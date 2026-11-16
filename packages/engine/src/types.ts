@@ -168,6 +168,18 @@ export interface MapOverlay {
   bounds: [LatLng, LatLng];
 }
 
+/**
+ * Kaartbron, instelbaar zodat we later kunnen wisselen (MapTiler, eigen
+ * kaarttegels op Cloudflare R2, enzovoort) zonder de app te wijzigen.
+ * Ontbreekt hij in het spel, dan gebruikt de app de standaardbron uit de configuratie.
+ */
+export interface MapSource {
+  /** URL van een MapLibre-stijl (style.json). */
+  styleUrl: string;
+  /** Bronvermelding op de kaart. */
+  attribution?: string;
+}
+
 export interface GpsSettings {
   /** Metingen met een grotere onzekerheid (meters) tellen niet mee. */
   maxAccuracy: number;
@@ -187,6 +199,7 @@ export interface GamePackage {
   playgrounds: Playground[];
   meetingPoint?: MeetingPoint;
   mapOverlay?: MapOverlay;
+  map?: MapSource;
   gps: GpsSettings;
 }
 

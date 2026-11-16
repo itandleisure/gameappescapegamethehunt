@@ -319,6 +319,21 @@ Geschatte lopende kosten bij het huidige volume (84 tot 207 spelers per maand, d
 
 Ter vergelijking: Loquiz kost nu ca. **420 – 1.035 euro per maand** voor The Hunt (5 euro per speler). De eigen oplossing kost dus ongeveer een tiende, en de kosten stijgen nauwelijks mee met het aantal spelers. Bij flinke groei (duizenden spelers per maand) komen er hooguit enkele tientallen euro's bij voor opslag van foto's en kaartgebruik. Ontwikkeltijd en onderhoud vallen buiten deze bedragen.
 
+### 11.1 Groei naar 100.000 evenementen per jaar
+
+Het doel op termijn is 10.000 tot 100.000 evenementen per jaar, met pieken van rond de 1.000 sessies en zo'n 10.000 telefoons tegelijk. We bouwen daar nu niet voor uit, maar maken ook geen keuzes die het later blokkeren.
+
+| Onderdeel | Bij de start | Wat bij groei | Al voorbereid |
+|---|---|---|---|
+| GPS naar de server | De telefoon meet continu, maar stuurt een uitgedunde route (bij ≥ 10 m verplaatsing, stilstaand eens per 30 s) in één bundel per 20 seconden | Bij 10.000 telefoons ~500 verzoeken per seconde in plaats van ~10.000. Eventueel alleen de telefoon van de teamcaptain laten sturen | `PositionUploader` in de engine, `record_positions` in de database |
+| Live kaart | Supabase Realtime op de tabel met posities | Overstappen op Realtime Broadcast per sessie, zodat posities niet eerst door de database hoeven | De monitor leest posities via één plek in de code |
+| Opslag van posities | Alle posities in Postgres | Ruwe posities na 90 dagen opruimen; afstand en route per team blijven bewaard. Tabel per maand opdelen | Afstand wordt per team berekend en kan worden vastgelegd bij het einde |
+| Foto's | Supabase Storage | Nieuwe foto's naar Cloudflare R2: geen kosten voor downloaden, ca. 15 dollar per TB per maand. Bij 100.000 evenementen gaat het om enkele TB per jaar | Elke foto onthoudt zijn opslag (`storage_provider`); links maken gaat via één functie |
+| Kaarttegels | MapTiler | Bij veel gelijktijdige spelers kunnen eigen kaarttegels (bijvoorbeeld Protomaps op R2) goedkoper zijn. Het speelveld wordt per sessie vooraf gedownload, dus het aantal aanvragen blijft beperkt | Kaartbron is instelbaar per spel (`map.styleUrl`), met een standaard in de app |
+| Database | Supabase Pro | Grotere database-instantie (ca. 100 tot 400 dollar per maand) en een leeskopie voor de resultatenpagina's | Standaard Postgres, dus ook te verhuizen |
+
+Grove inschatting van de lopende kosten bij 100.000 evenementen per jaar: enkele honderden tot rond de 1.000 euro per maand, afhankelijk van het aantal foto's en kaartgebruik. Dat is nog steeds een fractie van wat Loquiz bij dat volume zou kosten.
+
 ## 12. Risico's
 
 | Risico | Aanpak |

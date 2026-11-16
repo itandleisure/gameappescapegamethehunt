@@ -3,6 +3,8 @@
 
 export interface ResultPhoto {
   task: string;
+  /** Waar het bestand staat: 'supabase' (nu) of 'r2' (later, bij groei). */
+  provider?: string;
   path: string;
   taken_at: string;
   url?: string;

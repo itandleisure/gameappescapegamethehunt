@@ -7,3 +7,4 @@ export * from './text.js';
 export * from './engine.js';
 export * from './layers.js';
 export * from './stats.js';
+export * from './gps-upload.js';
