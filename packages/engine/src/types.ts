@@ -1,0 +1,283 @@
+/**
+ * Gedeelde datatypes voor speler-app, beheeromgeving en server.
+ *
+ * Een *gepubliceerd spelpakket* (`GamePackage`) is het resultaat van het
+ * samenvoegen van de lagen basisspel + stadsvariant + klantvariant (zie
+ * `layers.ts`). Een sessie speelt altijd één vaste versie daarvan.
+ */
+
+/** Taalcode, bijvoorbeeld `nl` of `en`. */
+export type Lang = string;
+
+/** Vertaalbare tekst: één waarde per taal. */
+export type Text = Partial<Record<Lang, string>>;
+
+export interface LatLng {
+  lat: number;
+  lng: number;
+}
+
+export interface TaskLocation extends LatLng {
+  /** Activatiestraal in meters. */
+  radius: number;
+}
+
+// ---------------------------------------------------------------------------
+// Antwoorden
+// ---------------------------------------------------------------------------
+
+export type AnswerSpec =
+  /** Alleen lezen en op OK drukken (verhaal, uitleg). */
+  | { type: 'info' }
+  /** Eén juiste optie kiezen. `correct` is de index in `options`. */
+  | { type: 'choice'; options: Text[]; correct: number }
+  /** Meerdere juiste opties aanvinken; precies deze set is goed. */
+  | { type: 'multi'; options: Text[]; correct: number[] }
+  /**
+   * Vrij tekstantwoord. Vergeleken zonder hoofdletters, spaties en accenten.
+   * Goede antwoorden gelden voor alle talen samen.
+   */
+  | { type: 'text'; accepted: string[] }
+  /** Getal, optioneel met marge. */
+  | { type: 'number'; value: number; tolerance?: number }
+  /** Foto uploaden; telt altijd als goed. */
+  | { type: 'photo' };
+
+export type AnswerValue =
+  | { type: 'info' }
+  | { type: 'choice'; option: number }
+  | { type: 'multi'; options: number[] }
+  | { type: 'text'; text: string }
+  | { type: 'number'; value: number | string }
+  | { type: 'photo'; photoId: string };
+
+// ---------------------------------------------------------------------------
+// Opdrachten
+// ---------------------------------------------------------------------------
+
+export interface Hint {
+  text: Text;
+  /** Puntaftrek als positief getal, bijvoorbeeld 25. */
+  cost: number;
+}
+
+export interface Task {
+  id: string;
+  title: Text;
+  body: Text;
+  answer: AnswerSpec;
+  /** Punten bij een goed (of afgerond) antwoord. */
+  points: number;
+  /** Punten per fout antwoord (meestal 0 of negatief). */
+  wrongPoints?: number;
+  tags: string[];
+  /** Hints met oplopende prijs; gaan vanzelf uit zodra de opdracht goed is. */
+  hints: Hint[];
+  /** Bevestigingsvraag voordat de opdracht opent ("Weten jullie zeker…?"). */
+  confirm?: Text;
+  /** Fout antwoord laat de opdracht openstaan tot hij goed is. */
+  retryUntilCorrect?: boolean;
+  /** Vaste locatie (voor alle tracks gelijk). */
+  location?: TaskLocation;
+  /** Locatie per tracknummer; gaat voor `location`. */
+  trackLocations?: Record<number, TaskLocation>;
+  correctComment?: Text;
+  wrongComment?: Text;
+}
+
+// ---------------------------------------------------------------------------
+// Regels: "wanneer [voorwaarde] dan [actie]"
+// ---------------------------------------------------------------------------
+
+/** Welke opdrachten een voorwaarde of actie betreft. */
+export type Selector =
+  | { task: string }
+  | { tasks: string[] }
+  | { tag: string }
+  | { all: true };
+
+export type Comparison = '>=' | '>' | '<=' | '<' | '==';
+
+export type Condition =
+  /** Opdracht(en) afgerond (goed of fout). */
+  | { kind: 'completed'; select: Selector; match?: 'all' | 'any' }
+  | { kind: 'correct'; select: Selector; match?: 'all' | 'any' }
+  /** Definitief fout beantwoord. */
+  | { kind: 'incorrect'; select: Selector; match?: 'all' | 'any' }
+  /** Speeltijd (sinds start van het team) is minstens x minuten. */
+  | { kind: 'elapsed'; minutes: number }
+  /** Minstens x seconden geleden dat de opdracht is afgerond. */
+  | { kind: 'afterCompleted'; task: string; seconds: number }
+  | { kind: 'score'; op: Comparison; value: number }
+  | { kind: 'onTrack'; track: number }
+  | { kind: 'and'; conditions: Condition[] }
+  | { kind: 'or'; conditions: Condition[] }
+  | { kind: 'not'; condition: Condition };
+
+export type Placement = 'map' | 'list' | { playground: string };
+
+export type Action =
+  | { kind: 'show'; select: Selector; on: Placement }
+  /** Direct openen als pop-up (zonder locatie). */
+  | { kind: 'open'; task: string }
+  | { kind: 'deactivate'; select: Selector }
+  | { kind: 'award'; points: number; reason?: string }
+  | { kind: 'message'; text: Text }
+  /** Start een reeks schermen die na elkaar openen. */
+  | { kind: 'startSequence'; sequence: string }
+  | { kind: 'end'; ending: string };
+
+export interface Rule {
+  id: string;
+  /** Korte omschrijving voor de beheeromgeving. */
+  label?: string;
+  when: Condition;
+  then: Action[];
+}
+
+// ---------------------------------------------------------------------------
+// Spelpakket
+// ---------------------------------------------------------------------------
+
+export interface Sequence {
+  id: string;
+  tasks: string[];
+}
+
+export interface Ending {
+  id: string;
+  title: Text;
+  body: Text;
+  /** Bonuspunten bij dit einde, bijvoorbeeld +600 bij het juiste extractiepunt. */
+  bonus: number;
+}
+
+export interface Playground {
+  id: string;
+  name: Text;
+}
+
+export interface MeetingPoint extends LatLng {
+  text: Text;
+}
+
+export interface MapOverlay {
+  /** Media-id of URL van de afbeelding. */
+  image: string;
+  /** Hoekpunten: noordwest en zuidoost. */
+  bounds: [LatLng, LatLng];
+}
+
+export interface GpsSettings {
+  /** Metingen met een grotere onzekerheid (meters) tellen niet mee. */
+  maxAccuracy: number;
+}
+
+export interface GamePackage {
+  id: string;
+  /** Versienummer van de gepubliceerde versie. */
+  version: number;
+  name: Text;
+  languages: Lang[];
+  defaultLanguage: Lang;
+  tasks: Task[];
+  rules: Rule[];
+  sequences: Sequence[];
+  endings: Ending[];
+  playgrounds: Playground[];
+  meetingPoint?: MeetingPoint;
+  mapOverlay?: MapOverlay;
+  gps: GpsSettings;
+}
+
+// ---------------------------------------------------------------------------
+// Gebeurtenissen van een team
+// ---------------------------------------------------------------------------
+
+interface EventBase {
+  /** Uniek id (door de app gemaakt), zodat dubbel versturen geen kwaad kan. */
+  id: string;
+  /** Tijdstip in ms sinds epoch, gecorrigeerd naar servertijd. */
+  at: number;
+}
+
+export type GameEvent = EventBase &
+  (
+    | { type: 'locationReached'; task: string; lat: number; lng: number; accuracy: number }
+    | { type: 'confirmed'; task: string }
+    | { type: 'declined'; task: string }
+    | { type: 'answered'; task: string; answer: AnswerValue }
+    | { type: 'hintUsed'; task: string; hint: number }
+    /** Spelleiding opent een opdracht handmatig vanuit de monitor. */
+    | { type: 'manualOpen'; task: string }
+  );
+
+export interface TeamContext {
+  /** Tracknummer van het team (1-based). */
+  track: number;
+  /** Starttijd van het team volgens de server (ms). */
+  startedAt: number;
+}
+
+// ---------------------------------------------------------------------------
+// Toestand van een team
+// ---------------------------------------------------------------------------
+
+export type TaskStatus =
+  /** Nog niet zichtbaar. */
+  | 'hidden'
+  /** Zichtbaar op kaart, lijst of playground. */
+  | 'visible'
+  /** Wacht op de bevestigingsvraag. */
+  | 'confirming'
+  /** Open om te beantwoorden. */
+  | 'open'
+  /** Afgerond. */
+  | 'done'
+  /** Uitgezet door een regel. */
+  | 'deactivated';
+
+export interface TaskState {
+  status: TaskStatus;
+  onMap: boolean;
+  inList: boolean;
+  playground?: string;
+  attempts: number;
+  correct?: boolean;
+  completedAt?: number;
+  hintsUsed: number;
+  lastAnswer?: AnswerValue;
+}
+
+export interface LedgerEntry {
+  at: number;
+  points: number;
+  reason: 'answer' | 'hint' | 'award' | 'ending' | 'wrong';
+  task?: string;
+  note?: string;
+}
+
+export interface MessageEntry {
+  at: number;
+  text: Text;
+  rule: string;
+}
+
+export interface Rejection {
+  event: string;
+  reason: string;
+}
+
+export interface TeamState {
+  /** Tijdstip waarop deze toestand is berekend. */
+  now: number;
+  score: number;
+  tasks: Record<string, TaskState>;
+  firedRules: Record<string, number>;
+  messages: MessageEntry[];
+  ledger: LedgerEntry[];
+  activeSequence?: { id: string; index: number };
+  ended?: { ending: string; at: number };
+  /** Gebeurtenissen die niet zijn toegepast, met reden (voor de monitor). */
+  rejected: Rejection[];
+}
