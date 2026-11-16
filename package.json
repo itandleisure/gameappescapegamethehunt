@@ -8,6 +8,7 @@
   "scripts": {
     "test": "pnpm -r --if-present test",
     "typecheck": "pnpm -r --if-present typecheck",
-    "test:db": "bash scripts/test-db.sh"
+    "test:db": "bash scripts/test-db.sh",
+    "test:functions": "node --test supabase/functions/*/*.test.ts"
   }
 }

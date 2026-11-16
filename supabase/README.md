@@ -30,3 +30,14 @@ npx supabase db push
 ```
 
 Zet daarna in Authentication → Providers "Anonymous sign-ins" aan.
+
+## Resultaten en fotoboek
+
+- `session_results(sessie)`: ranglijst met punten, speeltijd, totaalafstand en foto's, voor spelleiding en spelers in de sessie.
+- Foto's staan in de opslag-bucket `photos` onder `<team_id>/<opdracht>/<bestand>`; alleen het eigen team kan uploaden.
+- Geheime link per sessie (`sessions.results_token`, aan met `results_shared`):
+  - `GET /functions/v1/results-export?token=…` geeft JSON met foto-links (7 dagen geldig)
+  - `GET /functions/v1/results-export?token=…&format=csv` geeft een CSV voor Excel of een fotoboek-tool
+  - `rotate_results_token(sessie)` maakt een nieuwe link
+
+Deployen van de functie: `npx supabase functions deploy results-export`.
