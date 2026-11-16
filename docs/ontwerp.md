@@ -182,6 +182,40 @@ MVP-schermen:
 6. **Live monitor**: kaart met teams en routes, ranglijst, voortgang per team, chat, opdracht handmatig openen, sessie afsluiten.
 7. **Resultaten**: ranglijst, antwoorden per opdracht, photowall, export naar Excel, en een deelbare resultatenpagina voor de klant met The Hunt-logo.
 
+### 7.1 Resultatenpagina, live kaart en fotoboek
+
+De game masters gebruiken de resultatenpagina van Loquiz tijdens en na het spel. Dat komt één-op-één terug, en de gegevens worden ook buiten de app bruikbaar voor het fotoboek.
+
+**Tijdens het spel (game master)**
+
+- Live kaart met de actuele locatie en de gelopen route van elk team, met filter per team. Posities komen live binnen (Supabase Realtime), zonder te verversen.
+- Ranglijst met per team: punten, speeltijd, totaalafstand, aantal goed/fout, gebruikte hints en waar het team in het spel is.
+- Chat met een team of met iedereen, en opdrachten handmatig openen.
+
+**Fotorol**
+
+- De foto uit de fotomissie (na 35 minuten) wordt automatisch geüpload zodra het team hem maakt. Zonder bereik wacht de foto in de wachtrij en gaat hij alsnog mee zodra er verbinding is.
+- De foto's staan per sessie in de photowall op de resultatenpagina en zijn ook te downloaden.
+
+**Resultaten per team**
+
+| Gegeven | Hoe het wordt bepaald |
+|---|---|
+| Punten | Door de server nagerekend met de spelregel-engine |
+| Speeltijd | Van start tot einde op servertijd |
+| Totaalafstand | Uit de GPS-route; onnauwkeurige metingen, stilstaan en sprongen in het signaal tellen niet mee |
+| Uitkomst | Ontsnapt, verkeerd extractiepunt of tijd op |
+| Foto's | Alle foto's van het team, met link |
+
+**Ophalen voor het fotoboek (de "template")**
+
+Elke sessie heeft een geheime link. Zet de spelleiding "resultaten delen" aan, dan geeft die link alle gegevens hierboven terug, zonder inloggen:
+
+- als JSON, voor low-code tools en automatiseringen die het fotoboek vullen;
+- als CSV, die direct in Excel opent, met per team een rij en de foto-links in eigen kolommen.
+
+Foto-links zijn 7 dagen geldig en worden bij elke aanvraag opnieuw gemaakt. Is een link te ver verspreid, dan maakt de spelleiding met één knop een nieuwe. Dezelfde link dient als deelbare resultatenpagina voor de klant.
+
 ## 8. MVP-scope
 
 **Wel in de eerste versie** (alles wat The Hunt Leeuwarden nodig heeft):
@@ -199,7 +233,8 @@ MVP-schermen:
 - Zichtbare speeltijd, scores van andere teams, verzamelpunt na afloop
 - Playgrounds Extractiepunt en Speluitleg
 - Basisspel + stadsvariant + klantvariant + vertalingen (NL en EN als eerste)
-- Beheeromgeving, live monitor, chat, resultaten met Excel-export, testmodus
+- Beheeromgeving, live monitor met live kaart van de teams, chat, resultaten met Excel-export, testmodus
+- Automatische foto-upload van de fotomissie, photowall, en export van resultaten en foto's voor het fotoboek (zie 7.1)
 
 **Niet in de eerste versie** (later, op volgorde van belang):
 
@@ -218,8 +253,8 @@ De weken zijn een inschatting vanaf de start van fase 1. De grootste onzekerhede
 |---|---|---|---|
 | 0. Voorbereiden | nu – 2 | Ontwikkelaarsaccounts aanvragen (zie hoofdstuk 10), Supabase- en MapTiler-account, keuze appnaam en icoon | Accounts klaar vóór de eerste testbuild |
 | 1. Fundament | 1 – 3 | Monorepo, database en toegangsregels, spelregel-engine met Leeuwarden als testscenario | Engine speelt Leeuwarden foutloos na in een test |
-| 2. Speler-app | 3 – 7 | Alle MVP-functies van de app, GPS-filtering, offline, wachtrij | Testbuild op eigen telefoons |
-| 3. Beheeromgeving | 4 – 8 | Editor, varianten, vertalingen, sessies, monitor, resultaten | Spelleiding kan zelf een sessie draaien |
+| 2. Speler-app | 3 – 7 | Alle MVP-functies van de app, GPS-filtering, offline, wachtrij, automatische foto-upload | Testbuild op eigen telefoons |
+| 3. Beheeromgeving | 4 – 8 | Editor, varianten, vertalingen, sessies, live monitor met kaart, resultatenpagina, photowall, export voor het fotoboek | Spelleiding kan zelf een sessie draaien en het fotoboek vullen |
 | 4. Leeuwarden invoeren | 8 – 9 | The Hunt overzetten als basisspel + stadsvariant Leeuwarden, NL en EN, simulator-controle | Spel compleet in eigen systeem |
 | 5. Veldtest | 9 – 10 | Met jullie eigen team in Leeuwarden, naast Loquiz op dezelfde route; GPS-logs vergelijken | Lijst verbeterpunten, besluit over livegang |
 | 6. Verbeteren en publiceren | 10 – 12 | Punten uit de veldtest, app indienen bij App Store en Google Play | App openbaar in beide stores |
