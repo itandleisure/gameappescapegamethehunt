@@ -8,6 +8,7 @@
 // Foto-links zijn 7 dagen geldig. Werkt alleen als "resultaten delen" aan staat.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { resultsToCsv, type SessionResults } from './format.ts';
+import { signPhotoUrls } from './photo-store.ts';
 
 const PHOTO_LINK_SECONDS = 7 * 24 * 60 * 60;
 
@@ -26,12 +27,7 @@ Deno.serve(async (req) => {
   if (error) return new Response('Resultaten niet gevonden of niet gedeeld', { status: 404 });
   const results = data as SessionResults;
 
-  const paths = results.teams.flatMap((t) => t.photos.map((p) => p.path));
-  if (paths.length) {
-    const { data: signed } = await supabase.storage.from('photos').createSignedUrls(paths, PHOTO_LINK_SECONDS);
-    const byPath = new Map((signed ?? []).map((s) => [s.path, s.signedUrl]));
-    for (const team of results.teams) for (const photo of team.photos) photo.url = byPath.get(photo.path) ?? undefined;
-  }
+  await signPhotoUrls(supabase, results.teams.flatMap((t) => t.photos), PHOTO_LINK_SECONDS);
 
   if (format === 'csv') {
     const name = results.session.name.replace(/[^\w-]+/g, '_');

@@ -21,7 +21,7 @@ export type TaskField =
   | 'correctComment'
   | 'wrongComment';
 
-export type GameField = 'name' | 'meetingPoint' | 'mapOverlay';
+export type GameField = 'name' | 'meetingPoint' | 'mapOverlay' | 'map';
 
 export type FieldRef = { task: string; field: TaskField } | { game: GameField };
 
