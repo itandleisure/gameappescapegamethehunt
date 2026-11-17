@@ -1,19 +1,45 @@
 'use client';
+import Link from 'next/link';
 import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
 import { useAuth } from '@/lib/auth';
-import { parseGamePackage } from '@/lib/game-import';
+import { parseGameFile } from '@/lib/game-import';
+import { importBundle } from '@/lib/game-store';
 import { supabase } from '@/lib/supabase';
 import { tx } from '@/lib/text';
 
 interface GameRow {
   id: string;
   slug: string;
+  parent_id: string | null;
   layer: 'base' | 'city' | 'client';
   languages: string[];
-  game_versions: { id: string; version: number; published_at: string; name: unknown }[];
+  settings: { name?: unknown };
+  game_versions: { version: number; published_at: string }[];
+  name: { text: string; lang: string }[];
 }
 
-const LAYER: Record<GameRow['layer'], string> = { base: 'Basisspel', city: 'Stad', client: 'Klant' };
+const LAYER_LABEL: Record<GameRow['layer'], string> = { base: 'Basisspel', city: 'Stad', client: 'Klant' };
+
+/** Zet de spellen in boomvolgorde: basisspel, dan zijn steden, dan hun klanten. */
+function tree(games: GameRow[]): { game: GameRow; depth: number }[] {
+  const out: { game: GameRow; depth: number }[] = [];
+  const walk = (parent: string | null, depth: number) => {
+    for (const g of games.filter((x) => x.parent_id === parent).sort((a, b) => a.slug.localeCompare(b.slug))) {
+      out.push({ game: g, depth });
+      walk(g.id, depth + 1);
+    }
+  };
+  walk(null, 0);
+  // Varianten op een gedeeld spel van een andere organisatie (ouder niet zichtbaar).
+  for (const g of games) if (!out.some((o) => o.game.id === g.id)) out.push({ game: g, depth: 0 });
+  return out;
+}
+
+function gameTitle(g: { slug: string; layer: string; settings: { name?: unknown }; name?: { text: string; lang: string }[] }) {
+  const own = g.name?.find((n) => n.lang === 'nl') ?? g.name?.[0];
+  if (g.layer === 'base' && own) return own.text;
+  return tx(g.settings.name) || g.slug;
+}
 
 export default function GamesPage() {
   const { org } = useAuth();
@@ -24,13 +50,20 @@ export default function GamesPage() {
 
   const load = useCallback(async () => {
     if (!org) return;
-    const { data, error } = await supabase()
-      .from('games')
-      .select('id, slug, layer, languages, game_versions(id, version, published_at, name:package->name)')
-      .eq('org_id', org.id)
-      .order('slug');
-    if (error) setErrors([error.message]);
-    else setGames(data as unknown as GameRow[]);
+    const db = supabase();
+    const [g, n] = await Promise.all([
+      db
+        .from('games')
+        .select('id, slug, parent_id, layer, languages, settings, game_versions(version, published_at)')
+        .eq('org_id', org.id),
+      db.from('translations').select('game_id, text, lang').eq('entity', 'game').eq('entity_id', '').eq('field', 'name'),
+    ]);
+    if (g.error || n.error) {
+      setErrors([(g.error ?? n.error)!.message]);
+      return;
+    }
+    const names = n.data as { game_id: string; text: string; lang: string }[];
+    setGames((g.data as unknown as Omit<GameRow, 'name'>[]).map((row) => ({ ...row, name: names.filter((x) => x.game_id === row.id) })));
   }, [org]);
 
   useEffect(() => {
@@ -45,35 +78,21 @@ export default function GamesPage() {
     setErrors([]);
     setNotice(null);
     try {
-      const parsed = parseGamePackage(await file.text());
+      const parsed = parseGameFile(await file.text());
       if (!parsed.ok) {
         setErrors(parsed.errors);
         return;
       }
-      const db = supabase();
-      let gameId = games?.find((g) => g.slug === parsed.slug)?.id;
-      if (!gameId) {
-        const { data, error } = await db
-          .from('games')
-          .insert({
-            org_id: org.id,
-            layer: 'base',
-            slug: parsed.slug,
-            languages: parsed.game.languages,
-            default_language: parsed.game.defaultLanguage,
-            settings: { imported: true },
-          })
-          .select('id')
-          .single();
-        if (error) throw error;
-        gameId = data.id as string;
+      if (games?.some((g) => g.slug === parsed.slug || parsed.bundle.variants.some((v) => v.id === g.slug))) {
+        setErrors([`Er bestaat al een spel met de naam ${parsed.slug} of een van de varianten. Pas het id in het bestand aan.`]);
+        return;
       }
-      const { data: version, error } = await db.rpc('publish_game_version', { p_game: gameId, p_package: parsed.game });
-      if (error) throw error;
-      setNotice(`${parsed.slug} gepubliceerd als versie ${(version as { version: number }).version}.`);
+      await importBundle(supabase(), org.id, parsed.bundle);
+      const n = parsed.bundle.variants.length;
+      setNotice(`${parsed.slug} geïmporteerd${n > 0 ? `, met ${n} variant${n === 1 ? '' : 'en'}` : ''}. Publiceer het spel om er sessies mee te maken.`);
       await load();
     } catch (err) {
-      setErrors([err instanceof Error ? err.message : String((err as { message?: string }).message ?? err)]);
+      setErrors([err instanceof Error ? err.message : String(err)]);
     } finally {
       setBusy(false);
     }
@@ -83,13 +102,13 @@ export default function GamesPage() {
     <>
       <h1>Spellen</h1>
       <p className="muted">
-        De editor voor opdrachten, steden en klantvarianten volgt. Tot die tijd kun je een spelpakket (JSON) importeren.
-        Bestaat het spel al, dan wordt het een nieuwe versie; lopende sessies blijven op hun eigen versie.
+        Een basisspel bevat de opdrachten en regels. Een stad vult locaties en lokale vragen in, een klant alleen de
+        velden die het basisspel als aanpasbaar markeert. Publiceren maakt een vaste versie waarmee je sessies maakt.
       </p>
       <div className="actions">
         <label className={`filebutton${busy ? ' disabled' : ''}`}>
           <input type="file" accept="application/json,.json" onChange={importFile} disabled={busy} />
-          {busy ? 'Bezig…' : 'Spelpakket importeren'}
+          {busy ? 'Bezig…' : 'Spel importeren (JSON)'}
         </label>
       </div>
       {notice ? <p className="notice">{notice}</p> : null}
@@ -114,24 +133,26 @@ export default function GamesPage() {
                 <th>Spel</th>
                 <th>Soort</th>
                 <th>Talen</th>
-                <th>Laatste versie</th>
+                <th>Gepubliceerd</th>
               </tr>
             </thead>
             <tbody>
-              {games.map((g) => {
+              {tree(games).map(({ game: g, depth }) => {
                 const latest = [...g.game_versions].sort((a, b) => b.version - a.version)[0];
                 return (
                   <tr key={g.id}>
-                    <td>
-                      <strong>{latest ? tx(latest.name) : g.slug}</strong>
+                    <td style={{ paddingLeft: 12 + depth * 24 }}>
+                      <Link href={`/spellen/${g.id}`}>
+                        <strong>{gameTitle(g)}</strong>
+                      </Link>
                       <div className="muted">{g.slug}</div>
                     </td>
-                    <td>{LAYER[g.layer]}</td>
+                    <td>{LAYER_LABEL[g.layer]}</td>
                     <td>{g.languages.join(', ').toUpperCase()}</td>
                     <td>
                       {latest
                         ? `v${latest.version} · ${new Date(latest.published_at).toLocaleDateString('nl-NL')}`
-                        : 'Niet gepubliceerd'}
+                        : 'Nog niet'}
                     </td>
                   </tr>
                 );
