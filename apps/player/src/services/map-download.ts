@@ -1,6 +1,14 @@
-import { OfflineManager } from '@maplibre/maplibre-react-native';
 import { DEFAULT_MAP_SOURCE, type GamePackage } from '@hunt/engine';
 import { chooseMaxZoom, playAreaBounds } from '../core/play-area';
+import { IN_EXPO_GO } from './runtime';
+
+type OfflineManagerType = typeof import('@maplibre/maplibre-react-native').OfflineManager;
+
+/** De native kaartmodule ontbreekt in Expo Go; daar wordt niets gedownload. */
+function offlineManager(): OfflineManagerType | null {
+  if (IN_EXPO_GO) return null;
+  return (require('@maplibre/maplibre-react-native') as typeof import('@maplibre/maplibre-react-native')).OfflineManager;
+}
 
 /**
  * Downloadt alleen het speelveld van deze sessie (enkele MB) zodat de kaart
@@ -21,7 +29,8 @@ export async function downloadPlayArea(
   onProgress: (percent: number) => void,
 ): Promise<void> {
   const bounds = playAreaBounds(game);
-  if (!bounds) return;
+  const OfflineManager = offlineManager();
+  if (!bounds || !OfflineManager) return;
   const name = packName(sessionId);
   const existing = (await OfflineManager.getPacks()).find((p) => (p.metadata as { name?: string } | undefined)?.name === name);
   if (existing) {
@@ -43,6 +52,8 @@ export async function downloadPlayArea(
 
 /** Verwijdert de kaarten van eerdere sessies. */
 export async function removePlayAreas(keepSessionId?: string): Promise<void> {
+  const OfflineManager = offlineManager();
+  if (!OfflineManager) return;
   const keep = keepSessionId ? packName(keepSessionId) : undefined;
   for (const pack of await OfflineManager.getPacks()) {
     const name = (pack.metadata as { name?: string } | undefined)?.name;

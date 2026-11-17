@@ -38,6 +38,10 @@ npx eas-cli build --profile development --platform android   # APK voor je eigen
 npx expo start --dev-client
 ```
 
+### Testen in Expo Go
+
+De app draait ook in Expo Go (de test-app uit de App Store en Play Store), met twee beperkingen: de kaart is een webkaart (zelfde stijl en markeringen) en GPS werkt alleen met het scherm aan. Testversies komen via EAS Update op het kanaal `preview`.
+
 Voor een testversie zonder computer: `--profile preview` geeft een APK die je via een link installeert.
 
 ## Expo-project
