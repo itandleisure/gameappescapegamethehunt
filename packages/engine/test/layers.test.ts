@@ -90,3 +90,17 @@ describe('vertalingen', () => {
     expect(t({ nl: 'Hallo', en: 'Hello' }, 'en', 'nl')).toBe('Hello');
   });
 });
+
+describe('kaartbron', () => {
+  it('gebruikt standaard OpenStreetMap en kan per stad worden ingesteld', async () => {
+    const { DEFAULT_MAP_SOURCE } = await import('../src/types.js');
+    expect(DEFAULT_MAP_SOURCE.attribution).toContain('OpenStreetMap');
+    const base: BaseGame = {
+      ...JSON.parse(JSON.stringify(theHuntBase)),
+      overridable: [...theHuntBase.overridable, { target: { game: 'map' }, layers: ['city'] }],
+    };
+    const own = { styleUrl: 'https://kaart.example.test/leeuwarden/style.json', attribution: '© OpenStreetMap-bijdragers' };
+    const pkg = composeGame(base, [{ ...leeuwarden, overrides: [...leeuwarden.overrides, { target: { game: 'map' }, value: own }] }], meta);
+    expect(pkg.map).toEqual(own);
+  });
+});

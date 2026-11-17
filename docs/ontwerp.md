@@ -27,7 +27,7 @@ De eerste versie (MVP) doet precies wat The Hunt Leeuwarden nodig heeft. Met de 
 |---|---|---|
 | Speler-app | **React Native + Expo** (TypeScript) | Eén codebase voor iOS en Android. Expo regelt builds, ondertekening en het verspreiden van testversies (TestFlight en Google Play) vanuit de cloud, zonder dat er een Mac nodig is. Updates van teksten en kleine fixes kunnen zonder nieuwe store-review worden uitgerold (EAS Update). |
 | GPS | `expo-location` met hoogste nauwkeurigheid, plus achtergrondlocatie | Continue GPS met filtering in de app; blijft werken als het scherm uit gaat (Android via voorgrondmelding, iOS via achtergrondlocatie). |
-| Kaart | **MapLibre** met kaarttegels van MapTiler | Eigen kaartstijl (zoals nu in Loquiz), eigen overlay-afbeelding per stad, en kaarten vooraf downloaden voor offline gebruik. |
+| Kaart | **MapLibre** met kaartdata van **OpenStreetMap** (zie 2.1) | Open source, zonder account of API-sleutel. Eigen kaartstijl (zoals nu in Loquiz), eigen overlay-afbeelding per stad, en kaarten vooraf downloaden voor offline gebruik. |
 | Beheeromgeving | **Next.js** (React, TypeScript) | Zelfde taal en gedeelde code met de app, inclusief de spelregel-engine en de datatypes. |
 | Server | **Supabase** (Postgres, Auth, Storage, Realtime, Edge Functions), EU-regio; beheeromgeving op **Vercel** (zie hoofdstuk 11) | Weinig eigen serverbeheer, live-updates voor de monitor en chat zitten erin, standaard Postgres zodat we nooit vastzitten. |
 | Code-opbouw | Monorepo met pnpm workspaces | App, beheer en gedeelde engine in één repository, zodat een wijziging aan de regels overal tegelijk geldt. |
@@ -35,6 +35,22 @@ De eerste versie (MVP) doet precies wat The Hunt Leeuwarden nodig heeft. Met de 
 **Waarom niet Flutter?** Flutter is net zo geschikt voor de app, maar dan schrijven we de app in Dart en de beheeromgeving in TypeScript. Met React Native is de spelregel-engine één stuk code voor app, beheer en server. Dat is voor dit project het belangrijkste argument, omdat de regels het lastigste en meest foutgevoelige deel zijn.
 
 **Waarom geen eigen server?** Kan later altijd nog, omdat Supabase gewoon Postgres is. Voor de start scheelt het weken werk aan inloggen, opslag en live-verbindingen.
+
+### 2.1 Kaart: OpenStreetMap
+
+De kaart gebruikt **OpenStreetMap**: open kaartdata, gratis, zonder account of API-sleutel. De app tekent de kaart zelf met MapLibre (ook open source), zodat we de kaartstijl en de stads-overlay zelf bepalen.
+
+De data is open, maar de kaarttegels moeten ergens vandaan komen. Daar zijn drie mogelijkheden:
+
+| Bron | Geschikt voor | Toelichting |
+|---|---|---|
+| Tegelserver van OpenStreetMap zelf (tile.openstreetmap.org) | Niet voor deze app | De gebruiksregels van OpenStreetMap verbieden zwaar gebruik door apps en het vooraf downloaden van gebieden. Dat laatste hebben we nodig voor offline spelen |
+| **OpenFreeMap** | Start, testen en veldtest | Gratis en open source, vectorkaarten op basis van OpenStreetMap, geen sleutel nodig. Een gratis dienst zonder garanties, dus niet de enige basis voor productie |
+| **Eigen kaartbestand** (Protomaps-formaat) op Cloudflare R2 | Productie | Eén bestand met de kaart van Nederland of alleen de speelsteden, gemaakt uit OpenStreetMap-data. Wij beheren het zelf, het kost enkele euro's per maand en het speelveld kan per sessie vooraf worden gedownload |
+
+Plan: we starten met OpenFreeMap en stappen vóór de livegang (fase 6) over op een eigen kaartbestand. De kaartbron is per spel in te stellen (`map.styleUrl`), dus voor die overstap hoeft de app niet opnieuw door de stores.
+
+Op de kaart staat altijd de bronvermelding "© OpenStreetMap-bijdragers". Die is verplicht.
 
 ## 3. Architectuur
 
@@ -251,7 +267,7 @@ De weken zijn een inschatting vanaf de start van fase 1. De grootste onzekerhede
 
 | Fase | Weken | Wat | Resultaat |
 |---|---|---|---|
-| 0. Voorbereiden | nu – 2 | Ontwikkelaarsaccounts aanvragen (zie hoofdstuk 10), Supabase- en MapTiler-account, keuze appnaam en icoon | Accounts klaar vóór de eerste testbuild |
+| 0. Voorbereiden | nu – 2 | Ontwikkelaarsaccounts aanvragen (zie hoofdstuk 10), Supabase-account, keuze appnaam en icoon | Accounts klaar vóór de eerste testbuild |
 | 1. Fundament | 1 – 3 | Monorepo, database en toegangsregels, spelregel-engine met Leeuwarden als testscenario | Engine speelt Leeuwarden foutloos na in een test |
 | 2. Speler-app | 3 – 7 | Alle MVP-functies van de app, GPS-filtering, offline, wachtrij, automatische foto-upload | Testbuild op eigen telefoons |
 | 3. Beheeromgeving | 4 – 8 | Editor, varianten, vertalingen, sessies, live monitor met kaart, resultatenpagina, photowall, export voor het fotoboek | Spelleiding kan zelf een sessie draaien en het fotoboek vullen |
@@ -302,7 +318,7 @@ GitHub is de plek voor de **code**: de versiegeschiedenis, het beoordelen van wi
 | Beheeromgeving en resultatenpagina | **Vercel** | Zet de Next.js-site automatisch online bij elke wijziging op GitHub, met eigen domein (bijvoorbeeld beheer.thehunt.nl) |
 | App bouwen en testversies verspreiden | **Expo EAS** | Bouwt iOS- en Android-versies in de cloud en zet ze op TestFlight en Google Play |
 | Speler-app | **App Store en Google Play** | Hoe spelers de app installeren |
-| Kaarttegels | **MapTiler** | Kaartstijl en offline kaarten |
+| Kaarttegels | **OpenStreetMap**: eerst OpenFreeMap, later eigen kaartbestand (zie 2.1) | Open source, geen account nodig |
 
 Geschatte lopende kosten bij het huidige volume (84 tot 207 spelers per maand, dus enkele honderden teams):
 
@@ -311,7 +327,7 @@ Geschatte lopende kosten bij het huidige volume (84 tot 207 spelers per maand, d
 | Supabase Pro (EU) | ca. 25 dollar per maand |
 | Vercel Pro (nodig bij zakelijk gebruik) | ca. 20 dollar per maand |
 | Expo EAS (builds en updates) | 0 tot 19 dollar per maand |
-| MapTiler (kaarttegels) | 0 tot 25 dollar per maand, afhankelijk van gebruik |
+| Kaarttegels (OpenStreetMap) | 0 euro; met eigen kaartbestand op R2 enkele euro's per maand |
 | GitHub | gratis (privé repository) |
 | Apple Developer Program | 99 dollar per jaar (ca. 8 per maand) |
 | Google Play Console | 25 dollar eenmalig |
@@ -329,7 +345,7 @@ Het doel op termijn is 10.000 tot 100.000 evenementen per jaar, met pieken van r
 | Live kaart | Supabase Realtime op de tabel met posities | Overstappen op Realtime Broadcast per sessie, zodat posities niet eerst door de database hoeven | De monitor leest posities via één plek in de code |
 | Opslag van posities | Alle posities in Postgres | Ruwe posities na 90 dagen opruimen; afstand en route per team blijven bewaard. Tabel per maand opdelen | Afstand wordt per team berekend en kan worden vastgelegd bij het einde |
 | Foto's | Supabase Storage | Nieuwe foto's naar Cloudflare R2: geen kosten voor downloaden, ca. 15 dollar per TB per maand. Bij 100.000 evenementen gaat het om enkele TB per jaar | Elke foto onthoudt zijn opslag (`storage_provider`); links maken gaat via één functie |
-| Kaarttegels | MapTiler | Bij veel gelijktijdige spelers kunnen eigen kaarttegels (bijvoorbeeld Protomaps op R2) goedkoper zijn. Het speelveld wordt per sessie vooraf gedownload, dus het aantal aanvragen blijft beperkt | Kaartbron is instelbaar per spel (`map.styleUrl`), met een standaard in de app |
+| Kaarttegels | OpenFreeMap (OpenStreetMap) | Eigen kaartbestand van Nederland en de speelsteden (Protomaps-formaat, OpenStreetMap-data) op Cloudflare R2: geen afhankelijkheid van een gratis dienst, vaste lage kosten, en geschikt om het speelveld vooraf te downloaden | Kaartbron is instelbaar per spel (`map.styleUrl`), met een standaard in de app |
 | Database | Supabase Pro | Grotere database-instantie (ca. 100 tot 400 dollar per maand) en een leeskopie voor de resultatenpagina's | Standaard Postgres, dus ook te verhuizen |
 
 Grove inschatting van de lopende kosten bij 100.000 evenementen per jaar: enkele honderden tot rond de 1.000 euro per maand, afhankelijk van het aantal foto's en kaartgebruik. Dat is nog steeds een fractie van wat Loquiz bij dat volume zou kosten.
