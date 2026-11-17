@@ -30,11 +30,13 @@ export function overlayExtension(type: string): string | null {
 }
 
 /** Opslagpad in de bucket media: altijd in de map van het spel. */
-export function overlayPath(gameId: string, type: string, now = Date.now()): string {
+export function mediaPath(gameId: string, name: string, type: string, now = Date.now()): string {
   const ext = overlayExtension(type);
   if (!ext) throw new Error('Gebruik een PNG-, JPG- of WebP-afbeelding.');
-  return `${gameId}/overlay-${now}.${ext}`;
+  return `${gameId}/${name.replace(/[^a-z0-9-]/gi, '-')}-${now}.${ext}`;
 }
+
+export const overlayPath = (gameId: string, type: string, now = Date.now()) => mediaPath(gameId, 'overlay', type, now);
 
 const M_PER_DEG_LAT = 111_320;
 

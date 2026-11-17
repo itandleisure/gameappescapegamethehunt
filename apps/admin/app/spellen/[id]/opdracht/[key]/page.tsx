@@ -2,9 +2,10 @@
 import { composeGame, type Task, type TaskField } from '@hunt/engine';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ChangeEvent, type ReactNode } from 'react';
 import { answerToRow, rowsToBase, rowsToVariant, type LayerRows, type TranslationRow } from '@/lib/game-model';
 import { loadChain } from '@/lib/game-store';
+import { mediaPath } from '@/lib/map-settings';
 import { supabase } from '@/lib/supabase';
 import { cleanText, formToTask, taskToForm, type AnswerType, type TaskForm, type Texts } from '@/lib/task-form';
 
@@ -20,7 +21,7 @@ const ANSWER_TYPES: { value: AnswerType; label: string }[] = [
 const LANG_NAME: Record<string, string> = { nl: 'Nederlands', en: 'Engels', de: 'Duits', es: 'Spaans', pt: 'Portugees', it: 'Italiaans', fr: 'Frans' };
 
 /** Velden die een stad of klant mag aanpassen, met wat het formulier dan toont. */
-type Editable = 'title' | 'body' | 'confirm' | 'correctComment' | 'wrongComment' | 'answer' | 'points' | 'hints' | 'location';
+type Editable = 'title' | 'body' | 'image' | 'confirm' | 'correctComment' | 'wrongComment' | 'answer' | 'points' | 'hints' | 'location';
 
 function TextFields(props: { languages: string[]; value: Texts; onChange: (v: Texts) => void; multiline?: boolean; label: string }) {
   return (
@@ -166,6 +167,7 @@ export default function TaskPage() {
           hint_costs: task.hints.map((h) => h.cost),
           has_confirm: task.confirm !== undefined,
           retry_until_correct: task.retryUntilCorrect ?? false,
+          settings: withImage(taskRow.settings ?? {}, task.image),
         })
         .eq('id', taskRow.id),
     );
@@ -198,10 +200,10 @@ export default function TaskPage() {
         if (rows.length) must(await db.from('translations').insert(rows.map((r) => ({ ...r, game_id: id }))));
       }
     }
-    for (const field of ['answer', 'points'] as const) {
+    for (const field of ['answer', 'points', 'image'] as const) {
       if (!may(field)) continue;
       must(await db.from('overrides').delete().eq('game_id', id).eq('task_id', taskRow.id).eq('field', field));
-      if (on[field]) {
+      if (on[field] && task[field] !== undefined) {
         must(await db.from('overrides').insert({ game_id: id, task_id: taskRow.id, field, value: task[field] }));
       }
     }
@@ -212,6 +214,25 @@ export default function TaskPage() {
       }
     }
   }
+
+  const uploadImage = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setBusy(true);
+    setErrors([]);
+    try {
+      const path = mediaPath(id, `opdracht-${key}`, file.type);
+      const up = await db.storage.from('media').upload(path, file, { contentType: file.type });
+      if (up.error) throw new Error(up.error.message);
+      set({ image: db.storage.from('media').getPublicUrl(path).data.publicUrl });
+      setNotice('Foto geüpload. Klik op Opslaan om hem bij de opdracht te bewaren.');
+    } catch (err) {
+      setErrors([err instanceof Error ? err.message : String(err)]);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const answer = form.answerType;
   const trackCount = Object.keys(inherited?.trackLocations ?? {}).length;
@@ -233,6 +254,27 @@ export default function TaskPage() {
       <Section title="Tekst" enabled={may('title') || may('body')} variant={isVariant} on={on.title || on.body} onToggle={(v) => setOn({ ...on, title: v && may('title'), body: v && may('body') })}>
         {may('title') ? <TextFields label="Titel" languages={languages} value={form.title} onChange={(title) => set({ title })} /> : null}
         {may('body') ? <TextFields label="Tekst" multiline languages={languages} value={form.body} onChange={(body) => set({ body })} /> : null}
+      </Section>
+
+      <Section title="Foto" enabled={may('image')} variant={isVariant} on={on.image} onToggle={toggle('image')}>
+        <p className="muted">Een foto ter ondersteuning van de tekst. Spelers zien hem boven de vraag.</p>
+        {form.image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={form.image} alt="" style={{ maxWidth: '100%', maxHeight: 280, borderRadius: 8, display: 'block', marginBottom: 8 }} />
+        ) : null}
+        <div className="actions">
+          <label className="filebutton">
+            {form.image ? 'Andere foto' : 'Foto uploaden'}
+            <input type="file" accept="image/png,image/jpeg,image/webp" hidden disabled={busy} onChange={(e) => void uploadImage(e)} />
+          </label>
+          {form.image ? (
+            <button className="link" onClick={() => set({ image: '' })}>
+              Weghalen
+            </button>
+          ) : null}
+        </div>
+        <label htmlFor="image">Of een adres (https)</label>
+        <input id="image" value={form.image} placeholder="https://…" onChange={(e) => set({ image: e.target.value })} />
       </Section>
 
       <Section title="Antwoord" enabled={may('answer')} variant={isVariant} on={on.answer} onToggle={toggle('answer')}>
@@ -422,4 +464,9 @@ export default function TaskPage() {
       </div>
     </>
   );
+}
+
+function withImage(settings: Record<string, unknown>, image: string | undefined): Record<string, unknown> {
+  const { image: _old, ...rest } = settings;
+  return image ? { ...rest, image } : rest;
 }

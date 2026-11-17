@@ -15,6 +15,14 @@ describe('spelmodel in de database', () => {
     expect(JSON.stringify(baseRows.tasks)).not.toContain('"nl"');
   });
 
+  it('bewaart de foto bij een opdracht in de instellingen van de opdracht', () => {
+    const base = json(theHuntBase);
+    base.tasks[0].image = 'https://example.org/foto.jpg';
+    const rows = baseToRows(base, { id: 'base', slug: 'the-hunt' });
+    expect(rows.tasks[0]!.settings).toEqual({ image: 'https://example.org/foto.jpg' });
+    expect(rowsToBase(rows).tasks[0]!.image).toBe('https://example.org/foto.jpg');
+  });
+
   it('stadsvariant en klantvariant geven hetzelfde gepubliceerde spel', () => {
     const base = rowsToBase(baseRows);
     for (const variants of [[leeuwarden], [amsterdam], [leeuwarden, parteon]]) {

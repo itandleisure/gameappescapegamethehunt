@@ -65,6 +65,8 @@ export interface Task {
   id: string;
   title: Text;
   body: Text;
+  /** Ondersteunende foto bij de tekst: absolute https-URL (PNG, JPG of WebP). */
+  image?: string;
   answer: AnswerSpec;
   /** Punten bij een goed (of afgerond) antwoord. */
   points: number;

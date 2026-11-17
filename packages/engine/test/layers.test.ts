@@ -55,6 +55,21 @@ describe('gelaagd gamemodel', () => {
     }
   });
 
+  it('een stad kan de foto bij een opdracht vervangen als dat mag', () => {
+    const base: BaseGame = JSON.parse(JSON.stringify(theHuntBase));
+    base.tasks.find((x) => x.id === 'lokaal-1')!.image = 'https://example.org/basis.jpg';
+    base.overridable.push({ target: { task: 'lokaal-1', field: 'image' }, layers: ['city'] });
+    const city = { id: 'lwd', layer: 'city' as const, name: { nl: 'Lwd' }, overrides: [{ target: { task: 'lokaal-1', field: 'image' as const }, value: 'https://example.org/oldehove.jpg' }] };
+    expect(task(composeGame(base, [], meta), 'lokaal-1').image).toBe('https://example.org/basis.jpg');
+    expect(task(composeGame(base, [city], meta), 'lokaal-1').image).toBe('https://example.org/oldehove.jpg');
+  });
+
+  it('een foto moet een https-adres zijn', () => {
+    const base: BaseGame = JSON.parse(JSON.stringify(theHuntBase));
+    base.tasks[0]!.image = 'http://example.org/onveilig.jpg';
+    expect(() => composeGame(base, [], meta)).toThrow(/foto moet een https-adres zijn/);
+  });
+
   it('stadsvariant moet vóór de klantvariant komen', () => {
     expect(() => composeGame(theHuntBase, [parteon, amsterdam], meta)).toThrow(/staat na een klantvariant/);
   });
