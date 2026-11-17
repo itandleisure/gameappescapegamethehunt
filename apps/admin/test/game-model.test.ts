@@ -1,0 +1,34 @@
+import { composeGame } from '@hunt/engine';
+import { describe, expect, it } from 'vitest';
+import { amsterdam, leeuwarden, parteon, theHuntBase } from '../../../packages/engine/test/fixtures/the-hunt.js';
+import { baseToRows, rowsToBase, rowsToVariant, variantToRows } from '../src/lib/game-model.js';
+
+const json = (v: unknown) => JSON.parse(JSON.stringify(v));
+const baseRows = baseToRows(theHuntBase, { id: 'base', slug: 'the-hunt' });
+const variantRows = (v: typeof leeuwarden, parent: string) =>
+  variantToRows(v, { id: v.id, slug: v.id, parent_id: parent, languages: ['nl', 'en'], default_language: 'nl' }, (k) => k);
+
+describe('spelmodel in de database', () => {
+  it('slaat het basisspel op en leest het ongewijzigd terug', () => {
+    expect(json(rowsToBase(baseRows))).toEqual(json(theHuntBase));
+    // Alle teksten staan in translations, niet in de opdrachten zelf.
+    expect(JSON.stringify(baseRows.tasks)).not.toContain('"nl"');
+  });
+
+  it('stadsvariant en klantvariant geven hetzelfde gepubliceerde spel', () => {
+    const base = rowsToBase(baseRows);
+    for (const variants of [[leeuwarden], [amsterdam], [leeuwarden, parteon]]) {
+      const expected = composeGame(theHuntBase, variants, { id: 'x', version: 1 });
+      const fromRows = variants.map((v, i) => rowsToVariant(variantRows(v, i === 0 ? 'base' : variants[0]!.id), baseRows));
+      expect(json(composeGame(base, fromRows, { id: 'x', version: 1 }))).toEqual(json(expected));
+    }
+  });
+
+  it('zet locaties van een stad in task_locations en teksten in translations', () => {
+    const rows = variantRows(leeuwarden, 'base');
+    expect(rows.locations.some((l) => l.task_id === 'start' && l.track === null)).toBe(true);
+    expect(rows.locations.some((l) => l.track !== null)).toBe(true);
+    expect(rows.translations.some((t) => t.field === 'body' && t.entity_id === 'lokaal-1')).toBe(true);
+    expect(rows.overrides.some((o) => o.field === 'meetingPoint')).toBe(true);
+  });
+});

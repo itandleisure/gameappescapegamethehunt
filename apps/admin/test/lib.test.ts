@@ -1,23 +1,39 @@
 import { composeGame } from '@hunt/engine';
 import { describe, expect, it } from 'vitest';
-import { leeuwarden, theHuntBase } from '../../../packages/engine/test/fixtures/the-hunt.js';
-import { parseGamePackage } from '../src/lib/game-import.js';
+import { leeuwarden, parteon, theHuntBase } from '../../../packages/engine/test/fixtures/the-hunt.js';
+import { parseGameFile } from '../src/lib/game-import.js';
 import { formatInZone, validateSession, zonedToUtc } from '../src/lib/sessions.js';
 
 describe('spelpakket importeren', () => {
   it('accepteert een samengesteld spel', () => {
     const game = composeGame(theHuntBase, [leeuwarden], { id: 'the-hunt-leeuwarden', version: 1 });
-    const result = parseGamePackage(JSON.stringify(game));
+    const result = parseGameFile(JSON.stringify(game));
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.slug).toBe('the-hunt-leeuwarden');
+    if (result.ok) {
+      expect(result.slug).toBe('the-hunt-leeuwarden');
+      expect(result.bundle.variants).toEqual([]);
+      expect(result.bundle.base).not.toHaveProperty('version');
+    }
+  });
+
+  it('accepteert een bundel met basisspel, stad en klant', () => {
+    const result = parseGameFile(JSON.stringify({ base: theHuntBase, variants: [leeuwarden, parteon] }));
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.bundle.variants.map((v) => v.id)).toEqual([leeuwarden.id, parteon.id]);
+  });
+
+  it('weigert een variant die een niet-aanpasbaar veld wijzigt', () => {
+    const bad = { ...leeuwarden, overrides: [{ target: { task: 'puzzel-tangram', field: 'points' }, value: 1 }] };
+    const result = parseGameFile(JSON.stringify({ base: theHuntBase, variants: [bad] }));
+    expect(result.ok).toBe(false);
   });
 
   it('weigert geen JSON, een verkeerde standaardtaal en kapotte verwijzingen', () => {
-    expect(parseGamePackage('{niet')).toEqual({ ok: false, errors: ['Dit is geen geldig JSON-bestand.'] });
+    expect(parseGameFile('{niet')).toEqual({ ok: false, errors: ['Dit is geen geldig JSON-bestand.'] });
     const game = composeGame(theHuntBase, [leeuwarden], { id: 'the-hunt-leeuwarden', version: 1 });
-    const wrongLang = parseGamePackage(JSON.stringify({ ...game, defaultLanguage: 'de' }));
+    const wrongLang = parseGameFile(JSON.stringify({ ...game, defaultLanguage: 'de' }));
     expect(wrongLang.ok).toBe(false);
-    const broken = parseGamePackage(JSON.stringify({ ...game, sequences: [{ id: 'x', tasks: ['bestaat-niet'] }] }));
+    const broken = parseGameFile(JSON.stringify({ ...game, sequences: [{ id: 'x', tasks: ['bestaat-niet'] }] }));
     expect(broken.ok).toBe(false);
     if (!broken.ok) expect(broken.errors.join(' ')).toContain('bestaat-niet');
   });

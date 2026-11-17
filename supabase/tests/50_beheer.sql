@@ -49,6 +49,9 @@ do $$ begin
   if (select array_agg(version order by version) from public.game_versions) <> array[1, 2] then
     raise exception 'versienummers kloppen niet';
   end if;
+  if (select package ->> 'version' from public.game_versions where version = 2) <> '2' then
+    raise exception 'versienummer staat niet in het pakket';
+  end if;
 end $$;
 -- Ongeldig pakket wordt geweigerd.
 do $$ begin
