@@ -48,6 +48,8 @@ De data is open, maar de kaarttegels moeten ergens vandaan komen. Daar zijn drie
 | **OpenFreeMap** | Start, testen en veldtest | Gratis en open source, vectorkaarten op basis van OpenStreetMap, geen sleutel nodig. Een gratis dienst zonder garanties, dus niet de enige basis voor productie |
 | **Eigen kaartbestand** (Protomaps-formaat) op Cloudflare R2 | Productie | Eén bestand met de kaart van Nederland of alleen de speelsteden, gemaakt uit OpenStreetMap-data. Wij beheren het zelf, het kost enkele euro's per maand en het speelveld kan per sessie vooraf worden gedownload |
 
+**Alleen de kaart van het eigen speelveld op de telefoon.** De app zelf bevat geen kaarten. Een team logt in met de code van de sessie; daarmee weet de app welke stad en welk speelveld het is. De app downloadt dan op de achtergrond alleen dat speelveld (een paar vierkante kilometer, enkele MB), terwijl het team de teamnaam invult en de speluitleg leest. Na afloop wordt de kaart weer verwijderd. Lukt de download niet, dan laadt de kaart online zoals elke kaart-app. Per stad staat één klein kaartbestand klaar op onze opslag; 30 steden kosten de app dus niets extra.
+
 Plan: we starten met OpenFreeMap en stappen vóór de livegang (fase 6) over op een eigen kaartbestand. De kaartbron is per spel in te stellen (`map.styleUrl`), dus voor die overstap hoeft de app niet opnieuw door de stores.
 
 Op de kaart staat altijd de bronvermelding "© OpenStreetMap-bijdragers". Die is verplicht.
