@@ -12,6 +12,7 @@ const config: ExpoConfig = {
   scheme: 'thehunt',
   version: '0.1.0',
   orientation: 'portrait',
+  icon: './assets/icon.png',
   userInterfaceStyle: 'light',
   ios: {
     bundleIdentifier: 'com.thebadassgroup.thehunt',
@@ -25,6 +26,7 @@ const config: ExpoConfig = {
   },
   android: {
     package: 'com.thebadassgroup.thehunt',
+    adaptiveIcon: { foregroundImage: './assets/adaptive-icon.png', backgroundColor: '#101214' },
     permissions: [
       'ACCESS_FINE_LOCATION',
       'ACCESS_COARSE_LOCATION',
@@ -37,6 +39,7 @@ const config: ExpoConfig = {
   plugins: [
     'expo-router',
     'expo-localization',
+    ['expo-splash-screen', { image: './assets/splash-logo.png', imageWidth: 220, backgroundColor: '#101214', resizeMode: 'contain' }],
     [
       'expo-location',
       {

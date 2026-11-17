@@ -133,6 +133,7 @@ export default function TaskScreen() {
             <View key={i} style={styles.hint}>
               <Text style={styles.hintLabel}>{`${t('hint')} ${i + 1}`}</Text>
               <Body>{tr(hint.text)}</Body>
+              {hint.image ? <TaskImage uri={hint.image} /> : null}
             </View>
           ))}
 

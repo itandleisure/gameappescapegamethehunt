@@ -16,7 +16,13 @@ function Header() {
   if (!user || !org) return null;
   return (
     <header className="top">
-      <span className="brand">Escape Game The Hunt</span>
+      <span className="brand">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo-dark.png" alt="" className="logo only-light" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo-light.png" alt="" className="logo only-dark" />
+        Escape Game The Hunt
+      </span>
       <nav>
         {NAV.map((n) => (
           <Link key={n.href} href={n.href} className={path.startsWith(n.href) ? 'active' : ''}>

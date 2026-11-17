@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkAnswer, normalizeText, parseNumber } from '../src/answers.js';
+import { checkAnswer, matchesAccepted, normalizeText, parseNumber } from '../src/answers.js';
 import type { AnswerSpec } from '../src/types.js';
 
 describe('antwoorden', () => {
@@ -35,5 +35,14 @@ describe('antwoorden', () => {
     expect(checkAnswer({ type: 'info' }, { type: 'info' })).toEqual({ valid: true, correct: true });
     expect(checkAnswer({ type: 'photo' }, { type: 'photo', photoId: 'p1' })).toEqual({ valid: true, correct: true });
     expect(checkAnswer({ type: 'photo' }, { type: 'info' })).toMatchObject({ valid: false });
+  });
+
+  it('kent een jokerteken in goedgekeurde antwoorden, zoals Loquiz', () => {
+    const spec = { type: 'text' as const, accepted: ['ver*'] };
+    expect(checkAnswer(spec, { type: 'text', text: 'Verloren' })).toEqual({ valid: true, correct: true });
+    expect(checkAnswer(spec, { type: 'text', text: 'ver' })).toEqual({ valid: true, correct: true });
+    expect(checkAnswer(spec, { type: 'text', text: 'over' })).toEqual({ valid: true, correct: false });
+    expect(matchesAccepted('*toren', 'Oldehove toren')).toBe(true);
+    expect(matchesAccepted('a.b', 'axb')).toBe(false);
   });
 });

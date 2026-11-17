@@ -79,3 +79,12 @@ textarea { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border
 ol.rules { list-style: none; padding: 0; display: grid; gap: 12px; }
 .corner { width: 16px; height: 16px; border-radius: 3px; background: #1d4ed8; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.35); cursor: grab; }
 .pin.meeting { background: #15803d; }
+header.top .brand { display: inline-flex; align-items: center; gap: 10px; }
+header.top .brand .logo { height: 32px; width: auto; }
+.loginlogo { display: block; width: 180px; height: auto; margin: 0 auto 16px; }
+.only-dark { display: none; }
+@media (prefers-color-scheme: dark) {
+  .only-dark { display: inline-block; }
+  img.only-dark.loginlogo { display: block; }
+  .only-light { display: none; }
+}

@@ -67,7 +67,9 @@ export default function PlayScreen() {
   const bounds = useMemo(() => (game ? playAreaBounds(game) : undefined), [game]);
   // Foto's bij opdrachten vooraf ophalen, zodat ze er ook zijn bij slecht bereik.
   useEffect(() => {
-    for (const task of game?.tasks ?? []) if (task.image) void Image.prefetch(task.image).catch(() => undefined);
+    for (const task of game?.tasks ?? []) {
+      for (const uri of [task.image, ...task.hints.map((h) => h.image)]) if (uri) void Image.prefetch(uri).catch(() => undefined);
+    }
   }, [game]);
 
   if (!controller || !snapshot || !game) return <Redirect href="/" />;

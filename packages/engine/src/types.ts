@@ -59,6 +59,8 @@ export interface Hint {
   text: Text;
   /** Puntaftrek als positief getal, bijvoorbeeld 25. */
   cost: number;
+  /** Optionele afbeelding bij de hint: absolute https-URL. */
+  image?: string;
 }
 
 export interface Task {

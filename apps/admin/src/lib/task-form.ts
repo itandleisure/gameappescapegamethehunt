@@ -2,7 +2,7 @@
  * Formuliergegevens voor één opdracht, en terug naar een engine-opdracht.
  * Puur (zonder database), zodat het te testen is.
  */
-import type { AnswerSpec, Task, TaskLocation, Text } from '@hunt/engine';
+import type { AnswerSpec, Hint, Task, TaskLocation, Text } from '@hunt/engine';
 
 export type AnswerType = AnswerSpec['type'];
 export type Texts = Record<string, string>;
@@ -25,7 +25,7 @@ export interface TaskForm {
   wrongPoints: string;
   tags: string;
   retryUntilCorrect: boolean;
-  hints: { cost: string; text: Texts }[];
+  hints: { cost: string; text: Texts; image: string }[];
   hasLocation: boolean;
   lat: string;
   lng: string;
@@ -58,7 +58,7 @@ export function taskToForm(task: Task): TaskForm {
     wrongPoints: String(task.wrongPoints ?? 0),
     tags: task.tags.join(', '),
     retryUntilCorrect: task.retryUntilCorrect ?? false,
-    hints: task.hints.map((h) => ({ cost: String(h.cost), text: texts(h.text) })),
+    hints: task.hints.map((h) => ({ cost: String(h.cost), text: texts(h.text), image: h.image ?? '' })),
     hasLocation: task.location !== undefined,
     lat: task.location ? String(task.location.lat) : '',
     lng: task.location ? String(task.location.lng) : '',
@@ -126,7 +126,13 @@ export function formToTask(key: string, form: TaskForm): { task: Task; errors: s
   const hints = form.hints.map((h, i) => {
     const cost = num(h.cost);
     if (!Number.isInteger(cost) || cost < 0) errors.push(`Hint ${i + 1}: de prijs moet een positief heel getal zijn.`);
-    return { cost, text: cleanText(h.text) };
+    const hint: Hint = { cost, text: cleanText(h.text) };
+    const image = h.image.trim();
+    if (image) {
+      if (!/^https:\/\/\S+$/.test(image)) errors.push(`Hint ${i + 1}: de afbeelding moet een https-adres zijn.`);
+      hint.image = image;
+    }
+    return hint;
   });
 
   const task: Task = {

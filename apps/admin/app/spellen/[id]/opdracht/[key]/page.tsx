@@ -3,7 +3,7 @@ import { composeGame, type Task, type TaskField } from '@hunt/engine';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useState, type ChangeEvent, type ReactNode } from 'react';
-import { answerToRow, rowsToBase, rowsToVariant, type LayerRows, type TranslationRow } from '@/lib/game-model';
+import { answerToRow, rowsToBase, taskSettings, rowsToVariant, type LayerRows, type TranslationRow } from '@/lib/game-model';
 import { loadChain } from '@/lib/game-store';
 import { mediaPath } from '@/lib/map-settings';
 import { supabase } from '@/lib/supabase';
@@ -167,7 +167,7 @@ export default function TaskPage() {
           hint_costs: task.hints.map((h) => h.cost),
           has_confirm: task.confirm !== undefined,
           retry_until_correct: task.retryUntilCorrect ?? false,
-          settings: withImage(taskRow.settings ?? {}, task.image),
+          settings: taskSettings(task, taskRow.settings ?? {}),
         })
         .eq('id', taskRow.id),
     );
@@ -382,6 +382,10 @@ export default function TaskPage() {
               </>
             ) : null}
             <TextFields label={`Hint ${i + 1}`} languages={languages} value={hint.text} onChange={(text) => set({ hints: form.hints.map((h, j) => (j === i ? { ...h, text } : h)) })} />
+            <label>
+              Afbeelding bij hint {i + 1} <span className="muted">(optioneel, https-adres)</span>
+            </label>
+            <input value={hint.image} placeholder="https://…" onChange={(e) => set({ hints: form.hints.map((h, j) => (j === i ? { ...h, image: e.target.value } : h)) })} />
             {!isVariant ? (
               <button type="button" className="link" onClick={() => set({ hints: form.hints.filter((_, j) => j !== i) })}>
                 Hint verwijderen
@@ -391,7 +395,7 @@ export default function TaskPage() {
         ))}
         {!isVariant ? (
           <div className="actions">
-            <button type="button" className="secondary" onClick={() => set({ hints: [...form.hints, { cost: '25', text: {} }] })}>
+            <button type="button" className="secondary" onClick={() => set({ hints: [...form.hints, { cost: '25', text: {}, image: '' }] })}>
               Hint toevoegen
             </button>
           </div>
@@ -466,7 +470,3 @@ export default function TaskPage() {
   );
 }
 
-function withImage(settings: Record<string, unknown>, image: string | undefined): Record<string, unknown> {
-  const { image: _old, ...rest } = settings;
-  return image ? { ...rest, image } : rest;
-}
