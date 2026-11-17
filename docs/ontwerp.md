@@ -352,6 +352,25 @@ Het doel op termijn is 10.000 tot 100.000 evenementen per jaar, met pieken van r
 
 Grove inschatting van de lopende kosten bij 100.000 evenementen per jaar: enkele honderden tot rond de 1.000 euro per maand, afhankelijk van het aantal foto's en kaartgebruik. Dat is nog steeds een fractie van wat Loquiz bij dat volume zou kosten.
 
+### 11.2 Uitrol in Europa: eigen game masters en partners
+
+The Hunt gaat ook naar Spanje, Portugal, Italië en andere landen, deels met eigen game masters en deels met lokale partners.
+
+| Onderdeel | Aanpak |
+|---|---|
+| Taal | Taal toevoegen aan het basisspel en vertalingen invullen; de beheeromgeving toont wat ontbreekt. Ook de knoppen en teksten van de app zelf zijn vertaalbaar. De app opent in de taal van de telefoon, het team kan wisselen |
+| Steden | Per stad het stadsformulier: locaties, extractiepunten, lokale vragen, overlay |
+| Kaart | OpenStreetMap dekt heel Europa; per stad een klein kaartbestand (zie 2.1) |
+| Tijd | Elke sessie heeft een tijdzone (bijvoorbeeld Europe/Lisbon). Tijden worden in UTC opgeslagen en in de tijdzone van de sessie getoond |
+| Stores | Eén App Store- en één Google Play-account publiceert in alle landen; de storebeschrijving per taal |
+| Privacy | Server in de EU (Frankfurt), dus AVG overal geregeld; privacyverklaring per taal |
+
+**Eigen game masters** in het buitenland krijgen een account in de organisatie van Badass Games, met de rol instructeur.
+
+**Partners** krijgen een eigen organisatie in de beheeromgeving, met eigen beheerders, game masters, sessies en resultaten. Badass Games deelt het basisspel met de partner. De partner maakt daarop eigen stads- en klantvarianten, maar kan het basisspel zelf niet wijzigen en ziet de steden en resultaten van Badass Games of andere partners niet. Een verbetering in het basisspel komt na publiceren ook bij de partner. Zo blijft de kwaliteit van The Hunt overal gelijk.
+
+Later te bepalen: hoe partners afrekenen (bijvoorbeeld per speler, zoals nu bij Loquiz) en of partners een eigen logo in de app en op de resultatenpagina krijgen. Het datamodel ondersteunt een logo per organisatie al.
+
 ## 12. Risico's
 
 | Risico | Aanpak |
