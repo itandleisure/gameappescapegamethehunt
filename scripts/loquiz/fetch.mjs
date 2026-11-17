@@ -6,14 +6,30 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 const BASE = 'https://api.loquiz.com/v3';
-const key = process.env.LOQUIZ_API_KEY;
+const key = (process.env.LOQUIZ_API_KEY ?? '').trim().replace(/^ApiKey-v1\s+/i, '');
 const outDir = process.argv[2];
 if (!key) throw new Error('LOQUIZ_API_KEY ontbreekt');
 if (!outDir) throw new Error('Geef een uitvoermap op');
 
+// De documentatie noemt "ApiKey-v1 <sleutel>"; probeer bij 401 ook andere vormen.
+const SCHEMES = [
+  (k) => ({ Authorization: `ApiKey-v1 ${k}` }),
+  (k) => ({ Authorization: `Bearer ${k}` }),
+  (k) => ({ Authorization: k }),
+  (k) => ({ 'X-Api-Key': k }),
+];
+let scheme = 0;
+console.log(`Sleutel: ${key.length} tekens`);
+for (; scheme < SCHEMES.length; scheme++) {
+  const res = await fetch(`${BASE}/games?limit=1`, { headers: { ...SCHEMES[scheme](key), Accept: 'application/json' } });
+  console.log(`Aanmeldvorm ${scheme + 1}: status ${res.status}`);
+  if (res.ok) break;
+}
+if (scheme === SCHEMES.length) throw new Error('Loquiz accepteert de sleutel niet (401)');
+
 async function get(path) {
   for (let attempt = 1; ; attempt++) {
-    const res = await fetch(BASE + path, { headers: { Authorization: `ApiKey-v1 ${key}`, Accept: 'application/json' } });
+    const res = await fetch(BASE + path, { headers: { ...SCHEMES[scheme](key), Accept: 'application/json' } });
     if (res.ok) return res.json();
     if (attempt < 4 && (res.status === 429 || res.status >= 500)) {
       await new Promise((r) => setTimeout(r, 2000 * attempt));
