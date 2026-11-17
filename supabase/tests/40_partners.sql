@@ -176,9 +176,33 @@ begin
   assert (r #>> '{teams,0,distance_m}')::numeric between 100 and 120, 'afstand gelopen';
   assert jsonb_array_length(r #> '{teams,0,photos}') = 1, 'foto in de fotowall';
 end $$;
+-- Badass Games ziet de sessie van de partner (het is hun spel), voor het
+-- fotoboek, maar kan er niets in wijzigen.
 select tests.login('a0000000-0000-0000-0000-000000000001');
+do $$
+declare r jsonb;
+begin
+  assert (select count(*) from public.sessions where join_code = 'MAD001') = 1, 'Badass Games ziet de sessie van de partner';
+  assert (select count(*) from public.positions) = 2, 'Badass Games ziet de live posities';
+  assert (select count(*) from public.photos) = 1, 'Badass Games ziet de foto''s';
+  r := public.session_results('5e500000-0000-0000-0000-000000000001');
+  assert jsonb_array_length(r #> '{teams,0,photos}') = 1, 'resultaten met fotowall';
+  update public.teams set score = 9999;
+  update public.sessions set name = 'Gekaapt';
+  assert (select score from public.teams) = 0, 'Badass Games wijzigt geen teams van de partner';
+  assert (select name from public.sessions where join_code = 'MAD001') = 'Madrid vrijdag', 'Badass Games wijzigt de sessie niet';
+end $$;
+
+-- Een andere partner ziet de sessie niet.
+select tests.login('17000000-0000-0000-0000-000000000001');
 do $$ begin
-  assert (select count(*) from public.sessions where join_code = 'MAD001') = 0, 'Badass Games ziet de sessies van de partner niet';
+  assert (select count(*) from public.sessions) = 0, 'andere partner ziet de sessie niet';
+  assert (select count(*) from public.positions) = 0, 'andere partner ziet geen posities';
+  begin
+    perform public.session_results('5e500000-0000-0000-0000-000000000001');
+    raise exception 'andere partner kreeg resultaten';
+  exception when insufficient_privilege then null;
+  end;
 end $$;
 
 -- Tijdzone per sessie
