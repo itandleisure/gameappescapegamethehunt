@@ -4,6 +4,7 @@ import type { Backend, PendingPhoto, TeamRecord } from '../src/core/types.js';
 /** Nep-server voor tests: houdt alles in het geheugen en kan "offline" gaan. */
 export class FakeBackend implements Backend {
   offline = false;
+  testMode = true;
   serverNow: number;
   teams = new Map<string, TeamRecord>();
   events = new Map<string, GameEvent[]>();
@@ -66,7 +67,7 @@ export class FakeBackend implements Backend {
   async loadGame() {
     this.guard();
     return {
-      session: { id: 'sessie-1', name: 'Test', timezone: 'Europe/Amsterdam', status: 'open' as const, testMode: true },
+      session: { id: 'sessie-1', name: 'Test', timezone: 'Europe/Amsterdam', status: 'open' as const, testMode: this.testMode },
       game: this.game,
     };
   }

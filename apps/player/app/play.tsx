@@ -115,6 +115,8 @@ export default function PlayScreen() {
   const listCount = listGroups(game, state).flatMap((g) => g.tasks).filter((task) => isAnswerable(game, ctx, state, task.id)).length;
   const latestMessage = state.messages.length > dismissedMessages ? state.messages[state.messages.length - 1] : undefined;
   const overlay = game.mapOverlay;
+  // In een testsessie kun je opdrachten openen zonder ter plekke te zijn.
+  const testTargets = snapshot.session.testMode ? controller.testTargets() : [];
   const weakGps = position !== null && position.accuracy > game.gps.maxAccuracy;
 
   return (
@@ -164,6 +166,19 @@ export default function PlayScreen() {
       </SafeAreaView>
 
       <SafeAreaView edges={['bottom']} style={styles.bottom}>
+        {testTargets.length > 0 ? (
+          <View style={styles.test}>
+            <Banner>{t('testMode')}</Banner>
+            {testTargets.map((id) => (
+              <Button
+                key={id}
+                kind="secondary"
+                label={`📍 ${tx(game.tasks.find((x) => x.id === id)?.title, lang, game.defaultLanguage)}`}
+                onPress={() => void controller.simulateArrival(id)}
+              />
+            ))}
+          </View>
+        ) : null}
         <Button label={listCount > 0 ? `${t('tasks')} (${listCount})` : t('tasks')} onPress={() => router.push('/tasks')} />
       </SafeAreaView>
     </View>
@@ -173,6 +188,7 @@ export default function PlayScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   spacer: { height: space.lg },
+  test: { marginBottom: space.sm },
   teamCode: { color: colors.accent, fontSize: 40, fontWeight: '800', letterSpacing: 6, marginVertical: space.sm },
   top: { position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: space.md },
   header: {
