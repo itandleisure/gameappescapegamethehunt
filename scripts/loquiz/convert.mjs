@@ -79,10 +79,8 @@ export function convertAnswer(task) {
         warnings,
       };
     case 'text': {
+      // Jokerteken * (bijv. "ver*") werkt in de engine zoals in Loquiz.
       const accepted = answers.filter((a) => a.correct).map((a) => a.text);
-      if (accepted.some((a) => a.includes('*'))) {
-        warnings.push(`antwoord met jokerteken (${accepted.join(', ')}): onze app kent nog geen jokertekens`);
-      }
       return { answer: { type: 'text', accepted }, warnings };
     }
     case 'number': {
@@ -198,8 +196,7 @@ export function convertGame(loquiz, skeleton, mapping) {
       const h = lq(hid);
       const { body } = splitTitle(htmlToText(h.text)); // eerste regel is "… Hint 1"
       const img = firstImage(h);
-      if (img) report.warnings.push(`${ourId}: hint ${i + 1} heeft een afbeelding (hints hebben nog geen afbeeldingveld)`);
-      return { cost: costs[i] ?? [25, 50, 75][i], text: nl(body) };
+      return { cost: costs[i] ?? [25, 50, 75][i], text: nl(body), ...(img ? { image: img } : {}) };
     });
     report.filled.push(ourId);
   }
