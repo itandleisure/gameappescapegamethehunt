@@ -6,7 +6,7 @@ import type { ExpoConfig } from 'expo/config';
  * wat een speler mag. Geheime sleutels horen hier nooit.
  */
 const config: ExpoConfig = {
-  name: 'The Hunt',
+  name: 'Escape Game The Hunt',
   slug: 'gameappescapegamethehunt',
   owner: 'the-badass-group',
   scheme: 'thehunt',
@@ -39,8 +39,8 @@ const config: ExpoConfig = {
       'expo-location',
       {
         locationAlwaysAndWhenInUsePermission:
-          'The Hunt gebruikt je locatie tijdens het spel om opdrachten te openen als je ter plekke bent, ook als het scherm uit is.',
-        locationWhenInUsePermission: 'The Hunt gebruikt je locatie om opdrachten te openen als je ter plekke bent.',
+          'Escape Game The Hunt gebruikt je locatie tijdens het spel om opdrachten te openen als je ter plekke bent, ook als het scherm uit is.',
+        locationWhenInUsePermission: 'Escape Game The Hunt gebruikt je locatie om opdrachten te openen als je ter plekke bent.',
         isIosBackgroundLocationEnabled: true,
         isAndroidBackgroundLocationEnabled: true,
         isAndroidForegroundServiceEnabled: true,
@@ -49,7 +49,7 @@ const config: ExpoConfig = {
     [
       'expo-image-picker',
       {
-        cameraPermission: 'The Hunt gebruikt de camera voor de fotomissies.',
+        cameraPermission: 'Escape Game The Hunt gebruikt de camera voor de fotomissies.',
         photosPermission: false,
       },
     ],

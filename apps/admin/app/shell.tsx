@@ -16,7 +16,7 @@ function Header() {
   if (!user || !org) return null;
   return (
     <header className="top">
-      <span className="brand">The Hunt</span>
+      <span className="brand">Escape Game The Hunt</span>
       <nav>
         {NAV.map((n) => (
           <Link key={n.href} href={n.href} className={path.startsWith(n.href) ? 'active' : ''}>

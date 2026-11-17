@@ -5,7 +5,7 @@
  */
 
 const nl = {
-  appName: 'The Hunt',
+  appName: 'Escape Game The Hunt',
   joinTitle: 'Doe mee',
   joinCode: 'Sessiecode',
   joinCodeHint: 'Krijg je van de spelleiding',
@@ -40,7 +40,7 @@ const nl = {
   retakePhoto: 'Opnieuw',
   sendPhoto: 'Foto versturen',
   photoSaved: 'Foto ontvangen. Hij wordt op de achtergrond verstuurd.',
-  locationNeeded: 'The Hunt heeft je locatie nodig om opdrachten te openen als je ter plekke bent.',
+  locationNeeded: 'Escape Game The Hunt heeft je locatie nodig om opdrachten te openen als je ter plekke bent.',
   locationAlways: 'Kies "Altijd toestaan", zodat het spel ook doorgaat als het scherm uit is.',
   allowLocation: 'Locatie toestaan',
   locationDenied: 'Zonder locatie kunnen we geen opdrachten openen. Zet locatie aan in de instellingen.',
@@ -48,7 +48,7 @@ const nl = {
   gpsWeak: 'Zwak GPS-signaal',
   offline: 'Geen verbinding. We sturen alles door zodra het weer kan.',
   mapDownloading: 'Kaart van het speelveld laden… {percent}%',
-  backgroundNotice: 'The Hunt volgt je locatie tijdens het spel',
+  backgroundNotice: 'Escape Game The Hunt volgt je locatie tijdens het spel',
   gameOver: 'Einde spel',
   finalScore: 'Eindscore',
   leave: 'Afmelden op deze telefoon',
@@ -65,7 +65,7 @@ export type MessageKey = keyof typeof nl;
 type Messages = Record<MessageKey, string>;
 
 const en: Messages = {
-  appName: 'The Hunt',
+  appName: 'Escape Game The Hunt',
   joinTitle: 'Join the game',
   joinCode: 'Session code',
   joinCodeHint: 'You get this from your game master',
@@ -100,7 +100,7 @@ const en: Messages = {
   retakePhoto: 'Retake',
   sendPhoto: 'Send photo',
   photoSaved: 'Photo received. It is being sent in the background.',
-  locationNeeded: 'The Hunt needs your location to open tasks when you arrive at them.',
+  locationNeeded: 'Escape Game The Hunt needs your location to open tasks when you arrive at them.',
   locationAlways: 'Choose "Always allow" so the game keeps working when the screen is off.',
   allowLocation: 'Allow location',
   locationDenied: "Without your location we can't open tasks. Turn on location in Settings.",
@@ -108,7 +108,7 @@ const en: Messages = {
   gpsWeak: 'Weak GPS signal',
   offline: "No connection. We'll send everything as soon as possible.",
   mapDownloading: 'Loading the map of the play area… {percent}%',
-  backgroundNotice: 'The Hunt is tracking your location during the game',
+  backgroundNotice: 'Escape Game The Hunt is tracking your location during the game',
   gameOver: 'Game over',
   finalScore: 'Final score',
   leave: 'Sign out on this phone',
@@ -122,7 +122,7 @@ const en: Messages = {
 };
 
 const de: Messages = {
-  appName: 'The Hunt',
+  appName: 'Escape Game The Hunt',
   joinTitle: 'Mitspielen',
   joinCode: 'Sitzungscode',
   joinCodeHint: 'Den bekommt ihr von der Spielleitung',
@@ -157,7 +157,7 @@ const de: Messages = {
   retakePhoto: 'Neu aufnehmen',
   sendPhoto: 'Foto senden',
   photoSaved: 'Foto erhalten. Es wird im Hintergrund gesendet.',
-  locationNeeded: 'The Hunt braucht euren Standort, um Aufgaben vor Ort zu öffnen.',
+  locationNeeded: 'Escape Game The Hunt braucht euren Standort, um Aufgaben vor Ort zu öffnen.',
   locationAlways: 'Wählt „Immer erlauben“, damit das Spiel auch bei ausgeschaltetem Bildschirm weiterläuft.',
   allowLocation: 'Standort erlauben',
   locationDenied: 'Ohne Standort können wir keine Aufgaben öffnen. Schaltet den Standort in den Einstellungen ein.',
@@ -165,7 +165,7 @@ const de: Messages = {
   gpsWeak: 'Schwaches GPS-Signal',
   offline: 'Keine Verbindung. Wir senden alles, sobald es wieder geht.',
   mapDownloading: 'Karte des Spielfelds wird geladen… {percent}%',
-  backgroundNotice: 'The Hunt verfolgt während des Spiels euren Standort',
+  backgroundNotice: 'Escape Game The Hunt verfolgt während des Spiels euren Standort',
   gameOver: 'Spielende',
   finalScore: 'Endstand',
   leave: 'Auf diesem Handy abmelden',
@@ -179,7 +179,7 @@ const de: Messages = {
 };
 
 const es: Messages = {
-  appName: 'The Hunt',
+  appName: 'Escape Game The Hunt',
   joinTitle: 'Únete al juego',
   joinCode: 'Código de sesión',
   joinCodeHint: 'Te lo da el director del juego',
@@ -214,7 +214,7 @@ const es: Messages = {
   retakePhoto: 'Repetir',
   sendPhoto: 'Enviar foto',
   photoSaved: 'Foto recibida. Se envía en segundo plano.',
-  locationNeeded: 'The Hunt necesita vuestra ubicación para abrir misiones cuando lleguéis al lugar.',
+  locationNeeded: 'Escape Game The Hunt necesita vuestra ubicación para abrir misiones cuando lleguéis al lugar.',
   locationAlways: 'Elegid «Permitir siempre» para que el juego siga con la pantalla apagada.',
   allowLocation: 'Permitir ubicación',
   locationDenied: 'Sin ubicación no podemos abrir misiones. Activad la ubicación en Ajustes.',
@@ -222,7 +222,7 @@ const es: Messages = {
   gpsWeak: 'Señal GPS débil',
   offline: 'Sin conexión. Lo enviaremos todo en cuanto sea posible.',
   mapDownloading: 'Cargando el mapa de la zona de juego… {percent}%',
-  backgroundNotice: 'The Hunt sigue vuestra ubicación durante el juego',
+  backgroundNotice: 'Escape Game The Hunt sigue vuestra ubicación durante el juego',
   gameOver: 'Fin del juego',
   finalScore: 'Puntuación final',
   leave: 'Cerrar sesión en este móvil',
@@ -236,7 +236,7 @@ const es: Messages = {
 };
 
 const pt: Messages = {
-  appName: 'The Hunt',
+  appName: 'Escape Game The Hunt',
   joinTitle: 'Junta-te ao jogo',
   joinCode: 'Código da sessão',
   joinCodeHint: 'Recebes este código do responsável do jogo',
@@ -271,7 +271,7 @@ const pt: Messages = {
   retakePhoto: 'Repetir',
   sendPhoto: 'Enviar foto',
   photoSaved: 'Foto recebida. Vai ser enviada em segundo plano.',
-  locationNeeded: 'O The Hunt precisa da vossa localização para abrir missões quando chegarem ao local.',
+  locationNeeded: 'O Escape Game The Hunt precisa da vossa localização para abrir missões quando chegarem ao local.',
   locationAlways: 'Escolham «Permitir sempre» para o jogo continuar com o ecrã desligado.',
   allowLocation: 'Permitir localização',
   locationDenied: 'Sem localização não conseguimos abrir missões. Ativem a localização nas Definições.',
@@ -279,7 +279,7 @@ const pt: Messages = {
   gpsWeak: 'Sinal de GPS fraco',
   offline: 'Sem ligação. Enviamos tudo assim que for possível.',
   mapDownloading: 'A carregar o mapa da zona de jogo… {percent}%',
-  backgroundNotice: 'O The Hunt segue a vossa localização durante o jogo',
+  backgroundNotice: 'O Escape Game The Hunt segue a vossa localização durante o jogo',
   gameOver: 'Fim do jogo',
   finalScore: 'Pontuação final',
   leave: 'Terminar sessão neste telemóvel',
@@ -293,7 +293,7 @@ const pt: Messages = {
 };
 
 const it: Messages = {
-  appName: 'The Hunt',
+  appName: 'Escape Game The Hunt',
   joinTitle: 'Partecipa al gioco',
   joinCode: 'Codice sessione',
   joinCodeHint: 'Ve lo dà il game master',
@@ -328,7 +328,7 @@ const it: Messages = {
   retakePhoto: 'Rifai',
   sendPhoto: 'Invia foto',
   photoSaved: 'Foto ricevuta. Viene inviata in background.',
-  locationNeeded: 'The Hunt ha bisogno della vostra posizione per aprire le missioni quando arrivate sul posto.',
+  locationNeeded: 'Escape Game The Hunt ha bisogno della vostra posizione per aprire le missioni quando arrivate sul posto.',
   locationAlways: 'Scegliete «Consenti sempre», così il gioco continua anche a schermo spento.',
   allowLocation: 'Consenti posizione',
   locationDenied: 'Senza posizione non possiamo aprire le missioni. Attivate la posizione nelle Impostazioni.',
@@ -336,7 +336,7 @@ const it: Messages = {
   gpsWeak: 'Segnale GPS debole',
   offline: 'Nessuna connessione. Invieremo tutto appena possibile.',
   mapDownloading: 'Caricamento della mappa dell’area di gioco… {percent}%',
-  backgroundNotice: 'The Hunt segue la vostra posizione durante il gioco',
+  backgroundNotice: 'Escape Game The Hunt segue la vostra posizione durante il gioco',
   gameOver: 'Fine del gioco',
   finalScore: 'Punteggio finale',
   leave: 'Esci su questo telefono',
