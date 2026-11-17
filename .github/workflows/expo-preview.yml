@@ -1,0 +1,34 @@
+name: Testversie speler-app
+
+# Publiceert na elke merge naar main een testversie van de speler-app naar
+# Expo (kanaal "preview"). Te openen in Expo Go op een iPhone of Android, of
+# in een development build. Met de hand te starten via Actions.
+on:
+  push:
+    branches: [main]
+    paths: ['apps/player/**', 'packages/engine/**', '.github/workflows/expo-preview.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: expo-preview
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Testversie publiceren
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: 27.2.0
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Publiceren
+        working-directory: apps/player
+        run: eas update --channel preview --message "${{ github.event.head_commit.message || 'Handmatige testversie' }}" --non-interactive
