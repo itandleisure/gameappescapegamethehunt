@@ -185,12 +185,15 @@ export interface MapSource {
 }
 
 /**
- * Standaard kaartbron: OpenStreetMap-data via OpenFreeMap (open source, geen
- * sleutel nodig). Voor productie vervangen door een eigen kaartbestand, zie
- * docs/ontwerp.md §2.1.
+ * Standaard kaartbron: de eigen zwart-witte stijl van Escape Game The Hunt
+ * (apps/admin/public/kaart/stijl.json) op OpenStreetMap-data via OpenFreeMap
+ * (open source, geen sleutel nodig). De stijl staat in de openbare repository
+ * en wordt na elke merge vanzelf bijgewerkt. Voor productie verhuizen naar een
+ * eigen domein of kaartbestand, zie docs/ontwerp.md §2.1.
  */
+export const OPENFREEMAP_LIBERTY = 'https://tiles.openfreemap.org/styles/liberty';
 export const DEFAULT_MAP_SOURCE: MapSource = {
-  styleUrl: 'https://tiles.openfreemap.org/styles/liberty',
+  styleUrl: 'https://raw.githubusercontent.com/itandleisure/gameappescapegamethehunt/main/apps/admin/public/kaart/stijl.json',
   attribution: '© OpenStreetMap-bijdragers, OpenFreeMap',
 };
 
