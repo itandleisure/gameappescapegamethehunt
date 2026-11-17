@@ -3,6 +3,7 @@ import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import { LOCATION_TASK } from '../config';
 import { currentGame, resumeGame } from './game';
+import { IN_EXPO_GO } from './runtime';
 
 /**
  * GPS tijdens het spel. Op de achtergrond (scherm uit, telefoon in de zak)
@@ -58,6 +59,8 @@ export type PermissionResult = 'always' | 'foreground' | 'denied';
 export async function requestLocationPermission(): Promise<PermissionResult> {
   const foreground = await Location.requestForegroundPermissionsAsync();
   if (foreground.status !== 'granted') return 'denied';
+  // Expo Go kan niet op de achtergrond volgen; daar alleen "tijdens gebruik".
+  if (IN_EXPO_GO) return 'foreground';
   const background = await Location.requestBackgroundPermissionsAsync();
   return background.status === 'granted' ? 'always' : 'foreground';
 }
@@ -65,6 +68,7 @@ export async function requestLocationPermission(): Promise<PermissionResult> {
 export async function locationPermission(): Promise<PermissionResult> {
   const foreground = await Location.getForegroundPermissionsAsync();
   if (foreground.status !== 'granted') return 'denied';
+  if (IN_EXPO_GO) return 'foreground';
   const background = await Location.getBackgroundPermissionsAsync();
   return background.status === 'granted' ? 'always' : 'foreground';
 }

@@ -56,6 +56,10 @@ const config: ExpoConfig = {
     '@maplibre/maplibre-react-native',
   ],
   experiments: { typedRoutes: false },
+  // Testversies via EAS Update. Met de SDK-versie als runtime kunnen ze ook in
+  // Expo Go draaien (zie src/services/runtime.ts).
+  runtimeVersion: { policy: 'sdkVersion' },
+  updates: { url: 'https://u.expo.dev/af20ef2e-91ed-4ff2-88fb-19a7f95b444e' },
   extra: {
     supabaseUrl: 'https://wrdhjzvgdwatdqubouuk.supabase.co',
     supabasePublishableKey: 'sb_publishable_l6xHOj03WKV578ftzT_pkA_n9Nw0y4S',

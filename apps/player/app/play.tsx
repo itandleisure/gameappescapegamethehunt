@@ -1,4 +1,3 @@
-import { Camera, ImageSource, Layer, Map, Marker, NativeUserLocation } from '@maplibre/maplibre-react-native';
 import { t as tx } from '@hunt/engine';
 import { Redirect, router, useSegments } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
@@ -12,13 +11,14 @@ import { onFix, requestLocationPermission, startTracking, stopTracking, type Per
 import { downloadPlayArea, mapStyleUrl } from '../src/services/map-download';
 import { Banner, Body, Button, Screen, Title } from '../src/ui/components';
 import { useGame } from '../src/ui/GameProvider';
+import GameMap from '../src/ui/map/GameMap';
 import { colors, radius, space } from '../src/ui/theme';
 
 export default function PlayScreen() {
   const { controller, snapshot, t, lang } = useGame();
   const segments = useSegments();
   const [permission, setPermission] = useState<PermissionResult | null>(null);
-  const [accuracy, setAccuracy] = useState<number | null>(null);
+  const [position, setPosition] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
   const [download, setDownload] = useState<number | null>(null);
   const [starting, setStarting] = useState(false);
   const [dismissedMessages, setDismissedMessages] = useState(0);
@@ -47,7 +47,7 @@ export default function PlayScreen() {
   useEffect(() => {
     if (!started || state?.ended) return;
     void startTracking(t('appName'), t('backgroundNotice')).then(setPermission);
-    return onFix((fix) => setAccuracy(fix.accuracy));
+    return onFix((fix) => setPosition({ lat: fix.lat, lng: fix.lng, accuracy: fix.accuracy }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [started, state?.ended !== undefined]);
 
@@ -115,37 +115,26 @@ export default function PlayScreen() {
   const listCount = listGroups(game, state).flatMap((g) => g.tasks).filter((task) => isAnswerable(game, ctx, state, task.id)).length;
   const latestMessage = state.messages.length > dismissedMessages ? state.messages[state.messages.length - 1] : undefined;
   const overlay = game.mapOverlay;
-  const weakGps = accuracy !== null && accuracy > game.gps.maxAccuracy;
+  const weakGps = position !== null && position.accuracy > game.gps.maxAccuracy;
 
   return (
     <View style={styles.safe}>
-      <Map style={StyleSheet.absoluteFill} mapStyle={mapStyleUrl(game)} attribution attributionPosition={{ bottom: 8, left: 8 }} logo={false}>
-        <Camera initialViewState={bounds ? { bounds, padding: { top: 120, bottom: 120, left: 40, right: 40 } } : undefined} />
-        {overlay && /^https?:/.test(overlay.image) ? (
-          <ImageSource
-            id="overlay"
-            url={overlay.image}
-            coordinates={[
-              [overlay.bounds[0].lng, overlay.bounds[0].lat],
-              [overlay.bounds[1].lng, overlay.bounds[0].lat],
-              [overlay.bounds[1].lng, overlay.bounds[1].lat],
-              [overlay.bounds[0].lng, overlay.bounds[1].lat],
-            ]}
-          >
-            <Layer type="raster" id="overlay-layer" paint={{ 'raster-opacity': 0.85 }} />
-          </ImageSource>
-        ) : null}
-        {markers.map((m) => (
-          <Marker key={m.id} id={m.id} lngLat={[m.location.lng, m.location.lat]} anchor="bottom">
-            <View style={styles.pin}>
-              <Text style={styles.pinText} numberOfLines={1}>
-                {tx(game.tasks.find((x) => x.id === m.id)?.title, lang, game.defaultLanguage)}
-              </Text>
-            </View>
-          </Marker>
-        ))}
-        <NativeUserLocation mode="heading" />
-      </Map>
+      <GameMap
+        styleUrl={mapStyleUrl(game)}
+        bounds={bounds}
+        position={position}
+        markers={markers.map((m) => ({
+          id: m.id,
+          lat: m.location.lat,
+          lng: m.location.lng,
+          label: tx(game.tasks.find((x) => x.id === m.id)?.title, lang, game.defaultLanguage),
+        }))}
+        overlay={
+          overlay && /^https?:/.test(overlay.image)
+            ? { url: overlay.image, nw: overlay.bounds[0], se: overlay.bounds[1] }
+            : undefined
+        }
+      />
 
       <SafeAreaView edges={['top']} style={styles.top}>
         <View style={styles.header}>
@@ -199,14 +188,4 @@ const styles = StyleSheet.create({
   headerLabel: { color: colors.textMuted, fontSize: 13 },
   headerValue: { color: colors.text, fontSize: 24, fontWeight: '800', fontVariant: ['tabular-nums'] },
   bottom: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: space.md, paddingBottom: space.md },
-  pin: {
-    backgroundColor: colors.accent,
-    borderRadius: radius.md,
-    paddingHorizontal: space.sm,
-    paddingVertical: space.xs,
-    maxWidth: 160,
-    borderWidth: 2,
-    borderColor: colors.background,
-  },
-  pinText: { color: colors.accentText, fontWeight: '700', fontSize: 13 },
 });
