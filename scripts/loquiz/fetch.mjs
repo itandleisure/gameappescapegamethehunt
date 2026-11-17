@@ -65,41 +65,5 @@ for (const g of list) {
 }
 console.log(`Opgehaald: ${ok}, mislukt: ${failed}`);
 
-// Foto's, audio en overlays downloaden, zodat we niet van Loquiz-links afhangen.
-// Video's (YouTube/Vimeo) en webpagina's blijven een link.
-await mkdir(join(outDir, 'media'), { recursive: true });
-const { readdir, readFile } = await import('node:fs/promises');
-const { createHash } = await import('node:crypto');
-const urls = new Set();
-for (const file of await readdir(join(outDir, 'games'))) {
-  const game = JSON.parse(await readFile(join(outDir, 'games', file), 'utf8'));
-  for (const u of [game.logoUrl, game.taskBackgroundImageUrl]) if (u) urls.add(u);
-  for (const o of game.mapOverlays ?? []) if (o?.imageUrl) urls.add(o.imageUrl);
-  for (const t of game.tasks ?? []) {
-    for (const m of t.media ?? []) if ((m?.type === 'image' || m?.type === 'audio') && m.url) urls.add(m.url);
-    if (t.backgroundAudio?.url) urls.add(t.backgroundAudio.url);
-    // Afbeeldingen die als <img> in de tekst staan
-    for (const field of [t.text, t.comments?.shortIntro, t.comments?.hint, t.comments?.correct, t.comments?.incorrect]) {
-      for (const m of String(field ?? '').matchAll(/<img[^>]+src=["']([^"']+)["']/gi)) urls.add(m[1]);
-    }
-  }
-}
-const index = {};
-let mediaOk = 0;
-let mediaFailed = 0;
-for (const url of urls) {
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(60000) });
-    if (!res.ok) throw new Error(String(res.status));
-    const ext = (new URL(url).pathname.match(/\.[a-z0-9]{2,5}$/i)?.[0] ?? '').toLowerCase();
-    const name = createHash('sha1').update(url).digest('hex').slice(0, 16) + ext;
-    await writeFile(join(outDir, 'media', name), Buffer.from(await res.arrayBuffer()));
-    index[url] = { file: name, contentType: res.headers.get('content-type') };
-    mediaOk++;
-    if (mediaOk % 100 === 0) console.log(`  ${mediaOk} mediabestanden…`);
-  } catch {
-    mediaFailed++;
-  }
-}
-await writeFile(join(outDir, 'media', 'index.json'), JSON.stringify(index, null, 1));
-console.log(`Media: ${mediaOk} gedownload, ${mediaFailed} mislukt`);
+// Foto's en audio worden niet hier gedownload: de beheeromgeving kopieert
+// externe afbeeldingen bij het importeren naar de eigen opslag.
