@@ -20,6 +20,10 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm test:functions
+      - name: Beheeromgeving bouwen
+        run: pnpm --filter @hunt/admin build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
 
   database:
     name: Database en toegangsregels
