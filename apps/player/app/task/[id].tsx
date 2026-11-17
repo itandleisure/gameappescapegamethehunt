@@ -72,6 +72,7 @@ export default function TaskScreen() {
       <SafeAreaView style={styles.safe}>
         <View style={styles.content}>
           <Title>{tr(task.title)}</Title>
+          {task.image ? <TaskImage uri={task.image} /> : null}
           <Body muted>{tr(task.body)}</Body>
           <Button kind="secondary" label={t('close')} onPress={close} />
         </View>
@@ -121,6 +122,7 @@ export default function TaskScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.safe}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Title>{tr(task.title)}</Title>
+          {task.image ? <TaskImage uri={task.image} /> : null}
           <Body>{tr(task.body)}</Body>
           <View style={styles.spacer} />
 
@@ -225,6 +227,23 @@ export default function TaskScreen() {
   );
 }
 
+/** Ondersteunende foto bij de opdrachttekst, in de eigen verhouding van de foto. */
+function TaskImage({ uri }: { uri: string }) {
+  const [ratio, setRatio] = useState(4 / 3);
+  return (
+    <Image
+      source={{ uri }}
+      style={[styles.taskImage, { aspectRatio: ratio }]}
+      resizeMode="contain"
+      accessibilityIgnoresInvertColors
+      onLoad={(e) => {
+        const { width, height } = e.nativeEvent.source;
+        if (width > 0 && height > 0) setRatio(Math.max(0.6, Math.min(2.5, width / height)));
+      }}
+    />
+  );
+}
+
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   content: { padding: space.md, paddingBottom: space.xl },
@@ -233,4 +252,5 @@ const styles = StyleSheet.create({
   hintLabel: { color: colors.accent, fontWeight: '700', marginBottom: space.xs },
   options: { flexDirection: 'row', flexWrap: 'wrap' },
   photo: { width: '100%', aspectRatio: 4 / 3, borderRadius: radius.md, marginBottom: space.sm },
+  taskImage: { width: '100%', borderRadius: radius.md, marginBottom: space.md, backgroundColor: colors.surface },
 });

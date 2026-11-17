@@ -19,4 +19,11 @@ describe('opdrachtformulier', () => {
     expect(formToTask('x', { ...form, hasLocation: true, lat: '95', lng: '5', radius: '0' }).errors).toHaveLength(2);
     expect(formToTask('x', { ...form, answerType: 'number', numberValue: '4,5' }).task.answer).toEqual({ type: 'number', value: 4.5 });
   });
+
+  it('neemt een foto over en weigert een adres zonder https', () => {
+    const form = taskToForm(theHuntBase.tasks[0]!);
+    expect(formToTask('x', { ...form, image: ' https://example.org/a.jpg ' }).task.image).toBe('https://example.org/a.jpg');
+    expect(formToTask('x', { ...form, image: 'http://example.org/a.jpg' }).errors).toContain('De foto moet een https-adres zijn.');
+    expect(formToTask('x', { ...form, image: '' }).task.image).toBeUndefined();
+  });
 });
