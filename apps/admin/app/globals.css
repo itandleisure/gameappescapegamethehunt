@@ -77,3 +77,5 @@ textarea { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border
 .pinlist li { padding: 4px 0; }
 .mono { font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
 ol.rules { list-style: none; padding: 0; display: grid; gap: 12px; }
+.corner { width: 16px; height: 16px; border-radius: 3px; background: #1d4ed8; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.35); cursor: grab; }
+.pin.meeting { background: #15803d; }

@@ -136,6 +136,11 @@ export default function GamePage() {
             Kaart
           </Link>
         ) : null}
+        {!legacy ? (
+          <Link href={`/spellen/${id}/overlay`} className="filebutton" style={{ background: 'transparent', color: 'var(--text)', border: '1px solid var(--line)' }}>
+            Overlay en verzamelpunt
+          </Link>
+        ) : null}
         {isBase && !legacy ? (
           <Link href={`/spellen/${id}/regels`} className="filebutton" style={{ background: 'transparent', color: 'var(--text)', border: '1px solid var(--line)' }}>
             Regels
