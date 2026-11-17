@@ -12,6 +12,22 @@ export function normalizeText(input: string): string {
     .replace(/\s+/g, '');
 }
 
+/**
+ * Komt een tekstantwoord overeen met een goedgekeurd antwoord? Een `*` in het
+ * goedgekeurde antwoord staat voor willekeurige tekens, zoals in Loquiz:
+ * "ver*" keurt alles goed dat met "ver" begint.
+ */
+export function matchesAccepted(accepted: string, given: string): boolean {
+  const want = normalizeText(accepted);
+  const got = normalizeText(given);
+  if (!want.includes('*')) return want === got;
+  const pattern = want
+    .split('*')
+    .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, '\\$&'))
+    .join('.*');
+  return new RegExp(`^${pattern}$`, 'u').test(got);
+}
+
 /** Leest een getal, ook met een komma als decimaalteken ("3,5"). */
 export function parseNumber(input: number | string): number | undefined {
   if (typeof input === 'number') return Number.isFinite(input) ? input : undefined;
@@ -56,7 +72,7 @@ export function checkAnswer(spec: AnswerSpec, answer: AnswerValue): AnswerCheck 
       const a = answer as Extract<AnswerValue, { type: 'text' }>;
       const given = normalizeText(a.text ?? '');
       if (given === '') return { valid: false, reason: 'leeg antwoord' };
-      return { valid: true, correct: spec.accepted.some((acc) => normalizeText(acc) === given) };
+      return { valid: true, correct: spec.accepted.some((acc) => matchesAccepted(acc, given)) };
     }
     case 'number': {
       const a = answer as Extract<AnswerValue, { type: 'number' }>;

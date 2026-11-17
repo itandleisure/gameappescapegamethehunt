@@ -23,6 +23,18 @@ describe('spelmodel in de database', () => {
     expect(rowsToBase(rows).tasks[0]!.image).toBe('https://example.org/foto.jpg');
   });
 
+  it('bewaart afbeeldingen bij hints op hun plek', () => {
+    const base = json(theHuntBase);
+    const task = base.tasks.find((t: { hints: unknown[] }) => t.hints.length >= 2);
+    task.hints[1].image = 'https://example.org/hint2.jpg';
+    const rows = baseToRows(base, { id: 'base', slug: 'the-hunt' });
+    const row = rows.tasks.find((t) => t.key === task.id)!;
+    expect((row.settings!.hintImages as unknown[])[0]).toBeNull();
+    const back = rowsToBase(rows).tasks.find((t) => t.id === task.id)!;
+    expect(back.hints[1]!.image).toBe('https://example.org/hint2.jpg');
+    expect(back.hints[0]!.image).toBeUndefined();
+  });
+
   it('stadsvariant en klantvariant geven hetzelfde gepubliceerde spel', () => {
     const base = rowsToBase(baseRows);
     for (const variants of [[leeuwarden], [amsterdam], [leeuwarden, parteon]]) {

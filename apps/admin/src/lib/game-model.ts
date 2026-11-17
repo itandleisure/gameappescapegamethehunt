@@ -235,7 +235,7 @@ export function baseToRows(base: BaseGame, game: Omit<GameRow, 'languages' | 'de
       hint_costs: task.hints.map((h) => h.cost),
       has_confirm: task.confirm !== undefined,
       retry_until_correct: task.retryUntilCorrect ?? false,
-      settings: task.image ? { image: task.image } : {},
+      settings: taskSettings(task),
     });
     if (task.location) locations.push({ task_id: task.id, track: null, ...pickLocation(task.location) });
     for (const [track, loc] of Object.entries(task.trackLocations ?? {})) {
@@ -321,6 +321,12 @@ export function rowsToBase(rows: LayerRows): BaseGame {
       if (row.has_confirm) task.confirm = texts.get('task', row.key, 'confirm') ?? {};
       if (row.retry_until_correct) task.retryUntilCorrect = true;
       if (typeof row.settings?.image === 'string') task.image = row.settings.image;
+      const hintImages = row.settings?.hintImages;
+      if (Array.isArray(hintImages)) {
+        task.hints.forEach((h, i) => {
+          if (typeof hintImages[i] === 'string') h.image = hintImages[i];
+        });
+      }
       for (const field of ['correctComment', 'wrongComment'] as const) {
         const value = texts.get('task', row.key, field);
         if (value) task[field] = value;
@@ -486,3 +492,12 @@ export function rowsToVariant(rows: LayerRows, base: LayerRows): Variant {
 
 export const GAME_FIELDS = GAME_VALUE_FIELDS;
 export type { MeetingPoint };
+
+/** Overige opdrachtvelden in tasks.settings: foto bij de tekst en afbeeldingen bij hints. */
+export function taskSettings(task: Task, settings: Record<string, unknown> = {}): Record<string, unknown> {
+  const { image: _i, hintImages: _h, ...rest } = settings;
+  const out: Record<string, unknown> = { ...rest };
+  if (task.image) out.image = task.image;
+  if (task.hints.some((h) => h.image)) out.hintImages = task.hints.map((h) => h.image ?? null);
+  return out;
+}

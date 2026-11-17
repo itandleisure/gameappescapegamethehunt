@@ -135,10 +135,13 @@ function applyTaskOverride(task: Task, field: TaskField, value: unknown): void {
     const incoming = value as Partial<Hint>[];
     task.hints = incoming.map((h, i) => {
       const prev = task.hints[i];
-      return {
+      const hint: Hint = {
         cost: h.cost ?? prev?.cost ?? 0,
         text: h.text ?? prev?.text ?? {},
       };
+      const image = h.image ?? prev?.image;
+      if (image) hint.image = image;
+      return hint;
     });
   } else if (field === 'trackLocations') {
     task.trackLocations = { ...(task.trackLocations ?? {}), ...(value as Task['trackLocations']) };
@@ -217,6 +220,9 @@ export function validateGame(game: GamePackage): string[] {
   }
   for (const t of game.tasks) {
     if (t.image !== undefined && !/^https:\/\/\S+$/.test(t.image)) issues.push(`opdracht ${t.id}: foto moet een https-adres zijn`);
+    t.hints.forEach((h, i) => {
+      if (h.image !== undefined && !/^https:\/\/\S+$/.test(h.image)) issues.push(`opdracht ${t.id}: afbeelding bij hint ${i + 1} moet een https-adres zijn`);
+    });
     if (t.answer.type === 'choice' && (t.answer.correct < 0 || t.answer.correct >= t.answer.options.length)) {
       issues.push(`opdracht ${t.id}: juiste optie bestaat niet`);
     }

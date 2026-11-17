@@ -189,10 +189,22 @@ export async function copyExternalImages(db: SupabaseClient, baseId: string): Pr
   };
 
   for (const t of tasks) {
-    const url = t.settings?.image;
-    if (typeof url !== 'string' || isOwnMedia(url, publicBase)) continue;
-    const next = await copy(url, baseId, t.key);
-    if (next) check(await db.from('tasks').update({ settings: { ...t.settings, image: next } }).eq('id', t.id));
+    const settings = { ...(t.settings ?? {}) };
+    let changed = false;
+    if (typeof settings.image === 'string' && !isOwnMedia(settings.image, publicBase)) {
+      const next = await copy(settings.image, baseId, t.key);
+      if (next) [settings.image, changed] = [next, true];
+    }
+    if (Array.isArray(settings.hintImages)) {
+      const list = [...(settings.hintImages as unknown[])];
+      for (const [i, url] of list.entries()) {
+        if (typeof url !== 'string' || isOwnMedia(url, publicBase)) continue;
+        const next = await copy(url, baseId, `${t.key}-hint-${i + 1}`);
+        if (next) [list[i], changed] = [next, true];
+      }
+      settings.hintImages = list;
+    }
+    if (changed) check(await db.from('tasks').update({ settings }).eq('id', t.id));
   }
   for (const o of overrides) {
     if (typeof o.value !== 'string' || isOwnMedia(o.value, publicBase)) continue;
