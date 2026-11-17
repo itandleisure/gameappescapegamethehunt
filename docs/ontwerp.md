@@ -367,9 +367,18 @@ The Hunt gaat ook naar Spanje, Portugal, Italië en andere landen, deels met eig
 
 **Eigen game masters** in het buitenland krijgen een account in de organisatie van Badass Games, met de rol instructeur.
 
-**Partners** krijgen een eigen organisatie in de beheeromgeving, met eigen beheerders, game masters, sessies en resultaten. Badass Games deelt het basisspel met de partner. De partner maakt daarop eigen stads- en klantvarianten, maar kan het basisspel zelf niet wijzigen en ziet de steden en resultaten van Badass Games of andere partners niet. Een verbetering in het basisspel komt na publiceren ook bij de partner. Zo blijft de kwaliteit van The Hunt overal gelijk.
+**Partners** krijgen een eigen organisatie in de beheeromgeving, met eigen beheerders, game masters, sessies en resultaten. Wat een partner wel en niet kan:
 
-Later te bepalen: hoe partners afrekenen (bijvoorbeeld per speler, zoals nu bij Loquiz) en of partners een eigen logo in de app en op de resultatenpagina krijgen. Het datamodel ondersteunt een logo per organisatie al.
+| Partner kan | Partner kan niet |
+|---|---|
+| Het spel spelen dat Badass Games met hem deelt (een stadsvariant, bijvoorbeeld Madrid) | Opdrachten, regels, locaties, iconen of de overlay wijzigen. Die maakt Badass Games |
+| Optioneel een klantvariant maken, met alleen de velden die het basisspel als aanpasbaar markeert (bijvoorbeeld de morsecode-puzzel) | Zelf een stadsvariant maken of het spel doordelen |
+| Een klantvariant kopiëren; alleen de aanpassingen gaan mee | De steden, sessies en resultaten van Badass Games of andere partners zien |
+| Eigen sessies draaien en de resultatenpagina gebruiken: live kaart met de teams, gelopen afstand, punten en de fotowall voor het fotoboek | |
+
+De database houdt dit zelf tegen, ook als iemand buiten de beheeromgeving om schrijft. Een verbetering in het basisspel komt na publiceren ook bij de partner. Zo blijft de kwaliteit van The Hunt overal gelijk.
+
+Later te bepalen: hoe partners afrekenen (bijvoorbeeld per speler, zoals nu bij Loquiz), of partners een eigen logo in de app en op de resultatenpagina krijgen (het datamodel ondersteunt een logo per organisatie al), en de koppeling met het boekingssysteem, dat nu sessies via de Loquiz-API aanmaakt. Dat vraagt straks een eigen API voor het aanmaken van sessies.
 
 ## 12. Risico's
 
