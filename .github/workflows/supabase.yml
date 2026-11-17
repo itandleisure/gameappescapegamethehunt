@@ -1,0 +1,34 @@
+name: Supabase bijwerken
+
+# Zet de databasemigraties en serverfuncties live op Supabase zodra een
+# wijziging in supabase/ op main komt (dus na het mergen van een pull request).
+# Met de hand te starten via Actions → Supabase bijwerken → Run workflow.
+on:
+  push:
+    branches: [main]
+    paths: ['supabase/**', '.github/workflows/supabase.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: supabase-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Migraties en functies live zetten
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_ID: wrdhjzvgdwatdqubouuk
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Koppelen aan het project
+        run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
+      - name: Migraties toepassen
+        run: supabase db push
+      - name: Serverfuncties bijwerken
+        run: supabase functions deploy results-export --project-ref "$SUPABASE_PROJECT_ID"
