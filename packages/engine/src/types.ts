@@ -169,8 +169,8 @@ export interface MapOverlay {
 }
 
 /**
- * Kaartbron, instelbaar zodat we later kunnen wisselen (MapTiler, eigen
- * kaarttegels op Cloudflare R2, enzovoort) zonder de app te wijzigen.
+ * Kaartbron, instelbaar zodat we kunnen wisselen (OpenFreeMap, eigen
+ * kaartbestand op Cloudflare R2, enzovoort) zonder de app te wijzigen.
  * Ontbreekt hij in het spel, dan gebruikt de app de standaardbron uit de configuratie.
  */
 export interface MapSource {
@@ -179,6 +179,16 @@ export interface MapSource {
   /** Bronvermelding op de kaart. */
   attribution?: string;
 }
+
+/**
+ * Standaard kaartbron: OpenStreetMap-data via OpenFreeMap (open source, geen
+ * sleutel nodig). Voor productie vervangen door een eigen kaartbestand, zie
+ * docs/ontwerp.md §2.1.
+ */
+export const DEFAULT_MAP_SOURCE: MapSource = {
+  styleUrl: 'https://tiles.openfreemap.org/styles/liberty',
+  attribution: '© OpenStreetMap-bijdragers, OpenFreeMap',
+};
 
 export interface GpsSettings {
   /** Metingen met een grotere onzekerheid (meters) tellen niet mee. */
