@@ -63,6 +63,23 @@ describe('GameController', () => {
     expect(await c.onLocation(s.fix(leeuwardenPoints.start))).toEqual([]);
   });
 
+  it('opent in een testsessie een opdracht zonder GPS, en anders niet', async () => {
+    const c = await GameController.join(s.deps, 'LWD001', 'Testers', 'nl');
+    await c.start();
+    expect(c.testTargets()).toContain('start');
+    expect(await c.simulateArrival('niet-bestaand')).toBe(false);
+    expect(await c.simulateArrival('start')).toBe(true);
+    expect(c.snapshot().state!.tasks.start!.status).toBe('open');
+    expect(c.snapshot().state!.rejected ?? []).toEqual([]);
+
+    s.backend.testMode = false;
+    const echt = await GameController.join(s.deps, 'LWD001', 'Echt', 'nl');
+    await echt.start();
+    expect(echt.testTargets()).toEqual([]);
+    expect(await echt.simulateArrival('start')).toBe(false);
+    expect(echt.snapshot().state!.tasks.start!.status).toBe('visible');
+  });
+
   it('beantwoordt, gebruikt hints en stuurt alles met servertijd naar de server', async () => {
     const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl');
     await c.start();

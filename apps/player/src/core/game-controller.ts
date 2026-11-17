@@ -201,6 +201,31 @@ export class GameController {
     return reached;
   }
 
+  /**
+   * Alleen in een testsessie: doet alsof het team bij de opdracht staat, zodat
+   * de spelleiding een spel kan doorlopen zonder ter plekke te zijn.
+   * Geeft false als het niet mag of de opdracht nu niet op de kaart open staat.
+   */
+  async simulateArrival(task: string): Promise<boolean> {
+    const ctx = this.context;
+    if (!ctx || !this.data.loaded.session.testMode) return false;
+    const state = computeState(this.game, ctx, this.data.events, this.clock.now());
+    const target = reachableTargets(this.game, ctx, state).find((x) => x.task === task);
+    if (!target) return false;
+    const { lat, lng } = target.location;
+    this.record({ type: 'locationReached', task, lat, lng, accuracy: 0 });
+    await this.commit();
+    return true;
+  }
+
+  /** Opdrachten die in een testsessie met simulateArrival te openen zijn. */
+  testTargets(): string[] {
+    const ctx = this.context;
+    if (!ctx || !this.data.loaded.session.testMode) return [];
+    const state = computeState(this.game, ctx, this.data.events, this.clock.now());
+    return reachableTargets(this.game, ctx, state).map((x) => x.task);
+  }
+
   // ---------------------------------------------------------------------------
   // Acties van het team
   // ---------------------------------------------------------------------------

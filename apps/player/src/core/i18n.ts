@@ -58,6 +58,7 @@ const nl = {
   errorLanguage: 'Deze taal is niet beschikbaar voor dit spel.',
   errorNetwork: 'Geen verbinding met de server. Probeer het opnieuw.',
   errorGeneric: 'Er ging iets mis. Probeer het opnieuw.',
+  testMode: 'Testmodus: tik op een opdracht om er direct naartoe te gaan.',
 };
 
 export type MessageKey = keyof typeof nl;
@@ -117,6 +118,7 @@ const en: Messages = {
   errorLanguage: 'This language is not available for this game.',
   errorNetwork: 'No connection to the server. Please try again.',
   errorGeneric: 'Something went wrong. Please try again.',
+  testMode: 'Test mode: tap a task to jump straight to it.',
 };
 
 const de: Messages = {
@@ -173,6 +175,7 @@ const de: Messages = {
   errorLanguage: 'Diese Sprache ist für dieses Spiel nicht verfügbar.',
   errorNetwork: 'Keine Verbindung zum Server. Bitte versucht es erneut.',
   errorGeneric: 'Etwas ist schiefgelaufen. Bitte versucht es erneut.',
+  testMode: 'Testmodus: Tippe auf eine Aufgabe, um direkt dorthin zu springen.',
 };
 
 const es: Messages = {
@@ -229,6 +232,7 @@ const es: Messages = {
   errorLanguage: 'Este idioma no está disponible para este juego.',
   errorNetwork: 'Sin conexión con el servidor. Inténtalo de nuevo.',
   errorGeneric: 'Algo ha ido mal. Inténtalo de nuevo.',
+  testMode: 'Modo de prueba: toca una tarea para ir directamente a ella.',
 };
 
 const pt: Messages = {
@@ -285,6 +289,7 @@ const pt: Messages = {
   errorLanguage: 'Este idioma não está disponível para este jogo.',
   errorNetwork: 'Sem ligação ao servidor. Tentem outra vez.',
   errorGeneric: 'Algo correu mal. Tentem outra vez.',
+  testMode: 'Modo de teste: toque numa tarefa para ir diretamente até ela.',
 };
 
 const it: Messages = {
@@ -341,6 +346,7 @@ const it: Messages = {
   errorLanguage: 'Questa lingua non è disponibile per questo gioco.',
   errorNetwork: 'Nessuna connessione al server. Riprovate.',
   errorGeneric: 'Qualcosa è andato storto. Riprovate.',
+  testMode: 'Modalità test: tocca un compito per andarci subito.',
 };
 
 export const MESSAGES: Record<string, Messages> = { nl, en, de, es, pt, it };
