@@ -2,7 +2,7 @@ import { t as tx } from '@hunt/engine';
 import { Redirect, router, useSegments } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { formatDuration } from '../src/core/i18n';
 import { playAreaBounds, taskMarkers } from '../src/core/play-area';
@@ -65,6 +65,10 @@ export default function PlayScreen() {
   }, [toShow, onTaskScreen]);
 
   const bounds = useMemo(() => (game ? playAreaBounds(game) : undefined), [game]);
+  // Foto's bij opdrachten vooraf ophalen, zodat ze er ook zijn bij slecht bereik.
+  useEffect(() => {
+    for (const task of game?.tasks ?? []) if (task.image) void Image.prefetch(task.image).catch(() => undefined);
+  }, [game]);
 
   if (!controller || !snapshot || !game) return <Redirect href="/" />;
   if (state?.ended) return <Redirect href="/end" />;

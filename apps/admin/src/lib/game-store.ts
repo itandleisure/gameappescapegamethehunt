@@ -14,6 +14,7 @@ import {
   type LayerRows,
   type TaskRow,
 } from './game-model';
+import { mediaPath } from './map-settings';
 
 const GAME_COLUMNS = 'id, layer, slug, parent_id, languages, default_language, settings';
 
@@ -28,7 +29,7 @@ export async function loadLayer(db: SupabaseClient, gameId: string): Promise<Lay
     db.from(table).select(columns).eq('game_id', gameId).then((r) => check<T[]>(r as never));
   const [game, tasks, locations, rules, playgrounds, overridable, overrides, translations] = await Promise.all([
     db.from('games').select(GAME_COLUMNS).eq('id', gameId).single().then((r) => check<GameRow>(r as never)),
-    by<TaskRow>('tasks', 'id, key, position, answer, points, wrong_points, tags, hint_costs, has_confirm, retry_until_correct'),
+    by<TaskRow>('tasks', 'id, key, position, answer, points, wrong_points, tags, hint_costs, has_confirm, retry_until_correct, settings'),
     by<LayerRows['locations'][number]>('task_locations', 'task_id, track, lat, lng, radius'),
     by<LayerRows['rules'][number]>('rules', 'key, position, label, condition, actions'),
     by<LayerRows['playgrounds'][number]>('playgrounds', 'key'),
@@ -134,4 +135,72 @@ export async function importBundle(db: SupabaseClient, orgId: string, bundle: Ga
     for (const id of created.reverse()) await db.from('games').delete().eq('id', id);
     throw err;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Foto's van buiten (bijvoorbeeld Loquiz) naar de eigen opslag kopiëren
+// ---------------------------------------------------------------------------
+
+/** Staat de afbeelding al in onze eigen bucket media? */
+export function isOwnMedia(url: string, publicBase: string): boolean {
+  return url.startsWith(publicBase);
+}
+
+/**
+ * Kopieert foto's bij opdrachten die nog naar een andere site wijzen naar de
+ * bucket media, voor het basisspel en alle varianten eronder. Lukt dat voor
+ * een foto niet (bijvoorbeeld omdat de site dat blokkeert), dan blijft het
+ * oude adres staan en komt hij in `failed`.
+ */
+export async function copyExternalImages(db: SupabaseClient, baseId: string): Promise<{ copied: number; failed: string[] }> {
+  const publicBase = db.storage.from('media').getPublicUrl('').data.publicUrl;
+  const tasks = check<{ id: string; key: string; settings: Record<string, unknown> | null }[]>(
+    (await db.from('tasks').select('id, key, settings').eq('game_id', baseId)) as never,
+  );
+  const keyById = new Map(tasks.map((t) => [t.id, t.key]));
+  const cities = check<{ id: string }[]>((await db.from('games').select('id').eq('parent_id', baseId)) as never).map((g) => g.id);
+  const clients = cities.length
+    ? check<{ id: string }[]>((await db.from('games').select('id').in('parent_id', cities)) as never).map((g) => g.id)
+    : [];
+  const variants = [...cities, ...clients];
+  const overrides = variants.length
+    ? check<{ game_id: string; task_id: string; value: unknown }[]>(
+        (await db.from('overrides').select('game_id, task_id, value').eq('field', 'image').in('game_id', variants)) as never,
+      )
+    : [];
+
+  let copied = 0;
+  const failed: string[] = [];
+  const copy = async (url: string, gameId: string, key: string): Promise<string | null> => {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(String(res.status));
+      const blob = await res.blob();
+      const type = blob.type.split(';')[0] ?? '';
+      const path = mediaPath(gameId, `opdracht-${key}`, type);
+      const up = await db.storage.from('media').upload(path, blob, { contentType: type });
+      if (up.error) throw new Error(up.error.message);
+      copied++;
+      return db.storage.from('media').getPublicUrl(path).data.publicUrl;
+    } catch {
+      failed.push(`${key}: ${url}`);
+      return null;
+    }
+  };
+
+  for (const t of tasks) {
+    const url = t.settings?.image;
+    if (typeof url !== 'string' || isOwnMedia(url, publicBase)) continue;
+    const next = await copy(url, baseId, t.key);
+    if (next) check(await db.from('tasks').update({ settings: { ...t.settings, image: next } }).eq('id', t.id));
+  }
+  for (const o of overrides) {
+    if (typeof o.value !== 'string' || isOwnMedia(o.value, publicBase)) continue;
+    const key = keyById.get(o.task_id) ?? o.task_id;
+    const next = await copy(o.value, o.game_id, key);
+    if (next) {
+      check(await db.from('overrides').update({ value: next }).eq('game_id', o.game_id).eq('task_id', o.task_id).eq('field', 'image'));
+    }
+  }
+  return { copied, failed };
 }

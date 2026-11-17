@@ -56,6 +56,8 @@ export interface TaskRow {
   hint_costs: number[];
   has_confirm: boolean;
   retry_until_correct: boolean;
+  /** Overige instellingen, zoals de foto bij de tekst (image). */
+  settings?: Record<string, unknown>;
 }
 
 export interface LocationRow {
@@ -233,6 +235,7 @@ export function baseToRows(base: BaseGame, game: Omit<GameRow, 'languages' | 'de
       hint_costs: task.hints.map((h) => h.cost),
       has_confirm: task.confirm !== undefined,
       retry_until_correct: task.retryUntilCorrect ?? false,
+      settings: task.image ? { image: task.image } : {},
     });
     if (task.location) locations.push({ task_id: task.id, track: null, ...pickLocation(task.location) });
     for (const [track, loc] of Object.entries(task.trackLocations ?? {})) {
@@ -317,6 +320,7 @@ export function rowsToBase(rows: LayerRows): BaseGame {
       if (row.wrong_points !== 0) task.wrongPoints = row.wrong_points;
       if (row.has_confirm) task.confirm = texts.get('task', row.key, 'confirm') ?? {};
       if (row.retry_until_correct) task.retryUntilCorrect = true;
+      if (typeof row.settings?.image === 'string') task.image = row.settings.image;
       for (const field of ['correctComment', 'wrongComment'] as const) {
         const value = texts.get('task', row.key, field);
         if (value) task[field] = value;

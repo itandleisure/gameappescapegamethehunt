@@ -12,6 +12,7 @@ export type Layer = 'city' | 'client';
 export type TaskField =
   | 'title'
   | 'body'
+  | 'image'
   | 'answer'
   | 'points'
   | 'hints'
@@ -215,6 +216,7 @@ export function validateGame(game: GamePackage): string[] {
     for (const action of rule.then) issues.push(...checkAction(rule.id, action, { taskIds, tags, sequences, endings, playgrounds }));
   }
   for (const t of game.tasks) {
+    if (t.image !== undefined && !/^https:\/\/\S+$/.test(t.image)) issues.push(`opdracht ${t.id}: foto moet een https-adres zijn`);
     if (t.answer.type === 'choice' && (t.answer.correct < 0 || t.answer.correct >= t.answer.options.length)) {
       issues.push(`opdracht ${t.id}: juiste optie bestaat niet`);
     }

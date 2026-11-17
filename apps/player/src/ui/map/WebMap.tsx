@@ -12,19 +12,29 @@ import type { GameMapProps } from './types';
 type WebViewHandle = { injectJavaScript: (script: string) => void };
 const WebView = RNWebView as unknown as ComponentType<WebViewProps & { ref?: Ref<WebViewHandle> }>;
 
-const MAPLIBRE = 'https://unpkg.com/maplibre-gl@6.16.0/dist';
+// Versie 5: de laatste met een los script (UMD). Versie 6 levert alleen nog
+// ES-modules, waardoor een gewone <script>-tag niets laadt en de kaart leeg bleef.
+const MAPLIBRE = 'https://unpkg.com/maplibre-gl@5.6.0/dist';
 
 function html(styleUrl: string, accent: string, dark: string) {
   return `<!doctype html><html><head>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <link rel="stylesheet" href="${MAPLIBRE}/maplibre-gl.css">
+<script>
+// Fouten zichtbaar maken in plaats van een zwart scherm.
+function showError(msg) { var e = document.getElementById('err'); if (!e) { document.body.insertAdjacentHTML('beforeend', '<div id="err"></div>'); e = document.getElementById('err'); } e.textContent = 'Kaart: ' + msg; }
+window.onerror = function (m) { showError(String(m)); };
+</script>
 <script src="${MAPLIBRE}/maplibre-gl.js"></script>
 <style>
 html,body,#map{margin:0;height:100%;background:${dark}}
 .pin{background:${accent};color:${dark};font:700 13px -apple-system,sans-serif;padding:4px 8px;border-radius:12px;border:2px solid ${dark};max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .me{width:16px;height:16px;border-radius:50%;background:#2f81f7;border:3px solid #fff;box-shadow:0 0 0 2px rgba(47,129,247,.4)}
+#err{position:absolute;top:40%;left:16px;right:16px;text-align:center;color:#fff;font:14px -apple-system,sans-serif}
 </style></head><body><div id="map"></div><script>
+if (!window.maplibregl) { showError('kon niet laden (geen internet?)'); window.hunt = () => {}; throw new Error('maplibre ontbreekt'); }
 const map = new maplibregl.Map({ container: 'map', style: ${JSON.stringify(styleUrl)}, attributionControl: { compact: true } });
+map.on('error', (e) => showError((e && e.error && e.error.message) || 'onbekende fout'));
 let markers = [], me = null, fitted = false;
 window.hunt = (data) => {
   map.loaded() ? apply(data) : map.once('load', () => apply(data));
@@ -60,9 +70,12 @@ export default function WebMap({ styleUrl, bounds, markers, overlay, position }:
       ref={ref}
       style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]}
       originWhitelist={['*']}
-      source={{ html: html(styleUrl, colors.accent, colors.background) }}
+      // Met een https-basisadres: zonder dat heeft de pagina geen eigen herkomst
+      // en kan MapLibre op iOS zijn achtergrondtaak (web worker) niet starten.
+      source={{ html: html(styleUrl, colors.accent, colors.background), baseUrl: 'https://kaart.escapegamethehunt.app/' }}
       onLoadEnd={() => ref.current?.injectJavaScript(`window.hunt && window.hunt(${payload}); true;`)}
       scrollEnabled={false}
+      onError={(e) => console.warn('webkaart', e.nativeEvent.description)}
     />
   );
 }

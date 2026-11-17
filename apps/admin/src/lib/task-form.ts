@@ -10,6 +10,7 @@ export type Texts = Record<string, string>;
 export interface TaskForm {
   title: Texts;
   body: Texts;
+  image: string;
   hasConfirm: boolean;
   confirm: Texts;
   correctComment: Texts;
@@ -42,6 +43,7 @@ export function taskToForm(task: Task): TaskForm {
   return {
     title: texts(task.title),
     body: texts(task.body),
+    image: task.image ?? '',
     hasConfirm: task.confirm !== undefined,
     confirm: texts(task.confirm),
     correctComment: texts(task.correctComment),
@@ -139,6 +141,11 @@ export function formToTask(key: string, form: TaskForm): { task: Task; errors: s
       .filter(Boolean),
     hints,
   };
+  const image = form.image.trim();
+  if (image) {
+    if (!/^https:\/\/\S+$/.test(image)) errors.push('De foto moet een https-adres zijn.');
+    task.image = image;
+  }
   if (wrongPoints !== 0) task.wrongPoints = wrongPoints;
   if (form.hasConfirm) task.confirm = cleanText(form.confirm);
   if (form.retryUntilCorrect) task.retryUntilCorrect = true;

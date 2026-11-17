@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
 import { useAuth } from '@/lib/auth';
 import { parseGameFile } from '@/lib/game-import';
-import { importBundle } from '@/lib/game-store';
+import { copyExternalImages, importBundle } from '@/lib/game-store';
 import { supabase } from '@/lib/supabase';
 import { tx } from '@/lib/text';
 
@@ -87,9 +87,17 @@ export default function GamesPage() {
         setErrors([`Er bestaat al een spel met de naam ${parsed.slug} of een van de varianten. Pas het id in het bestand aan.`]);
         return;
       }
-      await importBundle(supabase(), org.id, parsed.bundle);
+      const baseId = await importBundle(supabase(), org.id, parsed.bundle);
       const n = parsed.bundle.variants.length;
-      setNotice(`${parsed.slug} geïmporteerd${n > 0 ? `, met ${n} variant${n === 1 ? '' : 'en'}` : ''}. Publiceer het spel om er sessies mee te maken.`);
+      const photos = await copyExternalImages(supabase(), baseId);
+      setNotice(
+        `${parsed.slug} geïmporteerd${n > 0 ? `, met ${n} variant${n === 1 ? '' : 'en'}` : ''}.` +
+          (photos.copied ? ` ${photos.copied} foto${photos.copied === 1 ? '' : "'s"} naar de eigen opslag gekopieerd.` : '') +
+          ' Publiceer het spel om er sessies mee te maken.',
+      );
+      if (photos.failed.length) {
+        setErrors([`Deze foto's konden niet worden gekopieerd en wijzen nog naar de oude site:`, ...photos.failed]);
+      }
       await load();
     } catch (err) {
       setErrors([err instanceof Error ? err.message : String(err)]);
