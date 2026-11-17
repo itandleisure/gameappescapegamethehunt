@@ -2,7 +2,7 @@
 
 Status: voorstel, ter beoordeling door Frans
 Datum: 16 november 2026
-Basis: het functieoverzicht van Loquiz ("Loquiz functieoverzicht voor eigen app"), met The Hunt NL Leeuwarden als referentiespel.
+Basis: het functieoverzicht van Loquiz ("Loquiz functieoverzicht voor eigen app"), met Escape Game The Hunt NL Leeuwarden als referentiespel.
 
 ## 1. Samenvatting
 
@@ -19,7 +19,7 @@ Twee dingen doen we bewust beter dan Loquiz:
 - **Gelaagde games**: één basisspel, met daarbovenop een stadsvariant, een klantvariant en vertalingen. Een betere hinttekst in het basisspel staat dan meteen in alle steden.
 - **Meertaligheid in één game**: het team kiest bij de start de taal; de beheeromgeving laat zien welke teksten nog niet vertaald zijn.
 
-De eerste versie (MVP) doet precies wat The Hunt Leeuwarden nodig heeft. Met de planning hieronder is een veldtest in Leeuwarden haalbaar rond week 10, en de overstap van Loquiz rond week 14 tot 16.
+De eerste versie (MVP) doet precies wat Escape Game The Hunt Leeuwarden nodig heeft. Met de planning hieronder is een veldtest in Leeuwarden haalbaar rond week 10, en de overstap van Loquiz rond week 14 tot 16.
 
 ## 2. Stackkeuze
 
@@ -78,7 +78,7 @@ Op de kaart staat altijd de bronvermelding "© OpenStreetMap-bijdragers". Die is
 
 ### 3.1 Hoe een spel loopt
 
-1. De spelleiding maakt in de beheeromgeving een **sessie** aan (bijvoorbeeld "The Hunt Leeuwarden, za 14:00, klant X"), met een inlogcode en QR-code en het aantal tracks.
+1. De spelleiding maakt in de beheeromgeving een **sessie** aan (bijvoorbeeld "Escape Game The Hunt Leeuwarden, za 14:00, klant X"), met een inlogcode en QR-code en het aantal tracks.
 2. Elk team scant de QR-code of tikt de code in, kiest een teamnaam en de taal. De app downloadt het complete spelpakket: opdrachten, regels, media en kaarttegels van het speelveld.
 3. Het team krijgt bij inloggen automatisch een track toegewezen (zie 5.4).
 4. Tijdens het spel draait de engine in de app. Elke gebeurtenis (locatie bereikt, antwoord gegeven, hint gekocht, timer verlopen) wordt lokaal opgeslagen en zo snel mogelijk naar de server gestuurd.
@@ -105,7 +105,7 @@ Dit is de reden voor een eigen app, dus hier zit extra aandacht:
 Een speelbaar spel wordt samengesteld uit lagen. Elke laag vult alleen in wat hij mag aanpassen:
 
 ```
-Basisspel "The Hunt"        opdrachten, regels, puzzels, hints, tijdlijn, punten
+Basisspel "Escape Game The Hunt"        opdrachten, regels, puzzels, hints, tijdlijn, punten
   └─ Stadsvariant          kaart-overlay, pinlocaties (start, tracks, extractiepunten),
      "Leeuwarden"          GPS-coördinaten extractiepunt, hintfoto, lokale vragen 54/55
        └─ Klantvariant     lokale vragen 54/55, hints morsecodepuzzel
@@ -115,7 +115,7 @@ Basisspel "The Hunt"        opdrachten, regels, puzzels, hints, tijdlijn, punten
 
 Hoe dat werkt:
 
-- In het basisspel markeert de maker welke velden een stad of klant mag invullen ("aanpasbare velden"). Voor The Hunt zijn dat precies de punten uit het functieoverzicht. In de beheeromgeving staan die velden per stad en klant klaar als een kort formulier, in plaats van 94 opdrachten.
+- In het basisspel markeert de maker welke velden een stad of klant mag invullen ("aanpasbare velden"). Voor Escape Game The Hunt zijn dat precies de punten uit het functieoverzicht. In de beheeromgeving staan die velden per stad en klant klaar als een kort formulier, in plaats van 94 opdrachten.
 - Bij het **publiceren** voegt de server de lagen samen tot één vaste versie. Een sessie speelt altijd een gepubliceerde versie. Wijzigingen tijdens een lopend spel hebben dus geen onverwacht effect, en achteraf is altijd te zien welke versie gespeeld is.
 - Een wijziging in het basisspel komt na opnieuw publiceren in alle steden en klantvarianten.
 - Vertalingen hangen aan elk tekstveld, in elke laag. De beheeromgeving toont teksten naast elkaar per taal en markeert wat ontbreekt. Publiceren in een taal met ontbrekende teksten geeft een waarschuwing.
@@ -129,7 +129,7 @@ Het spelverloop wordt beschreven met regels in de vorm **wanneer [voorwaarde] da
 
 ### 5.2 Voorwaarden (MVP)
 
-| Voorwaarde | Voorbeeld uit The Hunt |
+| Voorwaarde | Voorbeeld uit Escape Game The Hunt |
 |---|---|
 | Opdracht(en) afgerond / goed / fout | Puzzel goed → hints van die puzzel uit |
 | Selectie op één opdracht, een reeks, of een tag | "Alle opdrachten met tag *oplossing* goed" |
@@ -166,7 +166,7 @@ Het volledige verloop van Leeuwarden wordt als geautomatiseerde test vastgelegd 
 
 | Tabel | Belangrijkste velden | Toelichting |
 |---|---|---|
-| `organizations` | naam, logo, kleuren | Badass Games / The Hunt, World of City Escapes |
+| `organizations` | naam, logo, kleuren | Badass Games / Escape Game The Hunt, World of City Escapes |
 | `users` | e-mail, rol (owner, admin, editor, instructeur) | Beheerders en spelleiding |
 | `games` | naam, type (basis/stad/klant), `parent_id`, talen | De lagen uit hoofdstuk 4 |
 | `tasks` | sleutel, antwoordtype, juiste antwoorden, punten, radius, activatie, hints, tags | Alleen in het basisspel |
@@ -198,7 +198,7 @@ MVP-schermen:
 4. **Vertalingen**: teksten naast elkaar per taal, filter "nog niet vertaald".
 5. **Sessies**: sessie aanmaken, QR-code en inlogcode, aantal tracks, testmodus, open/dicht.
 6. **Live monitor**: kaart met teams en routes, ranglijst, voortgang per team, chat, opdracht handmatig openen, sessie afsluiten.
-7. **Resultaten**: ranglijst, antwoorden per opdracht, photowall, export naar Excel, en een deelbare resultatenpagina voor de klant met The Hunt-logo.
+7. **Resultaten**: ranglijst, antwoorden per opdracht, photowall, export naar Excel, en een deelbare resultatenpagina voor de klant met Escape Game The Hunt-logo.
 
 ### 7.1 Resultatenpagina, live kaart en fotoboek
 
@@ -236,7 +236,7 @@ Foto-links zijn 7 dagen geldig en worden bij elke aanvraag opnieuw gemaakt. Is e
 
 ## 8. MVP-scope
 
-**Wel in de eerste versie** (alles wat The Hunt Leeuwarden nodig heeft):
+**Wel in de eerste versie** (alles wat Escape Game The Hunt Leeuwarden nodig heeft):
 
 - Inloggen met code of QR, teamnaam, taalkeuze
 - Introreeks van 12 schermen en terug te lezen speluitleg
@@ -273,10 +273,10 @@ De weken zijn een inschatting vanaf de start van fase 1. De grootste onzekerhede
 | 1. Fundament | 1 – 3 | Monorepo, database en toegangsregels, spelregel-engine met Leeuwarden als testscenario | Engine speelt Leeuwarden foutloos na in een test |
 | 2. Speler-app | 3 – 7 | Alle MVP-functies van de app, GPS-filtering, offline, wachtrij, automatische foto-upload | Testbuild op eigen telefoons |
 | 3. Beheeromgeving | 4 – 8 | Editor, varianten, vertalingen, sessies, live monitor met kaart, resultatenpagina, photowall, export voor het fotoboek | Spelleiding kan zelf een sessie draaien en het fotoboek vullen |
-| 4. Leeuwarden invoeren | 8 – 9 | The Hunt overzetten als basisspel + stadsvariant Leeuwarden, NL en EN, simulator-controle | Spel compleet in eigen systeem |
+| 4. Leeuwarden invoeren | 8 – 9 | Escape Game The Hunt overzetten als basisspel + stadsvariant Leeuwarden, NL en EN, simulator-controle | Spel compleet in eigen systeem |
 | 5. Veldtest | 9 – 10 | Met jullie eigen team in Leeuwarden, naast Loquiz op dezelfde route; GPS-logs vergelijken | Lijst verbeterpunten, besluit over livegang |
 | 6. Verbeteren en publiceren | 10 – 12 | Punten uit de veldtest, app indienen bij App Store en Google Play | App openbaar in beide stores |
-| 7. Overstap | 12 – 16 | Eerste echte boekingen, daarna Amsterdam, Kampen, klantvarianten en andere talen; Loquiz opzeggen (let op de looptijd van het jaarabonnement) | Loquiz niet meer nodig voor The Hunt |
+| 7. Overstap | 12 – 16 | Eerste echte boekingen, daarna Amsterdam, Kampen, klantvarianten en andere talen; Loquiz opzeggen (let op de looptijd van het jaarabonnement) | Loquiz niet meer nodig voor Escape Game The Hunt |
 | 8. Uitbreiden | daarna | Should-haves, andere spellen van World of City Escapes | |
 
 Tijdens de overstap draaien Loquiz en de eigen app een paar weken naast elkaar, zodat er altijd een terugvaloptie is.
@@ -335,7 +335,7 @@ Geschatte lopende kosten bij het huidige volume (84 tot 207 spelers per maand, d
 | Google Play Console | 25 dollar eenmalig |
 | **Totaal lopend** | **ca. 55 – 100 euro per maand** |
 
-Ter vergelijking: Loquiz kost nu ca. **420 – 1.035 euro per maand** voor The Hunt (5 euro per speler). De eigen oplossing kost dus ongeveer een tiende, en de kosten stijgen nauwelijks mee met het aantal spelers. Bij flinke groei (duizenden spelers per maand) komen er hooguit enkele tientallen euro's bij voor opslag van foto's en kaartgebruik. Ontwikkeltijd en onderhoud vallen buiten deze bedragen.
+Ter vergelijking: Loquiz kost nu ca. **420 – 1.035 euro per maand** voor Escape Game The Hunt (5 euro per speler). De eigen oplossing kost dus ongeveer een tiende, en de kosten stijgen nauwelijks mee met het aantal spelers. Bij flinke groei (duizenden spelers per maand) komen er hooguit enkele tientallen euro's bij voor opslag van foto's en kaartgebruik. Ontwikkeltijd en onderhoud vallen buiten deze bedragen.
 
 ### 11.1 Groei naar 100.000 evenementen per jaar
 
@@ -354,7 +354,7 @@ Grove inschatting van de lopende kosten bij 100.000 evenementen per jaar: enkele
 
 ### 11.2 Uitrol in Europa: eigen game masters en partners
 
-The Hunt gaat ook naar Spanje, Portugal, Italië en andere landen, deels met eigen game masters en deels met lokale partners.
+Escape Game The Hunt gaat ook naar Spanje, Portugal, Italië en andere landen, deels met eigen game masters en deels met lokale partners.
 
 | Onderdeel | Aanpak |
 |---|---|
@@ -376,7 +376,7 @@ The Hunt gaat ook naar Spanje, Portugal, Italië en andere landen, deels met eig
 | Een klantvariant kopiëren; alleen de aanpassingen gaan mee | De steden, sessies en resultaten van Badass Games of andere partners zien |
 | Eigen sessies draaien en de resultatenpagina gebruiken: live kaart met de teams, gelopen afstand, punten en de fotowall voor het fotoboek | |
 
-De database houdt dit zelf tegen, ook als iemand buiten de beheeromgeving om schrijft. Een verbetering in het basisspel komt na publiceren ook bij de partner. Zo blijft de kwaliteit van The Hunt overal gelijk.
+De database houdt dit zelf tegen, ook als iemand buiten de beheeromgeving om schrijft. Een verbetering in het basisspel komt na publiceren ook bij de partner. Zo blijft de kwaliteit van Escape Game The Hunt overal gelijk.
 
 Later te bepalen: hoe partners afrekenen (bijvoorbeeld per speler, zoals nu bij Loquiz), of partners een eigen logo in de app en op de resultatenpagina krijgen (het datamodel ondersteunt een logo per organisatie al), en de koppeling met het boekingssysteem, dat nu sessies via de Loquiz-API aanmaakt. Dat vraagt straks een eigen API voor het aanmaken van sessies.
 
@@ -393,7 +393,7 @@ Later te bepalen: hoe partners afrekenen (bijvoorbeeld per speler, zoals nu bij 
 
 ## 13. Open punten voor Frans
 
-1. Bedrijfsnaam waaronder de app in de stores komt, en de appnaam (bijvoorbeeld "The Hunt").
+1. Bedrijfsnaam waaronder de app in de stores komt, en de appnaam (bijvoorbeeld "Escape Game The Hunt").
 2. Moet World of City Escapes later ook in dezelfde app, of krijgt dat een eigen app? Dit bepaalt of we nu al meerdere merken in de app inbouwen.
 3. Einddatum van het Loquiz-jaarabonnement, om de overstap op af te stemmen.
 4. Welke talen naast NL en EN het eerst nodig zijn.

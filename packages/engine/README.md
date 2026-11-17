@@ -24,4 +24,4 @@ De spelregel-engine en gedeelde datatypes. Eén stuk code voor de speler-app (of
 pnpm --filter @hunt/engine test
 ```
 
-`test/the-hunt-leeuwarden.test.ts` speelt The Hunt Leeuwarden na (ontwerp §5.6). De inhoud in `test/fixtures/the-hunt.ts` is testdata met de structuur en regels van Leeuwarden; de echte teksten en coördinaten komen in fase 4.
+`test/the-hunt-leeuwarden.test.ts` speelt Escape Game The Hunt Leeuwarden na (ontwerp §5.6). De inhoud in `test/fixtures/the-hunt.ts` is testdata met de structuur en regels van Leeuwarden; de echte teksten en coördinaten komen in fase 4.

@@ -3,7 +3,7 @@ import { theHuntBase } from '../../../packages/engine/test/fixtures/the-hunt.js'
 import { formToTask, taskToForm } from '../src/lib/task-form.js';
 
 describe('opdrachtformulier', () => {
-  it('geeft elke opdracht uit The Hunt ongewijzigd terug', () => {
+  it('geeft elke opdracht uit Escape Game The Hunt ongewijzigd terug', () => {
     for (const task of theHuntBase.tasks) {
       const { trackLocations: _tracks, ...rest } = task;
       const { task: back, errors } = formToTask(task.id, taskToForm(task));

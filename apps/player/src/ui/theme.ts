@@ -1,4 +1,4 @@
-/** Kleuren en maten van de app. Later af te stemmen op de huisstijl van The Hunt. */
+/** Kleuren en maten van de app. Later af te stemmen op de huisstijl van Escape Game The Hunt. */
 export const colors = {
   background: '#101214',
   surface: '#1b1f23',

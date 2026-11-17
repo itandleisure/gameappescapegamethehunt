@@ -30,7 +30,7 @@ export default function LoginPage() {
   return (
     <div className="card narrow">
       <h1>{mode === 'login' ? 'Inloggen' : 'Account aanmaken'}</h1>
-      <p className="muted">Beheeromgeving van The Hunt.</p>
+      <p className="muted">Beheeromgeving van Escape Game The Hunt.</p>
       <form onSubmit={submit}>
         <label htmlFor="email">E-mail</label>
         <input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />

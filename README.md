@@ -1,6 +1,6 @@
-# The Hunt app
+# Escape Game The Hunt app
 
-Eigen spelplatform voor The Hunt en andere GPS-buitenspellen, ter vervanging van Loquiz.
+Eigen spelplatform voor Escape Game The Hunt en andere GPS-buitenspellen, ter vervanging van Loquiz.
 
 Onderdelen (gepland):
 

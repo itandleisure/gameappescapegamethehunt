@@ -1,8 +1,8 @@
 /**
- * The Hunt als testgeval voor de engine: basisspel, stadsvariant Leeuwarden,
+ * Escape Game The Hunt als testgeval voor de engine: basisspel, stadsvariant Leeuwarden,
  * stadsvariant Amsterdam en klantvariant Parteon.
  *
- * Structuur en regels volgen The Hunt NL Leeuwarden in Loquiz (94 opdrachten,
+ * Structuur en regels volgen Escape Game The Hunt NL Leeuwarden in Loquiz (94 opdrachten,
  * 13 regelblokken). De teksten, antwoorden en coördinaten hieronder zijn
  * TESTDATA: de echte inhoud wordt in fase 4 ingevoerd. Ingebouwde functies
  * (hints, bevestiging, introreeks, tracks) vervangen de ruim 40 losse
@@ -47,7 +47,7 @@ const placeholder: TaskLocation = { lat: 0, lng: 0, radius: 10 };
 
 export const theHuntBase: BaseGame = {
   id: 'the-hunt',
-  name: nlen('The Hunt', 'The Hunt'),
+  name: nlen('Escape Game The Hunt', 'Escape Game The Hunt'),
   languages: ['nl', 'en'],
   defaultLanguage: 'nl',
   gps: { maxAccuracy: 30 },

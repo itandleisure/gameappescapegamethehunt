@@ -61,7 +61,7 @@ end $$;
 
 select tests.login(:editor);
 do $$ begin
-  assert (select count(*) from public.games) = 2, 'editor ziet beide lagen van The Hunt';
+  assert (select count(*) from public.games) = 2, 'editor ziet beide lagen van Escape Game The Hunt';
   insert into public.games (org_id, layer, slug, parent_id)
     values ('0a000000-0000-0000-0000-00000000000a', 'city', 'the-hunt-amsterdam', '6a000000-0000-0000-0000-000000000001');
   assert (select count(*) from public.games) = 3, 'editor kan een stadsvariant aanmaken';

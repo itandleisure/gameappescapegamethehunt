@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { Shell } from './shell';
 import './globals.css';
 
-export const metadata: Metadata = { title: 'The Hunt – beheer' };
+export const metadata: Metadata = { title: 'Escape Game The Hunt – beheer' };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

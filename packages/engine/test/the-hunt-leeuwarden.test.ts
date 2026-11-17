@@ -1,5 +1,5 @@
 /**
- * The Hunt Leeuwarden als geautomatiseerd testscenario (ontwerp §5.6).
+ * Escape Game The Hunt Leeuwarden als geautomatiseerd testscenario (ontwerp §5.6).
  * Elke wijziging aan de engine moet deze scenario's blijven halen.
  */
 import { describe, expect, it } from 'vitest';
@@ -44,7 +44,7 @@ function solidTeam(): Script {
 /** Hernoemt ids zodat losse extra gebeurtenissen niet botsen met het script. */
 const extra = (s: Script, prefix: string): GameEvent[] => s.events.map((e, i) => ({ ...e, id: `${prefix}${i}` }));
 
-describe('The Hunt Leeuwarden', () => {
+describe('Escape Game The Hunt Leeuwarden', () => {
   it('heeft een geldig samengesteld spelpakket', () => {
     expect(game.tasks.find((t) => t.id === 'start')?.location?.lat).toBeCloseTo(P.start.lat);
     expect(game.tasks.filter((t) => t.tags.includes('oplossing'))).toHaveLength(6);
