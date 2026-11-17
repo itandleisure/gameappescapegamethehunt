@@ -1,6 +1,6 @@
 import { Redirect } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { APP_LANGUAGES, LANGUAGE_NAMES } from '../src/core/i18n';
 import { BackendError } from '../src/core/supabase-backend';
@@ -46,7 +46,12 @@ export default function JoinScreen() {
     <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.safe}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Title>{t('appName')}</Title>
+          <Image
+            source={require('../assets/logo-white.png')}
+            style={styles.logo}
+            resizeMode="contain"
+            accessibilityLabel={t('appName')}
+          />
           {error ? <Banner tone="danger">{t(error)}</Banner> : null}
 
           <Title>{t('joinTitle')}</Title>
@@ -100,6 +105,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
   content: { padding: space.md, paddingBottom: space.xl },
+  logo: { width: '60%', maxWidth: 240, aspectRatio: 496 / 600, alignSelf: 'center', marginTop: space.md, marginBottom: space.lg },
   chips: { flexDirection: 'row', flexWrap: 'wrap', marginTop: space.sm, marginBottom: space.sm },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: space.xl },
 });

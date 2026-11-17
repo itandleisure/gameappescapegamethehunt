@@ -29,6 +29,10 @@ export default function LoginPage() {
 
   return (
     <div className="card narrow">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/logo-full-dark.png" alt="Escape Game The Hunt" className="loginlogo only-light" />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/logo-full-light.png" alt="Escape Game The Hunt" className="loginlogo only-dark" />
       <h1>{mode === 'login' ? 'Inloggen' : 'Account aanmaken'}</h1>
       <p className="muted">Beheeromgeving van Escape Game The Hunt.</p>
       <form onSubmit={submit}>
