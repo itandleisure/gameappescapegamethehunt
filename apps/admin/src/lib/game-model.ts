@@ -189,7 +189,7 @@ function answerFromRow(row: Record<string, unknown>, texts: TextBag, key: string
 // Regels: berichtteksten apart
 // ---------------------------------------------------------------------------
 
-function actionsToRow(rule: Rule, out: TranslationRow[]): unknown[] {
+export function actionsToRow(rule: Rule, out: TranslationRow[]): unknown[] {
   return rule.then.map((action, i) => {
     if (action.kind !== 'message') return action;
     pushText(out, 'rule', rule.id, `message.${i}`, action.text);

@@ -131,6 +131,21 @@ export default function GamePage() {
         <button onClick={() => void doPublish()} disabled={busy || Boolean(legacy)}>
           {busy ? 'Bezig…' : 'Publiceren'}
         </button>
+        {!legacy && self.game.layer !== 'client' ? (
+          <Link href={`/spellen/${id}/kaart`} className="filebutton" style={{ background: 'transparent', color: 'var(--text)', border: '1px solid var(--line)' }}>
+            Kaart
+          </Link>
+        ) : null}
+        {!legacy ? (
+          <Link href={`/spellen/${id}/overlay`} className="filebutton" style={{ background: 'transparent', color: 'var(--text)', border: '1px solid var(--line)' }}>
+            Overlay en verzamelpunt
+          </Link>
+        ) : null}
+        {isBase && !legacy ? (
+          <Link href={`/spellen/${id}/regels`} className="filebutton" style={{ background: 'transparent', color: 'var(--text)', border: '1px solid var(--line)' }}>
+            Regels
+          </Link>
+        ) : null}
         {versions[0] ? (
           <span className="muted">
             Laatste versie: v{versions[0].version} van {new Date(versions[0].published_at).toLocaleString('nl-NL')}

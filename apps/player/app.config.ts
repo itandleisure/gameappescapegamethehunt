@@ -17,6 +17,8 @@ const config: ExpoConfig = {
     bundleIdentifier: 'com.thebadassgroup.thehunt',
     supportsTablet: false,
     infoPlist: {
+      // Korte naam onder het icoon op het beginscherm; App Store-naam blijft Escape Game The Hunt.
+      CFBundleDisplayName: 'The Hunt',
       UIBackgroundModes: ['location'],
       ITSAppUsesNonExemptEncryption: false,
     },
