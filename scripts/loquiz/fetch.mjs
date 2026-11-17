@@ -21,7 +21,7 @@ const SCHEMES = [
 let scheme = 0;
 console.log(`Sleutel: ${key.length} tekens`);
 for (; scheme < SCHEMES.length; scheme++) {
-  const res = await fetch(`${BASE}/games?limit=1`, { headers: { ...SCHEMES[scheme](key), Accept: 'application/json' } });
+  const res = await fetch(`${BASE}/games?limit=1`, { headers: { ...SCHEMES[scheme](key), Accept: 'application/json' }, signal: AbortSignal.timeout(30000) });
   console.log(`Aanmeldvorm ${scheme + 1}: status ${res.status}`);
   if (res.ok) break;
 }
@@ -29,7 +29,7 @@ if (scheme === SCHEMES.length) throw new Error('Loquiz accepteert de sleutel nie
 
 async function get(path) {
   for (let attempt = 1; ; attempt++) {
-    const res = await fetch(BASE + path, { headers: { ...SCHEMES[scheme](key), Accept: 'application/json' } });
+    const res = await fetch(BASE + path, { headers: { ...SCHEMES[scheme](key), Accept: 'application/json' }, signal: AbortSignal.timeout(30000) });
     if (res.ok) return res.json();
     if (attempt < 4 && (res.status === 429 || res.status >= 500)) {
       await new Promise((r) => setTimeout(r, 2000 * attempt));
@@ -57,6 +57,7 @@ for (const g of list) {
     const game = await get(`/games/${encodeURIComponent(g.id)}`);
     await writeFile(join(outDir, 'games', `${g.id}.json`), JSON.stringify(game, null, 1));
     ok++;
+    if (ok % 25 === 0) console.log(`  ${ok} games opgehaald…`);
   } catch (err) {
     failed++;
     console.log(String(err.message));
@@ -88,13 +89,14 @@ let mediaOk = 0;
 let mediaFailed = 0;
 for (const url of urls) {
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: AbortSignal.timeout(60000) });
     if (!res.ok) throw new Error(String(res.status));
     const ext = (new URL(url).pathname.match(/\.[a-z0-9]{2,5}$/i)?.[0] ?? '').toLowerCase();
     const name = createHash('sha1').update(url).digest('hex').slice(0, 16) + ext;
     await writeFile(join(outDir, 'media', name), Buffer.from(await res.arrayBuffer()));
     index[url] = { file: name, contentType: res.headers.get('content-type') };
     mediaOk++;
+    if (mediaOk % 100 === 0) console.log(`  ${mediaOk} mediabestanden…`);
   } catch {
     mediaFailed++;
   }
