@@ -1,0 +1,49 @@
+name: Loquiz-export
+
+# Haalt de games uit Loquiz op en zet ze VERSLEUTELD in loquiz-export/ op deze branch.
+# De repository is openbaar, dus niets van de inhoud mag leesbaar in logs of
+# artifacts terechtkomen. Alleen wie de privésleutel heeft kan het openen.
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/project-thread-ci0en6]
+    paths:
+      - .github/workflows/loquiz-export.yml
+      - scripts/loquiz/fetch.mjs
+
+permissions:
+  contents: write
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Games ophalen
+        env:
+          LOQUIZ_API_KEY: ${{ secrets.LOQUIZ_API_KEY }}
+        run: node scripts/loquiz/fetch.mjs "$RUNNER_TEMP/loquiz"
+      - name: Versleutelen
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          tar czf loquiz.tgz loquiz
+          openssl rand -out sessie.key 32
+          openssl enc -aes-256-cbc -pbkdf2 -salt -in loquiz.tgz -out loquiz.tgz.enc -pass file:sessie.key
+          openssl pkeyutl -encrypt -pubin -inkey "$GITHUB_WORKSPACE/scripts/loquiz/export-public-key.pem" \
+            -pkeyopt rsa_padding_mode:oaep -in sessie.key -out sessie.key.enc
+          mkdir -p "$GITHUB_WORKSPACE/loquiz-export"
+          mv loquiz.tgz.enc sessie.key.enc "$GITHUB_WORKSPACE/loquiz-export/"
+          rm -rf loquiz loquiz.tgz sessie.key
+          ls -l "$GITHUB_WORKSPACE/loquiz-export"
+      - name: Versleutelde export op de branch zetten
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add loquiz-export
+          git commit -m "Loquiz-export (versleuteld)"
+          git push origin HEAD:${{ github.ref_name }}
