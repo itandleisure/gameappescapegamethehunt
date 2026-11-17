@@ -1,0 +1,45 @@
+import { composeGame, computeState } from '@hunt/engine';
+import { describe, expect, it } from 'vitest';
+import { INTRO, leeuwarden, leeuwardenPoints, theHuntBase } from '../../../packages/engine/test/fixtures/the-hunt.js';
+import { answerFeedback, isAnswerable, listGroups, taskToShow } from '../src/core/view.js';
+
+const game = composeGame(theHuntBase, [leeuwarden], { id: 'lwd', version: 1 });
+const T0 = Date.UTC(2026, 10, 21, 13, 0, 0);
+const team = { track: 2, startedAt: T0 };
+const at = (s: number) => T0 + s * 1000;
+const P = leeuwardenPoints;
+
+describe('schermen', () => {
+  it('toont na de startlocatie vanzelf de speluitleg, scherm voor scherm', () => {
+    const events = [
+      { id: '1', at: at(10), type: 'locationReached' as const, task: 'start', ...P.start, accuracy: 5 },
+      { id: '2', at: at(20), type: 'answered' as const, task: 'start', answer: { type: 'info' as const } },
+    ];
+    let state = computeState(game, team, events.slice(0, 1), at(15));
+    expect(taskToShow(game, state)).toBe('start');
+    state = computeState(game, team, events, at(25));
+    expect(taskToShow(game, state)).toBe(INTRO[0]);
+  });
+
+  it('kan een opdracht op de kaart pas openen op locatie', () => {
+    const state = computeState(game, team, [], at(1));
+    expect(state.tasks.start!.status).toBe('visible');
+    expect(isAnswerable(game, team, state, 'start')).toBe(false);
+  });
+
+  it('geeft na een antwoord de juiste melding', () => {
+    const events = [
+      { id: '1', at: at(10), type: 'locationReached' as const, task: 'start', ...P.start, accuracy: 5 },
+    ];
+    const before = computeState(game, team, events, at(11));
+    const after = computeState(game, team, [...events, { id: '2', at: at(12), type: 'answered' as const, task: 'start', answer: { type: 'info' as const } }], at(13));
+    expect(answerFeedback(before, after, 'start')).toBe('correct');
+    expect(answerFeedback(after, after, 'start')).toBe('rejected');
+  });
+
+  it('groepeert de lijst per playground', () => {
+    const state = computeState(game, team, [], at(1));
+    const groups = listGroups(game, state);
+    for (const g of groups) for (const t of g.tasks) expect(state.tasks[t.id]!.status).not.toBe('hidden');
+  });
+});

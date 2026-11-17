@@ -10,3 +10,10 @@ coverage/
 .next/
 .vercel/
 supabase/.temp/
+
+# Expo
+.expo/
+apps/player/android/
+apps/player/ios/
+apps/player/dist/
+expo-env.d.ts

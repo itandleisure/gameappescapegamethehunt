@@ -1,0 +1,169 @@
+import { composeGame, type GpsFix } from '@hunt/engine';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { leeuwarden, leeuwardenPoints, theHuntBase } from '../../../packages/engine/test/fixtures/the-hunt.js';
+import { GameController, STORAGE_KEY, randomUuid } from '../src/core/game-controller.js';
+import { MemoryStore } from '../src/core/types.js';
+import { FakeBackend } from './fake-backend.js';
+
+const game = composeGame(theHuntBase, [leeuwarden], { id: 'the-hunt-leeuwarden', version: 1 });
+const T0 = Date.UTC(2026, 10, 21, 13, 0, 0);
+const SKEW = 90_000; // telefoonklok loopt anderhalve minuut achter
+
+function setup() {
+  let device = T0 - SKEW;
+  let n = 0;
+  const backend = new FakeBackend(game, T0);
+  const store = new MemoryStore();
+  const deps = {
+    backend,
+    store,
+    deviceNow: () => device,
+    newId: () => `id-${++n}`,
+  };
+  const advance = (ms: number) => {
+    device += ms;
+    backend.serverNow += ms;
+  };
+  const fix = (p: { lat: number; lng: number }, accuracy = 8): GpsFix => ({ ...p, accuracy, at: device });
+  return { backend, store, deps, advance, fix, device: () => device };
+}
+
+describe('GameController', () => {
+  let s: ReturnType<typeof setup>;
+  beforeEach(() => {
+    s = setup();
+  });
+
+  it('meldt een team aan, rekent op servertijd en start eenmalig', async () => {
+    const c = await GameController.join(s.deps, 'LWD001', 'De Speurders', 'nl');
+    expect(c.team.track).toBe(1);
+    expect(c.snapshot().state).toBeNull();
+    expect(c.snapshot().now).toBe(T0); // klok gecorrigeerd
+
+    await c.start();
+    s.advance(60_000);
+    await c.start(); // tweede keer verandert niets
+    expect(c.team.startedAt).toBe(T0);
+    const state = c.snapshot().state!;
+    expect(state.tasks.start!.status).toBe('visible');
+    expect(state.tasks.start!.onMap).toBe(true);
+  });
+
+  it('opent de startlocatie pas na twee goede GPS-metingen, slechte metingen tellen niet', async () => {
+    const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl');
+    await c.start();
+    s.advance(5_000);
+    expect(await c.onLocation(s.fix(leeuwardenPoints.start, 80))).toEqual([]);
+    expect(await c.onLocation(s.fix(leeuwardenPoints.start))).toEqual([]);
+    s.advance(1_000);
+    expect(await c.onLocation(s.fix(leeuwardenPoints.start))).toEqual(['start']);
+    expect(c.snapshot().state!.tasks.start!.status).toBe('open');
+    // Opnieuw binnen de cirkel opent niets dubbel
+    s.advance(1_000);
+    expect(await c.onLocation(s.fix(leeuwardenPoints.start))).toEqual([]);
+  });
+
+  it('beantwoordt, gebruikt hints en stuurt alles met servertijd naar de server', async () => {
+    const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl');
+    await c.start();
+    s.advance(1_000);
+    await c.onLocation(s.fix(leeuwardenPoints.start));
+    s.advance(1_000);
+    await c.onLocation(s.fix(leeuwardenPoints.start));
+    await c.answer('start', { type: 'info' });
+    await c.tick();
+
+    const sent = s.backend.events.get(c.team.id)!;
+    expect(sent.map((e) => e.type)).toEqual(['locationReached', 'answered']);
+    expect(sent[0]!.at).toBe(T0 + 2_000);
+    expect(c.snapshot().pending).toBe(0);
+
+    // Hint mag niet voor een opdracht die nog niet zichtbaar is
+    expect(await c.useHint('puzzel-tangram')).toBe(false);
+  });
+
+  it('blijft offline doorspelen en verstuurt later alles, zonder dubbelingen', async () => {
+    const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl');
+    await c.start();
+    s.backend.offline = true;
+    s.advance(1_000);
+    await c.onLocation(s.fix(leeuwardenPoints.start));
+    s.advance(1_000);
+    await c.onLocation(s.fix(leeuwardenPoints.start));
+    await c.answer('start', { type: 'info' });
+    await c.tick();
+    const snap = c.snapshot();
+    expect(snap.online).toBe(false);
+    expect(snap.pending).toBe(2);
+    expect(snap.state!.tasks.start!.status).toBe('done'); // spel loopt gewoon door
+
+    s.backend.offline = false;
+    s.advance(1_000);
+    await c.tick(); // nog binnen de wachttijd na de fout
+    s.advance(10_000);
+    await c.tick();
+    expect(s.backend.events.get(c.team.id)).toHaveLength(2);
+    expect(c.snapshot().pending).toBe(0);
+    expect(c.snapshot().online).toBe(true);
+  });
+
+  it('bundelt GPS-posities en houdt ze vast als het versturen mislukt', async () => {
+    const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl');
+    await c.start();
+    for (let i = 0; i < 10; i++) {
+      s.advance(6_000);
+      await c.onLocation(s.fix({ lat: leeuwardenPoints.start.lat + i * 0.0002, lng: leeuwardenPoints.start.lng }));
+    }
+    s.backend.offline = true;
+    await c.tick();
+    expect(s.backend.positions).toHaveLength(0);
+    s.backend.offline = false;
+    s.advance(20_000);
+    await c.tick();
+    expect(s.backend.positions.length).toBeGreaterThanOrEqual(9);
+    expect(s.backend.positions[0]!.at).toBeGreaterThan(T0); // servertijd
+  });
+
+  it('telt een foto direct mee en uploadt hem op de achtergrond', async () => {
+    const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl');
+    await c.start();
+    s.backend.offline = true;
+    await c.submitPhoto('fotomissie', 'file:///foto.jpg');
+    const event = c.snapshot();
+    expect(event.pending).toBe(2); // gebeurtenis + foto
+    s.backend.offline = false;
+    s.advance(30_000);
+    await c.tick();
+    expect(s.backend.photos).toHaveLength(1);
+    expect(s.backend.photos[0]!.path).toMatch(/^team-1\/fotomissie\//);
+    const answered = s.backend.events.get(c.team.id)!.find((e) => e.type === 'answered')!;
+    expect(answered).toMatchObject({ task: 'fotomissie', answer: { type: 'photo', photoId: s.backend.photos[0]!.photo.photoId } });
+  });
+
+  it('gaat na een herstart verder en neemt gebeurtenissen van een tweede telefoon over', async () => {
+    const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl');
+    await c.start();
+    s.advance(1_000);
+    await c.onLocation(s.fix(leeuwardenPoints.start));
+    s.advance(1_000);
+    await c.onLocation(s.fix(leeuwardenPoints.start));
+    await c.tick();
+
+    // Tweede telefoon met de teamcode beantwoordt de start
+    const other = setup();
+    const phone2 = await GameController.rejoin({ ...s.deps, store: other.store, newId: () => 'tweede-1' }, c.team.teamCode);
+    await phone2.answer('start', { type: 'info' });
+    await phone2.tick();
+
+    // Eerste telefoon herstart
+    expect(await s.store.getItem(STORAGE_KEY)).not.toBeNull();
+    const resumed = (await GameController.resume(s.deps))!;
+    expect(resumed.snapshot().state!.tasks.start!.status).toBe('done');
+    await resumed.leave();
+    expect(await GameController.resume(s.deps)).toBeNull();
+  });
+
+  it('maakt geldige uuid\'s voor de database', () => {
+    expect(randomUuid()).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+  });
+});

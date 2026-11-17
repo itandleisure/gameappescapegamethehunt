@@ -1,0 +1,368 @@
+import {
+  LocationGate,
+  PositionUploader,
+  canUseHint,
+  computeState,
+  reachableTargets,
+  type AnswerValue,
+  type GameEvent,
+  type GamePackage,
+  type GpsFix,
+  type TeamContext,
+  type TeamState,
+} from '@hunt/engine';
+import { ClockSync } from './clock.js';
+import { Retry } from './outbox.js';
+import type { Backend, KeyValueStore, LoadedGame, PendingPhoto, SessionInfo, TeamRecord } from './types.js';
+
+export const STORAGE_KEY = 'hunt.game.v1';
+
+/** Wat de app op het scherm toont. */
+export interface Snapshot {
+  team: TeamRecord;
+  session: SessionInfo;
+  game: GamePackage;
+  /** Leeg zolang het team nog niet op Start heeft gedrukt. */
+  state: TeamState | null;
+  /** Servertijd van deze momentopname. */
+  now: number;
+  /** Aantal dingen dat nog naar de server moet (gebeurtenissen, foto's). */
+  pending: number;
+  /** Of het laatste verzoek aan de server lukte. */
+  online: boolean;
+}
+
+export interface ControllerDeps {
+  backend: Backend;
+  store: KeyValueStore;
+  /** Telefoonklok (ms). */
+  deviceNow?: () => number;
+  /** Maakt unieke id's voor gebeurtenissen en foto's. */
+  newId?: () => string;
+}
+
+interface Saved {
+  team: TeamRecord;
+  loaded: LoadedGame;
+  events: GameEvent[];
+  unsent: string[];
+  photos: PendingPhoto[];
+  clockOffset: number;
+}
+
+type Listener = (snapshot: Snapshot) => void;
+
+/** UUID v4; de app geeft een cryptografisch sterke versie mee (expo-crypto). */
+export function randomUuid(random: () => number = Math.random): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.floor(random() * 16);
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
+/**
+ * Het hart van de speler-app. Houdt de gebeurtenissen van het team bij,
+ * rekent de toestand uit met de engine (ook offline), opent opdrachten op
+ * locatie, en stuurt gebeurtenissen, posities en foto's naar de server.
+ */
+export class GameController {
+  private readonly clock: ClockSync;
+  private readonly gate: LocationGate;
+  private readonly uploader = new PositionUploader();
+  private readonly eventRetry = new Retry();
+  private readonly photoRetry = new Retry();
+  private readonly positionRetry = new Retry();
+  private readonly listeners = new Set<Listener>();
+  private readonly newId: () => string;
+  private online = true;
+  private currentTick: Promise<void> | null = null;
+  private nextTick: Promise<void> | null = null;
+  private lastPullAt = 0;
+
+  private constructor(
+    private readonly deps: ControllerDeps,
+    private data: Saved,
+  ) {
+    this.clock = new ClockSync(deps.deviceNow ?? Date.now);
+    this.clock.offset = data.clockOffset;
+    this.gate = new LocationGate({ maxAccuracy: data.loaded.game.gps.maxAccuracy });
+    this.newId = deps.newId ?? (() => randomUuid());
+  }
+
+  // ---------------------------------------------------------------------------
+  // Starten
+  // ---------------------------------------------------------------------------
+
+  /** Nieuw team aanmelden met de sessiecode van de spelleiding. */
+  static async join(deps: ControllerDeps, joinCode: string, teamName: string, language: string) {
+    await deps.backend.ensureSignedIn();
+    const team = await deps.backend.joinSession(joinCode, teamName, language);
+    return GameController.open(deps, team);
+  }
+
+  /** Op een tweede telefoon verder spelen met de teamcode. */
+  static async rejoin(deps: ControllerDeps, teamCode: string) {
+    await deps.backend.ensureSignedIn();
+    const team = await deps.backend.rejoinTeam(teamCode);
+    return GameController.open(deps, team);
+  }
+
+  /** Na het herstarten van de app: verder waar het team was. */
+  static async resume(deps: ControllerDeps): Promise<GameController | null> {
+    const raw = await deps.store.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const controller = new GameController(deps, JSON.parse(raw) as Saved);
+    // Gebeurtenissen van een andere telefoon van hetzelfde team ophalen; lukt
+    // dat niet (offline), dan gaat het spel gewoon verder met wat er lokaal is.
+    await controller.pull().catch(() => undefined);
+    return controller;
+  }
+
+  private static async open(deps: ControllerDeps, team: TeamRecord) {
+    const [loaded, events] = await Promise.all([deps.backend.loadGame(team), deps.backend.loadEvents(team.id)]);
+    const controller = new GameController(deps, { team, loaded, events, unsent: [], photos: [], clockOffset: 0 });
+    await controller.clock.sync(() => deps.backend.serverTime()).catch(() => undefined);
+    controller.data.clockOffset = controller.clock.offset;
+    await controller.save();
+    return controller;
+  }
+
+  /** Start de speeltijd (eenmalig, servertijd). */
+  async start(): Promise<void> {
+    if (this.data.team.startedAt !== null) return;
+    this.data.team = await this.deps.backend.startTeam(this.data.team.id);
+    await this.save();
+    this.emit();
+  }
+
+  /** Stopt met spelen op deze telefoon en wist de lokale gegevens. */
+  async leave(): Promise<void> {
+    await this.deps.store.removeItem(STORAGE_KEY);
+    this.listeners.clear();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Toestand
+  // ---------------------------------------------------------------------------
+
+  get team(): TeamRecord {
+    return this.data.team;
+  }
+
+  get game(): GamePackage {
+    return this.data.loaded.game;
+  }
+
+  get context(): TeamContext | null {
+    const { track, startedAt } = this.data.team;
+    return startedAt === null ? null : { track, startedAt };
+  }
+
+  snapshot(): Snapshot {
+    const now = this.clock.now();
+    const ctx = this.context;
+    return {
+      team: this.data.team,
+      session: this.data.loaded.session,
+      game: this.game,
+      state: ctx ? computeState(this.game, ctx, this.data.events, now) : null,
+      now,
+      pending: this.data.unsent.length + this.data.photos.length,
+      online: this.online,
+    };
+  }
+
+  subscribe(listener: Listener): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
+  // ---------------------------------------------------------------------------
+  // GPS
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Verwerkt een GPS-meting (tijd in telefoontijd). Geeft de opdrachten terug
+   * die hierdoor openen, zodat de app kan trillen of een geluid laten horen.
+   */
+  async onLocation(fix: GpsFix): Promise<string[]> {
+    const ctx = this.context;
+    if (!ctx) return [];
+    const serverFix = { ...fix, at: this.clock.toServer(fix.at) };
+    this.uploader.add(serverFix);
+
+    const state = computeState(this.game, ctx, this.data.events, serverFix.at);
+    if (state.ended) return [];
+    const reached = this.gate.feed(serverFix, reachableTargets(this.game, ctx, state));
+    for (const task of reached) {
+      this.record({ type: 'locationReached', task, lat: fix.lat, lng: fix.lng, accuracy: fix.accuracy });
+    }
+    if (reached.length > 0) await this.commit();
+    return reached;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Acties van het team
+  // ---------------------------------------------------------------------------
+
+  async confirm(task: string): Promise<void> {
+    this.record({ type: 'confirmed', task });
+    await this.commit();
+  }
+
+  async decline(task: string): Promise<void> {
+    this.record({ type: 'declined', task });
+    // Weer "binnen de cirkel komen" moet de vraag opnieuw kunnen stellen.
+    this.gate.reset(task);
+    await this.commit();
+  }
+
+  async answer(task: string, answer: AnswerValue): Promise<void> {
+    this.record({ type: 'answered', task, answer });
+    await this.commit();
+  }
+
+  /** Neemt de volgende hint; geeft false als dat nu niet mag. */
+  async useHint(task: string): Promise<boolean> {
+    const snap = this.snapshot();
+    if (!snap.state || !canUseHint(this.game, snap.state, task)) return false;
+    this.record({ type: 'hintUsed', task, hint: snap.state.tasks[task]!.hintsUsed });
+    await this.commit();
+    return true;
+  }
+
+  /**
+   * Foto bij een opdracht. Telt direct als antwoord; de foto zelf gaat op de
+   * achtergrond naar de server, ook als er nu even geen bereik is.
+   */
+  async submitPhoto(task: string, uri: string): Promise<void> {
+    const photoId = this.newId();
+    this.data.photos.push({ photoId, task, uri, takenAt: this.clock.now() });
+    this.record({ type: 'answered', task, answer: { type: 'photo', photoId } });
+    await this.commit();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Synchroniseren
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Roep regelmatig aan (bijvoorbeeld elke 5 seconden). Verstuurt wat klaarstaat
+   * en haalt af en toe gebeurtenissen van andere telefoons van het team op.
+   */
+  tick(): Promise<void> {
+    // Nooit twee rondes tegelijk; een verzoek tijdens een ronde wacht op de volgende.
+    if (!this.currentTick) {
+      this.currentTick = this.runTick().finally(() => {
+        this.currentTick = null;
+      });
+      return this.currentTick;
+    }
+    this.nextTick ??= this.currentTick.then(() => {
+      this.nextTick = null;
+      return this.tick();
+    });
+    return this.nextTick;
+  }
+
+  private async runTick(): Promise<void> {
+    try {
+      const device = (this.deps.deviceNow ?? Date.now)();
+      await this.flushEvents(device);
+      await this.flushPositions();
+      await this.flushPhotos(device);
+      if (device - this.lastPullAt >= 30_000) {
+        this.lastPullAt = device;
+        await this.pull().catch(() => undefined);
+      }
+    } finally {
+      this.emit();
+    }
+  }
+
+  private async flushEvents(device: number) {
+    if (this.data.unsent.length === 0 || !this.eventRetry.ready(device)) return;
+    const ids = new Set(this.data.unsent);
+    const batch = this.data.events.filter((e) => ids.has(e.id));
+    try {
+      await this.deps.backend.sendEvents(this.data.team.id, batch);
+      this.data.unsent = this.data.unsent.filter((id) => !ids.has(id));
+      this.eventRetry.succeeded();
+      this.online = true;
+      await this.save();
+    } catch {
+      this.eventRetry.failed(device);
+      this.online = false;
+    }
+  }
+
+  private async flushPositions() {
+    const now = this.clock.now();
+    if (!this.uploader.shouldFlush(now) || !this.positionRetry.ready(now)) return;
+    const batch = this.uploader.takeBatch(now);
+    if (batch.length === 0) return;
+    try {
+      await this.deps.backend.recordPositions(this.data.team.id, batch);
+      this.positionRetry.succeeded();
+    } catch {
+      this.uploader.requeue(batch);
+      this.positionRetry.failed(now);
+    }
+  }
+
+  private async flushPhotos(device: number) {
+    if (this.data.photos.length === 0 || !this.photoRetry.ready(device)) return;
+    const photo = this.data.photos[0]!;
+    try {
+      await this.deps.backend.uploadPhoto(this.data.team.id, photo);
+      this.data.photos.shift();
+      this.photoRetry.succeeded();
+      await this.save();
+    } catch {
+      this.photoRetry.failed(device);
+    }
+  }
+
+  /** Haalt gebeurtenissen van de server op en voegt ze samen met de lokale. */
+  private async pull() {
+    const [remote, team] = await Promise.all([
+      this.deps.backend.loadEvents(this.data.team.id),
+      this.deps.backend.loadTeam(this.data.team.id),
+    ]);
+    const known = new Set(this.data.events.map((e) => e.id));
+    const added = remote.filter((e) => !known.has(e.id));
+    this.data.team = team;
+    if (added.length > 0) this.data.events = [...this.data.events, ...added];
+    await this.save();
+    this.emit();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Intern
+  // ---------------------------------------------------------------------------
+
+  private record(event: DistributiveOmit<GameEvent, 'id' | 'at'>) {
+    const full = { ...event, id: this.newId(), at: this.clock.now() } as GameEvent;
+    this.data.events.push(full);
+    this.data.unsent.push(full.id);
+  }
+
+  private async commit() {
+    await this.save();
+    this.emit();
+    void this.tick();
+  }
+
+  private async save() {
+    this.data.clockOffset = this.clock.offset;
+    await this.deps.store.setItem(STORAGE_KEY, JSON.stringify(this.data));
+  }
+
+  private emit() {
+    if (this.listeners.size === 0) return;
+    const snap = this.snapshot();
+    for (const listener of this.listeners) listener(snap);
+  }
+}
+
+type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
