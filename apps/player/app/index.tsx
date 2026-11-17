@@ -1,0 +1,105 @@
+import { Redirect } from 'expo-router';
+import { useState } from 'react';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { APP_LANGUAGES, LANGUAGE_NAMES } from '../src/core/i18n';
+import { BackendError } from '../src/core/supabase-backend';
+import { joinGame, rejoinGame } from '../src/services/game';
+import { Banner, Body, Button, Chip, Field, Title } from '../src/ui/components';
+import { useGame } from '../src/ui/GameProvider';
+import { colors, space } from '../src/ui/theme';
+import { msg, type MessageKey } from '../src/core/i18n';
+
+/** Aanmelden met de sessiecode, of verder spelen met een teamcode. */
+export default function JoinScreen() {
+  const { loading, controller, lang: deviceLang } = useGame();
+  const [lang, setLang] = useState(deviceLang);
+  const [joinCode, setJoinCode] = useState('');
+  const [teamName, setTeamName] = useState('');
+  const [teamCode, setTeamCode] = useState('');
+  const [busy, setBusy] = useState<'join' | 'rejoin' | null>(null);
+  const [error, setError] = useState<MessageKey | null>(null);
+  const t = (key: MessageKey) => msg(lang, key);
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator color={colors.accent} size="large" />
+      </View>
+    );
+  }
+  if (controller) return <Redirect href="/play" />;
+
+  const run = async (kind: 'join' | 'rejoin', action: () => Promise<unknown>) => {
+    setBusy(kind);
+    setError(null);
+    try {
+      await action();
+    } catch (e) {
+      setError(e instanceof BackendError ? e.key : 'errorGeneric');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.safe}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <Title>{t('appName')}</Title>
+          {error ? <Banner tone="danger">{t(error)}</Banner> : null}
+
+          <Title>{t('joinTitle')}</Title>
+          <Field
+            label={t('joinCode')}
+            hint={t('joinCodeHint')}
+            value={joinCode}
+            onChangeText={(v) => setJoinCode(v.toUpperCase())}
+            autoCapitalize="characters"
+            autoCorrect={false}
+            maxLength={12}
+          />
+          <Field label={t('teamName')} value={teamName} onChangeText={setTeamName} maxLength={60} />
+          <Body muted>{t('language')}</Body>
+          <View style={styles.chips}>
+            {APP_LANGUAGES.map((code) => (
+              <Chip key={code} label={LANGUAGE_NAMES[code] ?? code} selected={lang === code} onPress={() => setLang(code)} />
+            ))}
+          </View>
+          <Button
+            label={t('join')}
+            busy={busy === 'join'}
+            disabled={joinCode.trim().length < 4 || teamName.trim().length === 0 || busy !== null}
+            onPress={() => run('join', () => joinGame(joinCode.trim(), teamName.trim(), lang))}
+          />
+
+          <View style={styles.divider} />
+          <Title>{t('rejoinTitle')}</Title>
+          <Field
+            label={t('teamCode')}
+            value={teamCode}
+            onChangeText={(v) => setTeamCode(v.toUpperCase())}
+            autoCapitalize="characters"
+            autoCorrect={false}
+            maxLength={12}
+          />
+          <Button
+            kind="secondary"
+            label={t('rejoin')}
+            busy={busy === 'rejoin'}
+            disabled={teamCode.trim().length < 4 || busy !== null}
+            onPress={() => run('rejoin', () => rejoinGame(teamCode.trim()))}
+          />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
+  content: { padding: space.md, paddingBottom: space.xl },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', marginTop: space.sm, marginBottom: space.sm },
+  divider: { height: 1, backgroundColor: colors.border, marginVertical: space.xl },
+});
