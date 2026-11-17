@@ -136,6 +136,11 @@ export default function GamePage() {
             Kaart
           </Link>
         ) : null}
+        {isBase && !legacy ? (
+          <Link href={`/spellen/${id}/regels`} className="filebutton" style={{ background: 'transparent', color: 'var(--text)', border: '1px solid var(--line)' }}>
+            Regels
+          </Link>
+        ) : null}
         {versions[0] ? (
           <span className="muted">
             Laatste versie: v{versions[0].version} van {new Date(versions[0].published_at).toLocaleString('nl-NL')}
