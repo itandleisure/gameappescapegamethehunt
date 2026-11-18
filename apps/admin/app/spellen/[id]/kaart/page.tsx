@@ -9,7 +9,7 @@ import { boundaryGeoJson, insertPoint, movePoint, rectAround, removePoint } from
 import type { LayerRows } from '@/lib/game-model';
 import { composeChain, loadChain } from '@/lib/game-store';
 import { allPins, circle, pinsFor, trackColor, trackCount, type Pin, type TrackChoice } from '@/lib/map-edit';
-import { gameFieldEditable } from '@/lib/map-settings';
+import { gameFieldEditable, imageCorners } from '@/lib/map-settings';
 import { loadMaplibre } from '@/lib/maplibre';
 import { supabase } from '@/lib/supabase';
 import { tx } from '@/lib/text';
@@ -40,6 +40,8 @@ export default function MapPage() {
   const [boundary, setBoundary] = useState<PlayBoundary | null>(null);
   const [boundaryDirty, setBoundaryDirty] = useState(false);
   const [drawing, setDrawing] = useState(false);
+  /** Overlay en speelveldgrens onder de pinnen tonen. */
+  const [showOverlay, setShowOverlay] = useState(true);
   const drawingRef = useRef(false);
   const vertexMarkers = useRef<Marker[]>([]);
 
@@ -101,6 +103,12 @@ export default function MapPage() {
           const lats = located.map((l) => l.lat);
           const lngs = located.map((l) => l.lng);
           m.fitBounds([[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]], { padding: 60, maxZoom: 17 });
+        }
+        // Overlay onder alles, zodat de pinnen erboven te slepen blijven.
+        const overlay = game.mapOverlay;
+        if (overlay && /^https?:/.test(overlay.image)) {
+          m.addSource('overlay', { type: 'image', url: overlay.image, coordinates: imageCorners(overlay.bounds) });
+          m.addLayer({ id: 'overlay', type: 'raster', source: 'overlay', paint: { 'raster-opacity': 0.85 } });
         }
         m.addSource('radius', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
         m.addLayer({ id: 'radius-fill', type: 'fill', source: 'radius', paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.15 } });
@@ -181,6 +189,9 @@ export default function MapPage() {
     (m.getSource('boundary') as GeoJSONSource | undefined)?.setData(boundaryGeoJson(boundary) as never);
     if (m.getLayer('boundary')) m.setPaintProperty('boundary', 'line-color', boundary?.color ?? DEFAULT_BOUNDARY_COLOR);
     m.getCanvas().style.cursor = drawing ? 'crosshair' : '';
+    for (const layer of ['overlay', 'boundary']) {
+      if (m.getLayer(layer)) m.setLayoutProperty(layer, 'visibility', showOverlay || (layer === 'boundary' && drawing) ? 'visible' : 'none');
+    }
     void loadMaplibre().then(({ Marker: MarkerClass }) => {
       for (const v of vertexMarkers.current) v.remove();
       vertexMarkers.current = [];
@@ -205,7 +216,7 @@ export default function MapPage() {
         vertexMarkers.current.push(marker);
       });
     });
-  }, [boundary, drawing, ready]);
+  }, [boundary, drawing, ready, showOverlay]);
 
   if (!chain || !game) return errors.length ? <ul className="errors">{errors.map((e, i) => <li key={i}>{e}</li>)}</ul> : <p className="muted">Laden…</p>;
 
@@ -306,6 +317,10 @@ export default function MapPage() {
             ))}
           </select>
         </div>
+        <label className="check" style={{ flex: '0 1 auto', margin: 0 }}>
+          <input type="checkbox" checked={showOverlay} onChange={(e) => setShowOverlay(e.target.checked)} />
+          Overlay en speelveldgrens tonen
+        </label>
         <div className="actions" style={{ flex: '1 1 auto', justifyContent: 'flex-end' }}>
           <button onClick={() => void save()} disabled={busy || dirty === 0}>
             {busy ? 'Bezig…' : dirty ? `Opslaan (${dirty})` : 'Opgeslagen'}
