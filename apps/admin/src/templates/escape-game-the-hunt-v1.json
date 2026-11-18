@@ -1112,10 +1112,10 @@
       },
       {
         "id": "fotomissie",
-        "label": "Na 25 minuten: fotomissie",
+        "label": "Na 35 minuten: fotomissie",
         "when": {
           "kind": "elapsed",
-          "minutes": 25
+          "minutes": 35
         },
         "then": [
           {
