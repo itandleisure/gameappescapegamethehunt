@@ -17,7 +17,7 @@ import {
 import { mediaPath } from './map-settings';
 import { t as tr } from './i18n';
 
-const GAME_COLUMNS = 'id, layer, slug, parent_id, languages, default_language, settings';
+const GAME_COLUMNS = 'id, layer, slug, parent_id, languages, default_language, settings, base_version';
 
 function check<T>(result: { data: T | null; error: { message: string } | null }): T {
   if (result.error) throw new Error(result.error.message);
@@ -41,7 +41,11 @@ export async function loadLayer(db: SupabaseClient, gameId: string): Promise<Lay
   return { game, tasks, locations, rules, playgrounds, overridable, overrides, translations };
 }
 
-/** Basisspel → (stad) → (klant): de keten tot en met dit spel. */
+/**
+ * Basisspel → (stad) → (klant): de keten tot en met dit spel. Is de stad
+ * gekoppeld aan een vaste versie van het basisspel, dan staat die versie
+ * vooraan in plaats van het basisspel zoals het nu is.
+ */
 export async function loadChain(db: SupabaseClient, gameId: string): Promise<LayerRows[]> {
   const chain: LayerRows[] = [];
   let id: string | null = gameId;
@@ -50,7 +54,66 @@ export async function loadChain(db: SupabaseClient, gameId: string): Promise<Lay
     chain.unshift(layer);
     id = layer.game.parent_id;
   }
+  const city = chain.find((c) => c.game.layer === 'city');
+  if (city && city.game.base_version != null && city.game.parent_id) {
+    const snapshot = check<{ snapshot: LayerRows }>(
+      (await db
+        .from('base_versions')
+        .select('snapshot')
+        .eq('game_id', city.game.parent_id)
+        .eq('version', city.game.base_version)
+        .single()) as never,
+    ).snapshot;
+    chain[0] = snapshotToLayer(snapshot);
+  }
   return chain;
+}
+
+/** Een vastgezette versie in dezelfde vorm als loadLayer, ook als er later kolommen bijkomen. */
+export function snapshotToLayer(snapshot: LayerRows): LayerRows {
+  return {
+    ...snapshot,
+    game: { ...snapshot.game, base_version: null },
+    tasks: snapshot.tasks ?? [],
+    locations: snapshot.locations ?? [],
+    rules: snapshot.rules ?? [],
+    playgrounds: snapshot.playgrounds ?? [],
+    overridable: snapshot.overridable ?? [],
+    overrides: snapshot.overrides ?? [],
+    translations: snapshot.translations ?? [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Versies van het basisspel
+// ---------------------------------------------------------------------------
+
+export interface BaseVersion {
+  version: number;
+  note: string | null;
+  created_at: string;
+}
+
+/** De vastgezette versies van een basisspel, nieuwste eerst. */
+export async function loadBaseVersions(db: SupabaseClient, baseId: string): Promise<BaseVersion[]> {
+  return check<BaseVersion[]>(
+    (await db
+      .from('base_versions')
+      .select('version, note, created_at')
+      .eq('game_id', baseId)
+      .order('version', { ascending: false })) as never,
+  );
+}
+
+/** Zet het basisspel zoals het nu is vast als nieuwe versie. Geeft het versienummer. */
+export async function createBaseVersion(db: SupabaseClient, baseId: string, note: string): Promise<number> {
+  const row = check<{ version: number }>(await db.rpc('create_base_version', { p_game: baseId, p_note: note }));
+  return row.version;
+}
+
+/** Koppelt een stad aan een versie van het basisspel (null: altijd de werkversie). */
+export async function setCityBaseVersion(db: SupabaseClient, cityId: string, version: number | null): Promise<void> {
+  check(await db.from('games').update({ base_version: version }).eq('id', cityId).select('id').single());
 }
 
 /** Stelt het spel samen zoals het gespeeld wordt. Gooit een CompositionError bij fouten. */
@@ -131,6 +194,9 @@ export async function importBundle(db: SupabaseClient, orgId: string, bundle: Ga
       created.push(id);
       if (variant.layer === 'city') city = id;
     }
+    // Het geïmporteerde basisspel wordt versie 1, en elke stad begint daarop.
+    await createBaseVersion(db, baseId, '');
+    check(await db.from('games').update({ base_version: 1 }).eq('parent_id', baseId).eq('layer', 'city'));
     return baseId;
   } catch (err) {
     for (const id of created.reverse()) await db.from('games').delete().eq('id', id);

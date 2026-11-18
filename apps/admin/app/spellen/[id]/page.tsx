@@ -4,7 +4,14 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import type { LayerRows } from "@/lib/game-model";
-import { loadChain, publish } from "@/lib/game-store";
+import {
+  createBaseVersion,
+  loadBaseVersions,
+  loadChain,
+  publish,
+  setCityBaseVersion,
+  type BaseVersion,
+} from "@/lib/game-store";
 import { tKey } from "@/lib/i18n";
 import { useLanguage } from "@/lib/language";
 import { supabase } from "@/lib/supabase";
@@ -33,6 +40,7 @@ interface Child {
   id: string;
   slug: string;
   layer: "city" | "client";
+  base_version: number | null;
 }
 
 function nl(
@@ -62,6 +70,8 @@ export default function GamePage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [newKey, setNewKey] = useState("");
+  const [baseVersions, setBaseVersions] = useState<BaseVersion[]>([]);
+  const [versionNote, setVersionNote] = useState("");
 
   const load = useCallback(async () => {
     const db = supabase();
@@ -75,13 +85,14 @@ export default function GamePage() {
           .order("version", { ascending: false }),
         db
           .from("games")
-          .select("id, slug, layer")
+          .select("id, slug, layer, base_version")
           .eq("parent_id", id)
           .order("slug"),
       ]);
       setChain(c);
       setVersions((v.data ?? []) as Version[]);
       setChildren((k.data ?? []) as Child[]);
+      setBaseVersions(await loadBaseVersions(db, c[0]!.game.id));
     } catch (err) {
       setErrors([err instanceof Error ? err.message : String(err)]);
     }
@@ -140,6 +151,55 @@ export default function GamePage() {
           ? err.issues
           : [err instanceof Error ? err.message : String(err)],
       );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Versies van het basisspel: vastzetten (basisspel) en kiezen (stad).
+  const city = chain.find((c) => c.game.layer === "city");
+  const cityVersion = city?.game.base_version ?? null;
+  const versionLabel = (v: BaseVersion) =>
+    t("Versie {n}", { n: v.version }) +
+    ` · ${new Date(v.created_at).toLocaleDateString(locale)}` +
+    (v.note ? ` · ${v.note}` : "");
+
+  const doCreateVersion = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setErrors([]);
+    setNotice(null);
+    try {
+      const n = await createBaseVersion(supabase(), id, versionNote);
+      setVersionNote("");
+      setNotice(
+        t("Versie {n} vastgezet. Steden blijven op hun huidige versie tot je ze zelf overzet.", { n }),
+      );
+      await load();
+    } catch (err) {
+      setErrors([err instanceof Error ? err.message : String(err)]);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const doChooseVersion = async (value: string) => {
+    setBusy(true);
+    setErrors([]);
+    setNotice(null);
+    try {
+      const version = value === "" ? null : Number(value);
+      await setCityBaseVersion(supabase(), id, version);
+      setNotice(
+        (version === null
+          ? t("Deze stad volgt nu de werkversie van het basisspel.")
+          : t("Deze stad bouwt nu voort op versie {n} van het basisspel.", { n: version })) +
+          " " +
+          t("Publiceer de stad (en de klantvarianten eronder) opnieuw om dit in nieuwe hunts te gebruiken."),
+      );
+      await load();
+    } catch (err) {
+      setErrors([err instanceof Error ? err.message : String(err)]);
     } finally {
       setBusy(false);
     }
@@ -281,6 +341,94 @@ export default function GamePage() {
         </p>
       ) : null}
 
+      {isBase && !legacy ? (
+        <section className="card" style={{ marginTop: 16 }}>
+          <h2 style={{ marginTop: 0 }}>{t("Versies van het basisspel")}</h2>
+          <p className="muted">
+            {t("Wat je hier aanpast, is de werkversie. Zet een nieuwe versie vast als de wijzigingen klaar zijn. Daarna kies je per stad wanneer die overgaat.")}
+          </p>
+          {baseVersions.length > 0 ? (
+            <ul>
+              {baseVersions.map((v) => {
+                const used = children.filter(
+                  (c) => c.layer === "city" && c.base_version === v.version,
+                );
+                return (
+                  <li key={v.version}>
+                    <strong>{versionLabel(v)}</strong>{" "}
+                    <span className="muted">
+                      {used.length > 0
+                        ? t("gebruikt door {cities}", {
+                            cities: used.map((c) => c.slug).join(", "),
+                          })
+                        : t("door geen enkele stad gebruikt")}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="muted">{t("Nog geen versies vastgezet.")}</p>
+          )}
+          <form className="row" onSubmit={doCreateVersion}>
+            <div>
+              <label htmlFor="version-note">{t("Wat is er nieuw? (optioneel)")}</label>
+              <input
+                id="version-note"
+                value={versionNote}
+                maxLength={500}
+                onChange={(e) => setVersionNote(e.target.value)}
+                placeholder={t("Bijvoorbeeld: nieuwe puzzel bij het extractiepunt")}
+              />
+            </div>
+            <div style={{ flex: "0 0 auto" }}>
+              <button type="submit" disabled={busy}>
+                {busy
+                  ? t("Bezig…")
+                  : t("Versie {n} vastzetten", {
+                      n: (baseVersions[0]?.version ?? 0) + 1,
+                    })}
+              </button>
+            </div>
+          </form>
+        </section>
+      ) : null}
+
+      {self.game.layer === "city" ? (
+        <section className="card" style={{ marginTop: 16 }}>
+          <label htmlFor="base-version">{t("Versie van het basisspel")}</label>
+          <select
+            id="base-version"
+            value={cityVersion === null ? "" : String(cityVersion)}
+            disabled={busy}
+            onChange={(e) => void doChooseVersion(e.target.value)}
+          >
+            {baseVersions.map((v) => (
+              <option key={v.version} value={String(v.version)}>
+                {versionLabel(v)}
+                {v.version === baseVersions[0]?.version ? ` (${t("nieuwste")})` : ""}
+              </option>
+            ))}
+            <option value="">{t("Werkversie (altijd de laatste wijzigingen, voor testen)")}</option>
+          </select>
+          <p className="muted" style={{ marginBottom: 0 }}>
+            {cityVersion !== null &&
+            baseVersions[0] &&
+            baseVersions[0].version > cityVersion
+              ? t("Er is een nieuwere versie van het basisspel: versie {n}. Kies die hierboven om deze stad over te zetten.", { n: baseVersions[0].version })
+              : t("Nieuwe versies van het basisspel komen pas in deze stad als je ze hier kiest.")}
+          </p>
+        </section>
+      ) : null}
+
+      {self.game.layer === "client" && city ? (
+        <p className="muted">
+          {cityVersion === null
+            ? t("Volgt de stad {city}, die de werkversie van het basisspel gebruikt.", { city: city.game.slug })
+            : t("Volgt de stad {city}: versie {n} van het basisspel.", { city: city.game.slug, n: cityVersion })}
+        </p>
+      ) : null}
+
       {children.length > 0 ? (
         <>
           <h2>{isBase ? t("Steden") : t("Klantvarianten")}</h2>
@@ -288,7 +436,13 @@ export default function GamePage() {
             {children.map((c) => (
               <li key={c.id}>
                 <Link href={`/spellen/${c.id}`}>{c.slug}</Link>{" "}
-                <span className="muted">({t(LAYER_LABEL[c.layer])})</span>
+                <span className="muted">
+                  ({t(LAYER_LABEL[c.layer])}
+                  {c.layer === "city"
+                    ? ` · ${c.base_version === null ? t("werkversie") : t("versie {n}", { n: c.base_version })}`
+                    : ""}
+                  )
+                </span>
               </li>
             ))}
           </ul>
