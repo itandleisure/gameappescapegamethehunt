@@ -47,7 +47,7 @@ export function GameNav({
     { key: 'kaart', href: `/spellen/${id}/kaart`, label: t('Kaart'), show: !legacy },
     { key: 'nieuw', href: `/spellen/nieuw?basis=${id}`, label: t('Nieuwe stad uitrollen'), show: isBase && !legacy },
     { key: 'tabbladen', href: `/spellen/${id}/tabbladen`, label: t('Tabbladen'), show: isBase && !legacy },
-    { key: 'regels', href: `/spellen/${id}/regels`, label: t('Regels'), show: isBase && !legacy },
+    { key: 'regels', href: `/spellen/${id}/regels`, label: t('Spelverloop'), show: isBase && !legacy },
   ];
   return (
     <nav className="actions" aria-label={t('Spel')}>
