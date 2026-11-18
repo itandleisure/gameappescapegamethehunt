@@ -23,6 +23,7 @@ import {
 } from "../src/services/location";
 import { downloadPlayArea, mapStyleUrl } from "../src/services/map-download";
 import { Banner, Body, Button, Screen, Title } from "../src/ui/components";
+import { takePhoto } from "../src/ui/camera";
 import { useGame } from "../src/ui/GameProvider";
 import GameMap from "../src/ui/map/GameMap";
 import { colors, radius, space } from "../src/ui/theme";
@@ -38,6 +39,7 @@ export default function PlayScreen() {
   } | null>(null);
   const [download, setDownload] = useState<number | null>(null);
   const [starting, setStarting] = useState(false);
+  const [teamPhoto, setTeamPhoto] = useState<string | null>(null);
   const [dismissedMessages, setDismissedMessages] = useState(0);
   const lastShown = useRef<string | undefined>(undefined);
   useKeepAwake();
@@ -125,10 +127,37 @@ export default function PlayScreen() {
               />
             </>
           ) : null}
+          {snapshot.teamPhotoNeeded || teamPhoto ? (
+            <>
+              <View style={styles.spacer} />
+              <Title>{t("teamPhotoTitle")}</Title>
+              {teamPhoto ? (
+                <>
+                  <Image source={{ uri: teamPhoto }} style={styles.teamPhoto} />
+                  <Body muted>{t("teamPhotoDone")}</Body>
+                </>
+              ) : (
+                <>
+                  <Body>{t("teamPhotoExplain")}</Body>
+                  <Button
+                    kind="secondary"
+                    label={t("takeTeamPhoto")}
+                    onPress={async () => {
+                      const uri = await takePhoto();
+                      if (!uri) return;
+                      await controller.submitTeamPhoto(uri);
+                      setTeamPhoto(uri);
+                    }}
+                  />
+                </>
+              )}
+            </>
+          ) : null}
           <View style={styles.spacer} />
           <Body muted>{t("startExplain")}</Body>
           <Button
             label={t("start")}
+            disabled={snapshot.teamPhotoNeeded}
             busy={starting}
             onPress={async () => {
               setStarting(true);
@@ -270,6 +299,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   spacer: { height: space.lg },
   test: { marginBottom: space.sm },
+  teamPhoto: { width: "100%", aspectRatio: 4 / 3, borderRadius: radius.md, marginVertical: space.sm },
   teamCode: {
     color: colors.accent,
     fontSize: 40,

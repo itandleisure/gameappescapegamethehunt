@@ -30,7 +30,12 @@ export interface Snapshot {
   pending: number;
   /** Of het laatste verzoek aan de server lukte. */
   online: boolean;
+  /** Deze telefoon meldde het team aan en moet nog een teamfoto maken. */
+  teamPhotoNeeded: boolean;
 }
+
+/** Opdrachtsleutel van de teamfoto in de tabel photos (een echte sleutel begint nooit met _). */
+export const TEAM_PHOTO_KEY = '_teamfoto';
 
 export interface ControllerDeps {
   backend: Backend;
@@ -48,6 +53,8 @@ interface Saved {
   unsent: string[];
   photos: PendingPhoto[];
   clockOffset: number;
+  /** 'needed' na aanmelden op deze telefoon, 'taken' zodra de teamfoto er is. */
+  teamPhoto?: 'needed' | 'taken';
 }
 
 type Listener = (snapshot: Snapshot) => void;
@@ -96,10 +103,10 @@ export class GameController {
   // ---------------------------------------------------------------------------
 
   /** Nieuw team aanmelden met de sessiecode van de spelleiding. */
-  static async join(deps: ControllerDeps, joinCode: string, teamName: string, language: string) {
+  static async join(deps: ControllerDeps, joinCode: string, teamName: string, language: string, phone: string) {
     await deps.backend.ensureSignedIn();
-    const team = await deps.backend.joinSession(joinCode, teamName, language);
-    return GameController.open(deps, team);
+    const team = await deps.backend.joinSession(joinCode, teamName, language, phone);
+    return GameController.open(deps, team, 'needed');
   }
 
   /** Op een tweede telefoon verder spelen met de teamcode. */
@@ -120,9 +127,9 @@ export class GameController {
     return controller;
   }
 
-  private static async open(deps: ControllerDeps, team: TeamRecord) {
+  private static async open(deps: ControllerDeps, team: TeamRecord, teamPhoto?: 'needed') {
     const [loaded, events] = await Promise.all([deps.backend.loadGame(team), deps.backend.loadEvents(team.id)]);
-    const controller = new GameController(deps, { team, loaded, events, unsent: [], photos: [], clockOffset: 0 });
+    const controller = new GameController(deps, { team, loaded, events, unsent: [], photos: [], clockOffset: 0, ...(teamPhoto ? { teamPhoto } : {}) });
     await controller.clock.sync(() => deps.backend.serverTime()).catch(() => undefined);
     controller.data.clockOffset = controller.clock.offset;
     await controller.save();
@@ -171,6 +178,7 @@ export class GameController {
       now,
       pending: this.data.unsent.length + this.data.photos.length,
       online: this.online,
+      teamPhotoNeeded: this.data.teamPhoto === 'needed',
     };
   }
 
@@ -274,6 +282,13 @@ export class GameController {
     const photoId = this.newId();
     this.data.photos.push({ photoId, task, uri, takenAt: this.clock.now() });
     this.record({ type: 'answered', task, answer: { type: 'photo', photoId } });
+    await this.commit();
+  }
+
+  /** De teamfoto bij het aanmelden; gaat net als andere foto's mee met de wachtrij. */
+  async submitTeamPhoto(uri: string): Promise<void> {
+    this.data.photos.push({ photoId: this.newId(), task: TEAM_PHOTO_KEY, uri, takenAt: this.clock.now() });
+    this.data.teamPhoto = 'taken';
     await this.commit();
   }
 

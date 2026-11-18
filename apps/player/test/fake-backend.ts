@@ -27,7 +27,10 @@ export class FakeBackend implements Backend {
     this.guard();
   }
 
-  async joinSession(joinCode: string, teamName: string, language: string) {
+  phones: string[] = [];
+
+  async joinSession(joinCode: string, teamName: string, language: string, phone = '') {
+    this.phones.push(phone);
     this.guard();
     if (joinCode !== 'LWD001') throw new Error('P0002');
     this.order += 1;

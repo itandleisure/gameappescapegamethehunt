@@ -44,8 +44,8 @@ export async function resumeGame(): Promise<GameController | null> {
   return current;
 }
 
-export async function joinGame(joinCode: string, teamName: string, language: string) {
-  setCurrent(await GameController.join(deps, joinCode, teamName, language));
+export async function joinGame(joinCode: string, teamName: string, language: string, phone: string) {
+  setCurrent(await GameController.join(deps, joinCode, teamName, language, phone));
   return current!;
 }
 

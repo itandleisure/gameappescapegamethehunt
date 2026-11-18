@@ -41,7 +41,7 @@ export interface PendingPhoto {
 export interface Backend {
   /** Zorgt voor een (anonieme) login op dit toestel. */
   ensureSignedIn(): Promise<void>;
-  joinSession(joinCode: string, teamName: string, language: string): Promise<TeamRecord>;
+  joinSession(joinCode: string, teamName: string, language: string, phone: string): Promise<TeamRecord>;
   rejoinTeam(teamCode: string): Promise<TeamRecord>;
   startTeam(teamId: string): Promise<TeamRecord>;
   loadTeam(teamId: string): Promise<TeamRecord>;

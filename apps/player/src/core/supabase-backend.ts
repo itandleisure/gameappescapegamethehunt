@@ -5,7 +5,7 @@ import type { Backend, LoadedGame, PendingPhoto, SessionInfo, TeamRecord } from 
 /** Fout met een tekstsleutel uit i18n, zodat het scherm een nette melding toont. */
 export class BackendError extends Error {
   constructor(
-    readonly key: 'errorUnknownSession' | 'errorUnknownTeam' | 'errorLanguage' | 'errorNetwork' | 'errorGeneric',
+    readonly key: 'errorUnknownSession' | 'errorUnknownTeam' | 'errorLanguage' | 'errorPhone' | 'errorNetwork' | 'errorGeneric',
     cause?: unknown,
   ) {
     super(key);
@@ -76,6 +76,7 @@ export function fromEventRow(row: EventRow): GameEvent {
 function translate(error: { code?: string; message?: string } | null, fallback: BackendError['key'] = 'errorGeneric') {
   if (!error) return new BackendError(fallback);
   if (error.code === 'P0002') return new BackendError(fallback === 'errorUnknownTeam' ? 'errorUnknownTeam' : 'errorUnknownSession', error);
+  if (error.code === '22023' && error.message?.includes('telefoon')) return new BackendError('errorPhone', error);
   if (error.code === '22023') return new BackendError('errorLanguage', error);
   if (error.message?.includes('Failed to fetch') || error.message?.includes('Network request failed')) {
     return new BackendError('errorNetwork', error);
@@ -101,11 +102,12 @@ export class SupabaseBackend implements Backend {
     if (error) throw translate(error, 'errorNetwork');
   }
 
-  async joinSession(joinCode: string, teamName: string, language: string) {
+  async joinSession(joinCode: string, teamName: string, language: string, phone: string) {
     const { data, error } = await this.client.rpc('join_session', {
       p_join_code: joinCode,
       p_team_name: teamName,
       p_language: language,
+      p_phone: phone,
     });
     if (error) throw translate(error, 'errorUnknownSession');
     return toTeam(data as TeamRow);
