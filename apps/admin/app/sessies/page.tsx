@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useAuth } from '@/lib/auth';
 import {
@@ -238,7 +239,9 @@ export default function SessionsPage() {
               {sessions.map((s) => (
                 <tr key={s.id}>
                   <td>
-                    <strong>{s.name}</strong>
+                    <Link href={`/sessies/${s.id}`}>
+                      <strong>{s.name}</strong>
+                    </Link>
                     <div className="muted">
                       {s.game_versions ? `${tx(s.game_versions.name)} v${s.game_versions.version}` : ''} · {s.track_count} tracks
                     </div>
@@ -250,6 +253,10 @@ export default function SessionsPage() {
                     {s.test_mode ? <span className="badge test">Test</span> : null}
                   </td>
                   <td>
+                    <div className="actions" style={{ marginTop: 0, flexWrap: 'nowrap' }}>
+                    <Link href={`/sessies/${s.id}`} className="buttonlink">
+                      Live &amp; resultaten
+                    </Link>
                     {s.status !== 'open' ? (
                       <button className="secondary" onClick={() => void setStatus(s.id, 'open')}>
                         Openen
@@ -259,6 +266,7 @@ export default function SessionsPage() {
                         Sluiten
                       </button>
                     )}
+                    </div>
                   </td>
                 </tr>
               ))}
