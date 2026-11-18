@@ -1,5 +1,5 @@
 'use client';
-import { t as text, type GamePackage } from '@hunt/engine';
+import { richToPlain, t as text, type GamePackage } from '@hunt/engine';
 import { useState } from 'react';
 import type { SessionResultsView } from '@/lib/results';
 
@@ -23,7 +23,7 @@ export function Answers({ view, game, colors }: { view: SessionResultsView; game
       <div className="answers">
         {tasks.map((col, i) => {
           const task = game.tasks.find((x) => x.id === col.id)!;
-          const body = text(task.body, 'nl', game.defaultLanguage);
+          const body = richToPlain(text(task.body, 'nl', game.defaultLanguage));
           const isOpen = expanded.has(col.id);
           const given = view.teams.flatMap((team) => {
             const a = team.answers.find((x) => x.task === col.id);
