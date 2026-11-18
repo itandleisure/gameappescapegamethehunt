@@ -231,6 +231,7 @@ export function validateGame(game: GamePackage): string[] {
   }
   for (const t of game.tasks) {
     if (t.image !== undefined && !/^https:\/\/\S+$/.test(t.image)) issues.push(`opdracht ${t.id}: foto moet een https-adres zijn`);
+    if (t.mapIcon !== undefined && t.mapIcon !== 'logo') issues.push(`opdracht ${t.id}: onbekend kaarticoon ${String(t.mapIcon)}`);
     if (t.mapLabel !== undefined && (t.mapLabel.trim() === '' || t.mapLabel.length > 3)) issues.push(`opdracht ${t.id}: kaarticoon mag 1 tot 3 tekens hebben`);
     t.hints.forEach((h, i) => {
       if (h.image !== undefined && !/^https:\/\/\S+$/.test(h.image)) issues.push(`opdracht ${t.id}: afbeelding bij hint ${i + 1} moet een https-adres zijn`);

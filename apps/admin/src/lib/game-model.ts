@@ -331,6 +331,7 @@ export function rowsToBase(rows: LayerRows): BaseGame {
       if (row.retry_until_correct) task.retryUntilCorrect = true;
       if (typeof row.settings?.image === 'string') task.image = row.settings.image;
       if (typeof row.settings?.mapLabel === 'string') task.mapLabel = row.settings.mapLabel;
+      if (row.settings?.mapIcon === 'logo') task.mapIcon = 'logo';
       const hintImages = row.settings?.hintImages;
       if (Array.isArray(hintImages)) {
         task.hints.forEach((h, i) => {
@@ -512,10 +513,11 @@ export type { MeetingPoint };
 
 /** Overige opdrachtvelden in tasks.settings: foto bij de tekst en afbeeldingen bij hints. */
 export function taskSettings(task: Task, settings: Record<string, unknown> = {}): Record<string, unknown> {
-  const { image: _i, hintImages: _h, mapLabel: _m, ...rest } = settings;
+  const { image: _i, hintImages: _h, mapLabel: _m, mapIcon: _mi, ...rest } = settings;
   const out: Record<string, unknown> = { ...rest };
   if (task.image) out.image = task.image;
   if (task.mapLabel) out.mapLabel = task.mapLabel;
+  if (task.mapIcon) out.mapIcon = task.mapIcon;
   if (task.hints.some((h) => h.image)) out.hintImages = task.hints.map((h) => h.image ?? null);
   return out;
 }

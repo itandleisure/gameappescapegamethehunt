@@ -140,3 +140,5 @@ td.wrong, li.wrong { color: var(--danger); }
 .photowall figcaption { padding: 8px 10px; }
 .buttonlink { display: inline-block; font-weight: 600; padding: 9px 16px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-text); text-decoration: none; }
 .teammarker { z-index: 2; }
+.pin.logo { width: 34px; height: 34px; background-image: url(/kaart/logo-icoon.png); background-size: 78%; background-position: center; background-repeat: no-repeat; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: middle; }

@@ -6,6 +6,12 @@ export type TrackChoice = number | null;
 
 export interface Pin {
   key: string;
+  /** null = vaste locatie (voor alle tracks), anders het tracknummer. */
+  track: TrackChoice;
+  /** Kort teken in het icoon: het kaartnummer van de opdracht, anders de eerste letters. */
+  label: string;
+  /** Logo-icoon in de trackkleur in plaats van letters of een nummer. */
+  logo: boolean;
   title: string;
   location: TaskLocation | null;
   editable: boolean;
@@ -40,9 +46,22 @@ export function pinsFor(chain: LayerRows[], game: GamePackage, track: TrackChoic
       (layer === 'city' &&
         base.overridable.some((o) => o.task_id === taskId && o.field === field && o.layers.includes('city')));
     const own = self.locations.some((l) => l.task_id === taskId && l.track === track);
-    return { key: task.id, title: title(task.id), location, editable, own };
+    const name = title(task.id);
+    return { key: task.id, track, label: task.mapLabel ?? name.slice(0, 2).toUpperCase(), logo: task.mapIcon === 'logo', title: name, location, editable, own };
   });
 }
+
+/**
+ * Alle pinnen van alle tracks tegelijk, zoals de Loquiz-creator: de vaste
+ * locaties plus per track de locaties die bij die track horen. Opdrachten
+ * zonder locatie staan er niet bij (die plaats je via de lijst).
+ */
+export function allPins(chain: LayerRows[], game: GamePackage, title: (key: string) => string): Pin[] {
+  const tracks: TrackChoice[] = [null, ...Array.from({ length: trackCount(game) }, (_, i) => i + 1)];
+  return tracks.flatMap((t) => pinsFor(chain, game, t, title).filter((p) => p.location));
+}
+
+export { trackColor } from '@hunt/engine';
 
 /** Cirkel als GeoJSON-veelhoek, voor de activatiestraal op de kaart. */
 export function circle(lat: number, lng: number, radius: number, steps = 48): [number, number][] {

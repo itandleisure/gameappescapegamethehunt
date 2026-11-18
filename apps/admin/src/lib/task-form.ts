@@ -25,6 +25,7 @@ export interface TaskForm {
   wrongPoints: string;
   tags: string;
   mapLabel: string;
+  mapIcon: '' | 'logo';
   retryUntilCorrect: boolean;
   hints: { cost: string; text: Texts; image: string }[];
   hasLocation: boolean;
@@ -59,6 +60,7 @@ export function taskToForm(task: Task): TaskForm {
     wrongPoints: String(task.wrongPoints ?? 0),
     tags: task.tags.join(', '),
     mapLabel: task.mapLabel ?? '',
+    mapIcon: task.mapIcon ?? '',
     retryUntilCorrect: task.retryUntilCorrect ?? false,
     hints: task.hints.map((h) => ({ cost: String(h.cost), text: texts(h.text), image: h.image ?? '' })),
     hasLocation: task.location !== undefined,
@@ -159,6 +161,7 @@ export function formToTask(key: string, form: TaskForm): { task: Task; errors: s
     if (mapLabel.length > 3) errors.push('Het kaarticoon mag hooguit 3 tekens hebben.');
     task.mapLabel = mapLabel;
   }
+  if (form.mapIcon === 'logo') task.mapIcon = 'logo';
   if (wrongPoints !== 0) task.wrongPoints = wrongPoints;
   if (form.hasConfirm) task.confirm = cleanText(form.confirm);
   if (form.retryUntilCorrect) task.retryUntilCorrect = true;

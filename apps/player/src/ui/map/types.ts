@@ -7,6 +7,8 @@ export interface MapMarker {
   label: string;
   /** Rond icoon met dit nummer in plaats van een label met de titel. */
   badge?: string;
+  /** Logo-icoon in deze kleur (de kleur van de track van het team). */
+  logoColor?: string;
 }
 
 export interface MapOverlayImage {

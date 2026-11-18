@@ -1,4 +1,4 @@
-import { t as tx } from "@hunt/engine";
+import { trackColor, t as tx } from "@hunt/engine";
 import { Redirect, router, useSegments } from "expo-router";
 import { useKeepAwake } from "expo-keep-awake";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -238,6 +238,9 @@ export default function PlayScreen() {
             lang,
             game.defaultLanguage,
           ),
+          ...(game.tasks.find((x) => x.id === m.id)?.mapIcon === "logo"
+            ? { logoColor: trackColor(ctx.track) }
+            : {}),
           ...(game.tasks.find((x) => x.id === m.id)?.mapLabel
             ? { badge: game.tasks.find((x) => x.id === m.id)!.mapLabel }
             : {}),
