@@ -396,6 +396,3 @@ a.button.secondary { background: transparent; color: var(--text); border-color: 
   .flow-moment { grid-template-columns: 56px 1fr; gap: 8px; }
   .flow-when { font-size: 12px; padding: 3px 8px; }
 }
-.puzzle-choice { width: 100%; border-collapse: collapse; margin: 8px 0; }
-.puzzle-choice th, .puzzle-choice td { padding: 8px; border-bottom: 1px solid var(--line); text-align: left; }
-.puzzle-choice th:not(:first-child), .puzzle-choice td:not(:first-child) { text-align: center; width: 120px; }

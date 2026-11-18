@@ -5,7 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { rectAround } from '@/lib/boundary';
 import { CITY_TODOS, todoState, type TodoKey } from '@/lib/city-rollout';
-import { FINISH_TASKS, LOCAL_QUESTIONS, MORSE_TASK, finishPoint, gatherAt, iconPins, pinKey, puzzleChoice, puzzles, startPoint, type PuzzleVersion } from '@/lib/city-setup';
+import { FINISH_TASKS, LOCAL_QUESTIONS, MORSE_TASK, finishPoint, gatherAt, iconPins, pinKey, startPoint } from '@/lib/city-setup';
+import { PUZZLE_COLUMNS, puzzleChoice, puzzleSlots, type PuzzleChoice, type PuzzleRow } from '@/lib/puzzles';
 import type { LayerRows } from '@/lib/game-model';
 import { displayName } from '@/lib/game-name';
 import { composeChain, loadChain } from '@/lib/game-store';
@@ -57,7 +58,9 @@ export default function SetupPage() {
   });
   const [morseOwn, setMorseOwn] = useState(false);
   const [morseHints, setMorseHints] = useState<string[]>([]);
-  const [chosen, setChosen] = useState<Record<string, PuzzleVersion>>({});
+  const [chosen, setChosen] = useState<PuzzleChoice>({});
+  /** De lijst met fysieke puzzels om uit te kiezen. */
+  const [library, setLibrary] = useState<PuzzleRow[]>([]);
 
   useEffect(() => {
     const n = Number(new URLSearchParams(window.location.search).get('stap'));
@@ -95,6 +98,8 @@ export default function SetupPage() {
       setMorseHints((morse?.hints ?? []).map((h) => inLang(h.text, lang)));
       setMorseOwn(self.translations.some((r) => r.entity === 'task' && r.entity_id === MORSE_TASK && r.field.startsWith('hint.')));
       setChosen(puzzleChoice(self.game.settings, g));
+      const lib = await supabase().from('puzzles').select(PUZZLE_COLUMNS).order('name');
+      setLibrary((lib.data ?? []) as unknown as PuzzleRow[]);
     } catch (err) {
       setErrors([err instanceof Error ? err.message : String(err)]);
     }
@@ -441,44 +446,31 @@ export default function SetupPage() {
       save = savePuzzles;
       body = (
         <>
-          <p>{t('Er zijn altijd zes puzzels. Kies per puzzel de Nederlandse versie of de internationale versie (meertalig, voor de nieuwe tassen in het buitenland).')}</p>
-          <table className="puzzle-choice">
-            <thead>
-              <tr>
-                <th>{t('Puzzel')}</th>
-                <th>{t('Nederlands')}</th>
-                <th>{t('Internationaal')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {puzzles(game).map((p, i) => (
-                <tr key={p.key}>
-                  <td>
-                    {i + 1}. {tx(p.title)}
-                  </td>
-                  {(['nl', 'int'] as const).map((v) => (
-                    <td key={v}>
-                      <input
-                        type="radio"
-                        name={`puzzel-${p.key}`}
-                        checked={(chosen[p.key] ?? 'nl') === v}
-                        onChange={() => setChosen({ ...chosen, [p.key]: v })}
-                        aria-label={`${tx(p.title)}: ${v === 'nl' ? t('Nederlands') : t('Internationaal')}`}
-                      />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="actions">
-            <button className="link small" onClick={() => setChosen(Object.fromEntries(puzzles(game).map((p) => [p.key, 'nl'])))}>
-              {t('Alles Nederlands')}
-            </button>
-          </div>
-          {Object.values(chosen).includes('int') ? (
-            <p className="muted small">{t('De internationale puzzels staan nog niet in het template. Tot ze er zijn, spelen teams in deze stad de Nederlandse versie; je keuze blijft bewaard.')}</p>
-          ) : null}
+          <p>{t('Er zijn altijd zes puzzels. Kies per puzzelplek welke fysieke puzzel erin zit; antwoord en hints komen dan van die puzzel.')}</p>
+          {puzzleSlots(game).map((slot, i) => (
+            <div key={slot.id} className="row" style={{ alignItems: 'center', margin: '6px 0' }}>
+              <label htmlFor={`slot-${slot.id}`} style={{ flex: '0 0 110px', margin: 0 }}>
+                {t('Puzzel {n}', { n: i + 1 })}
+              </label>
+              <select
+                id={`slot-${slot.id}`}
+                value={chosen[slot.id] ?? ''}
+                onChange={(e) => setChosen({ ...chosen, [slot.id]: e.target.value || null })}
+                style={{ flex: 1 }}
+              >
+                <option value="">{t('{name} (uit het template)', { name: tx(slot.title) })}</option>
+                {library.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ))}
+          <p className="muted small">
+            {library.length ? t('Een puzzel toevoegen of aanpassen doe je op de pagina') : t('Er staan nog geen puzzels in de lijst. Voeg ze toe op de pagina')}{' '}
+            <Link href="/puzzels">{t('Puzzels')}</Link>.
+          </p>
         </>
       );
       break;
