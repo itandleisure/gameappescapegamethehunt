@@ -1,4 +1,4 @@
-import { locationFor, type GamePackage, type Task, type TeamContext, type TeamState } from '@hunt/engine';
+import { DEFAULT_MAP_SOURCE, locationFor, MAP_STYLES, type GamePackage, type Task, type TeamContext, type TeamState } from '@hunt/engine';
 
 /**
  * Afleidingen uit de toestand voor de schermen. Puur rekenwerk, zodat het
@@ -69,4 +69,17 @@ export function answerFeedback(before: TeamState, after: TeamState, taskId: stri
 export function isValidPhone(input: string): boolean {
   const v = input.trim().replace(/\s+/g, ' ');
   return /^\+?[0-9][0-9 ()-]{6,22}[0-9]$/.test(v) && v.replace(/\D/g, '').length >= 8;
+}
+
+/**
+ * Kaartstijl in de app: wat het team zelf koos, anders wat de beheerapp voor
+ * het spel instelde. `next` geeft de volgende stijl voor de wisselknop.
+ */
+export function mapStyleChoice(game: GamePackage, chosenUrl: string | null): { url: string; id: string; next: string } {
+  const gameUrl = game.map?.styleUrl ?? DEFAULT_MAP_SOURCE.styleUrl;
+  const options = MAP_STYLES.map((s) => ({ url: s.source.styleUrl, id: s.id }));
+  if (!options.some((o) => o.url === gameUrl)) options.unshift({ url: gameUrl, id: 'spel' });
+  const url = chosenUrl && options.some((o) => o.url === chosenUrl) ? chosenUrl : gameUrl;
+  const i = options.findIndex((o) => o.url === url);
+  return { url, id: options[i]!.id, next: options[(i + 1) % options.length]!.url };
 }

@@ -223,7 +223,7 @@ export default function GamePage() {
               border: "1px solid var(--line)",
             }}
           >
-            Overlay en verzamelpunt
+            Kaartstijl en overlay
           </Link>
         ) : null}
         {isBase && !legacy ? (

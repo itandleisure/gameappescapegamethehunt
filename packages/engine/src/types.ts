@@ -226,6 +226,16 @@ export const DEFAULT_MAP_SOURCE: MapSource = {
   attribution: '© OpenStreetMap-bijdragers, OpenFreeMap',
 };
 
+const STYLE_BASE = 'https://raw.githubusercontent.com/itandleisure/gameappescapegamethehunt/main/apps/admin/public/kaart';
+
+/** Kaartstijlen om uit te kiezen in de beheerapp (per spel, stad of klant). */
+export const MAP_STYLES: readonly { id: string; name: string; source: MapSource }[] = [
+  { id: 'zwart-wit', name: 'Zwart-wit (standaard)', source: DEFAULT_MAP_SOURCE },
+  { id: 'nacht', name: 'Nacht', source: { styleUrl: `${STYLE_BASE}/nacht.json`, attribution: DEFAULT_MAP_SOURCE.attribution! } },
+  { id: 'schatkaart', name: 'Schatkaart', source: { styleUrl: `${STYLE_BASE}/schatkaart.json`, attribution: DEFAULT_MAP_SOURCE.attribution! } },
+  { id: 'kleur', name: 'Gewone kleurenkaart', source: { styleUrl: OPENFREEMAP_LIBERTY, attribution: DEFAULT_MAP_SOURCE.attribution! } },
+];
+
 export interface GpsSettings {
   /** Metingen met een grotere onzekerheid (meters) tellen niet mee. */
   maxAccuracy: number;

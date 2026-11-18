@@ -1,5 +1,5 @@
 'use client';
-import { DEFAULT_MAP_SOURCE, type GamePackage, type LatLng, type MapOverlay, type Text } from '@hunt/engine';
+import { DEFAULT_MAP_SOURCE, MAP_STYLES, type GamePackage, type Layer, type LatLng, type MapOverlay, type MapSource, type Text } from '@hunt/engine';
 import type { ImageSource, Map as MlMap, Marker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import Link from 'next/link';
@@ -30,6 +30,11 @@ export default function OverlayPage() {
   const [meeting, setMeeting] = useState<LatLng | null>(null);
   const [meetingText, setMeetingText] = useState<Text>({});
   const [opacity, setOpacity] = useState(0.7);
+  const [mapSource, setMapSource] = useState<MapSource | null>(null);
+  /** Welke lagen (stad, klant) een veld mogen aanpassen; alleen in het basisspel in te stellen. */
+  const [allowed, setAllowed] = useState<Record<MapGameField, Layer[]>>({ map: [], mapOverlay: [], meetingPoint: [] });
+  const [allowedDirty, setAllowedDirty] = useState(false);
+  const shownStyle = useRef<string | null>(null);
   const [dirty, setDirty] = useState<Set<MapGameField>>(new Set());
   const [errors, setErrors] = useState<string[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
@@ -48,6 +53,14 @@ export default function OverlayPage() {
       setOverlay(g.mapOverlay ?? null);
       setMeeting(g.meetingPoint ? { lat: g.meetingPoint.lat, lng: g.meetingPoint.lng } : null);
       setMeetingText(g.meetingPoint?.text ?? {});
+      setMapSource(g.map ?? null);
+      const fields: MapGameField[] = ['map', 'mapOverlay', 'meetingPoint'];
+      setAllowed(
+        Object.fromEntries(
+          fields.map((f) => [f, c[0]!.overridable.find((o) => o.task_id === null && o.field === f)?.layers.filter((l) => l !== 'base') ?? []]),
+        ) as Record<MapGameField, Layer[]>,
+      );
+      setAllowedDirty(false);
       setDirty(new Set());
     } catch (err) {
       setErrors([err instanceof Error ? err.message : String(err)]);
@@ -61,6 +74,7 @@ export default function OverlayPage() {
   const touch = (field: MapGameField) => setDirty((d) => new Set(d).add(field));
   const canOverlay = chain ? gameFieldEditable(chain, 'mapOverlay') : false;
   const canMeeting = chain ? gameFieldEditable(chain, 'meetingPoint') : false;
+  const canStyle = chain ? gameFieldEditable(chain, 'map') : false;
 
   // Kaart één keer aanmaken.
   useEffect(() => {
@@ -79,6 +93,7 @@ export default function OverlayPage() {
         center: [start.lng, start.lat],
         zoom: 15,
       });
+      shownStyle.current = game.map?.styleUrl ?? DEFAULT_MAP_SOURCE.styleUrl;
       m.on('load', () => setReady((n) => n + 1));
       map.current = m;
     });
@@ -86,6 +101,16 @@ export default function OverlayPage() {
       cancelled = true;
     };
   }, [game]);
+
+  // Andere kaartstijl gekozen: de kaart opnieuw opbouwen, daarna de overlay weer erop.
+  useEffect(() => {
+    const m = map.current;
+    const url = mapSource?.styleUrl ?? DEFAULT_MAP_SOURCE.styleUrl;
+    if (!m || !ready || shownStyle.current === url) return;
+    shownStyle.current = url;
+    m.setStyle(url);
+    m.once('style.load', () => setReady((n) => n + 1));
+  }, [mapSource, ready]);
 
   // Overlay-afbeelding tonen of bijwerken.
   useEffect(() => {
@@ -208,6 +233,16 @@ export default function OverlayPage() {
           if (overlay) settings.mapOverlay = overlay;
           else delete settings.mapOverlay;
         }
+        if (dirty.has('map')) {
+          if (mapSource) settings.map = mapSource;
+          else delete settings.map;
+        }
+        if (allowedDirty) {
+          for (const [field, layers] of Object.entries(allowed)) {
+            must(await db.from('overridable_fields').delete().eq('game_id', id).is('task_id', null).eq('field', field));
+            if (layers.length) must(await db.from('overridable_fields').insert({ game_id: id, task_id: null, field, layers }));
+          }
+        }
         if (dirty.has('meetingPoint')) {
           if (meeting) settings.meetingPoint = meeting;
           else delete settings.meetingPoint;
@@ -219,7 +254,7 @@ export default function OverlayPage() {
       } else {
         for (const field of dirty) {
           must(await db.from('overrides').delete().eq('game_id', id).is('task_id', null).eq('field', field));
-          const value = field === 'mapOverlay' ? overlay : meeting ? { ...meeting, text: cleanText(meetingText) } : null;
+          const value = field === 'mapOverlay' ? overlay : field === 'map' ? mapSource : meeting ? { ...meeting, text: cleanText(meetingText) } : null;
           if (value) must(await db.from('overrides').insert({ game_id: id, task_id: null, field, value }));
         }
       }
@@ -251,16 +286,16 @@ export default function OverlayPage() {
   return (
     <>
       <p className="muted">
-        <Link href="/spellen">Spellen</Link> › <Link href={`/spellen/${id}`}>{self.game.slug}</Link> › Overlay en verzamelpunt
+        <Link href="/spellen">Spellen</Link> › <Link href={`/spellen/${id}`}>{self.game.slug}</Link> › Kaartstijl, overlay en verzamelpunt
       </p>
-      <h1>Overlay en verzamelpunt</h1>
+      <h1>Kaartstijl, overlay en verzamelpunt</h1>
       <p className="muted">
         Een overlay is een eigen kaartafbeelding (bijvoorbeeld een getekende spelkaart) die over de gewone kaart ligt.
         Het verzamelpunt is waar teams aan het begin en einde samenkomen.
       </p>
       <div className="actions">
-        <button onClick={() => void save()} disabled={busy || dirty.size === 0}>
-          {busy ? 'Bezig…' : dirty.size ? 'Opslaan' : 'Opgeslagen'}
+        <button onClick={() => void save()} disabled={busy || (dirty.size === 0 && !allowedDirty)}>
+          {busy ? 'Bezig…' : dirty.size || allowedDirty ? 'Opslaan' : 'Opgeslagen'}
         </button>
       </div>
       {notice ? <p className="notice">{notice}</p> : null}
@@ -275,7 +310,38 @@ export default function OverlayPage() {
       <div className="mapgrid">
         <div ref={container} className="map" />
         <aside className="card">
-          <h2 style={{ marginTop: 0 }}>Overlay</h2>
+          <h2 style={{ marginTop: 0 }}>Kaartstijl</h2>
+          {!canStyle ? (
+            <p className="muted">De kaartstijl is in deze laag niet aan te passen.</p>
+          ) : (
+            <>
+              <select
+                aria-label="Kaartstijl"
+                value={MAP_STYLES.find((s) => s.source.styleUrl === (mapSource?.styleUrl ?? DEFAULT_MAP_SOURCE.styleUrl))?.id ?? 'eigen'}
+                onChange={(e) => {
+                  const style = MAP_STYLES.find((s) => s.id === e.target.value);
+                  if (!style) return;
+                  setMapSource(style.id === MAP_STYLES[0]!.id ? null : style.source);
+                  touch('map');
+                }}
+              >
+                {MAP_STYLES.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+                {mapSource && !MAP_STYLES.some((s) => s.source.styleUrl === mapSource.styleUrl) ? <option value="eigen">Eigen stijl</option> : null}
+              </select>
+              <p className="muted">Zo ziet de kaart eruit in de app. Een stad of klant kan een andere stijl kiezen als dat hieronder mag.</p>
+              {!isBase && ownGameField(chain, 'map') ? (
+                <button className="link" onClick={() => void reset('map')} disabled={busy}>
+                  Terug naar kaartstijl van de laag erboven
+                </button>
+              ) : null}
+            </>
+          )}
+
+          <h2>Overlay</h2>
           {!canOverlay ? (
             <p className="muted">De overlay is in deze laag niet aan te passen.</p>
           ) : (
@@ -382,6 +448,48 @@ export default function OverlayPage() {
               ) : null}
             </>
           )}
+          {isBase ? (
+            <>
+              <h2>Aanpassen in varianten</h2>
+              <p className="muted">Mag een stad of klant hier een eigen versie van maken?</p>
+              <table>
+                <thead>
+                  <tr>
+                    <th />
+                    <th>Stad</th>
+                    <th>Klant</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(
+                    [
+                      ['map', 'Kaartstijl'],
+                      ['mapOverlay', 'Overlay'],
+                      ['meetingPoint', 'Verzamelpunt'],
+                    ] as const
+                  ).map(([field, label]) => (
+                    <tr key={field}>
+                      <td>{label}</td>
+                      {(['city', 'client'] as const).map((layer) => (
+                        <td key={layer}>
+                          <input
+                            type="checkbox"
+                            aria-label={`${label} ${layer === 'city' ? 'stad' : 'klant'}`}
+                            checked={allowed[field].includes(layer)}
+                            onChange={(e) => {
+                              const next = e.target.checked ? [...allowed[field], layer] : allowed[field].filter((l) => l !== layer);
+                              setAllowed({ ...allowed, [field]: next });
+                              setAllowedDirty(true);
+                            }}
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          ) : null}
         </aside>
       </div>
     </>

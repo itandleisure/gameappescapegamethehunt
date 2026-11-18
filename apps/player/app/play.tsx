@@ -13,7 +13,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { formatDuration } from "../src/core/i18n";
 import { playAreaBounds, taskMarkers } from "../src/core/play-area";
-import { isAnswerable, listGroups, taskToShow } from "../src/core/view";
+import { isAnswerable, listGroups, mapStyleChoice, taskToShow } from "../src/core/view";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import type { MessageKey } from "../src/core/i18n";
 import {
   onFix,
   requestLocationPermission,
@@ -21,12 +23,14 @@ import {
   stopTracking,
   type PermissionResult,
 } from "../src/services/location";
-import { downloadPlayArea, mapStyleUrl } from "../src/services/map-download";
+import { downloadPlayArea } from "../src/services/map-download";
 import { Banner, Body, Button, Screen, Title } from "../src/ui/components";
 import { takePhoto } from "../src/ui/camera";
 import { useGame } from "../src/ui/GameProvider";
 import GameMap from "../src/ui/map/GameMap";
 import { colors, radius, space } from "../src/ui/theme";
+
+const MAP_STYLE_KEY = "hunt.kaartstijl";
 
 export default function PlayScreen() {
   const { controller, snapshot, t, lang } = useGame();
@@ -40,6 +44,13 @@ export default function PlayScreen() {
   const [download, setDownload] = useState<number | null>(null);
   const [starting, setStarting] = useState(false);
   const [teamPhoto, setTeamPhoto] = useState<string | null>(null);
+  // Kaartstijl die het team zelf koos (bewaard op deze telefoon).
+  const [chosenStyle, setChosenStyle] = useState<string | null>(null);
+  useEffect(() => {
+    void AsyncStorage.getItem(MAP_STYLE_KEY)
+      .then(setChosenStyle)
+      .catch(() => undefined);
+  }, []);
   const [dismissedMessages, setDismissedMessages] = useState(0);
   const lastShown = useRef<string | undefined>(undefined);
   useKeepAwake();
@@ -190,12 +201,13 @@ export default function PlayScreen() {
   const overlay = game.mapOverlay;
   // In een testsessie kun je opdrachten openen zonder ter plekke te zijn.
   const testTargets = snapshot.session.testMode ? controller.testTargets() : [];
+  const style = mapStyleChoice(game, chosenStyle);
   const weakGps = position !== null && position.accuracy > game.gps.maxAccuracy;
 
   return (
     <View style={styles.safe}>
       <GameMap
-        styleUrl={mapStyleUrl(game)}
+        styleUrl={style.url}
         bounds={bounds}
         position={position}
         markers={markers.map((m) => ({
@@ -228,6 +240,17 @@ export default function PlayScreen() {
             <Text style={styles.headerLabel}>{t("score")}</Text>
             <Text style={styles.headerValue}>{state.score}</Text>
           </View>
+          <Pressable
+            accessibilityRole="button"
+            style={styles.styleButton}
+            onPress={() => {
+              setChosenStyle(style.next);
+              void AsyncStorage.setItem(MAP_STYLE_KEY, style.next).catch(() => undefined);
+            }}
+          >
+            <Text style={styles.headerLabel}>{t("mapStyle")}</Text>
+            <Text style={styles.styleName}>{t(`style_${style.id}` as MessageKey)} ›</Text>
+          </Pressable>
           <View style={styles.headerRight}>
             <Text style={styles.headerLabel}>{t("time")}</Text>
             <Text style={styles.headerValue}>
@@ -324,6 +347,8 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
   },
   headerRight: { alignItems: "flex-end" },
+  styleButton: { alignItems: "center", paddingHorizontal: space.sm },
+  styleName: { color: colors.accent, fontSize: 15, fontWeight: "700" },
   headerLabel: { color: colors.textMuted, fontSize: 13 },
   headerValue: {
     color: colors.text,
