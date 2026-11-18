@@ -718,10 +718,12 @@ export const de: Record<string, string> = {
   "Vult alleen lege vertalingen in ({langs}); wat er al staat blijft staan.": "Füllt nur leere Übersetzungen ({langs}); vorhandene Texte bleiben erhalten.",
   "Log opnieuw in om te vertalen.": "Melde dich erneut an, um zu übersetzen.",
   "Geen verbinding met de vertaaldienst.": "Keine Verbindung zum Übersetzungsdienst.",
-  "Vertalen is mislukt. Probeer het opnieuw.": "Übersetzen fehlgeschlagen. Bitte erneut versuchen.",
   "Hier staan de spellen per stad en klant. Een nieuwe stad maak je vanuit een template (onder Templates). Publiceren maakt een vaste versie waarmee je hunts maakt.": "Hier stehen die Spiele pro Stadt und Kunde. Eine neue Stadt erstellst du aus einer Vorlage (unter Vorlagen). Veröffentlichen erstellt eine feste Version, mit der du Hunts anlegst.",
   "{template}: werkversie": "{template}: Arbeitsversion",
   "{template} v{n}": "{template} v{n}",
   "Je kunt er nu steden mee uitrollen.": "Du kannst jetzt Städte damit ausrollen.",
   "Template importeren (JSON)": "Vorlage importieren (JSON)",
+  "Het vertalen duurde te lang (time-out op de server). Probeer het opnieuw.": "Das Übersetzen hat zu lange gedauert (Zeitüberschreitung auf dem Server). Bitte erneut versuchen.",
+  "De server gaf een fout ({status}). Probeer het opnieuw.": "Der Server meldete einen Fehler ({status}). Bitte erneut versuchen.",
+  "Niet gelukt voor: {list}": "Fehlgeschlagen für: {list}",
 };
