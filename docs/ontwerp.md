@@ -117,7 +117,7 @@ Hoe dat werkt:
 
 - In het basisspel markeert de maker welke velden een stad of klant mag invullen ("aanpasbare velden"). Voor Escape Game The Hunt zijn dat precies de punten uit het functieoverzicht. In de beheeromgeving staan die velden per stad en klant klaar als een kort formulier, in plaats van 94 opdrachten.
 - Bij het **publiceren** voegt de server de lagen samen tot één vaste versie. Een sessie speelt altijd een gepubliceerde versie. Wijzigingen tijdens een lopend spel hebben dus geen onverwacht effect, en achteraf is altijd te zien welke versie gespeeld is.
-- Een wijziging in het basisspel komt na opnieuw publiceren in alle steden en klantvarianten.
+- Het basisspel heeft **versies** (v1, v2, ...). Wijzigingen gaan eerst in de werkversie; met "Versie vastzetten" wordt daar een vaste versie van gemaakt. Elke stad kiest in een keuzelijst op welke versie ze voortbouwt, zodat je per stad bewust overstapt. Een klantvariant volgt de versie van zijn stad. Na het overzetten publiceer je de stad opnieuw.
 - Vertalingen hangen aan elk tekstveld, in elke laag. De beheeromgeving toont teksten naast elkaar per taal en markeert wat ontbreekt. Publiceren in een taal met ontbrekende teksten geeft een waarschuwing.
 - Resultaten blijven per sessie samen, ongeacht de taal die een team koos.
 

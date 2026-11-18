@@ -48,6 +48,8 @@ export interface GameRow {
   languages: string[];
   default_language: string;
   settings: Record<string, unknown>;
+  /** Alleen bij een stad: de versie van het basisspel waar die op voortbouwt (null: de werkversie). */
+  base_version?: number | null;
 }
 
 export interface TaskRow {

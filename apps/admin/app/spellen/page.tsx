@@ -14,6 +14,7 @@ interface GameRow {
   slug: string;
   parent_id: string | null;
   layer: 'base' | 'city' | 'client';
+  base_version: number | null;
   languages: string[];
   settings: { name?: unknown };
   game_versions: { version: number; published_at: string }[];
@@ -43,6 +44,18 @@ function gameTitle(g: { slug: string; layer: string; settings: { name?: unknown 
   return tx(g.settings.name) || g.slug;
 }
 
+/** Per versie van het basisspel hoeveel steden erop zitten, bijvoorbeeld "v1: 3 steden · v2: 1 stad". */
+function versionSummary(games: GameRow[], baseId: string, t: (nl: string, vars?: Record<string, string | number>) => string): string {
+  const counts = new Map<number | null, number>();
+  for (const c of games) if (c.parent_id === baseId && c.layer === 'city') counts.set(c.base_version, (counts.get(c.base_version) ?? 0) + 1);
+  return [...counts.entries()]
+    .sort(([a], [b]) => (a ?? Infinity) - (b ?? Infinity))
+    .map(([version, n]) =>
+      (version === null ? t('werkversie') : t('versie {n}', { n: version })) + ': ' + (n === 1 ? t('1 stad') : t('{n} steden', { n })),
+    )
+    .join(' · ');
+}
+
 export default function GamesPage() {
   const { org } = useAuth();
   const { t, locale } = useLanguage();
@@ -57,7 +70,7 @@ export default function GamesPage() {
     const [g, n] = await Promise.all([
       db
         .from('games')
-        .select('id, slug, parent_id, layer, languages, settings, game_versions(version, published_at)')
+        .select('id, slug, parent_id, layer, base_version, languages, settings, game_versions(version, published_at)')
         .eq('org_id', org.id),
       db.from('translations').select('game_id, text, lang').eq('entity', 'game').eq('entity_id', '').eq('field', 'name'),
     ]);
@@ -167,7 +180,19 @@ export default function GamesPage() {
                       </Link>
                       <div className="muted">{g.slug}</div>
                     </td>
-                    <td>{t(LAYER_LABEL[g.layer])}</td>
+                    <td>
+                      {t(LAYER_LABEL[g.layer])}
+                      {g.layer === 'base' && games.some((c) => c.parent_id === g.id && c.layer === 'city') ? (
+                        <div className="muted">{versionSummary(games, g.id, t)}</div>
+                      ) : null}
+                      {g.layer === 'city' ? (
+                        <div className="muted">
+                          {g.base_version === null
+                            ? t('basisspel: werkversie')
+                            : t('basisspel: versie {n}', { n: g.base_version })}
+                        </div>
+                      ) : null}
+                    </td>
                     <td>{g.languages.join(', ').toUpperCase()}</td>
                     <td>
                       {latest
