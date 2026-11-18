@@ -518,4 +518,10 @@ export const en: Record<string, string> = {
   "Werkversie": "Working version",
   "1 stad": "1 city",
   "{n} steden": "{n} cities",
+  "Naam aanpassen": "Rename",
+  "De naam in {lang} is verplicht.": "The name in {lang} is required.",
+  "Naam opgeslagen. Publiceer het spel opnieuw, en ook de steden en klantvarianten eronder, om de nieuwe naam in nieuwe hunts te zien. Hunts die al bestaan, houden hun oude naam.": "Name saved. Publish the game again, and also the cities and client variants below it, to see the new name in new hunts. Existing hunts keep their old name.",
+  "Naam opgeslagen.": "Name saved.",
+  "Dit is de naam die spelers in de app zien.": "This is the name players see in the app.",
+  "Dit is de naam in de beheeromgeving, bijvoorbeeld bij het kiezen van een spel voor een nieuwe hunt. Spelers zien de naam van het basisspel.": "This is the name in the admin environment, for example when choosing a game for a new hunt. Players see the name of the base game.",
 };
