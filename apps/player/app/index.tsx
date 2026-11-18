@@ -113,7 +113,7 @@ export default function JoinScreen() {
             onChangeText={(v) => setTeamCode(v.toUpperCase())}
             autoCapitalize="characters"
             autoCorrect={false}
-            maxLength={12}
+            maxLength={30}
           />
           <Button
             kind="secondary"
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
   content: { padding: space.md, paddingBottom: space.xl, ...contentColumn },
-  logo: { height: 88, width: (88 * 496) / 600, alignSelf: 'center', marginTop: space.sm, marginBottom: space.sm },
+  logo: { height: 64, width: (64 * 496) / 600, alignSelf: 'center', marginTop: space.xs, marginBottom: space.xs },
   chips: { flexDirection: 'row', flexWrap: 'wrap', marginTop: space.sm, marginBottom: space.sm },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: space.xl },
 });

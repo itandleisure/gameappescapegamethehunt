@@ -95,7 +95,7 @@ begin
     t := public.join_session(' hunt01 ', 'Team ' || n, 'nl');
     assert t.login_order = n, 'inlogvolgorde klopt';
     assert t.track = ((n - 1) % 5) + 1, format('team %s zit op track %s', n, t.track);
-    assert t.team_code ~ '^[A-Z2-9]{6}$', 'teamcode heeft 6 tekens';
+    assert t.team_code ~ '^[A-Z]+-[A-Z]+$', format('teamcode is twee woorden: %s', t.team_code);
   end loop;
   assert t.track = 1, 'team 6 zit weer op track 1';
 
@@ -231,7 +231,8 @@ end $$;
 select tests.logout();
 select team_code as code1 from public.teams where session_id = '5a000000-0000-0000-0000-000000000001' and login_order = 1 \gset
 select tests.login('c0000000-0000-0000-0000-000000000007');
-select public.rejoin_team(lower(:'code1'));
+-- Kleine letters en een spatie in plaats van het streepje mogen ook.
+select public.rejoin_team(replace(lower(:'code1'), '-', ' '));
 do $$
 declare
   t public.teams;

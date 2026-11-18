@@ -40,7 +40,8 @@ export class FakeBackend implements Backend {
       name: teamName,
       language,
       track: ((this.order - 1) % 5) + 1,
-      teamCode: `CODE${this.order}`,
+      // Langste soort woordcode, zodat de schermcontrole die ook test.
+      teamCode: this.order === 1 ? 'GLIMMENDE-SCHILDPAD' : `GLIMMENDE-SCHILDPAD-${this.order}`,
       startedAt: null,
       endedAt: null,
     };

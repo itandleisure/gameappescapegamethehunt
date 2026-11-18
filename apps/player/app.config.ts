@@ -39,7 +39,7 @@ const config: ExpoConfig = {
   plugins: [
     'expo-router',
     'expo-localization',
-    ['expo-splash-screen', { image: './assets/splash-logo.png', imageWidth: 220, backgroundColor: '#101214', resizeMode: 'contain' }],
+    ['expo-splash-screen', { image: './assets/splash-logo.png', imageWidth: 140, backgroundColor: '#101214', resizeMode: 'contain' }],
     [
       'expo-location',
       {

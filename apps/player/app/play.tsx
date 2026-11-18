@@ -18,6 +18,7 @@ import { playAreaBounds, taskMarkers } from "../src/core/play-area";
 import { isAnswerable, listGroups, mapStyleChoice, taskToShow } from "../src/core/view";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { MessageKey } from "../src/core/i18n";
+import { BackendError } from "../src/core/supabase-backend";
 import {
   onFix,
   requestLocationPermission,
@@ -49,6 +50,9 @@ export default function PlayScreen() {
   const [download, setDownload] = useState<number | null>(null);
   const [starting, setStarting] = useState(false);
   const [teamPhoto, setTeamPhoto] = useState<string | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  // Foutmelding bij teamfoto of starten, zodat het team niet zonder uitleg blijft hangen.
+  const [setupError, setSetupError] = useState<MessageKey | null>(null);
   // Kaartstijl die het team zelf koos (bewaard op deze telefoon).
   const [chosenStyle, setChosenStyle] = useState<string | null>(null);
   useEffect(() => {
@@ -139,10 +143,13 @@ export default function PlayScreen() {
   /** Locatie vragen en daarna starten. */
   const withLocation = async (next: () => Promise<void>) => {
     setStarting(true);
+    setSetupError(null);
     try {
       const result = await requestLocationPermission();
       setPermission(result);
       if (result !== "denied") await next();
+    } catch (e) {
+      setSetupError(e instanceof BackendError ? e.key : "errorGeneric");
     } finally {
       setStarting(false);
     }
@@ -156,13 +163,24 @@ export default function PlayScreen() {
           <Title>{t("teamPhotoTitle")}</Title>
           <Body>{t("teamPhotoExplain")}</Body>
           <View style={styles.spacer} />
+          {setupError ? <Banner tone="danger">{t(setupError)}</Banner> : null}
           <Button
             label={t("takeTeamPhoto")}
+            busy={photoBusy}
+            disabled={photoBusy}
             onPress={async () => {
-              const photo = await takePhoto();
-              if (!photo) return;
-              await controller.submitTeamPhoto(photo.uri);
-              setTeamPhoto(photo.uri);
+              setPhotoBusy(true);
+              setSetupError(null);
+              try {
+                const photo = await takePhoto();
+                if (!photo) return;
+                await controller.submitTeamPhoto(photo.uri);
+                setTeamPhoto(photo.uri);
+              } catch {
+                setSetupError("errorGeneric");
+              } finally {
+                setPhotoBusy(false);
+              }
             }}
           />
           <LeaveGame showCode={false} />
@@ -178,9 +196,8 @@ export default function PlayScreen() {
           <Title>{tx(game.name, lang, game.defaultLanguage)}</Title>
           <View style={styles.codeCard}>
             <Text style={styles.codeLabel}>{t("yourTeamCode")}</Text>
-            <Text style={styles.teamCode} numberOfLines={1} adjustsFontSizeToFit>
-              {snapshot.team.teamCode}
-            </Text>
+            {/* Woordcode ("RODE-VOS") met spaties, zodat een lange code netjes over twee regels loopt. */}
+            <Text style={styles.teamCode}>{snapshot.team.teamCode.replace(/-/g, " ")}</Text>
             <Body>{t("teamCodeExplain")}</Body>
           </View>
           <View style={styles.spacer} />
@@ -198,6 +215,7 @@ export default function PlayScreen() {
           ) : null}
           <View style={styles.spacer} />
           <Body muted>{t("startExplain")}</Body>
+          {setupError ? <Banner tone="danger">{t(setupError)}</Banner> : null}
           <Button
             label={t("start")}
             disabled={snapshot.teamPhotoNeeded}
@@ -409,9 +427,10 @@ const styles = StyleSheet.create({
   codeLabel: { color: colors.accent, fontWeight: "700", fontSize: 15 },
   teamCode: {
     color: colors.accent,
-    fontSize: 40,
+    fontSize: 32,
+    lineHeight: 38,
     fontWeight: "800",
-    letterSpacing: 6,
+    letterSpacing: 1,
     marginVertical: space.sm,
   },
   top: {
