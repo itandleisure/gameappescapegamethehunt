@@ -15,12 +15,6 @@ export interface SessionInfo {
   starts_at: string | null;
   timezone: string;
   join_code: string;
-  /** Centrale start: de spelleider start het spel voor alle teams tegelijk. */
-  central_start: boolean;
-  /** Geen nieuwe teams meer (bestaande teams kunnen met hun teamcode opnieuw inloggen). */
-  locked: boolean;
-  /** Moment van de centrale start. */
-  started_at: string | null;
   /** Teams kunnen elkaar berichten sturen. */
   team_chat: boolean;
 }
@@ -29,8 +23,6 @@ export interface LiveTeam extends TeamRow {
   login_order: number;
   /** Code waarmee een andere telefoon het team overneemt. */
   team_code: string;
-  /** Speluitleg gelezen, klaar voor de start. */
-  ready_at: string | null;
   /** Telefoonnummer uit de aanmelding (tabel team_contacts), alleen voor de spelleiding. */
   phone?: string | null;
 }
@@ -72,7 +64,7 @@ function mergeById<T extends { id: string | number }>(list: T[], rows: T[]): T[]
   return fresh.length ? [...list, ...fresh] : list;
 }
 
-const TEAM_COLUMNS = 'id, name, track, language, score, outcome, started_at, ended_at, login_order, team_code, ready_at';
+const TEAM_COLUMNS = 'id, name, track, language, score, outcome, started_at, ended_at, login_order, team_code';
 
 export function useSessionLive(id: string) {
   const [data, setData] = useState<SessionLive | null>(null);
@@ -86,7 +78,7 @@ export function useSessionLive(id: string) {
     try {
       const s = await db
         .from('sessions')
-        .select('id, name, status, test_mode, starts_at, timezone, join_code, central_start, locked, started_at, team_chat, game_versions(package)')
+        .select('id, name, status, test_mode, starts_at, timezone, join_code, team_chat, game_versions(package)')
         .eq('id', id)
         .single();
       if (s.error) throw new Error(s.error.message);

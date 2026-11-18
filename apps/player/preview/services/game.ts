@@ -17,7 +17,6 @@ class PreviewBackend extends FakeBackend {
 
 const backend = new PreviewBackend(previewGame(scene, img, long), Date.now());
 backend.testMode = scene === 'play';
-backend.centralStart = scene === 'central';
 backend.teamChat = scene === 'chat' || scene === 'play';
 let n = 0;
 const deps: ControllerDeps = { backend, store: new MemoryStore(), newId: () => `voorbeeld-${++n}` };
@@ -45,7 +44,7 @@ async function prepare(): Promise<GameController | null> {
   const controller = await GameController.join(deps, 'LWD001', teamName, 'nl', '+31 6 12345678');
   if (scene === 'teamphoto') return controller;
   await controller.submitTeamPhoto(testImage(4000, 3000));
-  if (scene === 'teamcode' || scene === 'central') return controller;
+  if (scene === 'teamcode') return controller;
   await controller.start();
   if (scene === 'chat') {
     const lang = long ? ' Dit is een heel lang bericht om te zien of het netjes afbreekt op een klein scherm.'.repeat(4) : '';

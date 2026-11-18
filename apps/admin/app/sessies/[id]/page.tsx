@@ -14,7 +14,6 @@ import { OpenToggle } from '@/results/OpenToggle';
 import { PhotobookEditor } from '@/results/PhotobookEditor';
 import { Photowall } from '@/results/Photowall';
 import { Standings } from '@/results/Standings';
-import { StartControl } from '@/results/StartControl';
 import { TeamChat } from '@/results/TeamChat';
 
 const TABS = [
@@ -104,13 +103,6 @@ export default function SessionLivePage() {
         {new Intl.DateTimeFormat(locale, { timeStyle: 'medium' }).format(new Date(updatedAt))}
         {error ? <span className="error"> · {error}</span> : null}
       </p>
-
-      {session.central_start && !session.started_at ? <StartControl data={data} onChange={() => void reload()} /> : null}
-      {session.central_start && session.started_at ? (
-        <p className="muted">
-          {t('Spel gestart om {time} voor alle teams.', { time: formatInZone(session.started_at, session.timezone) })}
-        </p>
-      ) : null}
 
       <nav className="tabs">
         {TABS.map((x) => (

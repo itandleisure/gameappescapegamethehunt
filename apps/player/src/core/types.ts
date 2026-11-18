@@ -20,8 +20,6 @@ export interface SessionInfo {
   timezone: string;
   status: 'draft' | 'open' | 'closed';
   testMode: boolean;
-  /** De spelleider start het spel voor alle teams tegelijk. */
-  centralStart?: boolean;
   /** Teams in deze hunt kunnen met elkaar chatten. */
   teamChat?: boolean;
 }
@@ -65,7 +63,6 @@ export interface Backend {
   rejoinTeam(teamCode: string): Promise<TeamRecord>;
   startTeam(teamId: string): Promise<TeamRecord>;
   /** Meldt dat het team de speluitleg heeft gelezen (centrale start). */
-  teamReady(teamId: string): Promise<TeamRecord>;
   loadTeam(teamId: string): Promise<TeamRecord>;
   loadGame(team: TeamRecord): Promise<LoadedGame>;
   loadEvents(teamId: string): Promise<GameEvent[]>;

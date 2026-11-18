@@ -1,7 +1,6 @@
 import {
   LocationGate,
   PositionUploader,
-  briefingTasks,
   canUseHint,
   computeState,
   reachableTargets,
@@ -158,49 +157,9 @@ export class GameController {
     return controller;
   }
 
-  /** Centrale start: de spelleider start het spel voor alle teams tegelijk. */
-  get centralStart(): boolean {
-    return this.data.loaded.session.centralStart === true;
-  }
-
-  /** Opdrachten van de speluitleg die het team vóór een centrale start leest. */
-  briefingTasks(): string[] {
-    return briefingTasks(this.game);
-  }
-
-  /** Team heeft de speluitleg gelezen en wacht op de start. */
-  async markReady(): Promise<void> {
-    if (this.data.team.readyAt) return;
-    this.data.team = await this.deps.backend.teamReady(this.data.team.id);
-    await this.save();
-    this.emit();
-  }
-
-  /**
-   * Centrale start: kijkt of de spelleider het spel al heeft gestart. Geeft
-   * true zodra de speeltijd loopt.
-   */
-  async checkStarted(): Promise<boolean> {
-    if (this.data.team.startedAt !== null) return true;
-    try {
-      this.data.team = await this.deps.backend.loadTeam(this.data.team.id);
-      this.online = true;
-    } catch {
-      this.online = false;
-      return false;
-    }
-    await this.save();
-    this.emit();
-    return this.data.team.startedAt !== null;
-  }
-
   /** Start de speeltijd (eenmalig, servertijd). */
   async start(): Promise<void> {
     if (this.data.team.startedAt !== null) return;
-    if (this.centralStart) {
-      await this.checkStarted();
-      return;
-    }
     this.data.team = await this.deps.backend.startTeam(this.data.team.id);
     await this.save();
     this.emit();
@@ -227,7 +186,8 @@ export class GameController {
   get context(): TeamContext | null {
     const { track, startedAt, readyAt } = this.data.team;
     if (startedAt === null) return null;
-    return this.centralStart && readyAt ? { track, startedAt, briefingRead: true } : { track, startedAt };
+    // Teams die vóór een (vroegere) centrale start de uitleg al lazen, houden die afgerond.
+    return readyAt ? { track, startedAt, briefingRead: true } : { track, startedAt };
   }
 
   snapshot(): Snapshot {
