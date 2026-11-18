@@ -161,3 +161,27 @@ export function boundaryMaskGeoJson(boundary: { points: (LatLng & { curve?: LatL
     features: [{ type: 'Feature' as const, properties: {}, geometry: { type: 'Polygon' as const, coordinates: [WORLD_RING, hole] } }],
   };
 }
+
+/** Cirkel van `radius` meter om een punt, als gesloten ring [lng, lat] voor GeoJSON. */
+export function circleRing(center: LatLng, radius: number, steps = 48): [number, number][] {
+  const dLat = radius / 111_320;
+  const dLng = radius / (111_320 * Math.cos((center.lat * Math.PI) / 180));
+  const ring: [number, number][] = [];
+  for (let i = 0; i <= steps; i++) {
+    const a = (i / steps) * 2 * Math.PI;
+    ring.push([center.lng + dLng * Math.cos(a), center.lat + dLat * Math.sin(a)]);
+  }
+  return ring;
+}
+
+/** Cirkels als GeoJSON-vlakken, elk met een eigen kleur (eigenschap `color`). */
+export function circlesGeoJson(circles: readonly (LatLng & { radius: number; color: string })[]) {
+  return {
+    type: 'FeatureCollection' as const,
+    features: circles.map((c) => ({
+      type: 'Feature' as const,
+      properties: { color: c.color },
+      geometry: { type: 'Polygon' as const, coordinates: [circleRing(c, c.radius)] },
+    })),
+  };
+}

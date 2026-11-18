@@ -131,7 +131,7 @@ interface BaseSettings {
   /** Vakjes met de GPS-code en het hintveld, per playground. */
   playgroundCode?: Record<string, PlaygroundCode>;
   gps: BaseGame['gps'];
-  meetingPoint?: LatLng;
+  meetingPoint?: LatLng & { radius?: number };
   mapOverlay?: MapOverlay;
   map?: MapSource;
   boundary?: PlayBoundary;

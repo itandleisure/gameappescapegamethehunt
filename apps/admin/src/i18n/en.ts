@@ -87,6 +87,8 @@ export const en: Record<string, string> = {
   "Wissen": "Clear",
   "Buiten het speelveld": "Outside the play area",
   "Dekking": "Opacity",
+  "Straal van de cirkel (meter)": "Circle radius (metres)",
+  "Binnen deze cirkel is een team bij het verzamelpunt.": "Inside this circle a team is at the meeting point.",
   "Kleur": "Colour",
   "Opdrachten": "Tasks",
   "Opdrachten zonder locatie plaats je door hierboven één track of de vaste locaties te kiezen.": "To place tasks without a location, choose one track or the fixed locations above.",

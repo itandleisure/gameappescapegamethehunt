@@ -3,7 +3,7 @@ import { StyleSheet } from 'react-native';
 import { WebView as RNWebView, type WebViewProps } from 'react-native-webview';
 import { colors } from '../theme';
 import { LOGO_ICON_DATA_URI } from './logo-data';
-import { boundaryMaskGeoJson, type UrlRewrite } from '@hunt/engine';
+import { boundaryMaskGeoJson, circlesGeoJson, type UrlRewrite } from '@hunt/engine';
 import { prepareMapProvider } from '../../services/map-provider';
 import type { GameMapProps } from './types';
 
@@ -78,6 +78,14 @@ function apply(d) {
     if (map.getSource('boundary')) map.getSource('boundary').setData(b);
     else { map.addSource('boundary', { type: 'geojson', data: b }); map.addLayer({ id: 'boundary', type: 'line', source: 'boundary', layout: { 'line-join': 'round' }, paint: { 'line-color': d.boundary.color, 'line-width': 3 } }); }
   }
+  if (d.circles) {
+    if (map.getSource('circles')) map.getSource('circles').setData(d.circles);
+    else {
+      map.addSource('circles', { type: 'geojson', data: d.circles });
+      map.addLayer({ id: 'circles-fill', type: 'fill', source: 'circles', paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.15 } });
+      map.addLayer({ id: 'circles-line', type: 'line', source: 'circles', paint: { 'line-color': ['get', 'color'], 'line-width': 2 } });
+    }
+  }
   if (d.position) {
     if (!me) { const el = document.createElement('div'); el.className = 'me'; me = new maplibregl.Marker({ element: el }).setLngLat([d.position.lng, d.position.lat]).addTo(map); }
     else me.setLngLat([d.position.lng, d.position.lat]);
@@ -86,10 +94,10 @@ function apply(d) {
 </script></body></html>`;
 }
 
-export default function WebMap({ styleUrl, bounds, markers, overlay, boundary, position }: GameMapProps) {
+export default function WebMap({ styleUrl, bounds, markers, overlay, boundary, circles, position }: GameMapProps) {
   const ref = useRef<WebViewHandle>(null);
   const mask = boundary && boundary.outside.opacity > 0 ? boundaryMaskGeoJson(boundary) : null;
-  const payload = JSON.stringify({ bounds, markers, overlay, boundary, mask, position, style: styleUrl });
+  const payload = JSON.stringify({ bounds, markers, overlay, boundary, mask, circles: circles?.length ? circlesGeoJson(circles) : null, position, style: styleUrl });
   // De pagina zelf blijft op de eerste stijl; wisselen gaat via window.hunt.
   const [firstStyle] = useState(styleUrl);
 

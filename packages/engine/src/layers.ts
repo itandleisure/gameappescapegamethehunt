@@ -263,6 +263,8 @@ export function validateGame(game: GamePackage): string[] {
       issues.push('speelveldgrens: ongeldig punt');
     if (b.color !== undefined && !/^#[0-9a-f]{6}$/i.test(b.color)) issues.push('speelveldgrens: kleur moet #rrggbb zijn');
   }
+  const mr = game.meetingPoint?.radius;
+  if (mr !== undefined && !(mr > 0 && mr <= 1000)) issues.push('verzamelpunt: straal moet tussen 0 en 1000 meter liggen');
   for (const t of game.tasks) {
     if (t.image !== undefined && !/^https:\/\/\S+$/.test(t.image)) issues.push(`opdracht ${t.id}: foto moet een https-adres zijn`);
     if (t.mapIcon !== undefined && !(MAP_ICONS as readonly string[]).includes(t.mapIcon)) issues.push(`opdracht ${t.id}: onbekend kaarticoon ${String(t.mapIcon)}`);

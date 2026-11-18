@@ -1,4 +1,4 @@
-import { distanceMeters, t as tx } from '@hunt/engine';
+import { DEFAULT_MEETING_RADIUS, distanceMeters, t as tx } from '@hunt/engine';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -14,8 +14,11 @@ import { LeaveGame } from '../src/ui/LeaveGame';
 import GameMap from '../src/ui/map/GameMap';
 import { colors, radius, space, contentColumn } from '../src/ui/theme';
 
-/** Binnen deze afstand van het verzamelpunt telt het team als aangekomen. */
-const ARRIVED_METERS = 40;
+/**
+ * Een team is er als het binnen de cirkel om het verzamelpunt staat. De GPS
+ * zit er in de stad vaak wat naast; tot 20 meter van die onzekerheid telt mee.
+ */
+const MAX_GPS_SLACK = 20;
 const ARRIVED_KEY = 'hunt.verzamelpunt';
 
 /**
@@ -61,8 +64,9 @@ export default function EndScreen() {
   }, [ended, walking, arrived]);
 
   const distance = meeting && position ? Math.round(distanceMeters(position, meeting)) : null;
+  const meetingRadius = meeting?.radius ?? DEFAULT_MEETING_RADIUS;
   useEffect(() => {
-    if (walking && distance !== null && distance <= ARRIVED_METERS) markArrived();
+    if (walking && distance !== null && position && distance <= meetingRadius + Math.min(position.accuracy, MAX_GPS_SLACK)) markArrived();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [walking, distance]);
 
@@ -99,6 +103,7 @@ export default function EndScreen() {
                 styleUrl={mapStyleChoice(game, null).url}
                 bounds={[meeting.lng - d, meeting.lat - d, meeting.lng + d, meeting.lat + d]}
                 markers={[{ id: 'verzamelpunt', lat: meeting.lat, lng: meeting.lng, label: t('meetingPoint') }]}
+                circles={[{ lat: meeting.lat, lng: meeting.lng, radius: meetingRadius, color: colors.accent }]}
                 position={position}
               />
             </View>
