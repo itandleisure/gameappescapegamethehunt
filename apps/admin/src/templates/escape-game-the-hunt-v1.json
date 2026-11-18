@@ -1301,7 +1301,7 @@
       },
       {
         "id": "tijd-op",
-        "label": "Na 90 minuten: alles uit en einde",
+        "label": "90 - Alles uit en einde",
         "when": {
           "kind": "elapsed",
           "minutes": 90

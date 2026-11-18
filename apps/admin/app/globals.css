@@ -354,3 +354,36 @@ a.button.secondary { background: transparent; color: var(--text); border-color: 
 .teamchat .chatbody { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--line); border-radius: 8px; padding: 6px 10px; margin-top: 2px; display: inline-block; text-align: left; }
 .teamchat .chatform { display: flex; gap: 8px; margin-top: 12px; }
 .teamchat .chatform input { flex: 1 1 auto; }
+
+/* Spelverloop: tijdlijn van de regels */
+.flow-timeline { list-style: none; padding: 0; margin: 0 0 8px; position: relative; }
+.flow-timeline::before { content: ''; position: absolute; left: 39px; top: 8px; bottom: 8px; width: 2px; background: var(--line); }
+.flow-moment { display: grid; grid-template-columns: 80px 1fr; gap: 12px; padding: 6px 0; position: relative; }
+.flow-when { align-self: start; justify-self: center; position: relative; z-index: 1; background: var(--accent); color: var(--accent-text); font-weight: 700; font-size: 13px; padding: 4px 10px; border-radius: 999px; white-space: nowrap; margin-top: 14px; }
+.flow-items { display: grid; gap: 8px; min-width: 0; }
+.flow-other { display: grid; gap: 8px; }
+.flow-item { padding: 14px 16px; }
+.flow-head { display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+.flow-head button { padding: 5px 12px; font-size: 13px; }
+.flow-if { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+.flow-actions { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 4px; }
+.flow-actions li { display: flex; gap: 8px; align-items: flex-start; }
+.flow-icon { width: 22px; flex: none; text-align: center; }
+.flow-actions > li > div { min-width: 0; }
+.flow-message summary { cursor: pointer; color: var(--muted); font-size: 14px; overflow: hidden; text-overflow: ellipsis; }
+.flow-message p { white-space: pre-wrap; margin: 6px 0 0; padding: 10px 12px; background: var(--bg); border-radius: 8px; font-size: 14px; }
+.flow-form h3 { margin: 16px 0 6px; font-size: 15px; }
+.flow-time { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
+.flow-time label { display: inline-flex; gap: 4px; align-items: center; margin: 0; }
+.flow-time input { width: 60px; }
+.flow-edit-actions { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.flow-edit-actions > li { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.flow-edit-actions textarea { width: 100%; box-sizing: border-box; }
+.flow-tech, .flow-tech-all { margin-top: 16px; }
+.flow-tech summary, .flow-tech-all summary { cursor: pointer; color: var(--muted); }
+.flow-tech-all { margin-top: 32px; }
+@media (max-width: 560px) {
+  .flow-timeline::before { left: 27px; }
+  .flow-moment { grid-template-columns: 56px 1fr; gap: 8px; }
+  .flow-when { font-size: 12px; padding: 3px 8px; }
+}
