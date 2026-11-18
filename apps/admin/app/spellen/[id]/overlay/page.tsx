@@ -7,6 +7,8 @@ import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
 import type { LayerRows } from '@/lib/game-model';
 import { composeChain, loadChain } from '@/lib/game-store';
+import { t as tr, tKey } from '@/lib/i18n';
+import { useT } from '@/lib/language';
 import {
   centerBounds,
   gameFieldEditable,
@@ -24,6 +26,7 @@ const round = (n: number) => Math.round(n * 1e6) / 1e6;
 
 export default function OverlayPage() {
   const { id } = useParams<{ id: string }>();
+  const t = useT();
   const [chain, setChain] = useState<LayerRows[] | null>(null);
   const [game, setGame] = useState<GamePackage | null>(null);
   const [overlay, setOverlay] = useState<MapOverlay | null>(null);
@@ -85,7 +88,7 @@ export default function OverlayPage() {
       const start =
         game.meetingPoint ??
         (game.mapOverlay ? { lat: (game.mapOverlay.bounds[0].lat + game.mapOverlay.bounds[1].lat) / 2, lng: (game.mapOverlay.bounds[0].lng + game.mapOverlay.bounds[1].lng) / 2 } : null) ??
-        game.tasks.map((t) => t.location ?? Object.values(t.trackLocations ?? {})[0]).find(Boolean) ??
+        game.tasks.map((tk) => tk.location ?? Object.values(tk.trackLocations ?? {})[0]).find(Boolean) ??
         { lat: 52.37, lng: 4.89 };
       const m = new Map({
         container: container.current,
@@ -151,7 +154,7 @@ export default function OverlayPage() {
           const at = corner === 'nw' ? overlay.bounds[0] : overlay.bounds[1];
           const el = document.createElement('div');
           el.className = 'corner';
-          el.title = corner === 'nw' ? 'Linksboven' : 'Rechtsonder';
+          el.title = corner === 'nw' ? t('Linksboven') : t('Rechtsonder');
           const marker = new MarkerClass({ element: el, draggable: canOverlay }).setLngLat([at.lng, at.lat]).addTo(m);
           marker.on('dragend', () => {
             const { lat, lng } = marker.getLngLat();
@@ -164,7 +167,7 @@ export default function OverlayPage() {
       if (meeting) {
         const el = document.createElement('div');
         el.className = `pin meeting${canMeeting ? ' editable' : ''}`;
-        el.title = 'Verzamelpunt';
+        el.title = t('Verzamelpunt');
         const marker = new MarkerClass({ element: el, draggable: canMeeting }).setLngLat([meeting.lng, meeting.lat]).addTo(m);
         marker.on('dragend', () => {
           const { lat, lng } = marker.getLngLat();
@@ -174,9 +177,9 @@ export default function OverlayPage() {
         markers.current.push(marker);
       }
     });
-  }, [overlay, meeting, ready, canOverlay, canMeeting]);
+  }, [overlay, meeting, ready, canOverlay, canMeeting, t]);
 
-  if (!chain || !game) return errors.length ? <ul className="errors">{errors.map((e, i) => <li key={i}>{e}</li>)}</ul> : <p className="muted">Laden…</p>;
+  if (!chain || !game) return errors.length ? <ul className="errors">{errors.map((e, i) => <li key={i}>{e}</li>)}</ul> : <p className="muted">{t('Laden…')}</p>;
 
   const self = chain[chain.length - 1]!;
   const isBase = self.game.layer === 'base';
@@ -209,7 +212,7 @@ export default function OverlayPage() {
       }
       setOverlay((o) => ({ image: url, bounds: o?.bounds ?? initialBounds(mid, size.width, size.height, widthMeters) }));
       touch('mapOverlay');
-      setNotice('Afbeelding geüpload. Sleep de blauwe hoeken tot de overlay op de kaart past en sla daarna op.');
+      setNotice(t('Afbeelding geüpload. Sleep de blauwe hoeken tot de overlay op de kaart past en sla daarna op.'));
     } catch (err) {
       setErrors([err instanceof Error ? err.message : String(err)]);
     } finally {
@@ -257,7 +260,7 @@ export default function OverlayPage() {
           if (value) must(await db.from('overrides').insert({ game_id: id, task_id: null, field, value }));
         }
       }
-      setNotice('Opgeslagen. Publiceer het spel om het in de app te zien.');
+      setNotice(t('Opgeslagen. Publiceer het spel om het in de app te zien.'));
       await load();
     } catch (err) {
       setErrors([err instanceof Error ? err.message : String(err)]);
@@ -273,7 +276,7 @@ export default function OverlayPage() {
     try {
       const r = await supabase().from('overrides').delete().eq('game_id', id).is('task_id', null).eq('field', field);
       if (r.error) throw new Error(r.error.message);
-      setNotice('Teruggezet naar de waarde van de laag erboven.');
+      setNotice(t('Teruggezet naar de waarde van de laag erboven.'));
       await load();
     } catch (err) {
       setErrors([err instanceof Error ? err.message : String(err)]);
@@ -285,16 +288,15 @@ export default function OverlayPage() {
   return (
     <>
       <p className="muted">
-        <Link href="/spellen">Spellen</Link> › <Link href={`/spellen/${id}`}>{self.game.slug}</Link> › Kaartstijl, overlay en verzamelpunt
+        <Link href="/spellen">{t('Spellen')}</Link> › <Link href={`/spellen/${id}`}>{self.game.slug}</Link> › {t('Kaartstijl, overlay en verzamelpunt')}
       </p>
-      <h1>Kaartstijl, overlay en verzamelpunt</h1>
+      <h1>{t('Kaartstijl, overlay en verzamelpunt')}</h1>
       <p className="muted">
-        Een overlay is een eigen kaartafbeelding (bijvoorbeeld een getekende spelkaart) die over de gewone kaart ligt.
-        Het verzamelpunt is waar teams aan het begin en einde samenkomen.
+        {t('Een overlay is een eigen kaartafbeelding (bijvoorbeeld een getekende spelkaart) die over de gewone kaart ligt. Het verzamelpunt is waar teams aan het begin en einde samenkomen.')}
       </p>
       <div className="actions">
         <button onClick={() => void save()} disabled={busy || (dirty.size === 0 && !allowedDirty)}>
-          {busy ? 'Bezig…' : dirty.size || allowedDirty ? 'Opslaan' : 'Opgeslagen'}
+          {busy ? t('Bezig…') : dirty.size || allowedDirty ? t('Opslaan') : t('Opgeslagen')}
         </button>
       </div>
       {notice ? <p className="notice">{notice}</p> : null}
@@ -309,13 +311,13 @@ export default function OverlayPage() {
       <div className="mapgrid">
         <div ref={container} className="map" />
         <aside className="card">
-          <h2 style={{ marginTop: 0 }}>Kaartstijl</h2>
+          <h2 style={{ marginTop: 0 }}>{t('Kaartstijl')}</h2>
           {!canStyle ? (
-            <p className="muted">De kaartstijl is in deze laag niet aan te passen.</p>
+            <p className="muted">{t('De kaartstijl is in deze laag niet aan te passen.')}</p>
           ) : (
             <>
               <select
-                aria-label="Kaartstijl"
+                aria-label={t('Kaartstijl')}
                 value={MAP_STYLES.find((s) => s.source.styleUrl === (mapSource?.styleUrl ?? DEFAULT_MAP_SOURCE.styleUrl))?.id ?? 'eigen'}
                 onChange={(e) => {
                   const style = MAP_STYLES.find((s) => s.id === e.target.value);
@@ -326,34 +328,34 @@ export default function OverlayPage() {
               >
                 {MAP_STYLES.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {s.name}
+                    {t(s.name)}
                   </option>
                 ))}
-                {mapSource && !MAP_STYLES.some((s) => s.source.styleUrl === mapSource.styleUrl) ? <option value="eigen">Eigen stijl</option> : null}
+                {mapSource && !MAP_STYLES.some((s) => s.source.styleUrl === mapSource.styleUrl) ? <option value="eigen">{t('Eigen stijl')}</option> : null}
               </select>
-              <p className="muted">Zo ziet de kaart eruit in de app. Een stad of klant kan een andere stijl kiezen als dat hieronder mag.</p>
+              <p className="muted">{t('Zo ziet de kaart eruit in de app. Een stad of klant kan een andere stijl kiezen als dat hieronder mag.')}</p>
               {!isBase && ownGameField(chain, 'map') ? (
                 <button className="link" onClick={() => void reset('map')} disabled={busy}>
-                  Terug naar kaartstijl van de laag erboven
+                  {t('Terug naar kaartstijl van de laag erboven')}
                 </button>
               ) : null}
             </>
           )}
 
-          <h2>Overlay</h2>
+          <h2>{t('Overlay')}</h2>
           {!canOverlay ? (
-            <p className="muted">De overlay is in deze laag niet aan te passen.</p>
+            <p className="muted">{t('De overlay is in deze laag niet aan te passen.')}</p>
           ) : (
             <>
               <label className="filebutton">
-                {overlay ? 'Andere afbeelding' : 'Afbeelding uploaden'}
+                {overlay ? t('Andere afbeelding') : t('Afbeelding uploaden')}
                 <input type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={(e) => void upload(e)} disabled={busy} />
               </label>
               {overlay ? (
                 <>
-                  <label htmlFor="opacity">Doorzichtigheid tijdens uitlijnen</label>
+                  <label htmlFor="opacity">{t('Doorzichtigheid tijdens uitlijnen')}</label>
                   <input id="opacity" type="range" min={0.2} max={1} step={0.05} value={opacity} onChange={(e) => setOpacity(Number(e.target.value))} />
-                  <p className="muted">Sleep de blauwe hoeken (linksboven en rechtsonder) tot straten en gebouwen samenvallen.</p>
+                  <p className="muted">{t('Sleep de blauwe hoeken (linksboven en rechtsonder) tot straten en gebouwen samenvallen.')}</p>
                   <div className="actions">
                     <button
                       className="secondary"
@@ -364,7 +366,7 @@ export default function OverlayPage() {
                         touch('mapOverlay');
                       }}
                     >
-                      Naar midden van de kaart
+                      {t('Naar midden van de kaart')}
                     </button>
                     <button
                       className="link"
@@ -373,24 +375,24 @@ export default function OverlayPage() {
                         touch('mapOverlay');
                       }}
                     >
-                      Weghalen
+                      {t('Weghalen')}
                     </button>
                   </div>
                 </>
               ) : (
-                <p className="muted">Nog geen overlay.</p>
+                <p className="muted">{t('Nog geen overlay.')}</p>
               )}
               {!isBase && ownGameField(chain, 'mapOverlay') ? (
                 <button className="link" onClick={() => void reset('mapOverlay')} disabled={busy}>
-                  Terug naar overlay van de laag erboven
+                  {t('Terug naar overlay van de laag erboven')}
                 </button>
               ) : null}
             </>
           )}
 
-          <h2>Verzamelpunt</h2>
+          <h2>{t('Verzamelpunt')}</h2>
           {!canMeeting ? (
-            <p className="muted">Het verzamelpunt is in deze laag niet aan te passen.</p>
+            <p className="muted">{t('Het verzamelpunt is in deze laag niet aan te passen.')}</p>
           ) : (
             <>
               {meeting ? (
@@ -398,7 +400,7 @@ export default function OverlayPage() {
                   {meeting.lat.toFixed(6)}, {meeting.lng.toFixed(6)}
                 </p>
               ) : (
-                <p className="muted">Nog geen verzamelpunt.</p>
+                <p className="muted">{t('Nog geen verzamelpunt.')}</p>
               )}
               <div className="actions">
                 <button
@@ -410,7 +412,7 @@ export default function OverlayPage() {
                     touch('meetingPoint');
                   }}
                 >
-                  {meeting ? 'Naar midden van de kaart' : 'Plaatsen in het midden van de kaart'}
+                  {meeting ? t('Naar midden van de kaart') : t('Plaatsen in het midden van de kaart')}
                 </button>
                 {meeting ? (
                   <button
@@ -420,14 +422,14 @@ export default function OverlayPage() {
                       touch('meetingPoint');
                     }}
                   >
-                    Weghalen
+                    {t('Weghalen')}
                   </button>
                 ) : null}
               </div>
               {meeting
                 ? game.languages.map((lang) => (
                     <div key={lang}>
-                      <label htmlFor={`mp-${lang}`}>Omschrijving ({lang.toUpperCase()})</label>
+                      <label htmlFor={`mp-${lang}`}>{t('Omschrijving ({lang})', { lang: lang.toUpperCase() })}</label>
                       <input
                         id={`mp-${lang}`}
                         value={meetingText[lang] ?? ''}
@@ -442,39 +444,39 @@ export default function OverlayPage() {
                 : null}
               {!isBase && ownGameField(chain, 'meetingPoint') ? (
                 <button className="link" onClick={() => void reset('meetingPoint')} disabled={busy}>
-                  Terug naar verzamelpunt van de laag erboven
+                  {t('Terug naar verzamelpunt van de laag erboven')}
                 </button>
               ) : null}
             </>
           )}
           {isBase ? (
             <>
-              <h2>Aanpassen in varianten</h2>
-              <p className="muted">Mag een stad of klant hier een eigen versie van maken?</p>
+              <h2>{t('Aanpassen in varianten')}</h2>
+              <p className="muted">{t('Mag een stad of klant hier een eigen versie van maken?')}</p>
               <table>
                 <thead>
                   <tr>
                     <th />
-                    <th>Stad</th>
-                    <th>Klant</th>
+                    <th>{t('Stad')}</th>
+                    <th>{t('Klant')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(
                     [
-                      ['map', 'Kaartstijl'],
-                      ['mapOverlay', 'Overlay'],
-                      ['meetingPoint', 'Verzamelpunt'],
-                      ['boundary', 'Speelveldgrens (rode lijn)'],
+                      ['map', tKey('Kaartstijl')],
+                      ['mapOverlay', tKey('Overlay')],
+                      ['meetingPoint', tKey('Verzamelpunt')],
+                      ['boundary', tKey('Speelveldgrens (rode lijn)')],
                     ] as const
                   ).map(([field, label]) => (
                     <tr key={field}>
-                      <td>{label}</td>
+                      <td>{t(label)}</td>
                       {(['city', 'client'] as const).map((layer) => (
                         <td key={layer}>
                           <input
                             type="checkbox"
-                            aria-label={`${label} ${layer === 'city' ? 'stad' : 'klant'}`}
+                            aria-label={`${t(label)} ${layer === 'city' ? t('stad') : t('klant')}`}
                             checked={allowed[field].includes(layer)}
                             onChange={(e) => {
                               const next = e.target.checked ? [...allowed[field], layer] : allowed[field].filter((l) => l !== layer);
@@ -505,7 +507,7 @@ function cleanText(text: Text): Text {
 }
 
 function textRows(text: Text) {
-  return Object.entries(cleanText(text)).map(([lang, t]) => ({ entity: 'game' as const, entity_id: '', field: 'meetingPoint', lang, text: t }));
+  return Object.entries(cleanText(text)).map(([lang, tk]) => ({ entity: 'game' as const, entity_id: '', field: 'meetingPoint', lang, text: tk }));
 }
 
 function imageSize(file: File): Promise<{ width: number; height: number }> {
@@ -516,7 +518,7 @@ function imageSize(file: File): Promise<{ width: number; height: number }> {
       resolve({ width: img.naturalWidth, height: img.naturalHeight });
       URL.revokeObjectURL(url);
     };
-    img.onerror = () => reject(new Error('Deze afbeelding kan niet worden gelezen.'));
+    img.onerror = () => reject(new Error(tr('Deze afbeelding kan niet worden gelezen.')));
     img.src = url;
   });
 }

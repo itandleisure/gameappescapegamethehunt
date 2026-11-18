@@ -3,6 +3,7 @@
 import type { GamePackage } from '@hunt/engine';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PositionRow } from './live-map';
+import { t as tr } from './i18n';
 import type { EventRow, PhotoRow, TeamRow } from './results';
 import { supabase } from './supabase';
 
@@ -88,7 +89,7 @@ export function useSessionLive(id: string) {
         .single();
       if (s.error) throw new Error(s.error.message);
       const row = s.data as unknown as SessionInfo & { game_versions: { package: GamePackage } | null };
-      if (!row.game_versions) throw new Error('Het spel van deze hunt is niet gevonden.');
+      if (!row.game_versions) throw new Error(tr('Het spel van deze hunt is niet gevonden.'));
       const t = await db.from('teams').select(TEAM_COLUMNS).eq('session_id', id).order('login_order');
       if (t.error) throw new Error(t.error.message);
       const ids = (t.data as LiveTeam[]).map((x) => x.id);

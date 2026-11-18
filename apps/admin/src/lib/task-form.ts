@@ -3,6 +3,7 @@
  * Puur (zonder database), zodat het te testen is.
  */
 import type { AnswerSpec, Hint, MapIcon, Task, TaskLocation, Text } from '@hunt/engine';
+import { t } from './i18n';
 
 export type AnswerType = AnswerSpec['type'];
 export type Texts = Record<string, string>;
@@ -84,9 +85,9 @@ export function formAnswer(form: TaskForm, errors: string[]): AnswerSpec {
     case 'choice':
     case 'multi': {
       const options = form.options.map(cleanText);
-      if (options.length < 2) errors.push('Geef minstens twee opties.');
+      if (options.length < 2) errors.push(t('Geef minstens twee opties.'));
       const correct = form.correct.filter((i) => i < options.length);
-      if (correct.length === 0) errors.push('Vink aan welke optie goed is.');
+      if (correct.length === 0) errors.push(t('Vink aan welke optie goed is.'));
       return form.answerType === 'choice'
         ? { type: 'choice', options, correct: correct[0] ?? 0 }
         : { type: 'multi', options, correct: [...correct].sort((a, b) => a - b) };
@@ -96,12 +97,12 @@ export function formAnswer(form: TaskForm, errors: string[]): AnswerSpec {
         .split('\n')
         .map((s) => s.trim())
         .filter(Boolean);
-      if (accepted.length === 0) errors.push('Geef minstens één goed antwoord.');
+      if (accepted.length === 0) errors.push(t('Geef minstens één goed antwoord.'));
       return { type: 'text', accepted };
     }
     case 'number': {
       const value = num(form.numberValue);
-      if (Number.isNaN(value)) errors.push('Het goede getal ontbreekt.');
+      if (Number.isNaN(value)) errors.push(t('Het goede getal ontbreekt.'));
       const tolerance = num(form.tolerance);
       return Number.isNaN(tolerance) ? { type: 'number', value } : { type: 'number', value, tolerance };
     }
@@ -115,8 +116,8 @@ export function formLocation(form: TaskForm, errors: string[]): TaskLocation | u
   const lat = num(form.lat);
   const lng = num(form.lng);
   const radius = num(form.radius);
-  if (!(lat >= -90 && lat <= 90) || !(lng >= -180 && lng <= 180)) errors.push('Breedte- of lengtegraad is ongeldig.');
-  if (!(radius > 0)) errors.push('De straal moet groter dan 0 meter zijn.');
+  if (!(lat >= -90 && lat <= 90) || !(lng >= -180 && lng <= 180)) errors.push(t('Breedte- of lengtegraad is ongeldig.'));
+  if (!(radius > 0)) errors.push(t('De straal moet groter dan 0 meter zijn.'));
   return { lat, lng, radius: Math.round(radius) };
 }
 
@@ -125,15 +126,15 @@ export function formToTask(key: string, form: TaskForm): { task: Task; errors: s
   const errors: string[] = [];
   const points = num(form.points);
   const wrongPoints = num(form.wrongPoints || '0');
-  if (!Number.isInteger(points)) errors.push('Punten moet een heel getal zijn.');
-  if (!Number.isInteger(wrongPoints)) errors.push('Punten bij fout moet een heel getal zijn.');
+  if (!Number.isInteger(points)) errors.push(t('Punten moet een heel getal zijn.'));
+  if (!Number.isInteger(wrongPoints)) errors.push(t('Punten bij fout moet een heel getal zijn.'));
   const hints = form.hints.map((h, i) => {
     const cost = num(h.cost);
-    if (!Number.isInteger(cost) || cost < 0) errors.push(`Hint ${i + 1}: de prijs moet een positief heel getal zijn.`);
+    if (!Number.isInteger(cost) || cost < 0) errors.push(t('Hint {n}: de prijs moet een positief heel getal zijn.', { n: i + 1 }));
     const hint: Hint = { cost, text: cleanText(h.text) };
     const image = h.image.trim();
     if (image) {
-      if (!/^https:\/\/\S+$/.test(image)) errors.push(`Hint ${i + 1}: de afbeelding moet een https-adres zijn.`);
+      if (!/^https:\/\/\S+$/.test(image)) errors.push(t('Hint {n}: de afbeelding moet een https-adres zijn.', { n: i + 1 }));
       hint.image = image;
     }
     return hint;
@@ -153,12 +154,12 @@ export function formToTask(key: string, form: TaskForm): { task: Task; errors: s
   };
   const image = form.image.trim();
   if (image) {
-    if (!/^https:\/\/\S+$/.test(image)) errors.push('De foto moet een https-adres zijn.');
+    if (!/^https:\/\/\S+$/.test(image)) errors.push(t('De foto moet een https-adres zijn.'));
     task.image = image;
   }
   const mapLabel = form.mapLabel.trim();
   if (mapLabel) {
-    if (mapLabel.length > 3) errors.push('Het kaarticoon mag hooguit 3 tekens hebben.');
+    if (mapLabel.length > 3) errors.push(t('Het kaarticoon mag hooguit 3 tekens hebben.'));
     task.mapLabel = mapLabel;
   }
   if (form.mapIcon) task.mapIcon = form.mapIcon;

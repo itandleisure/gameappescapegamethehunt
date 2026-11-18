@@ -18,6 +18,8 @@ import {
 } from "react";
 import { rowsToBase, type LayerRows } from "@/lib/game-model";
 import { loadChain } from "@/lib/game-store";
+import { t as tr } from "@/lib/i18n";
+import { useT } from "@/lib/language";
 import { mediaPath } from "@/lib/map-settings";
 import {
   newPiece,
@@ -34,6 +36,7 @@ import { supabase } from "@/lib/supabase";
  */
 export default function TabbladenPage() {
   const { id } = useParams<{ id: string }>();
+  const t = useT();
   const [chain, setChain] = useState<LayerRows[] | null>(null);
   const [base, setBase] = useState<BaseGame | null>(null);
   const [list, setList] = useState<Playground[]>([]);
@@ -73,7 +76,7 @@ export default function TabbladenPage() {
         ))}
       </ul>
     ) : (
-      <p className="muted">Laden…</p>
+      <p className="muted">{t('Laden…')}</p>
     );
 
   const self = chain[chain.length - 1]!;
@@ -87,9 +90,9 @@ export default function TabbladenPage() {
 
   const add = () => {
     const key = playgroundKey(newName);
-    if (!key) return setErrors(["Geef het tabblad een naam."]);
+    if (!key) return setErrors([t("Geef het tabblad een naam.")]);
     if (list.some((p) => p.id === key))
-      return setErrors([`Er is al een tabblad ${key}.`]);
+      return setErrors([t("Er is al een tabblad {name}.", { name: key })]);
     setList((l) => [
       ...l,
       { id: key, name: { [base.defaultLanguage]: newName.trim() } },
@@ -156,7 +159,7 @@ export default function TabbladenPage() {
       if (briefing) settings.briefing = briefing;
       else delete settings.briefing;
       must(await db.from("games").update({ settings }).eq("id", id));
-      setNotice("Opgeslagen. Publiceer het spel om het in de app te zien.");
+      setNotice(t("Opgeslagen. Publiceer het spel om het in de app te zien."));
       await load();
     } catch (err) {
       setErrors([err instanceof Error ? err.message : String(err)]);
@@ -168,20 +171,16 @@ export default function TabbladenPage() {
   return (
     <>
       <p className="muted">
-        <Link href="/spellen">Spellen</Link> ›{" "}
-        <Link href={`/spellen/${id}`}>{self.game.slug}</Link> › Tabbladen
+        <Link href="/spellen">{t('Spellen')}</Link> ›{" "}
+        <Link href={`/spellen/${id}`}>{self.game.slug}</Link> › {t("Tabbladen")}
       </p>
-      <h1>Tabbladen</h1>
+      <h1>{t('Tabbladen')}</h1>
       <p className="muted">
-        Tabbladen staan in de app onder Opdrachten, zoals Speluitleg en
-        Extractiepunt. Een tabblad kan een naslagtekst hebben (per taal) en een
-        foto met afgedekte vakken: elk vak wordt zichtbaar zodra de opdracht die
-        erbij hoort goed is. Gelezen uitleg verdwijnt uit de lijst; de
-        naslagtekst blijft hier staan.
+        {t('Tabbladen staan in de app onder Opdrachten, zoals Speluitleg en Extractiepunt. Een tabblad kan een naslagtekst hebben (per taal) en een foto met afgedekte vakken: elk vak wordt zichtbaar zodra de opdracht die erbij hoort goed is. Gelezen uitleg verdwijnt uit de lijst; de naslagtekst blijft hier staan.')}
       </p>
       {!isBase ? (
         <p className="notice">
-          Tabbladen stel je in bij het basisspel:{" "}
+          {t("Tabbladen stel je in bij het basisspel:")}{" "}
           <Link href={`/spellen/${chain[0]!.game.id}/tabbladen`}>
             {chain[0]!.game.slug}
           </Link>
@@ -191,7 +190,7 @@ export default function TabbladenPage() {
         <>
           <div className="actions">
             <button onClick={() => void save()} disabled={busy || !dirty}>
-              {busy ? "Bezig…" : dirty ? "Opslaan" : "Opgeslagen"}
+              {busy ? t("Bezig…") : dirty ? t("Opslaan") : t("Opgeslagen")}
             </button>
           </div>
           {notice ? <p className="notice">{notice}</p> : null}
@@ -204,12 +203,11 @@ export default function TabbladenPage() {
           ) : null}
 
           <section className="card" style={{ marginBottom: 16 }}>
-            <h2 style={{ marginTop: 0 }}>Speluitleg vóór de start</h2>
+            <h2 style={{ marginTop: 0 }}>{t('Speluitleg vóór de start')}</h2>
             <p className="muted">
-              Bij een hunt met centrale start lezen teams deze uitleg terwijl ze wachten. Pas als iedereen klaar is,
-              start de spelleider het spel. De gelezen uitleg telt dan bij de start als afgerond.
+              {t("Bij een hunt met centrale start lezen teams deze uitleg terwijl ze wachten. Pas als iedereen klaar is, start de spelleider het spel. De gelezen uitleg telt dan bij de start als afgerond.")}
             </p>
-            <label htmlFor="briefing">Reeks</label>
+            <label htmlFor="briefing">{t('Reeks')}</label>
             <select
               id="briefing"
               value={briefing}
@@ -218,10 +216,10 @@ export default function TabbladenPage() {
                 setDirty(true);
               }}
             >
-              <option value="">Geen (uitleg tijdens het spel)</option>
+              <option value="">{t('Geen (uitleg tijdens het spel)')}</option>
               {base.sequences.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.id} ({s.tasks.length} schermen)
+                  {s.id} ({t("{n} schermen", { n: s.tasks.length })})
                 </option>
               ))}
             </select>
@@ -239,20 +237,20 @@ export default function TabbladenPage() {
           ))}
 
           <section className="card" style={{ marginTop: 16 }}>
-            <h2 style={{ marginTop: 0 }}>Nieuw tabblad</h2>
+            <h2 style={{ marginTop: 0 }}>{t('Nieuw tabblad')}</h2>
             <div className="row">
               <div>
-                <label htmlFor="newpg">Naam</label>
+                <label htmlFor="newpg">{t('Naam')}</label>
                 <input
                   id="newpg"
                   value={newName}
-                  placeholder="Speluitleg"
+                  placeholder={t('Speluitleg')}
                   onChange={(e) => setNewName(e.target.value)}
                 />
               </div>
               <div style={{ flex: "0 0 auto" }}>
                 <button className="secondary" onClick={add}>
-                  Toevoegen
+                  {t('Toevoegen')}
                 </button>
               </div>
             </div>
@@ -276,6 +274,7 @@ function PlaygroundCard({
   onChange: (change: (p: Playground) => Playground) => void;
   onError: (message: string) => void;
 }) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState(0);
   const preview = useRef<HTMLDivElement>(null);
@@ -359,7 +358,7 @@ function PlaygroundCard({
         {base.languages.map((lang) => (
           <div key={lang}>
             <label htmlFor={`${p.id}-name-${lang}`}>
-              Naam ({lang.toUpperCase()})
+              {t("Naam ({lang})", { lang: lang.toUpperCase() })}
             </label>
             <input
               id={`${p.id}-name-${lang}`}
@@ -370,15 +369,14 @@ function PlaygroundCard({
         ))}
       </div>
 
-      <h3>Naslagtekst</h3>
+      <h3>{t('Naslagtekst')}</h3>
       <p className="muted">
-        Staat altijd bovenaan dit tabblad, bijvoorbeeld de tijdlijn van het
-        spel.
+        {t('Staat altijd bovenaan dit tabblad, bijvoorbeeld de tijdlijn van het spel.')}
       </p>
       {base.languages.map((lang) => (
         <div key={lang}>
           <label htmlFor={`${p.id}-body-${lang}`}>
-            Tekst ({lang.toUpperCase()})
+            {t("Tekst ({lang})", { lang: lang.toUpperCase() })}
           </label>
           <textarea
             id={`${p.id}-body-${lang}`}
@@ -389,10 +387,10 @@ function PlaygroundCard({
         </div>
       ))}
 
-      <h3>Foto met afgedekte vakken</h3>
+      <h3>{t('Foto met afgedekte vakken')}</h3>
       <div className="actions" style={{ marginTop: 0 }}>
         <label className={`filebutton${busy ? " disabled" : ""}`}>
-          {busy ? "Bezig…" : reveal ? "Andere foto" : "Foto uploaden"}
+          {busy ? t("Bezig…") : reveal ? t("Andere foto") : t("Foto uploaden")}
           <input
             type="file"
             accept="image/png,image/jpeg,image/webp"
@@ -402,7 +400,7 @@ function PlaygroundCard({
         </label>
         {reveal ? (
           <button className="link" onClick={() => setReveal(undefined)}>
-            Foto weghalen
+            {t('Foto weghalen')}
           </button>
         ) : null}
       </div>
@@ -462,9 +460,8 @@ function PlaygroundCard({
           </div>
           <div style={{ flex: "1 1 320px" }}>
             <p className="muted" style={{ marginTop: 0 }}>
-              Kies een vak en sleep op de foto om het te tekenen. Het vak blijft
-              dicht in de app tot de gekozen opdracht goed is. Foto:{" "}
-              {reveal.width} × {reveal.height} px.
+              {t('Kies een vak en sleep op de foto om het te tekenen. Het vak blijft dicht in de app tot de gekozen opdracht goed is.')}{" "}
+              {t('Foto: {w} × {h} px.', { w: reveal.width, h: reveal.height })}
             </p>
             {reveal.pieces.map((piece, i) => (
               <div
@@ -483,12 +480,12 @@ function PlaygroundCard({
                     name={`${p.id}-sel`}
                     checked={i === selected}
                     onChange={() => setSelected(i)}
-                    aria-label={`Vak ${i + 1} kiezen`}
+                    aria-label={t("Vak {n} kiezen", { n: i + 1 })}
                   />{" "}
                   {i + 1}
                 </div>
                 <div>
-                  <label htmlFor={`${p.id}-task-${i}`}>Opdracht</label>
+                  <label htmlFor={`${p.id}-task-${i}`}>{t('Opdracht')}</label>
                   <select
                     id={`${p.id}-task-${i}`}
                     value={piece.task}
@@ -501,9 +498,9 @@ function PlaygroundCard({
                       })
                     }
                   >
-                    {base.tasks.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.title[base.defaultLanguage] || t.id} ({t.id})
+                    {base.tasks.map((tk) => (
+                      <option key={tk.id} value={tk.id}>
+                        {tk.title[base.defaultLanguage] || tk.id} ({tk.id})
                       </option>
                     ))}
                   </select>
@@ -519,7 +516,7 @@ function PlaygroundCard({
                       setSelected(0);
                     }}
                   >
-                    Weghalen
+                    {t('Weghalen')}
                   </button>
                 </div>
               </div>
@@ -530,7 +527,7 @@ function PlaygroundCard({
                 const used = new Set(reveal.pieces.map((x) => x.task));
                 const task =
                   base.tasks.find(
-                    (t) => !used.has(t.id) && t.tags.includes("oplossing"),
+                    (tk) => !used.has(tk.id) && tk.tags.includes("oplossing"),
                   )?.id ??
                   base.tasks[0]?.id ??
                   "";
@@ -541,12 +538,12 @@ function PlaygroundCard({
                 setSelected(reveal.pieces.length);
               }}
             >
-              Vak toevoegen
+              {t('Vak toevoegen')}
             </button>
           </div>
         </div>
       ) : (
-        <p className="muted">Geen foto op dit tabblad.</p>
+        <p className="muted">{t('Geen foto op dit tabblad.')}</p>
       )}
     </section>
   );
@@ -572,12 +569,12 @@ function cleanPlayground(p: Playground): Playground {
 }
 
 function textRows(key: string, field: string, text: Text) {
-  return Object.entries(cleanText(text)).map(([lang, t]) => ({
+  return Object.entries(cleanText(text)).map(([lang, tk]) => ({
     entity: "playground" as const,
     entity_id: key,
     field,
     lang,
-    text: t,
+    text: tk,
   }));
 }
 
@@ -590,7 +587,7 @@ function imageSize(file: File): Promise<{ width: number; height: number }> {
       URL.revokeObjectURL(url);
     };
     img.onerror = () =>
-      reject(new Error("Deze afbeelding kan niet worden gelezen."));
+      reject(new Error(tr("Deze afbeelding kan niet worden gelezen.")));
     img.src = url;
   });
 }

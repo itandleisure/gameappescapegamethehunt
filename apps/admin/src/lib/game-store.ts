@@ -15,6 +15,7 @@ import {
   type TaskRow,
 } from './game-model';
 import { mediaPath } from './map-settings';
+import { t as tr } from './i18n';
 
 const GAME_COLUMNS = 'id, layer, slug, parent_id, languages, default_language, settings';
 
@@ -55,7 +56,7 @@ export async function loadChain(db: SupabaseClient, gameId: string): Promise<Lay
 /** Stelt het spel samen zoals het gespeeld wordt. Gooit een CompositionError bij fouten. */
 export function composeChain(chain: LayerRows[], version = 0): GamePackage {
   const [baseRows, ...variantRows] = chain;
-  if (!baseRows) throw new Error('Geen basisspel gevonden.');
+  if (!baseRows) throw new Error(tr('Geen basisspel gevonden.'));
   const base = rowsToBase(baseRows);
   const variants = variantRows.map((rows) => rowsToVariant(rows, baseRows));
   const last = chain[chain.length - 1]!;
@@ -120,7 +121,7 @@ export async function importBundle(db: SupabaseClient, orgId: string, bundle: Ga
     let city: string | null = null;
     for (const variant of bundle.variants) {
       const parent = variant.layer === 'city' ? baseId : (city ?? baseId);
-      if (variant.layer === 'client' && !city) throw new Error(`Klantvariant ${variant.id} heeft geen stad ervoor.`);
+      if (variant.layer === 'client' && !city) throw new Error(tr('Klantvariant {id} heeft geen stad ervoor.', { id: variant.id }));
       const rows = variantToRows(
         variant,
         { id: '', slug: variant.id, parent_id: parent, languages: bundle.base.languages, default_language: bundle.base.defaultLanguage },

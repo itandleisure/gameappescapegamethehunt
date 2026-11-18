@@ -10,6 +10,7 @@ import {
   type TranslationRow,
 } from "@/lib/game-model";
 import { loadChain } from "@/lib/game-store";
+import { useT } from "@/lib/language";
 import {
   describeRule,
   formatDuration,
@@ -47,6 +48,7 @@ const hmsSeconds = (v: Hms): number | null => {
 
 export default function RulesPage() {
   const { id } = useParams<{ id: string }>();
+  const t = useT();
   const [rows, setRows] = useState<LayerRows | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
@@ -76,12 +78,12 @@ export default function RulesPage() {
         ))}
       </ul>
     ) : (
-      <p className="muted">Laden…</p>
+      <p className="muted">{t('Laden…')}</p>
     );
   if (rows.game.id !== id) {
     return (
       <p className="card">
-        Regels horen bij het basisspel. Open het basisspel om ze te bewerken.
+        {t('Regels horen bij het basisspel. Open het basisspel om ze te bewerken.')}
       </p>
     );
   }
@@ -120,7 +122,7 @@ export default function RulesPage() {
         if (!values) return r;
         const seconds = values.map(hmsSeconds);
         if (seconds.some((n) => n === null))
-          throw new Error(`Regel ${r.label ?? r.id}: vul uren, minuten en seconden in als getal van 0 of meer.`);
+          throw new Error(t("Regel {name}: vul uren, minuten en seconden in als getal van 0 of meer.", { name: r.label ?? r.id }));
         const settings = timeSettings(r.when);
         const secs = seconds as number[];
         const when = withTimes(r.when, settings.map((st, i) => settingValue(st, secs[i]!)));
@@ -139,17 +141,17 @@ export default function RulesPage() {
         );
       }
       setTimes({});
-    }, "Tijden opgeslagen. Publiceer het spel om ze in de app te gebruiken.");
+    }, t("Tijden opgeslagen. Publiceer het spel om ze in de app te gebruiken."));
 
   const saveDraft = () =>
     run(async () => {
       if (!draft) return;
       if (!/^[a-z0-9][a-z0-9-]{0,62}$/.test(draft.id))
         throw new Error(
-          "Gebruik voor de sleutel alleen kleine letters, cijfers en streepjes.",
+          t("Gebruik voor de sleutel alleen kleine letters, cijfers en streepjes."),
         );
       if (draft.isNew && base.rules.some((r) => r.id === draft.id))
-        throw new Error("Die sleutel bestaat al.");
+        throw new Error(t("Die sleutel bestaat al."));
       const { rule, error } = parseRule(
         draft.id,
         draft.label,
@@ -195,10 +197,10 @@ export default function RulesPage() {
         must(
           await db
             .from("translations")
-            .insert(texts.map((t) => ({ ...t, game_id: id }))),
+            .insert(texts.map((tk) => ({ ...tk, game_id: id }))),
         );
       setDraft(null);
-    }, "Regel opgeslagen. Publiceer het spel om hem te gebruiken.");
+    }, t("Regel opgeslagen. Publiceer het spel om hem te gebruiken."));
 
   const remove = (rule: Rule) =>
     run(async () => {
@@ -218,7 +220,7 @@ export default function RulesPage() {
           .eq("entity", "rule")
           .eq("entity_id", rule.id),
       );
-    }, "Regel verwijderd.");
+    }, t("Regel verwijderd."));
 
   const move = (index: number, delta: number) =>
     run(async () => {
@@ -234,7 +236,7 @@ export default function RulesPage() {
             .eq("key", r.id),
         );
       }
-    }, "Volgorde opgeslagen.");
+    }, t("Volgorde opgeslagen."));
 
   // Het bewerkvak staat bij de regel zelf (of bovenaan voor een nieuwe regel),
   // zodat je het ziet zonder te scrollen.
@@ -242,7 +244,7 @@ export default function RulesPage() {
     <div className="card">
       <div className="row">
         <div>
-          <label htmlFor="key">Sleutel</label>
+          <label htmlFor="key">{t('Sleutel')}</label>
           <input
             id="key"
             value={draft.id}
@@ -251,7 +253,7 @@ export default function RulesPage() {
           />
         </div>
         <div>
-          <label htmlFor="label">Omschrijving</label>
+          <label htmlFor="label">{t('Omschrijving')}</label>
           <input
             id="label"
             value={draft.label}
@@ -259,7 +261,7 @@ export default function RulesPage() {
           />
         </div>
       </div>
-      <label htmlFor="when">Als (voorwaarde, JSON)</label>
+      <label htmlFor="when">{t('Als (voorwaarde, JSON)')}</label>
       <textarea
         id="when"
         rows={6}
@@ -267,7 +269,7 @@ export default function RulesPage() {
         value={draft.when}
         onChange={(e) => setDraft({ ...draft, when: e.target.value })}
       />
-      <label htmlFor="then">Dan (acties, JSON)</label>
+      <label htmlFor="then">{t('Dan (acties, JSON)')}</label>
       <textarea
         id="then"
         rows={10}
@@ -286,10 +288,10 @@ export default function RulesPage() {
       })()}
       <div className="actions">
         <button onClick={() => void saveDraft()} disabled={busy}>
-          Opslaan
+          {t('Opslaan')}
         </button>
         <button className="secondary" onClick={() => setDraft(null)}>
-          Annuleren
+          {t('Annuleren')}
         </button>
       </div>
     </div>
@@ -298,14 +300,12 @@ export default function RulesPage() {
   return (
     <>
       <p className="muted">
-        <Link href="/spellen">Spellen</Link> ›{" "}
-        <Link href={`/spellen/${id}`}>{rows.game.slug}</Link> › Regels
+        <Link href="/spellen">{t('Spellen')}</Link> ›{" "}
+        <Link href={`/spellen/${id}`}>{rows.game.slug}</Link> › {t("Regels")}
       </p>
-      <h1>Regels</h1>
+      <h1>{t('Regels')}</h1>
       <p className="muted">
-        Een regel is “als dit gebeurt, dan dat”. Elke regel vuurt één keer, op
-        het eerste moment dat de voorwaarde waar wordt. Volgorde telt bij regels
-        die op hetzelfde moment vuren.
+        {t('Een regel is “als dit gebeurt, dan dat”. Elke regel vuurt één keer, op het eerste moment dat de voorwaarde waar wordt. Volgorde telt bij regels die op hetzelfde moment vuren.')}
       </p>
       {notice ? <p className="notice">{notice}</p> : null}
       {errors.length > 0 ? (
@@ -318,10 +318,9 @@ export default function RulesPage() {
 
       {timed.length > 0 ? (
         <section className="card" style={{ marginBottom: 16 }}>
-          <h2 style={{ marginTop: 0 }}>Tijden</h2>
+          <h2 style={{ marginTop: 0 }}>{t('Tijden')}</h2>
           <p className="muted">
-            Regels die op tijd gaan. Vul uren, minuten en seconden in en sla op; de omschrijving loopt mee. In een testhunt kun je in de app de tijd
-            vooruitzetten, zodat je niet hoeft te wachten.
+            {t("Regels die op tijd gaan. Vul uren, minuten en seconden in en sla op; de omschrijving loopt mee. In een testhunt kun je in de app de tijd vooruitzetten, zodat je niet hoeft te wachten.")}
           </p>
           <table>
             <tbody>
@@ -341,7 +340,7 @@ export default function RulesPage() {
                                 style={{ width: 56 }}
                                 inputMode="numeric"
                                 value={values[i]![unit]}
-                                aria-label={`${unit === "h" ? "uren" : unit === "m" ? "minuten" : "seconden"} ${s.kind === "elapsed" ? "na de start" : `na ${s.task}`}`}
+                                aria-label={`${unit === "h" ? t("uren") : unit === "m" ? t("minuten") : t("seconden")} ${s.kind === "elapsed" ? t("na de start") : t("na {task}", { task: s.task })}`}
                                 onChange={(e) =>
                                   setTimes({
                                     ...times,
@@ -349,11 +348,11 @@ export default function RulesPage() {
                                   })
                                 }
                               />
-                              {unit === "h" ? "u" : unit === "m" ? "min" : "sec"}
+                              {unit === "h" ? t("u") : unit === "m" ? t("min") : t("sec")}
                             </label>
                           ))}
                           <span className="muted small">
-                            {s.kind === "elapsed" ? "na de start" : `na ${s.task}`}
+                            {s.kind === "elapsed" ? t("na de start") : t("na {task}", { task: s.task })}
                             {hmsSeconds(values[i]!) !== null ? ` (${formatDuration(hmsSeconds(values[i]!)!)})` : ""}
                           </span>
                         </div>
@@ -366,7 +365,7 @@ export default function RulesPage() {
           </table>
           <div className="actions">
             <button onClick={() => void saveTimes()} disabled={busy || Object.keys(times).length === 0}>
-              {Object.keys(times).length ? "Tijden opslaan" : "Opgeslagen"}
+              {Object.keys(times).length ? t("Tijden opslaan") : t("Opgeslagen")}
             </button>
           </div>
         </section>
@@ -392,12 +391,12 @@ export default function RulesPage() {
               })
             }
           >
-            Nieuwe regel
+            {t('Nieuwe regel')}
           </button>
         </div>
       )}
 
-      <h2>Alle regels</h2>
+      <h2>{t('Alle regels')}</h2>
       <ol className="rules">
         {base.rules.map((rule, i) => (
           <li key={rule.id} className="card">
@@ -421,7 +420,7 @@ export default function RulesPage() {
                       })
                     }
                   >
-                    Bewerken
+                    {t('Bewerken')}
                   </button>
                   <button
                     className="secondary"
@@ -441,11 +440,11 @@ export default function RulesPage() {
                     className="link"
                     disabled={busy}
                     onClick={() => {
-                      if (window.confirm(`Regel ${rule.id} verwijderen?`))
+                      if (window.confirm(t("Regel {name} verwijderen?", { name: rule.id })))
                         void remove(rule);
                     }}
                   >
-                    Verwijderen
+                    {t('Verwijderen')}
                   </button>
                 </div>
               </>

@@ -1,5 +1,6 @@
 import type { LatLng, MapOverlay } from '@hunt/engine';
 import type { LayerRows } from './game-model';
+import { t } from './i18n';
 
 /** Spelvelden op de kaartpagina voor overlay en verzamelpunt. */
 export type MapGameField = 'mapOverlay' | 'meetingPoint' | 'map' | 'boundary';
@@ -32,7 +33,7 @@ export function overlayExtension(type: string): string | null {
 /** Opslagpad in de bucket media: altijd in de map van het spel. */
 export function mediaPath(gameId: string, name: string, type: string, now = Date.now()): string {
   const ext = overlayExtension(type);
-  if (!ext) throw new Error('Gebruik een PNG-, JPG- of WebP-afbeelding.');
+  if (!ext) throw new Error(t('Gebruik een PNG-, JPG- of WebP-afbeelding.'));
   return `${gameId}/${name.replace(/[^a-z0-9-]/gi, '-')}-${now}.${ext}`;
 }
 

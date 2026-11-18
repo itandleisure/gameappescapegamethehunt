@@ -1,5 +1,6 @@
 // Live kaart voor de spelleiding (de Hunters): waar is elk team nu, en welke
 // route heeft het gelopen. Pure functies, zodat ze zonder kaart te testen zijn.
+import { t } from './i18n';
 import { distanceMeters, routeDistance, type GamePackage, type LatLng } from '@hunt/engine';
 
 export interface PositionRow {
@@ -100,11 +101,11 @@ export function trailsGeoJson(teams: readonly MapTeam[], trails: Map<string, Tea
 /** "zojuist", "45 s geleden", "3 min geleden", "1 u 5 min geleden" */
 export function ago(at: number, now: number): string {
   const s = Math.max(0, Math.round((now - at) / 1000));
-  if (s < 10) return 'zojuist';
-  if (s < 60) return `${s} s geleden`;
+  if (s < 10) return t('zojuist');
+  if (s < 60) return t('{s} s geleden', { s });
   const m = Math.floor(s / 60);
-  if (m < 60) return `${m} min geleden`;
-  return `${Math.floor(m / 60)} u ${m % 60} min geleden`;
+  if (m < 60) return t('{m} min geleden', { m });
+  return t('{h} u {m} min geleden', { h: Math.floor(m / 60), m: m % 60 });
 }
 
 /** Positie ouder dan 2 minuten: het team heeft (even) geen verbinding of GPS. */

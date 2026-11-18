@@ -5,20 +5,22 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import type { LayerRows } from "@/lib/game-model";
 import { loadChain, publish } from "@/lib/game-store";
+import { tKey } from "@/lib/i18n";
+import { useLanguage } from "@/lib/language";
 import { supabase } from "@/lib/supabase";
 
 const LAYER_LABEL = {
-  base: "Basisspel",
-  city: "Stad",
-  client: "Klant",
+  base: tKey("Basisspel"),
+  city: tKey("Stad"),
+  client: tKey("Klant"),
 } as const;
 const ANSWER_LABEL: Record<string, string> = {
-  info: "Info",
-  choice: "Meerkeuze",
-  multi: "Meerdere goed",
-  text: "Tekst",
-  number: "Getal",
-  photo: "Foto",
+  info: tKey("Info"),
+  choice: tKey("Meerkeuze"),
+  multi: tKey("Meerdere goed"),
+  text: tKey("Tekst"),
+  number: tKey("Getal"),
+  photo: tKey("Foto"),
 };
 
 interface Version {
@@ -40,10 +42,10 @@ function nl(
   field: string,
 ): string {
   const list = rows.translations.filter(
-    (t) => t.entity === entity && t.entity_id === id && t.field === field,
+    (tk) => tk.entity === entity && tk.entity_id === id && tk.field === field,
   );
   return (
-    (list.find((t) => t.lang === rows.game.default_language) ?? list[0])
+    (list.find((tk) => tk.lang === rows.game.default_language) ?? list[0])
       ?.text ?? ""
   );
 }
@@ -51,6 +53,7 @@ function nl(
 export default function GamePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { t, locale } = useLanguage();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [chain, setChain] = useState<LayerRows[] | null>(null);
   const [versions, setVersions] = useState<Version[]>([]);
@@ -96,7 +99,7 @@ export default function GamePage() {
         ))}
       </ul>
     ) : (
-      <p className="muted">Laden…</p>
+      <p className="muted">{t('Laden…')}</p>
     );
 
   const base = chain[0]!;
@@ -113,9 +116,9 @@ export default function GamePage() {
   // Wat deze laag aanpast, per opdrachtsleutel.
   const changed = new Set<string>();
   if (!isBase) {
-    const keyById = new Map(base.tasks.map((t) => [t.id, t.key]));
-    for (const t of self.translations)
-      if (t.entity === "task") changed.add(t.entity_id);
+    const keyById = new Map(base.tasks.map((tk) => [tk.id, tk.key]));
+    for (const tk of self.translations)
+      if (tk.entity === "task") changed.add(tk.entity_id);
     for (const o of self.overrides)
       if (o.task_id) changed.add(keyById.get(o.task_id) ?? "");
     for (const l of self.locations) changed.add(keyById.get(l.task_id) ?? "");
@@ -128,7 +131,7 @@ export default function GamePage() {
     try {
       const version = await publish(supabase(), id);
       setNotice(
-        `Gepubliceerd als versie ${version}. Nieuwe hunts kunnen deze versie kiezen.`,
+        t("Gepubliceerd als versie {n}. Nieuwe hunts kunnen deze versie kiezen.", { n: version }),
       );
       await load();
     } catch (err) {
@@ -162,11 +165,11 @@ export default function GamePage() {
     const key = newKey.trim().toLowerCase();
     if (!/^[a-z0-9][a-z0-9-]{0,62}$/.test(key)) {
       setErrors([
-        "Gebruik voor de sleutel alleen kleine letters, cijfers en streepjes.",
+        t("Gebruik voor de sleutel alleen kleine letters, cijfers en streepjes."),
       ]);
       return;
     }
-    const position = Math.max(-1, ...base.tasks.map((t) => t.position)) + 1;
+    const position = Math.max(-1, ...base.tasks.map((tk) => tk.position)) + 1;
     const { error } = await supabase()
       .from("tasks")
       .insert({ game_id: id, key, position });
@@ -179,7 +182,7 @@ export default function GamePage() {
   return (
     <>
       <p className="muted">
-        <Link href="/spellen">Spellen</Link>
+        <Link href="/spellen">{t('Spellen')}</Link>
         {chain.slice(0, -1).map((c) => (
           <span key={c.game.id}>
             {" "}
@@ -189,7 +192,7 @@ export default function GamePage() {
       </p>
       <h1>{title}</h1>
       <p className="muted">
-        {LAYER_LABEL[self.game.layer]} · {self.game.slug} · talen{" "}
+        {t(LAYER_LABEL[self.game.layer])} · {self.game.slug} · {t("talen")}{" "}
         {self.game.languages.join(", ").toUpperCase()}
       </p>
 
@@ -198,7 +201,7 @@ export default function GamePage() {
           onClick={() => void doPublish()}
           disabled={busy || Boolean(legacy)}
         >
-          {busy ? "Bezig…" : "Publiceren"}
+          {busy ? t("Bezig…") : t("Publiceren")}
         </button>
         {!legacy && self.game.layer !== "client" ? (
           <Link
@@ -210,7 +213,7 @@ export default function GamePage() {
               border: "1px solid var(--line)",
             }}
           >
-            Kaart
+            {t('Kaart')}
           </Link>
         ) : null}
         {!legacy ? (
@@ -223,7 +226,7 @@ export default function GamePage() {
               border: "1px solid var(--line)",
             }}
           >
-            Kaartstijl en overlay
+            {t('Kaartstijl en overlay')}
           </Link>
         ) : null}
         {isBase && !legacy ? (
@@ -236,7 +239,7 @@ export default function GamePage() {
               border: "1px solid var(--line)",
             }}
           >
-            Tabbladen
+            {t('Tabbladen')}
           </Link>
         ) : null}
         {isBase && !legacy ? (
@@ -249,16 +252,18 @@ export default function GamePage() {
               border: "1px solid var(--line)",
             }}
           >
-            Regels
+            {t('Regels')}
           </Link>
         ) : null}
         {versions[0] ? (
           <span className="muted">
-            Laatste versie: v{versions[0].version} van{" "}
-            {new Date(versions[0].published_at).toLocaleString("nl-NL")}
+            {t("Laatste versie: v{n} van {date}", {
+              n: versions[0].version,
+              date: new Date(versions[0].published_at).toLocaleString(locale),
+            })}
           </span>
         ) : (
-          <span className="muted">Nog niet gepubliceerd.</span>
+          <span className="muted">{t('Nog niet gepubliceerd.')}</span>
         )}
       </div>
       {notice ? <p className="notice">{notice}</p> : null}
@@ -272,20 +277,18 @@ export default function GamePage() {
 
       {legacy ? (
         <p className="card">
-          Dit spel is als kant-en-klaar spelpakket geïmporteerd en heeft daarom
-          geen losse opdrachten om te bewerken. Je kunt er wel hunts mee
-          maken. Importeer het spel opnieuw als bundel om het te bewerken.
+          {t('Dit spel is als kant-en-klaar spelpakket geïmporteerd en heeft daarom geen losse opdrachten om te bewerken. Je kunt er wel hunts mee maken. Importeer het spel opnieuw als bundel om het te bewerken.')}
         </p>
       ) : null}
 
       {children.length > 0 ? (
         <>
-          <h2>{isBase ? "Steden" : "Klantvarianten"}</h2>
+          <h2>{isBase ? t("Steden") : t("Klantvarianten")}</h2>
           <ul>
             {children.map((c) => (
               <li key={c.id}>
                 <Link href={`/spellen/${c.id}`}>{c.slug}</Link>{" "}
-                <span className="muted">({LAYER_LABEL[c.layer]})</span>
+                <span className="muted">({t(LAYER_LABEL[c.layer])})</span>
               </li>
             ))}
           </ul>
@@ -294,53 +297,54 @@ export default function GamePage() {
 
       {!legacy ? (
         <>
-          <h2>Opdrachten</h2>
+          <h2>{t('Opdrachten')}</h2>
           {!isBase ? (
             <p className="muted">
-              Een {self.game.layer === "city" ? "stad" : "klant"} past alleen de
-              aanpasbare velden aan. Opdrachten met een stip zijn in deze
-              variant aangepast.
+              {self.game.layer === "city"
+                ? t("Een stad past alleen de aanpasbare velden aan. Opdrachten met een stip zijn in deze variant aangepast.")
+                : t("Een klant past alleen de aanpasbare velden aan. Opdrachten met een stip zijn in deze variant aangepast.")}
             </p>
           ) : null}
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Opdracht</th>
-                  <th>Antwoord</th>
-                  <th>Punten</th>
-                  <th>Locatie</th>
+                  <th>{t('Opdracht')}</th>
+                  <th>{t('Antwoord')}</th>
+                  <th>{t('Punten')}</th>
+                  <th>{t('Locatie')}</th>
                 </tr>
               </thead>
               <tbody>
-                {tasks.map((t) => {
+                {tasks.map((tk) => {
                   const located = chain.some((c) =>
-                    c.locations.some((l) => l.task_id === t.id),
+                    c.locations.some((l) => l.task_id === tk.id),
                   );
                   return (
-                    <tr key={t.id}>
+                    <tr key={tk.id}>
                       <td>
-                        <Link href={`/spellen/${id}/opdracht/${t.key}`}>
+                        <Link href={`/spellen/${id}/opdracht/${tk.key}`}>
                           <strong>
-                            {nl(base, "task", t.key, "title") || t.key}
+                            {nl(base, "task", tk.key, "title") || tk.key}
                           </strong>
                         </Link>
-                        {changed.has(t.key) ? (
+                        {changed.has(tk.key) ? (
                           <span
                             className="badge test"
                             style={{ marginLeft: 8 }}
                           >
-                            aangepast
+                            {t('aangepast')}
                           </span>
                         ) : null}
-                        <div className="muted">{t.key}</div>
+                        <div className="muted">{tk.key}</div>
                       </td>
                       <td>
-                        {ANSWER_LABEL[String(t.answer.type)] ??
-                          String(t.answer.type)}
+                        {ANSWER_LABEL[String(tk.answer.type)]
+                          ? t(ANSWER_LABEL[String(tk.answer.type)]!)
+                          : String(tk.answer.type)}
                       </td>
-                      <td>{t.points}</td>
-                      <td>{located ? "Ja" : "–"}</td>
+                      <td>{tk.points}</td>
+                      <td>{located ? t("Ja") : "–"}</td>
                     </tr>
                   );
                 })}
@@ -350,7 +354,7 @@ export default function GamePage() {
           {isBase ? (
             <form className="row" onSubmit={addTask} style={{ marginTop: 16 }}>
               <div>
-                <label htmlFor="key">Nieuwe opdracht (sleutel)</label>
+                <label htmlFor="key">{t('Nieuwe opdracht (sleutel)')}</label>
                 <input
                   id="key"
                   value={newKey}
@@ -359,7 +363,7 @@ export default function GamePage() {
                 />
               </div>
               <div style={{ flex: "0 0 auto" }}>
-                <button type="submit">Toevoegen</button>
+                <button type="submit">{t('Toevoegen')}</button>
               </div>
             </form>
           ) : null}
@@ -367,28 +371,26 @@ export default function GamePage() {
       ) : null}
 
       <section className="card" style={{ marginTop: 32 }}>
-        <h2 style={{ marginTop: 0 }}>Spel verwijderen</h2>
+        <h2 style={{ marginTop: 0 }}>{t('Spel verwijderen')}</h2>
         <p className="muted">
-          Verwijdert dit spel met alle opdrachten, versies en testhunts. Een
-          spel met varianten eronder of met echte hunts (geen testhunt) kan
-          niet weg. Dit is niet terug te draaien.
+          {t('Verwijdert dit spel met alle opdrachten, versies en testhunts. Een spel met varianten eronder of met echte hunts (geen testhunt) kan niet weg. Dit is niet terug te draaien.')}
         </p>
         {confirmDelete ? (
           <div className="actions">
-            <span>Weet je zeker dat je {self.game.slug} wilt verwijderen?</span>
+            <span>{t("Weet je zeker dat je {name} wilt verwijderen?", { name: self.game.slug })}</span>
             <button
               className="danger"
               onClick={() => void doDelete()}
               disabled={busy}
             >
-              {busy ? "Bezig…" : "Ja, verwijderen"}
+              {busy ? t("Bezig…") : t("Ja, verwijderen")}
             </button>
             <button
               className="secondary"
               onClick={() => setConfirmDelete(false)}
               disabled={busy}
             >
-              Annuleren
+              {t('Annuleren')}
             </button>
           </div>
         ) : (
@@ -397,7 +399,7 @@ export default function GamePage() {
             onClick={() => setConfirmDelete(true)}
             disabled={busy}
           >
-            Spel verwijderen
+            {t('Spel verwijderen')}
           </button>
         )}
       </section>

@@ -256,3 +256,7 @@ button.icon:hover { background: var(--bg); color: var(--danger); }
 .switch input:disabled + .slider { opacity: .6; }
 .switch .on { color: var(--ok); font-weight: 600; }
 .switch .off { color: var(--muted); }
+
+/* Taalkeuze in de kop en op het inlogscherm */
+select.langpick { width: auto; padding: 4px 8px; font-size: 13px; margin: 0; }
+.langcorner { display: flex; justify-content: flex-end; margin-bottom: 8px; }

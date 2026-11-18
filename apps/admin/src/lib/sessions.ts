@@ -1,3 +1,5 @@
+import { currentLocale, t } from './i18n';
+
 export type SessionStatus = 'draft' | 'open' | 'closed';
 
 export interface SessionInput {
@@ -54,14 +56,14 @@ export function toJoinCode(text: string): string {
 
 export function validateSession(input: SessionInput): string[] {
   const errors: string[] = [];
-  if (input.name.trim().length < 2) errors.push('Geef de hunt een naam.');
-  if (!input.gameVersionId) errors.push('Kies een spel.');
+  if (input.name.trim().length < 2) errors.push(t('Geef de hunt een naam.'));
+  if (!input.gameVersionId) errors.push(t('Kies een spel.'));
   if (!Number.isInteger(input.trackCount) || input.trackCount < 1 || input.trackCount > 50) {
-    errors.push('Aantal tracks moet tussen 1 en 50 liggen.');
+    errors.push(t('Aantal tracks moet tussen 1 en 50 liggen.'));
   }
   const code = input.joinCode?.trim() ?? '';
-  if (code && !/^[A-Za-z0-9]{4,12}$/.test(code)) errors.push('De hunt-code moet 4 tot 12 letters of cijfers zijn, zonder spaties.');
-  if (input.startsAt && Number.isNaN(Date.parse(input.startsAt))) errors.push('Startmoment is ongeldig.');
+  if (code && !/^[A-Za-z0-9]{4,12}$/.test(code)) errors.push(t('De hunt-code moet 4 tot 12 letters of cijfers zijn, zonder spaties.'));
+  if (input.startsAt && Number.isNaN(Date.parse(input.startsAt))) errors.push(t('Startmoment is ongeldig.'));
   return errors;
 }
 
@@ -95,5 +97,5 @@ export function zonedToUtc(local: string, timeZone: string): string {
 
 export function formatInZone(iso: string | null, timeZone: string): string {
   if (!iso) return '–';
-  return new Intl.DateTimeFormat('nl-NL', { timeZone, dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
+  return new Intl.DateTimeFormat(currentLocale(), { timeZone, dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
 }
