@@ -1,15 +1,24 @@
-// Fotoboek voor de klant: welke foto's erin staan, in welke volgorde, en hoe
-// ze over de pagina's van de PDF worden verdeeld. Zonder browser of database,
-// zodat het met gewone tests te controleren is.
-import { tKey, translate, isAdminLanguage, type AdminLanguage } from './i18n';
+// Fotoboek voor de klant: welke foto's erin staan, in welke volgorde, hoe ze
+// over de pagina's van de PDF worden verdeeld en de cijfers van de hunt.
+// Zonder browser of database, zodat het met gewone tests te controleren is.
+import { tKey, translate, isAdminLanguage, LOCALES, type AdminLanguage } from './i18n';
 import type { PhotoRow } from './results';
 
 /** Opdrachtsleutel van de teamfoto (zie Photowall). */
 export const TEAM_PHOTO_KEY = '_teamfoto';
 
+/** Hoe lang de klant het fotoboek kan bekijken na het delen. */
+export const SHARE_DAYS = 28;
+
+export type BookSource = 'game' | 'own' | 'stock';
+
 export interface BookItem {
-  /** 'game': foto uit het spel (bucket photos); 'own': eigen foto van de spelleiding (bucket photobooks). */
-  source: 'game' | 'own';
+  /**
+   * 'game': foto uit het spel (bucket photos); 'own': eigen foto van de
+   * spelleiding bij deze hunt; 'stock': vaste algemene foto van de organisatie
+   * (beide in bucket photobooks).
+   */
+  source: BookSource;
   path: string;
   caption: string;
   /** Groot: de foto krijgt een eigen pagina. */
@@ -19,31 +28,95 @@ export interface BookItem {
 export interface Photobook {
   session_id: string;
   title: string;
+  city: string;
   intro: string;
   items: BookItem[];
+  /** Pagina "Jullie Hunt in cijfers" in het fotoboek. */
   show_ranking: boolean;
   language: AdminLanguage;
   pdf_path: string | null;
   pdf_made_at: string | null;
   share_token: string;
+  share_password: string;
   shared: boolean;
+  shared_until: string | null;
+}
+
+export interface BookLinks {
+  video?: string;
+  google_review?: string;
+  website_review?: string;
+  vacancy?: string;
+  website?: string;
+  email?: string;
+  phone?: string;
+}
+
+export const LINK_KEYS = ['video', 'google_review', 'website_review', 'vacancy', 'website', 'email', 'phone'] as const;
+
+/** Vaste onderdelen van elk fotoboek, per organisatie. */
+export interface PhotobookSettings {
+  org_id: string;
+  cover_path: string | null;
+  stock_paths: string[];
+  links: BookLinks;
 }
 
 /** Vaste teksten in de PDF en op de klantpagina; vertaald in de taal van het fotoboek. */
 export const BOOK_TEXT = {
-  ranking: tKey('Ranglijst'),
-  place: tKey('Plaats'),
+  missionDone: tKey('Missie volbracht'),
+  thanksFor: tKey('Bedankt voor het spelen van'),
+  huntIn: tKey('The Hunt in'),
+  statsTitle: tKey('Jullie Hunt in cijfers'),
+  statsIntro: tKey(
+    'Alle teams zijn de stad door gerend, op de vlucht voor de Hunters. Zo ver zijn jullie gekomen, helemaal te voet: goed voor de conditie en goed voor de lucht in de stad.',
+  ),
+  avgKm: tKey('gemiddeld gelopen per team'),
+  stepsPP: tKey('stappen per persoon, gemiddeld'),
+  totalKm: tKey('samen gelopen door {n} teams'),
+  co2Saved: tKey('CO2 bespaard ten opzichte van de auto'),
   team: tKey('Team'),
-  points: tKey('Punten'),
-  time: tKey('Speeltijd'),
+  km: tKey('Km'),
+  steps: tKey('Stappen p.p.'),
+  kcal: tKey('Kcal p.p.'),
+  co2: tKey('Kg CO2 bespaard'),
+  together: tKey('Samen'),
+  footnote: tKey('Indicatief: 1.350 stappen en 55 kcal per km per persoon, 0,18 kg CO2 per autokilometer, één auto per team.'),
+  videoTitle: tKey('Beleef het nog een keer'),
+  videoText: tKey('Bekijk de video van The Hunt.'),
+  videoLink: tKey('Bekijk de video'),
+  groupPhoto: tKey('Groepsfoto'),
+  yourPhotos: tKey("Jullie foto's"),
+  reviewTitle: tKey('Laat een review achter'),
+  reviewText: tKey(
+    'Vonden jullie het een topdag? Laat dan een review achter, dat helpt ons enorm. Op Google of via onze website: het kost je een minuutje.',
+  ),
+  googleReview: tKey('Google-review'),
+  websiteReview: tKey('Review via onze website'),
+  vacancyLabel: tKey('Gezocht: Hunters'),
+  vacancyTitle: tKey('Wij zijn op jacht naar nieuwe Hunters!'),
+  vacancyText: tKey(
+    'We zoeken spelleiders in heel Nederland: groepen ontvangen, het spel uitleggen en daarna als Hunter de jacht openen. Een bijbaan vol actie, in de eigen stad.',
+  ),
+  vacancyAsk: tKey('Ken jij iemand die dit op het lijf geschreven is? Stuur de vacature door!'),
+  vacancyLink: tKey('Stuur de vacature door'),
   thanks: tKey('Bedankt voor het spelen!'),
   thanksText: tKey('We hopen dat jullie een geweldige tijd hebben gehad. Graag tot de volgende hunt!'),
-  photos: tKey("Foto's"),
   download: tKey('Download het fotoboek (PDF)'),
-  page: tKey('Pagina {n}'),
+  downloadZip: tKey("Download alle foto's (zip)"),
+  zipping: tKey("Foto's verzamelen… {n} van {total}"),
+  password: tKey('Wachtwoord'),
+  open: tKey('Openen'),
+  passwordAsk: tKey('Vul het wachtwoord in dat jullie bij de link hebben gekregen.'),
+  wrongPassword: tKey('Dit wachtwoord klopt niet.'),
+  notFound: tKey('Dit fotoboek is niet (meer) gedeeld. Vraag de organisatie om een nieuwe link.'),
+  expired: tKey('Dit fotoboek is niet meer beschikbaar. Vraag de organisatie om het opnieuw te delen.'),
+  availableUntil: tKey('Te bekijken en te downloaden tot {date}.'),
 };
 
-export function bookText(lang: string, key: keyof typeof BOOK_TEXT, vars?: Record<string, string | number>): string {
+export type BookTextKey = keyof typeof BOOK_TEXT;
+
+export function bookText(lang: string, key: BookTextKey, vars?: Record<string, string | number>): string {
   return translate(isAdminLanguage(lang) ? lang : 'nl', BOOK_TEXT[key], vars);
 }
 
@@ -54,28 +127,28 @@ export function gameCaption(photo: Pick<PhotoRow, 'task_key'>, teamName: string,
 }
 
 /**
- * Eerste opzet van het fotoboek: per team (in volgorde van de ranglijst) eerst
- * de teamfoto, dan de opdrachtfoto's op tijd. Teamfoto's komen groot.
+ * Eerste opzet van het fotoboek, zoals jullie fotoboek nu is opgebouwd: eerst
+ * de teamfoto's (in volgorde van de ranglijst), dan de opdrachtfoto's per
+ * team op tijd, en tot slot de vaste algemene foto's.
  */
 export function defaultItems(
   photos: readonly PhotoRow[],
   teamOrder: readonly string[],
   caption: (photo: PhotoRow) => string,
+  stockPaths: readonly string[] = [],
 ): BookItem[] {
   const order = new Map(teamOrder.map((id, i) => [id, i]));
   const sorted = [...photos].sort(
     (a, b) =>
+      Number(b.task_key === TEAM_PHOTO_KEY) - Number(a.task_key === TEAM_PHOTO_KEY) ||
       (order.get(a.team_id) ?? Infinity) - (order.get(b.team_id) ?? Infinity) ||
       a.team_id.localeCompare(b.team_id) ||
-      Number(b.task_key === TEAM_PHOTO_KEY) - Number(a.task_key === TEAM_PHOTO_KEY) ||
       a.created_at.localeCompare(b.created_at),
   );
-  return sorted.map((p) => ({
-    source: 'game',
-    path: p.path,
-    caption: caption(p),
-    ...(p.task_key === TEAM_PHOTO_KEY ? { large: true } : {}),
-  }));
+  return [
+    ...sorted.map((p): BookItem => ({ source: 'game', path: p.path, caption: caption(p) })),
+    ...stockPaths.map((path): BookItem => ({ source: 'stock', path, caption: '' })),
+  ];
 }
 
 /** Spelfoto's die (nog) niet in het fotoboek staan, bijvoorbeeld foto's die later binnenkwamen. */
@@ -93,15 +166,109 @@ export function moveItem<T>(list: readonly T[], from: number, to: number): T[] {
   return next;
 }
 
+const SOURCES: readonly string[] = ['game', 'own', 'stock'];
+
 /** Leest de items uit de database en laat onbruikbare rijen weg. */
 export function parseItems(value: unknown): BookItem[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((v): BookItem[] => {
     if (!v || typeof v !== 'object') return [];
     const o = v as Record<string, unknown>;
-    if ((o.source !== 'game' && o.source !== 'own') || typeof o.path !== 'string' || !o.path) return [];
-    return [{ source: o.source, path: o.path, caption: typeof o.caption === 'string' ? o.caption : '', ...(o.large === true ? { large: true } : {}) }];
+    if (!SOURCES.includes(o.source as string) || typeof o.path !== 'string' || !o.path) return [];
+    return [
+      {
+        source: o.source as BookSource,
+        path: o.path,
+        caption: typeof o.caption === 'string' ? o.caption : '',
+        ...(o.large === true ? { large: true } : {}),
+      },
+    ];
   });
+}
+
+/** Leest de links uit de database: alleen bekende sleutels met tekst. */
+export function parseLinks(value: unknown): BookLinks {
+  const out: BookLinks = {};
+  if (!value || typeof value !== 'object') return out;
+  for (const key of LINK_KEYS) {
+    const v = (value as Record<string, unknown>)[key];
+    if (typeof v === 'string' && v.trim()) out[key] = v.trim();
+  }
+  return out;
+}
+
+/** Maakt van "www.site.nl" een klikbare link; e-mail en telefoon worden mailto: en tel:. */
+export function href(kind: 'url' | 'email' | 'phone', value: string): string {
+  const v = value.trim();
+  if (kind === 'email') return `mailto:${v}`;
+  if (kind === 'phone') return `tel:${v.replace(/[^\d+]/g, '')}`;
+  return /^https?:\/\//i.test(v) ? v : `https://${v}`;
+}
+
+/** Link zonder https:// en www., zoals hij in de PDF staat. */
+export function displayUrl(value: string): string {
+  return value.trim().replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/$/, '');
+}
+
+// -----------------------------------------------------------------------------
+// Jullie Hunt in cijfers
+// -----------------------------------------------------------------------------
+
+/** Zelfde vuistregels als in het huidige fotoboek. */
+export const STEPS_PER_KM = 1350;
+export const KCAL_PER_KM = 55;
+export const CO2_KG_PER_CAR_KM = 0.18;
+
+export interface TeamStat {
+  name: string;
+  km: number;
+  stepsPP: number;
+  kcalPP: number;
+  co2Kg: number;
+}
+
+export interface HuntStats {
+  teams: TeamStat[];
+  totalKm: number;
+  avgKm: number;
+  avgStepsPP: number;
+  totalCo2Kg: number;
+}
+
+/**
+ * Cijfers per team uit de gelopen afstand: stappen en kcal per persoon,
+ * en CO2 die een auto per team over dezelfde afstand had uitgestoten.
+ * Teams zonder gelopen afstand tellen niet mee. Meeste kilometers eerst.
+ */
+export function huntStats(teams: readonly { name: string; distanceM: number | null }[]): HuntStats {
+  const list = teams
+    .filter((t) => (t.distanceM ?? 0) > 0)
+    .map((t): TeamStat => {
+      const km = (t.distanceM ?? 0) / 1000;
+      return {
+        name: t.name,
+        km,
+        stepsPP: Math.round(km * STEPS_PER_KM),
+        kcalPP: Math.round(km * KCAL_PER_KM),
+        co2Kg: km * CO2_KG_PER_CAR_KM,
+      };
+    })
+    .sort((a, b) => b.km - a.km || a.name.localeCompare(b.name));
+  const totalKm = list.reduce((s, t) => s + t.km, 0);
+  const n = list.length;
+  return {
+    teams: list,
+    totalKm,
+    avgKm: n ? totalKm / n : 0,
+    avgStepsPP: n ? Math.round(list.reduce((s, t) => s + t.stepsPP, 0) / n) : 0,
+    totalCo2Kg: list.reduce((s, t) => s + t.co2Kg, 0),
+  };
+}
+
+/** Getal in de taal van het fotoboek: 3941 → "3.941", 2.94 → "2,9". */
+export function formatNumber(lang: string, value: number, decimals = 0): string {
+  const locale = LOCALES[isAdminLanguage(lang) ? lang : 'nl'];
+  return value.toLocaleString(locale, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
 // -----------------------------------------------------------------------------
@@ -148,8 +315,9 @@ export interface Rect {
 
 /**
  * Vakken voor 1 tot 4 foto's binnen een gebied (coördinaten met y omhoog,
- * zoals in een PDF). 1: het hele vlak; 2: naast elkaar; 3: één groot links en
- * twee rechts boven elkaar; 4: twee bij twee. Volgorde: zoals je leest.
+ * zoals in een PDF). 1: het hele vlak; 2: boven elkaar (staand vlak) of naast
+ * elkaar (liggend vlak); 3: één breed boven en twee eronder; 4: twee bij twee.
+ * Volgorde: zoals je leest.
  */
 export function slots(count: number, area: Rect, gap: number): Rect[] {
   const { x, y, w, h } = area;
@@ -160,19 +328,21 @@ export function slots(count: number, area: Rect, gap: number): Rect[] {
     case 1:
       return [{ ...area }];
     case 2:
+      return h > w
+        ? [
+            { x, y: top, w, h: halfH },
+            { x, y, w, h: halfH },
+          ]
+        : [
+            { x, y, w: halfW, h },
+            { x: x + halfW + gap, y, w: halfW, h },
+          ];
+    case 3:
       return [
-        { x, y, w: halfW, h },
-        { x: x + halfW + gap, y, w: halfW, h },
+        { x, y: top, w, h: halfH },
+        { x, y, w: halfW, h: halfH },
+        { x: x + halfW + gap, y, w: halfW, h: halfH },
       ];
-    case 3: {
-      const bigW = (w - gap) * 0.6;
-      const smallW = w - gap - bigW;
-      return [
-        { x, y, w: bigW, h },
-        { x: x + bigW + gap, y: top, w: smallW, h: halfH },
-        { x: x + bigW + gap, y, w: smallW, h: halfH },
-      ];
-    }
     default:
       return [
         { x, y: top, w: halfW, h: halfH },
@@ -183,12 +353,19 @@ export function slots(count: number, area: Rect, gap: number): Rect[] {
   }
 }
 
-/** Past een foto in een vak zonder bij te snijden, gecentreerd. */
-export function fit(imgW: number, imgH: number, box: Rect): Rect {
-  const scale = Math.min(box.w / imgW, box.h / imgH);
-  const w = imgW * scale;
-  const h = imgH * scale;
-  return { x: box.x + (box.w - w) / 2, y: box.y + (box.h - h) / 2, w, h };
+/**
+ * Uitsnede van een foto om een vak helemaal te vullen (zoals object-fit:
+ * cover), in pixels van de foto. Iets boven het midden, zodat hoofden op
+ * groepsfoto's er minder snel af vallen.
+ */
+export function coverCrop(imgW: number, imgH: number, boxW: number, boxH: number): { sx: number; sy: number; sw: number; sh: number } {
+  const target = boxW / boxH;
+  if (imgW / imgH > target) {
+    const sw = imgH * target;
+    return { sx: (imgW - sw) / 2, sy: 0, sw, sh: imgH };
+  }
+  const sh = imgW / target;
+  return { sx: 0, sy: (imgH - sh) * 0.35, sw: imgW, sh };
 }
 
 /** Knipt tekst op in regels die binnen maxWidth passen (breedte via measure). */
@@ -214,25 +391,57 @@ export function wrapText(text: string, maxWidth: number, measure: (s: string) =>
   return lines;
 }
 
-/** Bestandsnaam voor de PDF, bijvoorbeeld "fotoboek-bedrijfsuitje-acme.pdf". */
-export function pdfFileName(title: string): string {
-  const slug = title
+function slug(text: string, max = 60): string {
+  return text
     .normalize('NFKD')
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
-    .slice(0, 60);
-  return `fotoboek${slug ? `-${slug}` : ''}.pdf`;
+    .slice(0, max);
 }
 
-/** Tekst voor de e-mail aan de klant, met de link naar het fotoboek. */
-export function mailBody(lang: string, title: string, link: string): { subject: string; body: string } {
+/** Bestandsnaam voor de PDF, bijvoorbeeld "fotoboek-bedrijfsuitje-acme.pdf". */
+export function pdfFileName(title: string): string {
+  const s = slug(title);
+  return `fotoboek${s ? `-${s}` : ''}.pdf`;
+}
+
+/** Bestandsnaam voor de zip met alle foto's. */
+export function zipFileName(title: string): string {
+  const s = slug(title);
+  return `fotos${s ? `-${s}` : ''}.zip`;
+}
+
+/** Namen van de foto's in de zip, op volgorde en uniek: "01-vossen.jpg". */
+export function zipEntryNames(items: readonly Pick<BookItem, 'caption'>[]): string[] {
+  const width = Math.max(2, String(items.length).length);
+  return items.map((item, i) => {
+    const s = slug(item.caption, 40);
+    return `${String(i + 1).padStart(width, '0')}${s ? `-${s}` : ''}.jpg`;
+  });
+}
+
+/** Tekst voor de e-mail aan de klant, met link, wachtwoord en hoe lang het fotoboek te zien is. */
+export function mailBody(
+  lang: string,
+  title: string,
+  link: string,
+  password: string,
+  until: string | null,
+): { subject: string; body: string } {
   const l = isAdminLanguage(lang) ? lang : 'nl';
   const tr = (nl: string, vars?: Record<string, string>) => translate(l, nl, vars);
+  const date = until ? new Intl.DateTimeFormat(LOCALES[l], { dateStyle: 'long' }).format(new Date(until)) : '';
   return {
     subject: tr(MAIL.subject, { title }),
-    body: [tr(MAIL.hello), tr(MAIL.text), link, `${tr(MAIL.bye)}\nEscape Game The Hunt`].join('\n\n'),
+    body: [
+      tr(MAIL.hello),
+      tr(MAIL.text),
+      `${link}\n${tr(MAIL.password, { password })}`,
+      ...(date ? [tr(MAIL.until, { date })] : []),
+      `${tr(MAIL.bye)}\nEscape Game The Hunt`,
+    ].join('\n\n'),
   };
 }
 
@@ -240,5 +449,7 @@ const MAIL = {
   subject: tKey('Jullie fotoboek: {title}'),
   hello: tKey('Hallo,'),
   text: tKey("Bedankt voor het spelen van Escape Game The Hunt! Via deze link vinden jullie de foto's van de dag en het fotoboek om te downloaden:"),
+  password: tKey('Wachtwoord: {password}'),
+  until: tKey("Het fotoboek en de foto's zijn te bekijken en te downloaden tot {date}."),
   bye: tKey('Met vriendelijke groet,'),
 };
