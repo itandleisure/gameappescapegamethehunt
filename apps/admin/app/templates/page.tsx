@@ -1,9 +1,17 @@
 'use client';
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useAuth } from '@/lib/auth';
 import { parseGameFile } from '@/lib/game-import';
-import { copyExternalImages, importBundle, loadBaseVersions, setBaseVersionNote, type BaseVersion } from '@/lib/game-store';
+import {
+  copyExternalImages,
+  createBaseVersion,
+  deleteBaseVersion,
+  importBundle,
+  loadBaseVersions,
+  setBaseVersionNote,
+  type BaseVersion,
+} from '@/lib/game-store';
 import { useLanguage } from '@/lib/language';
 import { supabase } from '@/lib/supabase';
 
@@ -19,6 +27,8 @@ interface Template {
   name: string;
   versions: BaseVersion[];
   cities: number;
+  /** Aantal steden per versie. */
+  perVersion: Record<number, number>;
 }
 
 /** Templates: de basisspellen met hun vaste versies, en vanaf hier steden uitrollen. */
@@ -29,24 +39,72 @@ export default function TemplatesPage() {
   const [errors, setErrors] = useState<string[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  /** Formulier voor een nieuwe versie: bij welke template, met welke omschrijving. */
+  const [creating, setCreating] = useState<{ id: string; note: string } | null>(null);
+  /** Versie die op bevestiging wacht om te verwijderen. */
+  const [removing, setRemoving] = useState<{ id: string; version: number } | null>(null);
+
+  const run = async (work: () => Promise<string>) => {
+    setBusy(true);
+    setErrors([]);
+    setNotice(null);
+    try {
+      setNotice(await work());
+      await load();
+    } catch (err) {
+      setErrors([err instanceof Error ? err.message : String(err)]);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const createVersion = (e: FormEvent) => {
+    e.preventDefault();
+    if (!creating) return;
+    void run(async () => {
+      const n = await createBaseVersion(supabase(), creating.id, creating.note);
+      setCreating(null);
+      return t('Template v{n} gemaakt: een volledige kopie van de template zoals die nu is.', { n });
+    });
+  };
+
+  const removeVersion = (id: string, version: number) =>
+    void run(async () => {
+      await deleteBaseVersion(supabase(), id, version);
+      setRemoving(null);
+      return t('Template v{n} verwijderd.', { n: version });
+    });
 
   const load = useCallback(async () => {
     if (!org) return;
     const db = supabase();
     const [g, n] = await Promise.all([
-      db.from('games').select('id, slug, layer, parent_id, default_language').eq('org_id', org.id),
+      db.from('games').select('id, slug, layer, parent_id, default_language, base_version').eq('org_id', org.id),
       db.from('translations').select('game_id, text, lang').eq('entity', 'game').eq('entity_id', '').eq('field', 'name'),
     ]);
     if (g.error || n.error) {
       setErrors([(g.error ?? n.error)!.message]);
       return;
     }
-    const games = g.data as { id: string; slug: string; layer: string; parent_id: string | null; default_language: string }[];
+    const games = g.data as {
+      id: string;
+      slug: string;
+      layer: string;
+      parent_id: string | null;
+      default_language: string;
+      base_version: number | null;
+    }[];
     const names = n.data as { game_id: string; text: string; lang: string }[];
     const bases = games.filter((x) => x.layer === 'base').sort((a, b) => a.slug.localeCompare(b.slug));
     const list = await Promise.all(
       bases.map(async (b) => {
         const own = names.filter((x) => x.game_id === b.id);
+        const perVersion: Record<number, number> = {};
+        for (const c of games) {
+          if (c.parent_id === b.id && c.layer === 'city' && c.base_version != null) {
+            perVersion[c.base_version] = (perVersion[c.base_version] ?? 0) + 1;
+          }
+        }
         const name = (own.find((x) => x.lang === lang) ?? own.find((x) => x.lang === b.default_language) ?? own[0])?.text ?? b.slug;
         return {
           id: b.id,
@@ -54,6 +112,7 @@ export default function TemplatesPage() {
           name,
           versions: await loadBaseVersions(db, b.id),
           cities: games.filter((x) => x.parent_id === b.id && x.layer === 'city').length,
+          perVersion,
         };
       }),
     );
@@ -146,10 +205,43 @@ export default function TemplatesPage() {
                                 <div className="muted">{new Date(v.created_at).toLocaleDateString(locale)}</div>
                               </td>
                               <td style={{ whiteSpace: 'pre-wrap' }}>{v.note ?? <span className="muted">–</span>}</td>
+                              <td className="muted" style={{ whiteSpace: 'nowrap' }}>
+                                {(tp.perVersion[v.version] ?? 0) === 1
+                                  ? t('1 stad')
+                                  : t('{n} steden', { n: tp.perVersion[v.version] ?? 0 })}
+                              </td>
                               <td style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>
-                                <Link href={`/spellen/nieuw?basis=${tp.id}&versie=${v.version}`} className="filebutton">
-                                  {t('Nieuwe stad uitrollen')}
-                                </Link>
+                                <div className="actions" style={{ justifyContent: 'flex-end', margin: 0 }}>
+                                  <Link href={`/spellen/nieuw?basis=${tp.id}&versie=${v.version}`} className="filebutton">
+                                    {t('Nieuwe stad uitrollen')}
+                                  </Link>
+                                  {removing?.id === tp.id && removing.version === v.version ? (
+                                    <>
+                                      <button type="button" className="danger" onClick={() => removeVersion(tp.id, v.version)} disabled={busy}>
+                                        {busy ? t('Bezig…') : t('Ja, verwijderen')}
+                                      </button>
+                                      <button type="button" className="secondary" onClick={() => setRemoving(null)} disabled={busy}>
+                                        {t('Annuleren')}
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      className="secondary"
+                                      disabled={busy || (tp.perVersion[v.version] ?? 0) > 0 || tp.versions.length === 1}
+                                      title={
+                                        (tp.perVersion[v.version] ?? 0) > 0
+                                          ? t('Er staan nog steden op versie {n}. Zet die eerst over naar een andere versie.', { n: v.version })
+                                          : tp.versions.length === 1
+                                            ? t('De enige versie van een template kan niet weg.')
+                                            : undefined
+                                      }
+                                      onClick={() => setRemoving({ id: tp.id, version: v.version })}
+                                    >
+                                      {t('Verwijderen')}
+                                    </button>
+                                  )}
+                                </div>
                               </td>
                             </tr>
                           ))}
@@ -157,9 +249,40 @@ export default function TemplatesPage() {
                       </table>
                     </div>
                   )}
-                  <div className="actions" style={{ marginTop: 12 }}>
-                    <Link href={`/spellen/${tp.id}#versies`}>{t('Template bewerken of nieuwe versie maken')}</Link>
-                  </div>
+                  {creating?.id === tp.id ? (
+                    <form className="version-new" onSubmit={createVersion}>
+                      <h3 style={{ marginTop: 0 }}>
+                        {t('Nieuwe templateversie: v{n}', { n: (tp.versions[0]?.version ?? 0) + 1 })}
+                      </h3>
+                      <p className="muted" style={{ marginTop: 0 }}>
+                        {t('Maakt een volledige, op zichzelf staande kopie van de template zoals die nu is. Bestaande steden blijven op hun versie; een oude versie zonder steden kun je daarna verwijderen.')}
+                      </p>
+                      <label htmlFor={`note-${tp.id}`}>{t('Wat zit erin, of wat is er anders?')}</label>
+                      <textarea
+                        id={`note-${tp.id}`}
+                        value={creating.note}
+                        maxLength={2000}
+                        rows={3}
+                        autoFocus
+                        onChange={(e) => setCreating({ ...creating, note: e.target.value })}
+                      />
+                      <div className="actions">
+                        <button type="submit" disabled={busy}>
+                          {busy ? t('Bezig…') : t('Template v{n} maken', { n: (tp.versions[0]?.version ?? 0) + 1 })}
+                        </button>
+                        <button type="button" className="secondary" onClick={() => setCreating(null)} disabled={busy}>
+                          {t('Annuleren')}
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <div className="actions" style={{ marginTop: 12 }}>
+                      <button type="button" onClick={() => setCreating({ id: tp.id, note: '' })} disabled={busy}>
+                        {t('Maak nieuwe templateversie (v{n})', { n: (tp.versions[0]?.version ?? 0) + 1 })}
+                      </button>
+                      <Link href={`/spellen/${tp.id}#versies`}>{t('Template bewerken')}</Link>
+                    </div>
+                  )}
                 </section>
               ))}
             </div>
