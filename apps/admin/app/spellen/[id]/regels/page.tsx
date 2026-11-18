@@ -114,7 +114,14 @@ export default function RulesPage() {
     }
   };
 
-  const timed = base.rules.filter((r) => timeSettings(r.when).length > 0);
+  // Op tijd geordend, zodat "10 - …", "20 - …", "35 - …" onder elkaar staan.
+  // Alleen de weergave: de volgorde van de regels zelf blijft gelijk.
+  const firstSeconds = (r: Rule) => settingSeconds(timeSettings(r.when)[0]!);
+  const timed = base.rules
+    .filter((r) => timeSettings(r.when).length > 0)
+    .map((r, i) => ({ r, i }))
+    .sort((a, b) => firstSeconds(a.r) - firstSeconds(b.r) || a.i - b.i)
+    .map(({ r }) => r);
   const saveTimes = () =>
     run(async () => {
       const changed = Object.entries(times);

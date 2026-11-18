@@ -47,5 +47,10 @@ describe('tijden in regels', () => {
     );
     expect(relabel('Na 75 minuten: einde', [{ kind: 'elapsed', minutes: 75 }], [4530])).toBe('Na 1 uur 15 minuten 30 seconden: einde');
     expect(relabel('Na 100 minuten', [elapsed], [60])).toBe('Na 100 minuten');
+    expect(relabel('10 - Puzzel 1 vrijgeven', [elapsed], [900])).toBe('15 - Puzzel 1 vrijgeven');
+    expect(relabel('10 - Puzzel 1 vrijgeven', [elapsed], [630])).toBe('10:30 - Puzzel 1 vrijgeven');
+    expect(relabel('75 - Extractiepunt tonen', [{ kind: 'elapsed', minutes: 75 }], [4800])).toBe('80 - Extractiepunt tonen');
+    expect(relabel('10:30 - Puzzel 1', [{ kind: 'elapsed', minutes: 10.5 }], [600])).toBe('10 - Puzzel 1');
+    expect(relabel('20 - Puzzel 2 vrijgeven', [elapsed], [900])).toBe('20 - Puzzel 2 vrijgeven');
   });
 });

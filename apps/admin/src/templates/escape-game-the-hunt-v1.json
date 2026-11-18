@@ -905,7 +905,7 @@
     "rules": [
       {
         "id": "introreeks",
-        "label": "Bij de start: 12 uitlegschermen na elkaar (niet als de uitleg al bij een centrale start is gedaan)",
+        "label": "0 - Uitleg starten (12 schermen)",
         "when": {
           "kind": "and",
           "conditions": [
@@ -974,7 +974,7 @@
       },
       {
         "id": "tijdlijn-10",
-        "label": "Na 10 minuten: bericht en nieuwe puzzel",
+        "label": "10 - Puzzel 1 vrijgeven",
         "when": {
           "kind": "elapsed",
           "minutes": 10
@@ -997,7 +997,7 @@
       },
       {
         "id": "tijdlijn-20",
-        "label": "Na 20 minuten: bericht en nieuwe puzzel",
+        "label": "20 - Puzzel 2 vrijgeven",
         "when": {
           "kind": "elapsed",
           "minutes": 20
@@ -1020,7 +1020,7 @@
       },
       {
         "id": "tijdlijn-30",
-        "label": "Na 30 minuten: bericht en nieuwe puzzel",
+        "label": "30 - Puzzel 3 vrijgeven",
         "when": {
           "kind": "elapsed",
           "minutes": 30
@@ -1043,7 +1043,7 @@
       },
       {
         "id": "tijdlijn-40",
-        "label": "Na 40 minuten: bericht en nieuwe puzzel",
+        "label": "40 - Puzzel 4 vrijgeven",
         "when": {
           "kind": "elapsed",
           "minutes": 40
@@ -1066,7 +1066,7 @@
       },
       {
         "id": "tijdlijn-50",
-        "label": "Na 50 minuten: bericht en nieuwe puzzel",
+        "label": "50 - Puzzel 5 vrijgeven",
         "when": {
           "kind": "elapsed",
           "minutes": 50
@@ -1089,7 +1089,7 @@
       },
       {
         "id": "tijdlijn-60",
-        "label": "Na 60 minuten: bericht en nieuwe puzzel",
+        "label": "60 - Puzzel 6 vrijgeven",
         "when": {
           "kind": "elapsed",
           "minutes": 60
@@ -1112,7 +1112,7 @@
       },
       {
         "id": "fotomissie",
-        "label": "Na 35 minuten: fotomissie",
+        "label": "35 - Fotomissie vrijgeven",
         "when": {
           "kind": "elapsed",
           "minutes": 35
@@ -1172,7 +1172,7 @@
       },
       {
         "id": "finale-alles-goed",
-        "label": "Na 75 minuten en alle puzzels goed: alleen het juiste extractiepunt (vlag)",
+        "label": "75 - Extractiepunt tonen (alle puzzels goed)",
         "when": {
           "kind": "and",
           "conditions": [
@@ -1206,7 +1206,7 @@
       },
       {
         "id": "finale-niet-alles-goed",
-        "label": "Na 75 minuten en niet alle puzzels goed: puzzels dicht, drie extractiepunten",
+        "label": "75 - Puzzels dicht, drie extractiepunten tonen (niet alle puzzels goed)",
         "when": {
           "kind": "and",
           "conditions": [
