@@ -1,6 +1,6 @@
 import { Redirect } from 'expo-router';
-import { useState } from 'react';
-import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Image, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { APP_LANGUAGES, LANGUAGE_NAMES } from '../src/core/i18n';
 import { BackendError } from '../src/core/supabase-backend';
@@ -21,6 +21,15 @@ export default function JoinScreen() {
   const [teamCode, setTeamCode] = useState('');
   const [busy, setBusy] = useState<'join' | 'rejoin' | null>(null);
   const [error, setError] = useState<MessageKey | null>(null);
+  const [keyboard, setKeyboard] = useState(false);
+  useEffect(() => {
+    const shown = Keyboard.addListener('keyboardDidShow', () => setKeyboard(true));
+    const hidden = Keyboard.addListener('keyboardDidHide', () => setKeyboard(false));
+    return () => {
+      shown.remove();
+      hidden.remove();
+    };
+  }, []);
   const t = (key: MessageKey) => msg(lang, key);
 
   if (loading) {
@@ -48,12 +57,15 @@ export default function JoinScreen() {
     <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.safe}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Image
-            source={require('../assets/logo-white.png')}
-            style={styles.logo}
-            resizeMode="contain"
-            accessibilityLabel={t('appName')}
-          />
+          {/* Klein logo, en weg zodra het toetsenbord open is: zo blijven alle velden in beeld. */}
+          {keyboard ? null : (
+            <Image
+              source={require('../assets/logo-white.png')}
+              style={styles.logo}
+              resizeMode="contain"
+              accessibilityLabel={t('appName')}
+            />
+          )}
           {error ? <Banner tone="danger">{t(error)}</Banner> : null}
 
           <Title>{t('joinTitle')}</Title>
@@ -120,7 +132,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
   content: { padding: space.md, paddingBottom: space.xl },
-  logo: { width: '60%', maxWidth: 240, aspectRatio: 496 / 600, alignSelf: 'center', marginTop: space.md, marginBottom: space.lg },
+  logo: { height: 88, aspectRatio: 496 / 600, alignSelf: 'center', marginTop: space.sm, marginBottom: space.sm },
   chips: { flexDirection: 'row', flexWrap: 'wrap', marginTop: space.sm, marginBottom: space.sm },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: space.xl },
 });

@@ -20,7 +20,6 @@ import {
   onFix,
   requestLocationPermission,
   startTracking,
-  stopTracking,
   type PermissionResult,
 } from "../src/services/location";
 import { downloadPlayArea } from "../src/services/map-download";
@@ -104,9 +103,7 @@ export default function PlayScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [started, state?.ended !== undefined]);
 
-  useEffect(() => {
-    if (state?.ended) void stopTracking();
-  }, [state?.ended]);
+  // Na het einde regelt het eindscherm de GPS (op weg naar het verzamelpunt).
 
   // Een opdracht die opengaat (op locatie, uit een reeks of door de spelleiding) komt vanzelf in beeld.
   const toShow = game && state ? taskToShow(game, state) : undefined;
