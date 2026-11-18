@@ -114,6 +114,14 @@ export async function createBaseVersion(db: SupabaseClient, baseId: string, note
   return row.version;
 }
 
+/** De inhoud van één vastgezette versie, in dezelfde vorm als loadLayer. */
+export async function loadBaseVersionSnapshot(db: SupabaseClient, baseId: string, version: number): Promise<LayerRows> {
+  const row = check<{ snapshot: LayerRows }>(
+    (await db.from('base_versions').select('snapshot').eq('game_id', baseId).eq('version', version).single()) as never,
+  );
+  return snapshotToLayer(row.snapshot);
+}
+
 /** Past de omschrijving van een versie aan (voor het eigen team: wat zit erin). */
 export async function setBaseVersionNote(db: SupabaseClient, baseId: string, version: number, note: string): Promise<void> {
   const text = note.trim();
