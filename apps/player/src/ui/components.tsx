@@ -1,5 +1,6 @@
+import { isRich, parseRich, type RichSpan } from '@hunt/engine';
 import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps, type TextStyle, type ViewStyle } from 'react-native';
 import { colors, radius, space } from './theme';
 
 export function Screen({ children, style }: { children: ReactNode; style?: ViewStyle }) {
@@ -11,7 +12,44 @@ export function Title({ children }: { children: ReactNode }) {
 }
 
 export function Body({ children, muted }: { children: ReactNode; muted?: boolean }) {
+  // Opgemaakte tekst uit de beheerapp (vet, kleur, lijsten, links, uitlijning).
+  if (typeof children === 'string' && isRich(children)) return <RichBody text={children} muted={muted} />;
   return <Text style={[styles.body, muted && styles.muted]}>{children}</Text>;
+}
+
+function spanStyle(s: RichSpan): TextStyle {
+  const color = s.color ?? (s.href ? colors.accent : undefined);
+  return {
+    ...(s.bold ? { fontWeight: '700' as const } : null),
+    ...(s.italic ? { fontStyle: 'italic' as const } : null),
+    ...(s.underline || s.href ? { textDecorationLine: 'underline' as const } : null),
+    ...(color ? { color } : null),
+  };
+}
+
+function RichBody({ text, muted }: { text: string; muted?: boolean }) {
+  let n = 0;
+  let prev: string | undefined;
+  return (
+    <View>
+      {parseRich(text).map((b, i) => {
+        if (b.list !== prev) n = 0;
+        prev = b.list;
+        const bullet = b.list === 'ol' ? `${++n}. ` : b.list === 'ul' ? '•  ' : '';
+        return (
+          <Text key={i} style={[styles.body, muted && styles.muted, b.align ? { textAlign: b.align } : null, b.list ? styles.listItem : null]}>
+            {bullet}
+            {b.spans.length === 0 ? ' ' : null}
+            {b.spans.map((s, j) => (
+              <Text key={j} style={spanStyle(s)} onPress={s.href ? () => void Linking.openURL(s.href!) : undefined}>
+                {s.text}
+              </Text>
+            ))}
+          </Text>
+        );
+      })}
+    </View>
+  );
 }
 
 export function Button({
@@ -83,6 +121,7 @@ const styles = StyleSheet.create({
   title: { color: colors.text, fontSize: 26, fontWeight: '700', marginBottom: space.md },
   body: { color: colors.text, fontSize: 17, lineHeight: 24 },
   muted: { color: colors.textMuted },
+  listItem: { paddingLeft: space.sm },
   button: {
     backgroundColor: colors.accent,
     borderRadius: radius.md,

@@ -8,7 +8,7 @@ supabase-js; de toegangsregels zitten in de database (row level security).
 - Inloggen en account aanmaken (e-mail en wachtwoord)
 - Eigen organisatie aanmaken als je nog nergens lid van bent (`create_organization`)
 - Spellen: overzicht als boom (basisspel › stad › klant), importeren als bundel `{ base, variants }` of spelpakket, publiceren
-- Opdracht bewerken: teksten per taal, antwoord, punten, hints, locatie, bevestiging; in een stad of klant alleen de aanpasbare velden
+- Opdracht bewerken met tabbladen (Opdracht, Feedback, Hints, Media, Activatie, Instellingen, Gebruikt in), een taalkeuze bovenaan en tekst met opmaak (vet, cursief, onderstreept, kleur, links, lijsten, uitlijning); in een stad of klant alleen de aanpasbare velden
 - Sessies: aanmaken met automatische sessiecode, start en tijdzone, aantal tracks, testmodus, openen en sluiten
 
 Volgt nog: regels, kaarteditor (locaties per track, overlay), klantvariant maken, vertalingen,
