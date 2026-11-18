@@ -78,7 +78,10 @@ export function randomUuid(random: () => number = Math.random): string {
 export class GameController {
   private readonly clock: ClockSync;
   private readonly gate: LocationGate;
-  private readonly uploader = new PositionUploader();
+  // Bijna live voor de spelleiding (die navigeert op de live kaart): een
+  // positie per 2 s of 5 m, en elke 3 s versturen zolang het team beweegt.
+  // Stilstaand blijft het bij een teken van leven per 30 s.
+  private readonly uploader = new PositionUploader({ minIntervalMs: 2_000, minDistance: 5, flushEveryMs: 3_000 });
   private readonly eventRetry = new Retry();
   private readonly photoRetry = new Retry();
   private readonly positionRetry = new Retry();

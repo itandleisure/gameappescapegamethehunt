@@ -178,14 +178,15 @@ describe('GameController', () => {
     expect(c.snapshot().online).toBe(true);
   });
 
-  it('bundelt GPS-posities en houdt ze vast als het versturen mislukt', async () => {
+  it('verstuurt GPS-posities en houdt ze vast als het versturen mislukt', async () => {
     const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl', '06 12345678');
     await c.start();
+    // Geen bereik onderweg: alles blijft bewaard.
+    s.backend.offline = true;
     for (let i = 0; i < 10; i++) {
       s.advance(6_000);
       await c.onLocation(s.fix({ lat: leeuwardenPoints.start.lat + i * 0.0002, lng: leeuwardenPoints.start.lng }));
     }
-    s.backend.offline = true;
     await c.tick();
     expect(s.backend.positions).toHaveLength(0);
     s.backend.offline = false;
@@ -193,6 +194,18 @@ describe('GameController', () => {
     await c.tick();
     expect(s.backend.positions.length).toBeGreaterThanOrEqual(9);
     expect(s.backend.positions[0]!.at).toBeGreaterThan(T0); // servertijd
+  });
+
+  it('verstuurt posities binnen enkele seconden, voor de live kaart', async () => {
+    const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl', '06 12345678');
+    await c.start();
+    for (let i = 0; i < 4; i++) {
+      s.advance(2_000);
+      await c.onLocation(s.fix({ lat: leeuwardenPoints.start.lat + i * 0.0005, lng: leeuwardenPoints.start.lng }));
+      await c.tick();
+    }
+    // Na 8 seconden rijden staat de route al (bijna) helemaal op de server.
+    expect(s.backend.positions.length).toBeGreaterThanOrEqual(3);
   });
 
   it('telt een foto direct mee en uploadt hem op de achtergrond', async () => {
