@@ -9,9 +9,11 @@ import {
   loadBaseVersions,
   loadChain,
   publish,
+  setBaseVersionNote,
   setCityBaseVersion,
   type BaseVersion,
 } from "@/lib/game-store";
+import { CITY_TODOS, todoState, type TodoKey } from "@/lib/city-rollout";
 import {
   baseName,
   cleanName,
@@ -69,6 +71,11 @@ function nl(
 export default function GamePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  /** Net uitgerold vanuit "Nieuwe stad uitrollen". */
+  const [justCreated, setJustCreated] = useState(false);
+  useEffect(() => {
+    setJustCreated(new URLSearchParams(window.location.search).get("nieuw") === "1");
+  }, []);
   const { t, locale } = useLanguage();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [chain, setChain] = useState<LayerRows[] | null>(null);
@@ -82,6 +89,8 @@ export default function GamePage() {
   const [versionNote, setVersionNote] = useState("");
   /** Naam per taal terwijl die wordt aangepast; null als het formulier dicht is. */
   const [nameDraft, setNameDraft] = useState<NameByLang | null>(null);
+  /** Omschrijving van een versie terwijl die wordt aangepast. */
+  const [noteDraft, setNoteDraft] = useState<{ version: number; text: string } | null>(null);
 
   const load = useCallback(async () => {
     const db = supabase();
@@ -205,6 +214,42 @@ export default function GamePage() {
           " " +
           t("Publiceer de stad (en de klantvarianten eronder) opnieuw om dit in nieuwe hunts te gebruiken."),
       );
+      await load();
+    } catch (err) {
+      setErrors([err instanceof Error ? err.message : String(err)]);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const doSaveNote = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!noteDraft) return;
+    setBusy(true);
+    setErrors([]);
+    setNotice(null);
+    try {
+      await setBaseVersionNote(supabase(), id, noteDraft.version, noteDraft.text);
+      setNoteDraft(null);
+      setNotice(t("Omschrijving van versie {n} opgeslagen.", { n: noteDraft.version }));
+      await load();
+    } catch (err) {
+      setErrors([err instanceof Error ? err.message : String(err)]);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Nog te doen bij een nieuwe stad: afvinken slaat meteen op.
+  const todo = todoState(self.game.settings);
+  const toggleTodo = async (key: TodoKey, done: boolean) => {
+    setBusy(true);
+    setErrors([]);
+    setNotice(null);
+    try {
+      const settings = { ...self.game.settings, todo: { ...todo, [key]: done } };
+      const r = await supabase().from("games").update({ settings }).eq("id", id);
+      if (r.error) throw new Error(r.error.message);
       await load();
     } catch (err) {
       setErrors([err instanceof Error ? err.message : String(err)]);
@@ -413,6 +458,19 @@ export default function GamePage() {
         ) : null}
         {isBase && !legacy ? (
           <Link
+            href={`/spellen/nieuw?basis=${id}`}
+            className="filebutton"
+            style={{
+              background: "transparent",
+              color: "var(--text)",
+              border: "1px solid var(--line)",
+            }}
+          >
+            {t("Nieuwe stad uitrollen")}
+          </Link>
+        ) : null}
+        {isBase && !legacy ? (
+          <Link
             href={`/spellen/${id}/tabbladen`}
             className="filebutton"
             style={{
@@ -457,6 +515,63 @@ export default function GamePage() {
         </ul>
       ) : null}
 
+      {self.game.layer === "city" && todo ? (
+        <section className="card" style={{ marginTop: 16 }}>
+          <h2 style={{ marginTop: 0 }}>
+            {t("Nog te doen voor deze stad")}{" "}
+            <span className="muted" style={{ fontWeight: 400, fontSize: 14 }}>
+              {t("{done} van {n} klaar", {
+                done: CITY_TODOS.filter((td) => todo[td.key]).length,
+                n: CITY_TODOS.length,
+              })}
+            </span>
+          </h2>
+          {justCreated ? (
+            <p className="notice">
+              {t("De stad is aangemaakt. Alle iconen staan nu in het centrum van de stad; sleep ze op de kaart naar de juiste plek.")}
+            </p>
+          ) : null}
+          {CITY_TODOS.map((td) => {
+            const href =
+              td.link === "overlay"
+                ? `/spellen/${id}/overlay`
+                : td.link === "kaart"
+                  ? `/spellen/${id}/kaart`
+                  : td.link === "opdrachten"
+                    ? "#opdrachten"
+                    : null;
+            return (
+              <div key={td.key} className="check" style={{ margin: "6px 0" }}>
+                <input
+                  type="checkbox"
+                  id={`todo-${td.key}`}
+                  checked={Boolean(todo[td.key])}
+                  disabled={busy}
+                  onChange={(e) => void toggleTodo(td.key, e.target.checked)}
+                />
+                <label
+                  htmlFor={`todo-${td.key}`}
+                  style={{
+                    margin: 0,
+                    fontWeight: 400,
+                    fontSize: 15,
+                    textDecoration: todo[td.key] ? "line-through" : undefined,
+                    color: todo[td.key] ? "var(--muted)" : undefined,
+                  }}
+                >
+                  {t(td.label)}
+                </label>
+                {href ? (
+                  <Link href={href} className="muted" style={{ marginLeft: 8, fontSize: 13 }}>
+                    {t("openen")}
+                  </Link>
+                ) : null}
+              </div>
+            );
+          })}
+        </section>
+      ) : null}
+
       {legacy ? (
         <p className="card">
           {t('Dit spel is als kant-en-klaar spelpakket geïmporteerd en heeft daarom geen losse opdrachten om te bewerken. Je kunt er wel hunts mee maken. Importeer het spel opnieuw als bundel om het te bewerken.')}
@@ -464,7 +579,7 @@ export default function GamePage() {
       ) : null}
 
       {isBase && !legacy ? (
-        <section className="card" style={{ marginTop: 16 }}>
+        <section className="card" id="versies" style={{ marginTop: 16 }}>
           <h2 style={{ marginTop: 0 }}>{t("Versies van het basisspel")}</h2>
           <p className="muted">
             {t("Wat je hier aanpast, is de werkversie. Zet een nieuwe versie vast als de wijzigingen klaar zijn. Daarna kies je per stad wanneer die overgaat.")}
@@ -476,6 +591,7 @@ export default function GamePage() {
                   <tr>
                     <th>{t("Versie")}</th>
                     <th>{t("Vastgezet")}</th>
+                    <th>{t("Omschrijving (alleen voor ons team)")}</th>
                     <th>{t("Steden")}</th>
                   </tr>
                 </thead>
@@ -484,12 +600,11 @@ export default function GamePage() {
                     ...baseVersions.map((v) => ({
                       key: String(v.version),
                       name: t("Versie {n}", { n: v.version }),
-                      when:
-                        new Date(v.created_at).toLocaleDateString(locale) +
-                        (v.note ? ` · ${v.note}` : ""),
+                      when: new Date(v.created_at).toLocaleDateString(locale),
+                      note: v.note,
                       version: v.version as number | null,
                     })),
-                    { key: "werk", name: t("Werkversie"), when: "–", version: null },
+                    { key: "werk", name: t("Werkversie"), when: "–", note: null, version: null },
                   ].map((row) => {
                     const used = children.filter(
                       (c) => c.layer === "city" && c.base_version === row.version,
@@ -502,6 +617,41 @@ export default function GamePage() {
                           <strong>{row.name}</strong>
                         </td>
                         <td className="muted">{row.when}</td>
+                        <td>
+                          {row.version === null ? (
+                            <span className="muted">–</span>
+                          ) : noteDraft?.version === row.version ? (
+                            <form onSubmit={doSaveNote}>
+                              <textarea
+                                aria-label={t("Omschrijving (alleen voor ons team)")}
+                                value={noteDraft.text}
+                                maxLength={2000}
+                                rows={4}
+                                autoFocus
+                                onChange={(e) => setNoteDraft({ ...noteDraft, text: e.target.value })}
+                              />
+                              <div className="actions">
+                                <button type="submit" disabled={busy}>
+                                  {busy ? t("Bezig…") : t("Opslaan")}
+                                </button>
+                                <button type="button" className="secondary" onClick={() => setNoteDraft(null)} disabled={busy}>
+                                  {t("Annuleren")}
+                                </button>
+                              </div>
+                            </form>
+                          ) : (
+                            <>
+                              {row.note ? <div style={{ whiteSpace: "pre-wrap" }}>{row.note}</div> : null}
+                              <button
+                                type="button"
+                                className="link small"
+                                onClick={() => setNoteDraft({ version: row.version!, text: row.note ?? "" })}
+                              >
+                                {row.note ? t("Aanpassen") : t("Omschrijving toevoegen")}
+                              </button>
+                            </>
+                          )}
+                        </td>
                         <td>
                           <strong>
                             {used.length === 1
@@ -534,7 +684,7 @@ export default function GamePage() {
               <input
                 id="version-note"
                 value={versionNote}
-                maxLength={500}
+                maxLength={2000}
                 onChange={(e) => setVersionNote(e.target.value)}
                 placeholder={t("Bijvoorbeeld: nieuwe puzzel bij het extractiepunt")}
               />
@@ -609,7 +759,7 @@ export default function GamePage() {
 
       {!legacy ? (
         <>
-          <h2>{t('Opdrachten')}</h2>
+          <h2 id="opdrachten">{t('Opdrachten')}</h2>
           {!isBase ? (
             <p className="muted">
               {self.game.layer === "city"
