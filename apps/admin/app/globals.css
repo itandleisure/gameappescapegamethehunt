@@ -260,3 +260,4 @@ button.icon:hover { background: var(--bg); color: var(--danger); }
 /* Taalkeuze in de kop en op het inlogscherm */
 select.langpick { width: auto; padding: 4px 8px; font-size: 13px; margin: 0; }
 .langcorner { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+.version-note { margin-top: 12px; padding: 12px 14px; border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; background: var(--bg); }

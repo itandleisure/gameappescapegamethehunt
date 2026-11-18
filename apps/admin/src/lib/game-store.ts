@@ -15,6 +15,7 @@ import {
   type TaskRow,
 } from './game-model';
 import { withCurrentName } from './game-name';
+import { centredLocations, centredMeetingPoint, citySlug, newTodoState, type Place } from './city-rollout';
 import { mediaPath } from './map-settings';
 import { t as tr } from './i18n';
 
@@ -113,6 +114,20 @@ export async function createBaseVersion(db: SupabaseClient, baseId: string, note
   return row.version;
 }
 
+/** Past de omschrijving van een versie aan (voor het eigen team: wat zit erin). */
+export async function setBaseVersionNote(db: SupabaseClient, baseId: string, version: number, note: string): Promise<void> {
+  const text = note.trim();
+  check(
+    await db
+      .from('base_versions')
+      .update({ note: text === '' ? null : text })
+      .eq('game_id', baseId)
+      .eq('version', version)
+      .select('version')
+      .single(),
+  );
+}
+
 /** Koppelt een stad aan een versie van het basisspel (null: altijd de werkversie). */
 export async function setCityBaseVersion(db: SupabaseClient, cityId: string, version: number | null): Promise<void> {
   check(await db.from('games').update({ base_version: version }).eq('id', cityId).select('id').single());
@@ -132,6 +147,75 @@ export async function publish(db: SupabaseClient, gameId: string): Promise<numbe
   const pkg = composeChain(await loadChain(db, gameId));
   const row = check<{ version: number }>(await db.rpc('publish_game_version', { p_game: gameId, p_package: pkg }));
   return row.version;
+}
+
+// ---------------------------------------------------------------------------
+// Nieuwe stad uitrollen
+// ---------------------------------------------------------------------------
+
+export interface RolloutInput {
+  baseId: string;
+  version: number;
+  place: Place;
+  /** Naam in de beheeromgeving, per taal. */
+  name: Record<string, string>;
+}
+
+/**
+ * Maakt een nieuwe stad op een versie van het basisspel. Alle opdrachtlocaties
+ * uit die versie komen in het centrum van de stad (en het verzamelpunt ook,
+ * als een stad dat mag aanpassen), en de stad krijgt een lijst met wat nog
+ * moet gebeuren. Geeft het id van de nieuwe stad.
+ */
+export async function rolloutCity(db: SupabaseClient, orgId: string, input: RolloutInput): Promise<string> {
+  const base = check<GameRow>(
+    (await db.from('games').select(GAME_COLUMNS).eq('id', input.baseId).single()) as never,
+  );
+  const snapshot = snapshotToLayer(
+    check<{ snapshot: LayerRows }>(
+      (await db
+        .from('base_versions')
+        .select('snapshot')
+        .eq('game_id', input.baseId)
+        .eq('version', input.version)
+        .single()) as never,
+    ).snapshot,
+  );
+  const [current, slugs] = await Promise.all([
+    db.from('tasks').select('id').eq('game_id', input.baseId).then((r) => check<{ id: string }[]>(r as never)),
+    db.from('games').select('slug').eq('org_id', orgId).then((r) => check<{ slug: string }[]>(r as never)),
+  ]);
+  const center = { lat: input.place.lat, lng: input.place.lng };
+  const meeting = centredMeetingPoint(snapshot, center);
+  const created = check<{ id: string }>(
+    await db
+      .from('games')
+      .insert({
+        org_id: orgId,
+        layer: 'city',
+        slug: citySlug(base.slug, input.place.name, slugs.map((s) => s.slug)),
+        parent_id: base.id,
+        languages: base.languages,
+        default_language: base.default_language,
+        base_version: input.version,
+        settings: { name: input.name, place: input.place, todo: newTodoState() },
+      })
+      .select('id')
+      .single(),
+  );
+  try {
+    const locations = centredLocations(snapshot, center, new Set(current.map((t) => t.id)));
+    if (locations.length) check(await db.from('task_locations').insert(locations.map((l) => ({ ...l, game_id: created.id }))));
+    // Het verzamelpunt is een extraatje: lukt het niet (bijvoorbeeld omdat het
+    // basisspel het verzamelpunt inmiddels niet meer aanpasbaar maakt), dan
+    // gaat het uitrollen gewoon door.
+    if (meeting) await db.from('overrides').insert({ ...meeting, game_id: created.id });
+    return created.id;
+  } catch (err) {
+    // Is de stad maar half aangemaakt, dan weer weghalen.
+    await db.from('games').delete().eq('id', created.id);
+    throw err;
+  }
 }
 
 // ---------------------------------------------------------------------------
