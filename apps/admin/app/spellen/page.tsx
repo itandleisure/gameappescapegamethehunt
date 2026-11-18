@@ -1,12 +1,10 @@
 'use client';
 import Link from 'next/link';
-import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth';
 import { openTodos } from '@/lib/city-rollout';
 import { currentLanguage, tKey } from '@/lib/i18n';
 import { useLanguage } from '@/lib/language';
-import { parseGameFile } from '@/lib/game-import';
-import { copyExternalImages, importBundle } from '@/lib/game-store';
 import { supabase } from '@/lib/supabase';
 import { tx } from '@/lib/text';
 
@@ -24,7 +22,7 @@ interface GameRow {
 
 const LAYER_LABEL: Record<GameRow['layer'], string> = { base: tKey('Basisspel'), city: tKey('Stad'), client: tKey('Klant') };
 
-/** Zet de spellen in boomvolgorde: basisspel, dan zijn steden, dan hun klanten. */
+/** Zet de spellen in boomvolgorde: basisspel (template), dan zijn steden, dan hun klanten. */
 function tree(games: GameRow[]): { game: GameRow; depth: number }[] {
   const out: { game: GameRow; depth: number }[] = [];
   const walk = (parent: string | null, depth: number) => {
@@ -45,25 +43,12 @@ function gameTitle(g: { slug: string; layer: string; settings: { name?: unknown 
   return tx(g.settings.name) || g.slug;
 }
 
-/** Per versie van het basisspel hoeveel steden erop zitten, bijvoorbeeld "v1: 3 steden · v2: 1 stad". */
-function versionSummary(games: GameRow[], baseId: string, t: (nl: string, vars?: Record<string, string | number>) => string): string {
-  const counts = new Map<number | null, number>();
-  for (const c of games) if (c.parent_id === baseId && c.layer === 'city') counts.set(c.base_version, (counts.get(c.base_version) ?? 0) + 1);
-  return [...counts.entries()]
-    .sort(([a], [b]) => (a ?? Infinity) - (b ?? Infinity))
-    .map(([version, n]) =>
-      (version === null ? t('werkversie') : t('versie {n}', { n: version })) + ': ' + (n === 1 ? t('1 stad') : t('{n} steden', { n })),
-    )
-    .join(' · ');
-}
-
 export default function GamesPage() {
   const { org } = useAuth();
   const { t, locale } = useLanguage();
   const [games, setGames] = useState<GameRow[] | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     if (!org) return;
@@ -87,66 +72,16 @@ export default function GamesPage() {
     void load();
   }, [load]);
 
-  const importFile = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file || !org) return;
-    setBusy(true);
-    setErrors([]);
-    setNotice(null);
-    try {
-      const parsed = parseGameFile(await file.text());
-      if (!parsed.ok) {
-        setErrors(parsed.errors);
-        return;
-      }
-      if (games?.some((g) => g.slug === parsed.slug || parsed.bundle.variants.some((v) => v.id === g.slug))) {
-        setErrors([t('Er bestaat al een spel met de naam {name} of een van de varianten. Pas het id in het bestand aan.', { name: parsed.slug })]);
-        return;
-      }
-      const baseId = await importBundle(supabase(), org.id, parsed.bundle);
-      const n = parsed.bundle.variants.length;
-      const photos = await copyExternalImages(supabase(), baseId);
-      setNotice(
-        (n === 0
-          ? t('{name} geïmporteerd.', { name: parsed.slug })
-          : n === 1
-            ? t('{name} geïmporteerd, met 1 variant.', { name: parsed.slug })
-            : t('{name} geïmporteerd, met {n} varianten.', { name: parsed.slug, n })) +
-          (photos.copied
-            ? ' ' +
-              (photos.copied === 1
-                ? t('1 foto naar de eigen opslag gekopieerd.')
-                : t("{n} foto's naar de eigen opslag gekopieerd.", { n: photos.copied }))
-            : '') +
-          ' ' +
-          t('Publiceer het spel om er hunts mee te maken.'),
-      );
-      if (photos.failed.length) {
-        setErrors([t("Deze foto's konden niet worden gekopieerd en wijzen nog naar de oude site:"), ...photos.failed]);
-      }
-      await load();
-    } catch (err) {
-      setErrors([err instanceof Error ? err.message : String(err)]);
-    } finally {
-      setBusy(false);
-    }
-  };
-
   return (
     <>
       <h1>{t('Spellen')}</h1>
       <p className="muted">
-        {t('Een basisspel bevat de opdrachten en regels. Een stad vult locaties en lokale vragen in, een klant alleen de velden die het basisspel als aanpasbaar markeert. Publiceren maakt een vaste versie waarmee je hunts maakt.')}
+        {t('Hier staan de spellen per stad en klant. Een nieuwe stad maak je vanuit een template (onder Templates). Publiceren maakt een vaste versie waarmee je hunts maakt.')}
       </p>
       <div className="actions">
         <Link href="/templates" className="filebutton">
           {t('Nieuwe stad uitrollen')}
         </Link>
-        <label className={`filebutton${busy ? ' disabled' : ''}`}>
-          <input type="file" accept="application/json,.json" onChange={importFile} disabled={busy} />
-          {busy ? t('Bezig…') : t('Spel importeren (JSON)')}
-        </label>
       </div>
       {notice ? <p className="notice">{notice}</p> : null}
       {errors.length > 0 ? (
@@ -160,7 +95,7 @@ export default function GamesPage() {
       <h2>{t('Overzicht')}</h2>
       {games === null ? (
         <p className="muted">{t('Laden…')}</p>
-      ) : games.length === 0 ? (
+      ) : games.every((g) => g.layer === 'base') ? (
         <p className="muted">{t('Nog geen spellen.')}</p>
       ) : (
         <div className="table-wrap">
@@ -174,7 +109,10 @@ export default function GamesPage() {
               </tr>
             </thead>
             <tbody>
-              {tree(games).map(({ game: g, depth }) => {
+              {tree(games)
+                .filter(({ game }) => game.layer !== 'base')
+                .map(({ game, depth }) => ({ game, depth: game.parent_id && games.some((b) => b.id === game.parent_id && b.layer === 'base') ? 0 : Math.max(0, depth - 1) }))
+                .map(({ game: g, depth }) => {
                 const latest = [...g.game_versions].sort((a, b) => b.version - a.version)[0];
                 return (
                   <tr key={g.id}>
@@ -186,14 +124,15 @@ export default function GamesPage() {
                     </td>
                     <td>
                       {t(LAYER_LABEL[g.layer])}
-                      {g.layer === 'base' && games.some((c) => c.parent_id === g.id && c.layer === 'city') ? (
-                        <div className="muted">{versionSummary(games, g.id, t)}</div>
-                      ) : null}
                       {g.layer === 'city' ? (
                         <div className="muted">
-                          {g.base_version === null
-                            ? t('basisspel: werkversie')
-                            : t('basisspel: versie {n}', { n: g.base_version })}
+                          {(() => {
+                            const base = games.find((b) => b.id === g.parent_id);
+                            const name = base ? gameTitle(base) : '';
+                            return g.base_version === null
+                              ? t('{template}: werkversie', { template: name })
+                              : t('{template} v{n}', { template: name, n: g.base_version });
+                          })()}
                         </div>
                       ) : null}
                       {(() => {

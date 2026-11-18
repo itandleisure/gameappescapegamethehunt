@@ -933,7 +933,7 @@
       },
       {
         "id": "na-uitleg",
-        "label": "Na de uitleg: speluitleg terug te lezen, trackvragen op de kaart, eerste puzzel",
+        "label": "Na de uitleg: speluitleg terug te lezen, trackvragen op de kaart",
         "when": {
           "kind": "completed",
           "select": {
@@ -969,13 +969,6 @@
               "tag": "track"
             },
             "on": "map"
-          },
-          {
-            "kind": "show",
-            "select": {
-              "task": "puzzel-tangram"
-            },
-            "on": "list"
           }
         ]
       },
@@ -996,7 +989,7 @@
           {
             "kind": "show",
             "select": {
-              "task": "puzzel-morse"
+              "task": "puzzel-tangram"
             },
             "on": "list"
           }
@@ -1019,7 +1012,7 @@
           {
             "kind": "show",
             "select": {
-              "task": "puzzel-blokjes"
+              "task": "puzzel-morse"
             },
             "on": "list"
           }
@@ -1042,7 +1035,7 @@
           {
             "kind": "show",
             "select": {
-              "task": "puzzel-stratenkaart"
+              "task": "puzzel-blokjes"
             },
             "on": "list"
           }
@@ -1065,7 +1058,7 @@
           {
             "kind": "show",
             "select": {
-              "task": "puzzel-cryptex"
+              "task": "puzzel-stratenkaart"
             },
             "on": "list"
           }
@@ -1088,6 +1081,29 @@
           {
             "kind": "show",
             "select": {
+              "task": "puzzel-cryptex"
+            },
+            "on": "list"
+          }
+        ]
+      },
+      {
+        "id": "tijdlijn-60",
+        "label": "Na 60 minuten: bericht en nieuwe puzzel",
+        "when": {
+          "kind": "elapsed",
+          "minutes": 60
+        },
+        "then": [
+          {
+            "kind": "message",
+            "text": {
+              "nl": "Er zijn 60 minuten verstreken.\n\nDe Hunters hebben jullie locatie doorgekregen en zijn nu op jacht!\n\nDaarnaast is de knop \"VRAGEN & HINTS\" beschikbaar gekomen. Via deze knop kunnen jullie het antwoord op de Kompas-puzzel invoeren of één of meerdere hints kopen.\n\nSucces en blijf uit handen van de Hunters!"
+            }
+          },
+          {
+            "kind": "show",
+            "select": {
               "task": "puzzel-kompas"
             },
             "on": "list"
@@ -1096,10 +1112,10 @@
       },
       {
         "id": "fotomissie",
-        "label": "Na 35 minuten: fotomissie",
+        "label": "Na 25 minuten: fotomissie",
         "when": {
           "kind": "elapsed",
-          "minutes": 35
+          "minutes": 25
         },
         "then": [
           {
@@ -1149,7 +1165,7 @@
           {
             "kind": "message",
             "text": {
-              "nl": "Super! Jullie hebben alle zes de puzzels succesvol opgelost.\n\nDe locatie van het extractiepunt wordt binnen 10 minuten vrijgegeven in de game-app.\n\nZorg dat jullie tot die tijd uit handen van de Hunters blijven"
+              "nl": "Super! Jullie hebben alle zes de puzzels succesvol opgelost.\n\nDe locatie van het extractiepunt wordt bij 75 minuten vrijgegeven in de game-app.\n\nZorg dat jullie tot die tijd uit handen van de Hunters blijven"
             }
           }
         ]
