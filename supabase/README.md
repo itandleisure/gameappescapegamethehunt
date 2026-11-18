@@ -41,3 +41,12 @@ Zet daarna in Authentication → Providers "Anonymous sign-ins" aan.
   - `rotate_results_token(sessie)` maakt een nieuwe link
 
 Deployen van de functie: `npx supabase functions deploy results-export`.
+
+## Fotoboek voor de klant
+
+- `photobooks`: één fotoboek per sessie (titel, tekst, taal, gekozen foto's in volgorde). Spelleiding en de maker van het spel (`can_watch_session`) beheren het.
+- Eigen foto's en de PDF staan in de bucket `photobooks` onder `<sessie>/…`.
+- Geheime link per fotoboek (`photobooks.share_token`, aan met `shared`):
+  - `GET /functions/v1/photobook?token=…` geeft JSON met foto-links en de PDF-link (7 dagen geldig)
+  - `shared_photobook(token)` geeft alleen foto's van de eigen sessie door
+  - `rotate_photobook_token(sessie)` maakt een nieuwe link
