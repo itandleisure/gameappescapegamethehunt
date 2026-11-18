@@ -102,7 +102,7 @@ export default function SessionsPage() {
         track_count: form.trackCount,
         test_mode: form.testMode,
         central_start: form.centralStart ?? false,
-        status: 'draft',
+        status: 'open',
         ...(form.joinCode?.trim() ? { join_code: form.joinCode.trim().toUpperCase() } : {}),
       });
     setBusy(false);
