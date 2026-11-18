@@ -44,6 +44,8 @@ describe('sessies', () => {
     const ok = { name: 'Bedrijfsuitje', gameVersionId: 'v1', startsAt: '', timezone: 'Europe/Amsterdam', trackCount: 5, testMode: false };
     expect(validateSession(ok)).toEqual([]);
     expect(validateSession({ ...ok, name: ' ', trackCount: 0, gameVersionId: '' })).toHaveLength(3);
+    expect(validateSession({ ...ok, joinCode: 'HUNT1' })).toEqual([]);
+    expect(validateSession({ ...ok, joinCode: 'HUNT 1' })).toHaveLength(1);
   });
 
   it('rekent lokale tijd om naar UTC, ook in de zomertijd', () => {

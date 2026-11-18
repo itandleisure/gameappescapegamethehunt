@@ -7,6 +7,8 @@ export interface SessionInput {
   timezone: string;
   trackCount: number;
   testMode: boolean;
+  /** Eigen sessiecode; leeg = de database kiest er een van 5 tekens. */
+  joinCode?: string;
 }
 
 export const STATUS_LABEL: Record<SessionStatus, string> = {
@@ -42,6 +44,8 @@ export function validateSession(input: SessionInput): string[] {
   if (!Number.isInteger(input.trackCount) || input.trackCount < 1 || input.trackCount > 50) {
     errors.push('Aantal tracks moet tussen 1 en 50 liggen.');
   }
+  const code = input.joinCode?.trim() ?? '';
+  if (code && !/^[A-Za-z0-9]{4,12}$/.test(code)) errors.push('De sessiecode moet 4 tot 12 letters of cijfers zijn, zonder spaties.');
   if (input.startsAt && Number.isNaN(Date.parse(input.startsAt))) errors.push('Startmoment is ongeldig.');
   return errors;
 }

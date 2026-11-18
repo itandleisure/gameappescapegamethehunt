@@ -1,7 +1,7 @@
 import { composeGame, computeState } from '@hunt/engine';
 import { describe, expect, it } from 'vitest';
 import { INTRO, leeuwarden, leeuwardenPoints, theHuntBase } from '../../../packages/engine/test/fixtures/the-hunt.js';
-import { answerFeedback, isAnswerable, listGroups, taskToShow } from '../src/core/view.js';
+import { answerFeedback, isAnswerable, isValidPhone, listGroups, taskToShow } from '../src/core/view.js';
 
 const game = composeGame(theHuntBase, [leeuwarden], { id: 'lwd', version: 1 });
 const T0 = Date.UTC(2026, 10, 21, 13, 0, 0);
@@ -56,5 +56,10 @@ describe('schermen', () => {
     const groups = listGroups(g, state);
     expect(groups.some((gr) => gr.playground === 'speluitleg')).toBe(true);
     expect(groups.flatMap((gr) => gr.tasks).map((t) => t.id)).not.toContain('start');
+  });
+
+  it('controleert telefoonnummers', () => {
+    for (const ok of ['0612345678', '+31 6 1234 5678', '058-1234567']) expect(isValidPhone(ok)).toBe(true);
+    for (const bad of ['', '12345', 'bel me', '06-1234567a']) expect(isValidPhone(bad)).toBe(false);
   });
 });

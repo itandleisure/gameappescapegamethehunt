@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { APP_LANGUAGES, LANGUAGE_NAMES } from '../src/core/i18n';
 import { BackendError } from '../src/core/supabase-backend';
 import { joinGame, rejoinGame } from '../src/services/game';
+import { isValidPhone } from '../src/core/view';
 import { Banner, Body, Button, Chip, Field, Title } from '../src/ui/components';
 import { useGame } from '../src/ui/GameProvider';
 import { colors, space } from '../src/ui/theme';
@@ -16,6 +17,7 @@ export default function JoinScreen() {
   const [lang, setLang] = useState(deviceLang);
   const [joinCode, setJoinCode] = useState('');
   const [teamName, setTeamName] = useState('');
+  const [phone, setPhone] = useState('');
   const [teamCode, setTeamCode] = useState('');
   const [busy, setBusy] = useState<'join' | 'rejoin' | null>(null);
   const [error, setError] = useState<MessageKey | null>(null);
@@ -65,6 +67,16 @@ export default function JoinScreen() {
             maxLength={12}
           />
           <Field label={t('teamName')} value={teamName} onChangeText={setTeamName} maxLength={60} />
+          <Field
+            label={t('phone')}
+            hint={t('phoneHint')}
+            value={phone}
+            onChangeText={setPhone}
+            keyboardType="phone-pad"
+            autoComplete="tel"
+            textContentType="telephoneNumber"
+            maxLength={24}
+          />
           <Body muted>{t('language')}</Body>
           <View style={styles.chips}>
             {APP_LANGUAGES.map((code) => (
@@ -74,8 +86,11 @@ export default function JoinScreen() {
           <Button
             label={t('join')}
             busy={busy === 'join'}
-            disabled={joinCode.trim().length < 4 || teamName.trim().length === 0 || busy !== null}
-            onPress={() => run('join', () => joinGame(joinCode.trim(), teamName.trim(), lang))}
+            disabled={joinCode.trim().length < 4 || teamName.trim().length === 0 || phone.trim().length === 0 || busy !== null}
+            onPress={() => {
+              if (!isValidPhone(phone)) return setError('errorPhone');
+              void run('join', () => joinGame(joinCode.trim(), teamName.trim(), lang, phone.trim().replace(/\s+/g, ' ')));
+            }}
           />
 
           <View style={styles.divider} />

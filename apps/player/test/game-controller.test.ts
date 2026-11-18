@@ -35,7 +35,7 @@ describe('GameController', () => {
   });
 
   it('meldt een team aan, rekent op servertijd en start eenmalig', async () => {
-    const c = await GameController.join(s.deps, 'LWD001', 'De Speurders', 'nl');
+    const c = await GameController.join(s.deps, 'LWD001', 'De Speurders', 'nl', '06 12345678');
     expect(c.team.track).toBe(1);
     expect(c.snapshot().state).toBeNull();
     expect(c.snapshot().now).toBe(T0); // klok gecorrigeerd
@@ -50,7 +50,7 @@ describe('GameController', () => {
   });
 
   it('opent de startlocatie pas na twee goede GPS-metingen, slechte metingen tellen niet', async () => {
-    const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl');
+    const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl', '06 12345678');
     await c.start();
     s.advance(5_000);
     expect(await c.onLocation(s.fix(leeuwardenPoints.start, 80))).toEqual([]);
@@ -68,7 +68,7 @@ describe('GameController', () => {
     base.tasks.find((t) => t.id === 'start')!.confirm = { nl: 'Is dit het juiste extractiepunt?' };
     const confirmGame = composeGame(base, [leeuwarden], { id: 'the-hunt-leeuwarden', version: 1 });
     s = setup(confirmGame);
-    const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl');
+    const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl', '06 12345678');
     await c.start();
     const arrive = async () => {
       await c.onLocation(s.fix(leeuwardenPoints.start));
@@ -88,8 +88,20 @@ describe('GameController', () => {
     expect(c.snapshot().state!.tasks.start!.status).toBe('confirming');
   });
 
+  it('stuurt het telefoonnummer mee en laat het aanmeldende team een teamfoto maken', async () => {
+    const c = await GameController.join(s.deps, 'LWD001', 'Fotogeniek', 'nl', '+31 6 1234 5678');
+    expect(s.backend.phones).toEqual(['+31 6 1234 5678']);
+    expect(c.snapshot().teamPhotoNeeded).toBe(true);
+    await c.submitTeamPhoto('file:///team.jpg');
+    expect(c.snapshot().teamPhotoNeeded).toBe(false);
+    expect(c.snapshot().pending).toBeGreaterThan(0);
+    // Een tweede telefoon met de teamcode hoeft geen teamfoto te maken.
+    const second = await GameController.rejoin(s.deps, c.team.teamCode);
+    expect(second.snapshot().teamPhotoNeeded).toBe(false);
+  });
+
   it('opent in een testsessie een opdracht zonder GPS, en anders niet', async () => {
-    const c = await GameController.join(s.deps, 'LWD001', 'Testers', 'nl');
+    const c = await GameController.join(s.deps, 'LWD001', 'Testers', 'nl', '06 12345678');
     await c.start();
     expect(c.testTargets()).toContain('start');
     expect(await c.simulateArrival('niet-bestaand')).toBe(false);
@@ -98,7 +110,7 @@ describe('GameController', () => {
     expect(c.snapshot().state!.rejected ?? []).toEqual([]);
 
     s.backend.testMode = false;
-    const echt = await GameController.join(s.deps, 'LWD001', 'Echt', 'nl');
+    const echt = await GameController.join(s.deps, 'LWD001', 'Echt', 'nl', '06 12345678');
     await echt.start();
     expect(echt.testTargets()).toEqual([]);
     expect(await echt.simulateArrival('start')).toBe(false);
@@ -106,7 +118,7 @@ describe('GameController', () => {
   });
 
   it('beantwoordt, gebruikt hints en stuurt alles met servertijd naar de server', async () => {
-    const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl');
+    const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl', '06 12345678');
     await c.start();
     s.advance(1_000);
     await c.onLocation(s.fix(leeuwardenPoints.start));
@@ -125,7 +137,7 @@ describe('GameController', () => {
   });
 
   it('blijft offline doorspelen en verstuurt later alles, zonder dubbelingen', async () => {
-    const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl');
+    const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl', '06 12345678');
     await c.start();
     s.backend.offline = true;
     s.advance(1_000);
@@ -150,7 +162,7 @@ describe('GameController', () => {
   });
 
   it('bundelt GPS-posities en houdt ze vast als het versturen mislukt', async () => {
-    const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl');
+    const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl', '06 12345678');
     await c.start();
     for (let i = 0; i < 10; i++) {
       s.advance(6_000);
@@ -167,7 +179,7 @@ describe('GameController', () => {
   });
 
   it('telt een foto direct mee en uploadt hem op de achtergrond', async () => {
-    const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl');
+    const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl', '06 12345678');
     await c.start();
     s.backend.offline = true;
     await c.submitPhoto('fotomissie', 'file:///foto.jpg');
@@ -183,7 +195,7 @@ describe('GameController', () => {
   });
 
   it('gaat na een herstart verder en neemt gebeurtenissen van een tweede telefoon over', async () => {
-    const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl');
+    const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl', '06 12345678');
     await c.start();
     s.advance(1_000);
     await c.onLocation(s.fix(leeuwardenPoints.start));

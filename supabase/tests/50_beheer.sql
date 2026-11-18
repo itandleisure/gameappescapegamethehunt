@@ -66,7 +66,7 @@ values (:'org', :'v1', 'Test', true, 'open');
 insert into public.sessions (org_id, game_version_id, name, join_code)
 values (:'org', :'v1', 'Eigen code', ' lwd001 ');
 do $$ begin
-  if (select join_code from public.sessions where name = 'Test') !~ '^[A-Z2-9]{6}$' then raise exception 'geen automatische code'; end if;
+  if (select join_code from public.sessions where name = 'Test') !~ '^[A-Z2-9]{5}$' then raise exception 'geen automatische code'; end if;
   if (select join_code from public.sessions where name = 'Eigen code') <> 'LWD001' then raise exception 'code niet genormaliseerd'; end if;
 end $$;
 

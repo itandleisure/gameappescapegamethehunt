@@ -37,6 +37,7 @@ const EMPTY: SessionInput = {
   timezone: 'Europe/Amsterdam',
   trackCount: 5,
   testMode: false,
+  joinCode: '',
 };
 
 export default function SessionsPage() {
@@ -98,10 +99,11 @@ export default function SessionsPage() {
         track_count: form.trackCount,
         test_mode: form.testMode,
         status: 'draft',
+        ...(form.joinCode?.trim() ? { join_code: form.joinCode.trim().toUpperCase() } : {}),
       });
     setBusy(false);
     if (error) {
-      setErrors([error.message]);
+      setErrors([/join_code/.test(error.message) ? 'Deze sessiecode is al in gebruik. Kies een andere.' : error.message]);
       return;
     }
     setForm({ ...EMPTY, gameVersionId: form.gameVersionId });
@@ -138,6 +140,16 @@ export default function SessionsPage() {
             <div>
               <label htmlFor="name">Naam</label>
               <input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Bedrijfsuitje Parteon" />
+            </div>
+            <div>
+              <label htmlFor="code">Sessiecode (optioneel)</label>
+              <input
+                id="code"
+                value={form.joinCode ?? ''}
+                maxLength={12}
+                onChange={(e) => setForm({ ...form, joinCode: e.target.value.toUpperCase() })}
+                placeholder="leeg = 5 tekens, bijv. K7XQM"
+              />
             </div>
             <div>
               <label htmlFor="game">Spel</label>

@@ -64,3 +64,9 @@ export function answerFeedback(before: TeamState, after: TeamState, taskId: stri
   if (a.status === 'done') return a.correct ? 'correct' : 'wrong';
   return 'tryAgain';
 }
+
+/** Een telefoonnummer zoals de database het accepteert: cijfers, spaties, +, -, haakjes, minstens 8 cijfers. */
+export function isValidPhone(input: string): boolean {
+  const v = input.trim().replace(/\s+/g, ' ');
+  return /^\+?[0-9][0-9 ()-]{6,22}[0-9]$/.test(v) && v.replace(/\D/g, '').length >= 8;
+}
