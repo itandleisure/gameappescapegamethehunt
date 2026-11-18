@@ -11,6 +11,7 @@ import {
   findCity,
   newTodoState,
   openTodos,
+  setupHref,
   spreadAround,
   type CityList,
 } from '../src/lib/city-rollout.js';
@@ -76,6 +77,7 @@ describe('nieuwe stad uitrollen', () => {
     expect(openTodos({})).toBeNull();
     const todo = newTodoState();
     expect(openTodos({ todo })).toBe(CITY_TODOS.length);
-    expect(openTodos({ todo: { ...todo, overlay: true } })).toBe(CITY_TODOS.length - 1);
+    expect(openTodos({ todo: { ...todo, speelveld: true } })).toBe(CITY_TODOS.length - 1);
+    expect(setupHref('g1', 'start')).toBe('/spellen/g1/inrichten?stap=3');
   });
 });

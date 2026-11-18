@@ -161,14 +161,24 @@ export function centredMeetingPoint(version: LayerRows, center: LatLng): Overrid
 // Nog te doen per nieuwe stad
 // ---------------------------------------------------------------------------
 
-export type TodoKey = 'overlay' | 'pins' | 'questions' | 'test';
+/** De stappen van het stappenplan "Stad inrichten", in volgorde. */
+export type TodoKey = 'speelveld' | 'finish' | 'start' | 'iconen' | 'vraag1' | 'vraag2' | 'morse' | 'puzzels' | 'test';
 
-export const CITY_TODOS: { key: TodoKey; label: string; link: 'overlay' | 'kaart' | 'opdrachten' | null }[] = [
-  { key: 'overlay', label: tKey('Overlay (kaarttekening) van de stad laten maken en plaatsen'), link: 'overlay' },
-  { key: 'pins', label: tKey('Iconen vanuit het centrum naar de juiste plek slepen, ook start- en verzamelpunt'), link: 'kaart' },
-  { key: 'questions', label: tKey('Stadsvragen schrijven'), link: 'opdrachten' },
-  { key: 'test', label: tKey('Proefronde lopen en de stad publiceren'), link: null },
+export const CITY_TODOS: { key: TodoKey; label: string }[] = [
+  { key: 'speelveld', label: tKey('Teken het speelveld') },
+  { key: 'finish', label: tKey('Kies de finishlocatie') },
+  { key: 'start', label: tKey('Wijs de startlocatie aan') },
+  { key: 'iconen', label: tKey('Sleep de iconen in het speelveld') },
+  { key: 'vraag1', label: tKey('Vul lokale vraag 1 in') },
+  { key: 'vraag2', label: tKey('Vul lokale vraag 2 in') },
+  { key: 'morse', label: tKey('Kies de morsecode') },
+  { key: 'puzzels', label: tKey('Kies de puzzels') },
+  { key: 'test', label: tKey('Proefronde lopen en de stad publiceren') },
 ];
+
+/** Link naar een stap van het stappenplan (stap 1 is de eerste). */
+export const setupHref = (gameId: string, key: TodoKey) =>
+  `/spellen/${gameId}/inrichten?stap=${CITY_TODOS.findIndex((td) => td.key === key) + 1}`;
 
 /** De lijst zoals die bij een stad in settings.todo staat (true = klaar). */
 export type TodoState = Partial<Record<TodoKey, boolean>>;
