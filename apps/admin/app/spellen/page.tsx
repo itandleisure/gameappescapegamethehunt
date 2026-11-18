@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
 import { useAuth } from '@/lib/auth';
+import { openTodos } from '@/lib/city-rollout';
 import { currentLanguage, tKey } from '@/lib/i18n';
 import { useLanguage } from '@/lib/language';
 import { parseGameFile } from '@/lib/game-import';
@@ -16,7 +17,7 @@ interface GameRow {
   layer: 'base' | 'city' | 'client';
   base_version: number | null;
   languages: string[];
-  settings: { name?: unknown };
+  settings: { name?: unknown; todo?: unknown };
   game_versions: { version: number; published_at: string }[];
   name: { text: string; lang: string }[];
 }
@@ -139,6 +140,11 @@ export default function GamesPage() {
         {t('Een basisspel bevat de opdrachten en regels. Een stad vult locaties en lokale vragen in, een klant alleen de velden die het basisspel als aanpasbaar markeert. Publiceren maakt een vaste versie waarmee je hunts maakt.')}
       </p>
       <div className="actions">
+        {games?.some((g) => g.layer === 'base') ? (
+          <Link href="/spellen/nieuw" className="filebutton">
+            {t('Nieuwe stad uitrollen')}
+          </Link>
+        ) : null}
         <label className={`filebutton${busy ? ' disabled' : ''}`}>
           <input type="file" accept="application/json,.json" onChange={importFile} disabled={busy} />
           {busy ? t('Bezig…') : t('Spel importeren (JSON)')}
@@ -192,6 +198,15 @@ export default function GamesPage() {
                             : t('basisspel: versie {n}', { n: g.base_version })}
                         </div>
                       ) : null}
+                      {(() => {
+                        const open = g.layer === 'city' ? openTodos(g.settings) : null;
+                        if (!open) return null;
+                        return (
+                          <div>
+                            <span className="badge test">{open === 1 ? t('nog 1 punt te doen') : t('nog {n} punten te doen', { n: open })}</span>
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td>{g.languages.join(', ').toUpperCase()}</td>
                     <td>
