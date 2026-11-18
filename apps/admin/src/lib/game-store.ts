@@ -14,6 +14,7 @@ import {
   type LayerRows,
   type TaskRow,
 } from './game-model';
+import { withCurrentName } from './game-name';
 import { mediaPath } from './map-settings';
 import { t as tr } from './i18n';
 
@@ -44,7 +45,8 @@ export async function loadLayer(db: SupabaseClient, gameId: string): Promise<Lay
 /**
  * Basisspel → (stad) → (klant): de keten tot en met dit spel. Is de stad
  * gekoppeld aan een vaste versie van het basisspel, dan staat die versie
- * vooraan in plaats van het basisspel zoals het nu is.
+ * vooraan in plaats van het basisspel zoals het nu is, wel met de huidige
+ * naam van het basisspel.
  */
 export async function loadChain(db: SupabaseClient, gameId: string): Promise<LayerRows[]> {
   const chain: LayerRows[] = [];
@@ -64,7 +66,7 @@ export async function loadChain(db: SupabaseClient, gameId: string): Promise<Lay
         .eq('version', city.game.base_version)
         .single()) as never,
     ).snapshot;
-    chain[0] = snapshotToLayer(snapshot);
+    chain[0] = withCurrentName(snapshotToLayer(snapshot), chain[0]!);
   }
   return chain;
 }
