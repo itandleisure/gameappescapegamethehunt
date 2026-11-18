@@ -823,8 +823,8 @@
           "nl": "Extractiepunt locatie 3"
         },
         "body": {
-          "nl": "Extractiepunt A (tekst)",
-          "en": "Extraction point A (text)"
+          "nl": "GEFELICITEERD!\n\nJullie hebben het juiste extractiepunt gevonden: locatie 3.\nBevestig om de ontsnapping af te ronden.",
+          "en": "CONGRATULATIONS!\n\nYou have found the right extraction point: location 3.\nConfirm to complete the escape."
         },
         "answer": {
           "type": "info"
@@ -851,8 +851,8 @@
           "nl": "Extractiepunt locatie 1"
         },
         "body": {
-          "nl": "Extractiepunt B (tekst)",
-          "en": "Extraction point B (text)"
+          "nl": "Jullie hebben extractiepunt locatie 1 bereikt.\n\nIs dit de plek waar jullie worden opgehaald? Denk goed na: jullie hebben maar één kans. Bevestig om de ontsnapping te starten.",
+          "en": "You have reached extraction point location 1.\n\nIs this where you will be picked up? Think carefully: you only get one chance. Confirm to start the escape."
         },
         "answer": {
           "type": "info"
@@ -879,8 +879,8 @@
           "nl": "Extractiepunt locatie 2"
         },
         "body": {
-          "nl": "Extractiepunt C (tekst)",
-          "en": "Extraction point C (text)"
+          "nl": "Jullie hebben extractiepunt locatie 2 bereikt.\n\nIs dit de plek waar jullie worden opgehaald? Denk goed na: jullie hebben maar één kans. Bevestig om de ontsnapping te starten.",
+          "en": "You have reached extraction point location 2.\n\nIs this where you will be picked up? Think carefully: you only get one chance. Confirm to start the escape."
         },
         "answer": {
           "type": "info"
