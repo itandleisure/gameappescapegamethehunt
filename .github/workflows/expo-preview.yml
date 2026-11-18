@@ -29,8 +29,10 @@ jobs:
         with:
           eas-version: 27.2.0
           token: ${{ secrets.EXPO_TOKEN }}
+      # --environment: neemt de omgevingsvariabelen van expo.dev mee (zoals
+      # EXPO_PUBLIC_MAPTILER_KEY voor de kaart).
       - name: Publiceren
         working-directory: apps/player
         env:
           COMMIT_TITLE: ${{ github.event.head_commit.message || 'Handmatige testversie' }}
-        run: eas update --channel preview --message "$(printf '%s' "$COMMIT_TITLE" | head -n 1)" --non-interactive
+        run: eas update --channel preview --environment preview --message "$(printf '%s' "$COMMIT_TITLE" | head -n 1)" --non-interactive
