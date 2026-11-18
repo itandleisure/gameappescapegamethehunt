@@ -1,26 +1,51 @@
 'use client';
-// PDF van het fotoboek, in de stijl van Escape Game The Hunt: een donkere
-// voorkant met logo en titel, de ranglijst, de foto's (groot of met 2 tot 4
-// op een pagina) en een bedankpagina. Wordt in de browser gemaakt met pdf-lib.
-import type { PDFFont, PDFImage, PDFPage, RGB } from 'pdf-lib';
-import { bookText, fit, paginate, slots, wrapText, type BookItem, type Rect } from './photobook';
+// PDF van het fotoboek in de huisstijl van Escape Game The Hunt (donkerblauw
+// met oranje, staand A4), opgebouwd zoals het fotoboek dat jullie nu sturen:
+//   1. voorkant met grote foto: "Bedankt voor het spelen van The Hunt in <stad>"
+//   2. Jullie Hunt in cijfers (afstand, stappen, kcal, CO2) en de video
+//   3. de foto's: groot (eigen pagina) of met 2 tot 4 op een pagina
+//   4. review en vacature
+//   5. bedankt, met contactgegevens
+// Wordt in de browser gemaakt met pdf-lib.
+import type { PDFDocument, PDFFont, PDFImage, PDFPage, RGB } from 'pdf-lib';
+import {
+  bookText,
+  coverCrop,
+  displayUrl,
+  formatNumber,
+  href,
+  paginate,
+  slots,
+  wrapText,
+  type BookItem,
+  type BookLinks,
+  type BookTextKey,
+  type HuntStats,
+  type Rect,
+} from './photobook';
 
 export interface PdfInput {
+  /** Titel van het document (metadata). */
   title: string;
-  subtitle: string;
+  city: string;
   intro: string;
   language: string;
   /** Foto's in volgorde, met een link om ze op te halen. */
   items: (BookItem & { url: string })[];
-  ranking: { rank: number; name: string; score: number; duration: string }[];
+  /** Omslagfoto (ook bij de video); zonder omslagfoto de eerste foto. */
+  coverUrl: string | null;
+  /** Foto's voor de review- en vacaturepagina (vaste foto's). */
+  extraUrls: string[];
+  stats: HuntStats | null;
+  links: BookLinks;
   /** Voortgang: aantal verwerkte foto's van het totaal. */
   onProgress?: (done: number, total: number) => void;
 }
 
-// A4 liggend, in punten.
-const W = 842;
-const H = 595;
-const M = 36;
+// A4 staand, in punten.
+const W = 595;
+const H = 842;
+const M = 44;
 
 export interface LoadedImage {
   bytes: Uint8Array;
@@ -28,24 +53,43 @@ export interface LoadedImage {
   height: number;
 }
 
+const blobs = new Map<string, Promise<Blob>>();
+function getBlob(source: string | Blob): Promise<Blob> {
+  if (typeof source !== 'string') return Promise.resolve(source);
+  let p = blobs.get(source);
+  if (!p) {
+    p = fetch(source).then((r) => {
+      if (!r.ok) throw new Error(`Foto laden mislukt (${r.status})`);
+      return r.blob();
+    });
+    blobs.set(source, p);
+  }
+  return p;
+}
+
 /**
  * Laadt een foto en zet hem om naar JPEG van hooguit maxSide pixels, met de
- * juiste kant boven. Zo blijft de PDF klein en werkt ook een foto van een
- * iPhone (HEIC) of een PNG.
+ * juiste kant boven. Met box wordt hij bijgesneden om dat vak te vullen. Zo
+ * blijft de PDF klein en werkt ook een foto van een iPhone (HEIC) of een PNG.
  */
-export async function loadAsJpeg(source: string | Blob, maxSide: number, quality = 0.85): Promise<LoadedImage> {
-  const blob = typeof source === 'string' ? await (await fetch(source)).blob() : source;
-  const bitmap = await createImageBitmap(blob, { imageOrientation: 'from-image' });
-  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
-  const width = Math.max(1, Math.round(bitmap.width * scale));
-  const height = Math.max(1, Math.round(bitmap.height * scale));
+export async function loadAsJpeg(
+  source: string | Blob,
+  maxSide: number,
+  quality = 0.85,
+  box?: { w: number; h: number },
+): Promise<LoadedImage> {
+  const bitmap = await createImageBitmap(await getBlob(source), { imageOrientation: 'from-image' });
+  const crop = box ? coverCrop(bitmap.width, bitmap.height, box.w, box.h) : { sx: 0, sy: 0, sw: bitmap.width, sh: bitmap.height };
+  const scale = Math.min(1, maxSide / Math.max(crop.sw, crop.sh));
+  const width = Math.max(1, Math.round(crop.sw * scale));
+  const height = Math.max(1, Math.round(crop.sh * scale));
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d')!;
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, width, height);
-  ctx.drawImage(bitmap, 0, 0, width, height);
+  ctx.drawImage(bitmap, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, width, height);
   bitmap.close();
   const out = await new Promise<Blob>((resolve, reject) =>
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Foto omzetten mislukt'))), 'image/jpeg', quality),
@@ -53,180 +97,362 @@ export async function loadAsJpeg(source: string | Blob, maxSide: number, quality
   return { bytes: new Uint8Array(await out.arrayBuffer()), width, height };
 }
 
+async function fontBytes(path: string): Promise<ArrayBuffer> {
+  const r = await fetch(path);
+  if (!r.ok) throw new Error(`Lettertype ${path} niet gevonden`);
+  return r.arrayBuffer();
+}
+
 export async function buildPhotobookPdf(input: PdfInput): Promise<Uint8Array> {
-  const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
+  const { PDFDocument, PDFString, rgb } = await import('pdf-lib');
+  const fontkit = (await import('@pdf-lib/fontkit')).default;
+  const hex = (h: string) => rgb(parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255);
   const C = {
-    dark: rgb(0.11, 0.106, 0.098),
-    paper: rgb(0.965, 0.961, 0.949),
-    white: rgb(1, 1, 1),
-    text: rgb(0.11, 0.106, 0.098),
-    muted: rgb(0.42, 0.404, 0.373),
-    light: rgb(0.85, 0.83, 0.8),
-    accent: rgb(0.761, 0.255, 0.047),
-    line: rgb(0.886, 0.875, 0.847),
+    navy: hex('#141e29'),
+    navy2: hex('#1f2b3a'),
+    orange: hex('#f29222'),
+    white: hex('#ffffff'),
+    text: hex('#141e29'),
+    muted: hex('#6b7280'),
+    light: hex('#c9ced6'),
+    card: hex('#f2f3f5'),
+    line: hex('#d9dce1'),
   };
   const lang = input.language;
-  const doc = await PDFDocument.create();
+  const T = (key: BookTextKey, vars?: Record<string, string | number>) => bookText(lang, key, vars);
+  const num = (v: number, d = 0) => formatNumber(lang, v, d);
+
+  const doc: PDFDocument = await PDFDocument.create();
+  doc.registerFontkit(fontkit);
   doc.setTitle(input.title);
   doc.setAuthor('Escape Game The Hunt');
   doc.setCreator('Escape Game The Hunt');
-  const font = await doc.embedFont(StandardFonts.Helvetica);
-  const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+  doc.setLanguage(lang);
+  const [regular, bold, mono] = await Promise.all([
+    fontBytes('/fonts/Lato-Regular.ttf').then((b) => doc.embedFont(b, { subset: true })),
+    fontBytes('/fonts/Lato-Bold.ttf').then((b) => doc.embedFont(b, { subset: true })),
+    fontBytes('/fonts/JetBrainsMono-Bold.ttf').then((b) => doc.embedFont(b, { subset: true })),
+  ]);
+  const logo = await doc.embedPng(await fontBytes('/logo-full-light.png'));
 
-  // Standaardletters kennen niet elk teken (bijvoorbeeld emoji): die vallen weg.
-  const safe = (f: PDFFont, text: string) =>
-    Array.from(text)
-      .filter((ch) => {
-        try {
-          f.encodeText(ch);
-          return true;
-        } catch {
-          return false;
-        }
-      })
+  // Tekens die een lettertype niet kent (bijvoorbeeld emoji) vallen weg.
+  const safe = (f: PDFFont, text: string) => {
+    const chars = f.getCharacterSet();
+    return Array.from(text)
+      .filter((ch) => chars.includes(ch.codePointAt(0)!))
       .join('');
-  const draw = (page: PDFPage, text: string, x: number, y: number, size: number, f: PDFFont, color: RGB, maxWidth?: number) => {
+  };
+  const width = (f: PDFFont, text: string, size: number, spacing = 0) =>
+    f.widthOfTextAtSize(safe(f, text), size) + spacing * Math.max(0, Array.from(safe(f, text)).length - 1);
+  const draw = (
+    page: PDFPage,
+    text: string,
+    x: number,
+    y: number,
+    size: number,
+    f: PDFFont,
+    color: RGB,
+    opts: { maxWidth?: number; spacing?: number; align?: 'left' | 'right' | 'center' } = {},
+  ) => {
     let s = safe(f, text);
-    if (maxWidth && f.widthOfTextAtSize(s, size) > maxWidth) {
-      while (s.length > 1 && f.widthOfTextAtSize(`${s}…`, size) > maxWidth) s = s.slice(0, -1);
+    const sp = opts.spacing ?? 0;
+    if (opts.maxWidth && width(f, s, size, sp) > opts.maxWidth) {
+      while (s.length > 1 && width(f, `${s}…`, size, sp) > opts.maxWidth) s = s.slice(0, -1);
       s = `${s.trimEnd()}…`;
     }
-    page.drawText(s, { x, y, size, font: f, color });
+    const w = width(f, s, size, sp);
+    let left = opts.align === 'right' ? x - w : opts.align === 'center' ? x - w / 2 : x;
+    if (!sp) page.drawText(s, { x: left, y, size, font: f, color });
+    else
+      for (const ch of Array.from(s)) {
+        page.drawText(ch, { x: left, y, size, font: f, color });
+        left += f.widthOfTextAtSize(ch, size) + sp;
+      }
+    return w;
   };
   const lines = (text: string, f: PDFFont, size: number, maxWidth: number) =>
-    wrapText(text, maxWidth, (s) => f.widthOfTextAtSize(safe(f, s), size)).map((l) => safe(f, l));
-
-  const logoLight = await doc.embedPng(await (await fetch('/logo-full-light.png')).arrayBuffer());
-  const logoSmall = await doc.embedPng(await (await fetch('/logo-dark.png')).arrayBuffer());
-
-  // Foto's ophalen; grote foto's met meer pixels.
-  const images = new Map<string, PDFImage>();
-  let done = 0;
-  input.onProgress?.(0, input.items.length);
-  for (const item of input.items) {
-    try {
-      const img = await loadAsJpeg(item.url, item.large ? 2200 : 1400);
-      images.set(item.path, await doc.embedJpg(img.bytes));
-    } catch {
-      // Een foto die niet laadt, slaat het fotoboek over.
+    wrapText(text, maxWidth, (s) => width(f, s, size)).map((l) => safe(f, l));
+  const paragraph = (page: PDFPage, text: string, x: number, y: number, size: number, f: PDFFont, color: RGB, maxWidth: number, leading = 1.45) => {
+    for (const l of lines(text, f, size, maxWidth)) {
+      draw(page, l, x, y, size, f, color);
+      y -= size * leading;
     }
-    input.onProgress?.(++done, input.items.length);
-  }
-  const usable = input.items.filter((i) => images.has(i.path));
-
-  const photoFrame = (page: PDFPage, image: PDFImage, box: Rect, border: number) => {
-    const r = fit(image.width, image.height, { x: box.x + border, y: box.y + border, w: box.w - 2 * border, h: box.h - 2 * border });
-    page.drawRectangle({ x: r.x - border, y: r.y - border, width: r.w + 2 * border, height: r.h + 2 * border, color: C.white, borderColor: C.line, borderWidth: 0.5 });
-    page.drawImage(image, { x: r.x, y: r.y, width: r.w, height: r.h });
-    return r;
+    return y;
+  };
+  const label = (page: PDFPage, text: string, x: number, y: number, color = C.orange) =>
+    draw(page, text.toUpperCase(), x, y, 6.5, mono, color, { spacing: 0.8 });
+  const link = (page: PDFPage, r: Rect, url: string) => {
+    const annot = doc.context.obj({
+      Type: 'Annot',
+      Subtype: 'Link',
+      Rect: [r.x, r.y, r.x + r.w, r.y + r.h],
+      Border: [0, 0, 0],
+      A: { Type: 'Action', S: 'URI', URI: PDFString.of(url) },
+    });
+    page.node.addAnnot(doc.context.register(annot));
+  };
+  const button = (page: PDFPage, text: string, x: number, y: number, url: string, style: 'orange' | 'outline' | 'dark' | 'outline-dark') => {
+    const size = 7.5;
+    const w = width(bold, text, size) + 32;
+    const h = 22;
+    const fill = style === 'orange' ? C.orange : style === 'dark' ? C.navy : undefined;
+    const border = style === 'outline' ? C.white : style === 'outline-dark' ? C.navy : undefined;
+    const r = h / 2;
+    page.drawSvgPath(`M ${r} 0 L ${w - r} 0 A ${r} ${r} 0 0 1 ${w - r} ${h} L ${r} ${h} A ${r} ${r} 0 0 1 ${r} 0 Z`, {
+      x,
+      y: y + h,
+      ...(fill ? { color: fill } : {}),
+      ...(border ? { borderColor: border, borderWidth: 1 } : {}),
+    });
+    const color = style === 'orange' || style === 'outline-dark' ? C.navy : C.white;
+    draw(page, text, x + 16, y + 7.5, size, bold, style === 'dark' || style === 'outline' ? C.white : color);
+    link(page, { x, y, w, h }, url);
+    return w;
   };
 
-  // --- Voorkant ---------------------------------------------------------------
-  {
-    const page = doc.addPage([W, H]);
-    page.drawRectangle({ x: 0, y: 0, width: W, height: H, color: C.dark });
-    const cover = usable[0];
-    const leftW = cover ? 330 : W - 2 * M;
-    const logoH = 120;
-    const logoW = (logoLight.width / logoLight.height) * logoH;
-    page.drawImage(logoLight, { x: M + 4, y: H - M - logoH, width: logoW, height: logoH });
-    let y = H - M - logoH - 48;
-    for (const l of lines(input.title, bold, 30, leftW).slice(0, 4)) {
-      draw(page, l, M + 4, y, 30, bold, C.white);
-      y -= 36;
+  // Foto's: per gebruik op maat bijgesneden en verkleind.
+  const total = input.items.length;
+  let done = 0;
+  input.onProgress?.(0, total);
+  const image = async (url: string, box: { w: number; h: number }, maxSide = 1600): Promise<PDFImage | null> => {
+    try {
+      const img = await loadAsJpeg(url, maxSide, 0.85, box);
+      return await doc.embedJpg(img.bytes);
+    } catch {
+      return null;
     }
-    page.drawRectangle({ x: M + 4, y: y + 14, width: 56, height: 4, color: C.accent });
-    y -= 16;
-    if (input.subtitle) {
-      draw(page, input.subtitle, M + 4, y, 13, font, C.light, leftW);
-      y -= 30;
-    }
-    for (const l of lines(input.intro, font, 11, leftW)) {
-      if (y < M + 12) break;
-      draw(page, l, M + 4, y, 11, font, C.light);
-      y -= 16;
-    }
-    if (cover) photoFrame(page, images.get(cover.path)!, { x: M + leftW + 30, y: M, w: W - 2 * M - leftW - 30, h: H - 2 * M }, 8);
-  }
+  };
 
   // Kop en voet van de gewone pagina's.
-  let pageNo = 1;
-  const paperPage = (heading: string) => {
+  let pageNo = 0;
+  const footerText = `THE HUNT${input.city ? ` · ${input.city}` : ''}`;
+  const newPage = (dark = false) => {
     const page = doc.addPage([W, H]);
     pageNo += 1;
-    page.drawRectangle({ x: 0, y: 0, width: W, height: H, color: C.paper });
-    const lh = 22;
-    page.drawImage(logoSmall, { x: M, y: H - M - lh + 4, width: (logoSmall.width / logoSmall.height) * lh, height: lh });
-    draw(page, heading, M + 34, H - M - 12, 12, bold, C.text, W - 2 * M - 120);
-    page.drawRectangle({ x: M, y: H - M - 26, width: W - 2 * M, height: 1.5, color: C.accent });
-    const label = bookText(lang, 'page', { n: pageNo });
-    draw(page, label, W - M - font.widthOfTextAtSize(safe(font, label), 9), M - 18, 9, font, C.muted);
-    draw(page, 'Escape Game The Hunt', M, M - 18, 9, font, C.muted);
+    page.drawRectangle({ x: 0, y: 0, width: W, height: H, color: dark ? C.navy : C.white });
+    if (pageNo > 1) {
+      page.drawLine({ start: { x: M, y: 50 }, end: { x: W - M, y: 50 }, thickness: 0.5, color: dark ? C.navy2 : C.line });
+      label(page, footerText, M, 38, dark ? C.light : C.muted);
+      draw(page, String(pageNo).padStart(2, '0'), W - M, 38, 6.5, mono, dark ? C.light : C.muted, { align: 'right' });
+    }
     return page;
   };
-  const content: Rect = { x: M, y: M, w: W - 2 * M, h: H - 2 * M - 40 };
+  const heading = (page: PDFPage, labelText: string, title: string | null, dark = false) => {
+    label(page, labelText, M, H - 50);
+    if (title) draw(page, title, M, H - 78, 18, bold, dark ? C.white : C.text, { maxWidth: W - 2 * M });
+    return title ? H - 96 : H - 64;
+  };
+  const coverUrl = input.coverUrl ?? input.items[0]?.url ?? null;
 
-  // --- Ranglijst ----------------------------------------------------------------
-  if (input.ranking.length) {
-    const cols = [
-      { label: bookText(lang, 'place'), x: M + 10 },
-      { label: bookText(lang, 'team'), x: M + 80 },
-      { label: bookText(lang, 'points'), x: W - M - 250 },
-      { label: bookText(lang, 'time'), x: W - M - 120 },
-    ];
-    const rowH = 24;
-    const perPage = Math.floor((content.h - 50) / rowH);
-    for (let start = 0; start < input.ranking.length; start += perPage) {
-      const page = paperPage(bookText(lang, 'ranking'));
-      let y = content.y + content.h - 30;
-      for (const c of cols) draw(page, c.label.toUpperCase(), c.x, y, 9, bold, C.muted);
-      y -= 10;
-      input.ranking.slice(start, start + perPage).forEach((r, i) => {
-        y -= rowH;
-        if (i % 2 === 0) page.drawRectangle({ x: M, y: y - 8, width: W - 2 * M, height: rowH, color: C.white });
-        const top3 = r.rank <= 3;
-        draw(page, String(r.rank), cols[0]!.x, y, 12, bold, top3 ? C.accent : C.text);
-        draw(page, r.name, cols[1]!.x, y, 12, top3 ? bold : font, C.text, cols[2]!.x - cols[1]!.x - 16);
-        draw(page, String(r.score), cols[2]!.x, y, 12, font, C.text);
-        draw(page, r.duration, cols[3]!.x, y, 12, font, C.text);
+  // --- 1. Voorkant -------------------------------------------------------------
+  {
+    const page = newPage(true);
+    const panelH = 300;
+    if (coverUrl) {
+      const img = await image(coverUrl, { w: W, h: H - panelH }, 2200);
+      if (img) page.drawImage(img, { x: 0, y: panelH, width: W, height: H - panelH });
+    }
+    // Logo linksboven in een donker blok.
+    const lw = 46;
+    const lh = (logo.height / logo.width) * lw;
+    page.drawRectangle({ x: 0, y: H - lh - 28, width: lw + 32, height: lh + 28, color: C.navy });
+    page.drawImage(logo, { x: 16, y: H - lh - 14, width: lw, height: lh });
+    // Tekst onderin.
+    let y = panelH - 64;
+    label(page, T('missionDone'), M, y);
+    y -= 34;
+    draw(page, T('thanksFor'), M, y, 24, bold, C.white, { maxWidth: W - 2 * M });
+    y -= 30;
+    if (input.city) {
+      const pw = draw(page, `${T('huntIn')} `, M, y, 24, bold, C.white);
+      draw(page, input.city, M + pw, y, 24, bold, C.orange, { maxWidth: W - 2 * M - pw });
+    } else draw(page, 'The Hunt', M, y, 24, bold, C.orange);
+    y -= 30;
+    if (input.intro) paragraph(page, input.intro, M, y, 9, regular, C.light, W - 2 * M - 40);
+    page.drawRectangle({ x: W - 200, y: 0, width: 200, height: 8, color: C.orange });
+  }
+
+  // --- 2. Jullie Hunt in cijfers -----------------------------------------------
+  const stats = input.stats && input.stats.teams.length ? input.stats : null;
+  if (stats || input.links.video) {
+    const page = newPage();
+    let y = heading(page, T('missionDone'), T('statsTitle'));
+    if (stats) {
+      y = paragraph(page, T('statsIntro'), M, y - 4, 8, regular, C.muted, W - 2 * M - 60) - 12;
+      // Vier kaarten.
+      const gap = 8;
+      const cw = (W - 2 * M - 3 * gap) / 4;
+      const ch = 62;
+      const cards: [string, string][] = [
+        [`${num(stats.avgKm, 1)} km`, T('avgKm')],
+        [num(stats.avgStepsPP), T('stepsPP')],
+        [`${num(stats.totalKm, 1)} km`, T('totalKm', { n: stats.teams.length })],
+        [`${num(stats.totalCo2Kg, 1)} kg`, T('co2Saved')],
+      ];
+      cards.forEach(([value, text], i) => {
+        const x = M + i * (cw + gap);
+        const dark = i === 3;
+        page.drawRectangle({ x, y: y - ch, width: cw, height: ch, color: dark ? C.navy : C.card });
+        draw(page, value, x + 10, y - 24, 15, bold, dark ? C.orange : C.text, { maxWidth: cw - 20 });
+        let ty = y - 38;
+        for (const l of lines(text, regular, 6.5, cw - 20).slice(0, 3)) {
+          draw(page, l, x + 10, ty, 6.5, regular, dark ? C.light : C.muted);
+          ty -= 8.5;
+        }
       });
+      y -= ch + 26;
+      // Tabel.
+      const cols = [
+        { key: 'team' as const, x: M, align: 'left' as const },
+        { key: 'km' as const, x: M + 240, align: 'right' as const },
+        { key: 'steps' as const, x: M + 320, align: 'right' as const },
+        { key: 'kcal' as const, x: M + 400, align: 'right' as const },
+        { key: 'co2' as const, x: W - M, align: 'right' as const },
+      ];
+      for (const c of cols) draw(page, T(c.key).toUpperCase(), c.x, y, 6, mono, C.muted, { align: c.align, spacing: 0.5 });
+      y -= 6;
+      page.drawLine({ start: { x: M, y }, end: { x: W - M, y }, thickness: 0.8, color: C.text });
+      const rowH = 17;
+      const maxRows = Math.max(3, Math.floor((y - 260) / rowH));
+      for (const t of stats.teams.slice(0, maxRows)) {
+        y -= rowH;
+        draw(page, t.name, cols[0]!.x, y + 5, 8, regular, C.text, { maxWidth: 220 });
+        draw(page, num(t.km, 1), cols[1]!.x, y + 5, 8, regular, C.text, { align: 'right' });
+        draw(page, num(t.stepsPP), cols[2]!.x, y + 5, 8, regular, C.text, { align: 'right' });
+        draw(page, num(t.kcalPP), cols[3]!.x, y + 5, 8, regular, C.text, { align: 'right' });
+        draw(page, num(t.co2Kg, 2), cols[4]!.x, y + 5, 8, regular, C.text, { align: 'right' });
+        page.drawLine({ start: { x: M, y }, end: { x: W - M, y }, thickness: 0.4, color: C.line });
+      }
+      y -= rowH;
+      draw(page, T('together'), cols[0]!.x, y + 5, 8, bold, C.text);
+      draw(page, num(stats.totalKm, 1), cols[1]!.x, y + 5, 8, bold, C.text, { align: 'right' });
+      draw(page, num(stats.totalCo2Kg, 1), cols[4]!.x, y + 5, 8, bold, C.text, { align: 'right' });
+      y -= 16;
+      paragraph(page, T('footnote'), M, y, 6, regular, C.muted, W - 2 * M);
+    }
+    // Video onderaan.
+    if (input.links.video) {
+      const vy = 70;
+      const vh = 210;
+      const vw = W - 2 * M;
+      page.drawRectangle({ x: M, y: vy, width: vw, height: vh, color: C.card });
+      const imgH = vh - 50;
+      if (coverUrl) {
+        const img = await image(coverUrl, { w: vw - 16, h: imgH - 8 }, 1400);
+        if (img) page.drawImage(img, { x: M + 8, y: vy + 42, width: vw - 16, height: imgH - 8 });
+      }
+      page.drawCircle({ x: M + vw / 2, y: vy + 42 + (imgH - 8) / 2, size: 18, color: C.orange });
+      const cx = M + vw / 2 + 2;
+      const cy = vy + 42 + (imgH - 8) / 2;
+      page.drawSvgPath(`M ${cx - 6} ${-(cy + 8)} L ${cx + 8} ${-cy} L ${cx - 6} ${-(cy - 8)} Z`, { x: 0, y: 0, color: C.navy });
+      const tw = draw(page, T('videoTitle'), M + 12, vy + 16, 11, bold, C.text);
+      draw(page, T('videoText'), M + 12 + tw + 12, vy + 16, 7, regular, C.muted);
+      draw(page, T('videoLink'), W - M - 12 - width(mono, ' →', 8), vy + 16, 8, bold, C.orange, { align: 'right' });
+      draw(page, ' →', W - M - 12, vy + 16, 8, mono, C.orange, { align: 'right' });
+      link(page, { x: M, y: vy, w: vw, h: vh }, href('url', input.links.video));
     }
   }
 
-  // --- Foto's -------------------------------------------------------------------
-  const captionH = 18;
-  for (const group of paginate(usable)) {
-    const page = paperPage(input.title);
-    const gap = group.length === 1 ? 0 : 14;
-    slots(group.length, content, gap).forEach((box, i) => {
+  // --- 3. Foto's ------------------------------------------------------------------
+  const pages = paginate(input.items);
+  let firstGrid = true;
+  for (const group of pages) {
+    const page = newPage();
+    let top: number;
+    if (group.length === 1 && group[0]!.large) {
+      top = heading(page, T('missionDone'), group[0]!.caption || T('groupPhoto'));
+    } else if (firstGrid) {
+      top = heading(page, T('missionDone'), T('yourPhotos'));
+      firstGrid = false;
+    } else {
+      top = heading(page, T('yourPhotos'), null);
+    }
+    const captionH = group.length === 1 && group[0]!.large ? 0 : 16;
+    const area: Rect = { x: M, y: 70, w: W - 2 * M, h: top - 8 - 70 };
+    const boxes = slots(group.length, area, 14);
+    for (const [i, box] of boxes.entries()) {
       const item = group[i]!;
-      const area = { x: box.x, y: box.y + captionH, w: box.w, h: box.h - captionH };
-      const r = photoFrame(page, images.get(item.path)!, area, group.length === 1 ? 8 : 5);
-      if (item.caption) {
-        const size = group.length === 1 ? 11 : 9;
-        const text = safe(font, item.caption);
-        const width = Math.min(font.widthOfTextAtSize(text, size), box.w);
-        draw(page, text, Math.max(box.x, r.x + r.w / 2 - width / 2), r.y - 8 - size - 2, size, font, C.text, box.w);
-      }
-    });
+      const photo = { x: box.x, y: box.y + captionH, w: box.w, h: box.h - captionH };
+      const img = await image(item.url, { w: photo.w, h: photo.h }, item.large ? 2200 : 1400);
+      if (img) page.drawImage(img, { x: photo.x, y: photo.y, width: photo.w, height: photo.h });
+      else page.drawRectangle({ x: photo.x, y: photo.y, width: photo.w, height: photo.h, color: C.card });
+      if (captionH && item.caption) label(page, item.caption, box.x, box.y + 4, C.muted);
+      input.onProgress?.(++done, total);
+    }
   }
 
-  // --- Bedankt ------------------------------------------------------------------
+  // --- 4. Review en vacature ------------------------------------------------------
+  const { google_review, website_review, vacancy } = input.links;
+  if (google_review || website_review || vacancy) {
+    const page = newPage(true);
+    let y = heading(page, T('missionDone'), google_review || website_review ? T('reviewTitle') : T('vacancyLabel'), true);
+    if (google_review || website_review) {
+      const imgUrl = input.extraUrls[0] ?? coverUrl;
+      const ih = 170;
+      if (imgUrl) {
+        const img = await image(imgUrl, { w: W - 2 * M, h: ih }, 1600);
+        if (img) {
+          page.drawImage(img, { x: M, y: y - ih, width: W - 2 * M, height: ih });
+          y -= ih + 22;
+        }
+      }
+      y = paragraph(page, T('reviewText'), M, y, 8.5, regular, C.light, W - 2 * M - 60) - 14;
+      let bx = M;
+      if (google_review) bx += button(page, T('googleReview'), bx, y - 22, href('url', google_review), 'orange') + 10;
+      if (website_review) button(page, T('websiteReview'), bx, y - 22, href('url', website_review), 'outline');
+      y -= 60;
+    }
+    if (vacancy) {
+      const bh = 230;
+      const bw = W - 2 * M;
+      const by = Math.max(70, y - bh);
+      page.drawRectangle({ x: M, y: by, width: bw, height: bh, color: C.orange });
+      const imgUrl = input.extraUrls[1] ?? input.extraUrls[0] ?? null;
+      let tx = M + 18;
+      if (imgUrl) {
+        const iw = bw * 0.36;
+        const img = await image(imgUrl, { w: iw, h: bh }, 1200);
+        if (img) {
+          page.drawImage(img, { x: M, y: by, width: iw, height: bh });
+          tx = M + iw + 16;
+        }
+      }
+      const tw = M + bw - 16 - tx;
+      let ty = by + bh - 24;
+      label(page, T('vacancyLabel'), tx, ty, C.navy);
+      ty -= 18;
+      for (const l of lines(T('vacancyTitle'), bold, 12, tw)) {
+        draw(page, l, tx, ty, 12, bold, C.navy);
+        ty -= 15;
+      }
+      ty = paragraph(page, T('vacancyText'), tx, ty - 2, 7.5, regular, C.navy, tw) - 4;
+      ty = paragraph(page, T('vacancyAsk'), tx, ty, 7.5, bold, C.navy, tw) - 10;
+      button(page, T('vacancyLink'), tx, ty - 22, href('url', vacancy), 'dark');
+      button(page, displayUrl(vacancy), tx, ty - 52, href('url', vacancy), 'outline-dark');
+    }
+  }
+
+  // --- 5. Bedankt -----------------------------------------------------------------
   {
-    const page = doc.addPage([W, H]);
-    page.drawRectangle({ x: 0, y: 0, width: W, height: H, color: C.dark });
-    const logoH = 150;
-    const logoW = (logoLight.width / logoLight.height) * logoH;
-    page.drawImage(logoLight, { x: (W - logoW) / 2, y: H / 2 - 10, width: logoW, height: logoH });
-    const center = (text: string, y: number, size: number, f: PDFFont, color: RGB) => {
-      const s = safe(f, text);
-      page.drawText(s, { x: (W - f.widthOfTextAtSize(s, size)) / 2, y, size, font: f, color });
-    };
-    center(bookText(lang, 'thanks'), H / 2 - 50, 24, bold, C.white);
-    let y = H / 2 - 80;
-    for (const l of lines(bookText(lang, 'thanksText'), font, 12, 460)) {
-      center(l, y, 12, font, C.light);
-      y -= 18;
+    const page = newPage(true);
+    const lw = 130;
+    const lh = (logo.height / logo.width) * lw;
+    page.drawImage(logo, { x: (W - lw) / 2, y: H / 2 + 10, width: lw, height: lh });
+    draw(page, T('thanks'), W / 2, H / 2 - 30, 22, bold, C.white, { align: 'center' });
+    let y = H / 2 - 56;
+    for (const l of lines(T('thanksText'), regular, 10, 360)) {
+      draw(page, l, W / 2, y, 10, regular, C.light, { align: 'center' });
+      y -= 15;
+    }
+    const contact: [string, string][] = [];
+    if (input.links.website) contact.push([displayUrl(input.links.website), href('url', input.links.website)]);
+    if (input.links.email) contact.push([input.links.email, href('email', input.links.email)]);
+    if (input.links.phone) contact.push([input.links.phone, href('phone', input.links.phone)]);
+    let cy = 70 + (contact.length - 1) * 12;
+    for (const [text, url] of contact) {
+      const w = draw(page, text, W - M, cy, 8, regular, C.white, { align: 'right' });
+      link(page, { x: W - M - w, y: cy - 2, w, h: 11 }, url);
+      cy -= 12;
     }
   }
 

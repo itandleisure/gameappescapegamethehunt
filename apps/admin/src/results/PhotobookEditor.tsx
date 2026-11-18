@@ -1,26 +1,33 @@
 'use client';
+import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ADMIN_LANGUAGES, ADMIN_LANGUAGE_NAMES, isAdminLanguage, LOCALES, type AdminLanguage } from '@/lib/i18n';
+import { ADMIN_LANGUAGES, ADMIN_LANGUAGE_NAMES, isAdminLanguage, type AdminLanguage } from '@/lib/i18n';
 import { useLanguage } from '@/lib/language';
+import { buildPhotoZip, saveBlob } from '@/lib/photo-zip';
 import {
   defaultItems,
   gameCaption,
+  huntStats,
   mailBody,
   moveItem,
   paginate,
   pdfFileName,
   TEAM_PHOTO_KEY,
   unusedGamePhotos,
+  zipFileName,
   type BookItem,
   type Photobook,
+  type PhotobookSettings,
 } from '@/lib/photobook';
 import { buildPhotobookPdf } from '@/lib/photobook-pdf';
 import {
-  deleteOwnPhoto,
+  deleteFile,
   listOwnPhotos,
   loadPhotobook,
+  loadSettings,
   rotateToken,
   savePhotobook,
+  sessionOrg,
   setShared,
   shareLink,
   signItems,
@@ -28,21 +35,23 @@ import {
   uploadOwnPhoto,
   uploadPdf,
 } from '@/lib/photobook-store';
-import { formatDuration, type SessionResultsView } from '@/lib/results';
+import type { SessionResultsView } from '@/lib/results';
 import type { SessionLive } from '@/lib/session-live';
 import { tx } from '@/lib/text';
 
-type Draft = Pick<Photobook, 'title' | 'intro' | 'items' | 'show_ranking' | 'language'>;
+type Draft = Pick<Photobook, 'title' | 'city' | 'intro' | 'items' | 'show_ranking' | 'language'>;
 
 /**
- * Fotoboek voor de klant: spelfoto's en eigen foto's kiezen en ordenen, een
- * PDF in Escape Game The Hunt-stijl maken en die via een link delen.
+ * Fotoboek voor de klant: spelfoto's, eigen foto's en de vaste foto's kiezen
+ * en ordenen, een PDF in Escape Game The Hunt-stijl maken en die met link en
+ * wachtwoord 28 dagen met de klant delen.
  */
 export function PhotobookEditor({ data, view }: { data: SessionLive; view: SessionResultsView }) {
   const { t, lang, locale } = useLanguage();
   const { session } = data;
   const [saved, setSaved] = useState<Photobook | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [settings, setSettings] = useState<PhotobookSettings | null>(null);
   const [dirty, setDirty] = useState(false);
   const [ownFiles, setOwnFiles] = useState<string[]>([]);
   const [urls, setUrls] = useState<Map<string, string>>(new Map());
@@ -59,20 +68,27 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
     [data.game.tasks, teamName],
   );
 
-  // Laden: bestaand fotoboek, of een eerste opzet met alle spelfoto's.
+  // Laden: bestaand fotoboek, of een eerste opzet met alle spelfoto's en de vaste foto's.
   useEffect(() => {
     let stop = false;
     void (async () => {
       try {
-        const [book, own] = await Promise.all([loadPhotobook(session.id), listOwnPhotos(session.id).catch(() => [])]);
+        const org = await sessionOrg(session.id);
+        const [book, own, set] = await Promise.all([
+          loadPhotobook(session.id),
+          listOwnPhotos(session.id).catch(() => []),
+          org ? loadSettings(org).catch(() => null) : Promise.resolve(null),
+        ]);
         if (stop) return;
         setSaved(book);
         setOwnFiles(own);
+        setSettings(set);
         setDraft(
           book ?? {
             title: session.name,
+            city: '',
             intro: '',
-            items: defaultItems(data.photos, view.teams.map((x) => x.id), caption),
+            items: defaultItems(data.photos, view.teams.map((x) => x.id), caption, set?.stock_paths ?? []),
             show_ranking: true,
             language: lang,
           },
@@ -91,17 +107,18 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
 
   const items = draft?.items ?? [];
   const unusedGame = useMemo(() => unusedGamePhotos(items, data.photos), [items, data.photos]);
-  const unusedOwn = useMemo(() => {
-    const used = new Set(items.filter((i) => i.source === 'own').map((i) => i.path));
-    return ownFiles.filter((p) => !used.has(p));
-  }, [items, ownFiles]);
+  const unusedFiles = useMemo(() => {
+    const used = new Set(items.filter((i) => i.source !== 'game').map((i) => i.path));
+    return [
+      ...ownFiles.filter((p) => !used.has(p)).map((path) => ({ source: 'own' as const, path })),
+      ...(settings?.stock_paths ?? []).filter((p) => !used.has(p)).map((path) => ({ source: 'stock' as const, path })),
+    ];
+  }, [items, ownFiles, settings]);
 
   // Voorbeeldfoto's: tijdelijke links ophalen voor wat nog geen link heeft.
-  const wanted = [
-    ...items,
-    ...unusedGame.map((p) => ({ source: 'game' as const, path: p.path })),
-    ...unusedOwn.map((path) => ({ source: 'own' as const, path })),
-  ].filter((i) => !urls.has(i.path));
+  const wanted = [...items, ...unusedGame.map((p) => ({ source: 'game' as const, path: p.path })), ...unusedFiles].filter(
+    (i) => !urls.has(i.path),
+  );
   const wantedKey = wanted.map((i) => `${i.source}:${i.path}`).join('|');
   useEffect(() => {
     if (!wantedKey) return;
@@ -144,7 +161,7 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
     }
   };
 
-  const save = async (extra: Partial<Photobook> = {}) => {
+  const save = async (extra: Partial<Pick<Photobook, 'pdf_path' | 'pdf_made_at'>> = {}) => {
     const book = await savePhotobook({ session_id: session.id, ...draft, ...extra });
     setSaved(book);
     setDirty(false);
@@ -152,7 +169,7 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
   };
 
   const addOwn = (files: FileList | null) =>
-    void run(t('Foto\'s uploaden…'), async () => {
+    void run(t("Foto's uploaden…"), async () => {
       const list = [...(files ?? [])];
       const added: BookItem[] = [];
       for (const [i, file] of list.entries()) {
@@ -166,44 +183,57 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
 
   const makePdf = () =>
     void run(t('PDF maken…'), async () => {
-      const signed = await signItems(items);
-      const ranking = draft.show_ranking
-        ? view.teams
-            .filter((x) => x.durationSeconds !== null)
-            .map((x) => ({ rank: x.rank, name: x.name, score: x.score, duration: formatDuration(x.durationSeconds) }))
-        : [];
+      const extra = settings?.stock_paths.slice(0, 2) ?? [];
+      const signed = await signItems([
+        ...items,
+        ...extra.map((path) => ({ source: 'stock' as const, path })),
+        ...(settings?.cover_path ? [{ source: 'stock' as const, path: settings.cover_path }] : []),
+      ]);
       const bytes = await buildPhotobookPdf({
         title: draft.title || session.name,
-        subtitle: [
-          session.starts_at
-            ? new Intl.DateTimeFormat(LOCALES[draft.language], { dateStyle: 'long', timeZone: session.timezone }).format(new Date(session.starts_at))
-            : '',
-          draft.title && draft.title !== session.name ? session.name : '',
-        ]
-          .filter(Boolean)
-          .join(' · '),
+        city: draft.city.trim(),
         intro: draft.intro,
         language: draft.language,
         items: items.flatMap((i) => (signed.has(i.path) ? [{ ...i, url: signed.get(i.path)! }] : [])),
-        ranking,
+        coverUrl: settings?.cover_path ? (signed.get(settings.cover_path) ?? null) : null,
+        extraUrls: extra.flatMap((p) => (signed.has(p) ? [signed.get(p)!] : [])),
+        stats: draft.show_ranking ? huntStats(view.teams) : null,
+        links: settings?.links ?? {},
         onProgress: (done, total) => setBusy(t('Foto {n} van {total} verwerken…', { n: done, total })),
       });
       setBusy(t('PDF opslaan…'));
       const path = await uploadPdf(session.id, bytes);
       await save({ pdf_path: path, pdf_made_at: new Date().toISOString() });
-      // Meteen downloaden.
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/pdf' }));
-      a.download = pdfFileName(draft.title || session.name);
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(a.href), 10_000);
+      saveBlob(new Blob([bytes as BlobPart], { type: 'application/pdf' }), pdfFileName(draft.title || session.name));
       setNotice(t('De PDF is gemaakt en gedownload.'));
+    });
+
+  const makeZip = () =>
+    void run(t('Zip maken…'), async () => {
+      const signed = await signItems(items);
+      const blob = await buildPhotoZip(
+        items.flatMap((i) => (signed.has(i.path) ? [{ ...i, url: signed.get(i.path)! }] : [])),
+        (done, total) => setBusy(t('Foto {n} van {total} verwerken…', { n: done, total })),
+      );
+      saveBlob(blob, zipFileName(draft.title || session.name));
+    });
+
+  const share = (on: boolean) =>
+    void run(t('Opslaan…'), async () => {
+      if (!saved) return;
+      const until = await setShared(session.id, on);
+      setSaved({ ...saved, shared: on, shared_until: until });
+      if (on) setNotice(t('Het fotoboek is {days} dagen te bekijken.', { days: 28 }));
     });
 
   const pages = paginate(items).length;
   const link = saved ? shareLink(saved.share_token) : '';
-  const mail = saved ? mailBody(draft.language, draft.title || session.name, link) : null;
-  const madeAt = saved?.pdf_made_at ? new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(saved.pdf_made_at)) : null;
+  const fmtDate = (iso: string) => new Intl.DateTimeFormat(locale, { dateStyle: 'long' }).format(new Date(iso));
+  const expired = !!saved?.shared_until && Date.parse(saved.shared_until) < Date.now();
+  const mail = saved ? mailBody(draft.language, draft.title || session.name, link, saved.share_password, saved.shared_until) : null;
+  const madeAt = saved?.pdf_made_at
+    ? new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(saved.pdf_made_at))
+    : null;
 
   const thumb = (path: string, alt: string) =>
     urls.get(path) ? (
@@ -212,15 +242,32 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
     ) : (
       <div className="placeholder muted">{t('Laden…')}</div>
     );
+  const sourceBadge = (source: BookItem['source']) =>
+    source === 'own' ? (
+      <span className="badge pb-own">{t('Eigen foto')}</span>
+    ) : source === 'stock' ? (
+      <span className="badge pb-own">{t('Vaste foto')}</span>
+    ) : null;
 
   return (
     <>
       <p className="muted">
-        {t('Maak na afloop een fotoboek voor de klant: kies de foto\'s uit het spel, voeg jullie eigen foto\'s toe, zet ze in de goede volgorde en maak er een PDF van.')}
+        {t("Maak na afloop een fotoboek voor de klant: kies de foto's uit het spel, voeg jullie eigen foto's toe, zet ze in de goede volgorde en maak er een PDF van.")}{' '}
+        <Link href="/instellingen/fotoboek">{t('Vaste foto\'s en links van elk fotoboek')}</Link>
       </p>
 
       <div className="card">
         <div className="row">
+          <div>
+            <label htmlFor="pb-city">{t('Stad')}</label>
+            <input
+              id="pb-city"
+              value={draft.city}
+              maxLength={80}
+              placeholder="Leeuwarden"
+              onChange={(e) => change({ city: e.target.value })}
+            />
+          </div>
           <div style={{ flex: '2 1 300px' }}>
             <label htmlFor="pb-title">{t('Titel')}</label>
             <input id="pb-title" value={draft.title} maxLength={200} onChange={(e) => change({ title: e.target.value })} />
@@ -240,10 +287,11 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
             </select>
           </div>
         </div>
+        <p className="help">{t('Op de voorkant: "Bedankt voor het spelen van The Hunt in {city}". De titel is de naam van de PDF en de klantpagina.', { city: draft.city || '…' })}</p>
         <label htmlFor="pb-intro">{t('Tekst op de voorkant')}</label>
         <textarea
           id="pb-intro"
-          rows={3}
+          rows={2}
           maxLength={4000}
           value={draft.intro}
           placeholder={t('Bijvoorbeeld: Wat een middag! Hier zijn de mooiste momenten van jullie hunt.')}
@@ -251,7 +299,7 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
         />
         <label className="check">
           <input type="checkbox" checked={draft.show_ranking} onChange={(e) => change({ show_ranking: e.target.checked })} />
-          {t('Ranglijst in het fotoboek')}
+          {t('Pagina "Jullie Hunt in cijfers" (afstand, stappen en CO2 per team)')}
         </label>
       </div>
 
@@ -261,15 +309,18 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
         </h2>
         <div className="actions" style={{ marginTop: 0, flex: '0 0 auto' }}>
           <label className={`filebutton ${busy ? 'disabled' : ''}`}>
-            {t('Eigen foto\'s toevoegen')}
+            {t("Eigen foto's toevoegen")}
             <input type="file" accept="image/*" multiple disabled={!!busy} onChange={(e) => addOwn(e.target.files)} />
           </label>
         </div>
       </div>
       <p className="muted small">
         {items.length === 0
-          ? t('Nog geen foto\'s gekozen.')
-          : t('Sleep de foto\'s in de goede volgorde. De eerste foto komt op de voorkant. Grote foto\'s krijgen een eigen pagina, de andere komen met maximaal vier op een pagina ({n} fotopagina\'s).', { n: pages })}
+          ? t("Nog geen foto's gekozen.")
+          : t(
+              "Sleep de foto's in de goede volgorde. Grote foto's (zoals de groepsfoto) krijgen een eigen pagina, de andere komen met maximaal vier op een pagina ({n} fotopagina's).",
+              { n: pages },
+            )}
       </p>
       <div className="photowall photobook">
         {items.map((item, i) => (
@@ -289,12 +340,12 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
             <div className="pb-thumb">
               {thumb(item.path, item.caption)}
               <span className="pb-number">{i + 1}</span>
-              {item.source === 'own' ? <span className="badge pb-own">{t('Eigen foto')}</span> : null}
+              {sourceBadge(item.source)}
             </div>
             <figcaption>
               <input
                 value={item.caption}
-                placeholder={t('Onderschrift')}
+                placeholder={item.large ? t('Groepsfoto') : t('Onderschrift')}
                 aria-label={t('Onderschrift')}
                 onChange={(e) => updateItem(i, { caption: e.target.value })}
               />
@@ -324,11 +375,11 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
         ))}
       </div>
 
-      {unusedGame.length || unusedOwn.length ? (
+      {unusedGame.length || unusedFiles.length ? (
         <>
           <div className="row" style={{ alignItems: 'center', margin: '24px 0 12px' }}>
             <h2 style={{ margin: 0, flex: '1 1 auto' }}>
-              {t('Niet in het fotoboek')} ({unusedGame.length + unusedOwn.length})
+              {t('Niet in het fotoboek')} ({unusedGame.length + unusedFiles.length})
             </h2>
             <div className="actions" style={{ marginTop: 0, flex: '0 0 auto' }}>
               <button
@@ -337,7 +388,7 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
                   setItems([
                     ...items,
                     ...unusedGame.map((p) => ({ source: 'game' as const, path: p.path, caption: caption(p) })),
-                    ...unusedOwn.map((path) => ({ source: 'own' as const, path, caption: '' })),
+                    ...unusedFiles.map((f) => ({ ...f, caption: '' })),
                   ])
                 }
               >
@@ -359,28 +410,30 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
                 </figcaption>
               </figure>
             ))}
-            {unusedOwn.map((path) => (
-              <figure key={path}>
+            {unusedFiles.map((f) => (
+              <figure key={f.path}>
                 <div className="pb-thumb">
-                  {thumb(path, t('Eigen foto'))}
-                  <span className="badge pb-own">{t('Eigen foto')}</span>
+                  {thumb(f.path, t('Eigen foto'))}
+                  {sourceBadge(f.source)}
                 </div>
                 <figcaption>
                   <div className="pb-tools">
-                    <button className="secondary" onClick={() => setItems([...items, { source: 'own', path, caption: '' }])}>
+                    <button className="secondary" onClick={() => setItems([...items, { ...f, caption: '' }])}>
                       {t('Toevoegen')}
                     </button>
-                    <button
-                      className="link"
-                      onClick={() =>
-                        void run(t('Verwijderen…'), async () => {
-                          await deleteOwnPhoto(path);
-                          setOwnFiles((f) => f.filter((x) => x !== path));
-                        })
-                      }
-                    >
-                      {t('Verwijderen')}
-                    </button>
+                    {f.source === 'own' ? (
+                      <button
+                        className="link"
+                        onClick={() =>
+                          void run(t('Verwijderen…'), async () => {
+                            await deleteFile(f.path);
+                            setOwnFiles((list) => list.filter((x) => x !== f.path));
+                          })
+                        }
+                      >
+                        {t('Verwijderen')}
+                      </button>
+                    ) : null}
                   </div>
                 </figcaption>
               </figure>
@@ -397,6 +450,9 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
           </button>
           <button disabled={!!busy || items.length === 0} onClick={makePdf}>
             {t('PDF maken')}
+          </button>
+          <button className="secondary" disabled={!!busy || items.length === 0} onClick={makeZip}>
+            {t("Alle foto's als zip")}
           </button>
           {pdfUrl && !busy ? (
             <a className="button secondary" href={pdfUrl} target="_blank" rel="noreferrer">
@@ -418,51 +474,54 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
         {saved?.pdf_path ? (
           <>
             <label className="check" style={{ marginTop: 16 }}>
-              <input
-                type="checkbox"
-                checked={saved.shared}
-                disabled={!!busy}
-                onChange={(e) => {
-                  const shared = e.target.checked;
-                  void run(t('Opslaan…'), async () => {
-                    await setShared(session.id, shared);
-                    setSaved({ ...saved, shared });
-                  });
-                }}
-              />
-              {t('Delen met de klant')}
+              <input type="checkbox" checked={saved.shared} disabled={!!busy} onChange={(e) => share(e.target.checked)} />
+              {t('Delen met de klant (28 dagen)')}
             </label>
             {saved.shared ? (
               <>
                 <p className="muted small">
-                  {t('Met deze link bekijkt de klant de foto\'s en downloadt het fotoboek, zonder in te loggen.')}
+                  {t("Met deze link en het wachtwoord bekijkt de klant de foto's en downloadt het fotoboek en alle foto's, zonder in te loggen.")}
                 </p>
-                <div className="row" style={{ alignItems: 'center' }}>
-                  <input readOnly value={link} onFocus={(e) => e.target.select()} style={{ flex: '3 1 320px' }} />
-                  <div className="actions" style={{ marginTop: 0, flex: '0 0 auto' }}>
-                    <button
-                      className="secondary"
-                      onClick={() =>
-                        void navigator.clipboard.writeText(link).then(
-                          () => setNotice(t('Link gekopieerd.')),
-                          () => setError(t('Kopiëren lukte niet. Selecteer de link en kopieer hem zelf.')),
-                        )
-                      }
-                    >
-                      {t('Kopieer link')}
-                    </button>
-                    {mail ? (
-                      <a
-                        className="button secondary"
-                        href={`mailto:?subject=${encodeURIComponent(mail.subject)}&body=${encodeURIComponent(mail.body)}`}
-                      >
-                        {t('Mail naar de klant')}
-                      </a>
-                    ) : null}
-                    <a className="button secondary" href={link} target="_blank" rel="noreferrer">
-                      {t('Bekijken')}
-                    </a>
+                <div className="row" style={{ alignItems: 'end' }}>
+                  <div style={{ flex: '3 1 320px' }}>
+                    <label htmlFor="pb-link">{t('Link')}</label>
+                    <input id="pb-link" readOnly value={link} onFocus={(e) => e.target.select()} />
                   </div>
+                  <div style={{ flex: '1 1 160px' }}>
+                    <label htmlFor="pb-pw">{t('Wachtwoord')}</label>
+                    <input id="pb-pw" className="mono" readOnly value={saved.share_password} onFocus={(e) => e.target.select()} />
+                  </div>
+                </div>
+                <p className={expired ? 'error' : 'muted'}>
+                  {saved.shared_until
+                    ? expired
+                      ? t('Verlopen op {date}. Verleng om het opnieuw te delen.', { date: fmtDate(saved.shared_until) })
+                      : t('Te bekijken tot {date}.', { date: fmtDate(saved.shared_until) })
+                    : null}
+                </p>
+                <div className="actions" style={{ marginTop: 0 }}>
+                  <button
+                    className="secondary"
+                    onClick={() =>
+                      void navigator.clipboard.writeText(`${link}\n${t('Wachtwoord: {password}', { password: saved.share_password })}`).then(
+                        () => setNotice(t('Link en wachtwoord gekopieerd.')),
+                        () => setError(t('Kopiëren lukte niet. Selecteer de link en kopieer hem zelf.')),
+                      )
+                    }
+                  >
+                    {t('Kopieer link en wachtwoord')}
+                  </button>
+                  {mail ? (
+                    <a className="button secondary" href={`mailto:?subject=${encodeURIComponent(mail.subject)}&body=${encodeURIComponent(mail.body)}`}>
+                      {t('Mail naar de klant')}
+                    </a>
+                  ) : null}
+                  <a className="button secondary" href={link} target="_blank" rel="noreferrer">
+                    {t('Bekijken')}
+                  </a>
+                  <button className="secondary" disabled={!!busy} onClick={() => share(true)}>
+                    {t('Verlengen tot 28 dagen vanaf nu')}
+                  </button>
                 </div>
                 <p>
                   <button
@@ -470,13 +529,12 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
                     disabled={!!busy}
                     onClick={() =>
                       void run(t('Opslaan…'), async () => {
-                        const token = await rotateToken(session.id);
-                        setSaved({ ...saved, share_token: token });
-                        setNotice(t('Nieuwe link gemaakt. De oude link werkt niet meer.'));
+                        setSaved(await rotateToken(session.id));
+                        setNotice(t('Nieuwe link en wachtwoord gemaakt. De oude werken niet meer.'));
                       })
                     }
                   >
-                    {t('Nieuwe link maken (de oude werkt dan niet meer)')}
+                    {t('Nieuwe link en wachtwoord maken (de oude werken dan niet meer)')}
                   </button>
                 </p>
               </>

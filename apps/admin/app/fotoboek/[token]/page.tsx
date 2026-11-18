@@ -1,118 +1,300 @@
 'use client';
 import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { LOCALES, isAdminLanguage } from '@/lib/i18n';
+import { useEffect, useState, type FormEvent } from 'react';
+import { LOCALES, isAdminLanguage, type AdminLanguage } from '@/lib/i18n';
 import { useLanguage } from '@/lib/language';
-import { bookText } from '@/lib/photobook';
-import { formatDuration } from '@/lib/results';
+import { buildPhotoZip, saveBlob } from '@/lib/photo-zip';
+import { bookText, displayUrl, formatNumber, href, huntStats, zipFileName, type BookLinks, type BookTextKey } from '@/lib/photobook';
 import { supabase } from '@/lib/supabase';
 
 interface SharedBook {
   title: string;
+  city: string;
   intro: string;
   language: string;
   session: string;
   starts_at: string | null;
   timezone: string;
-  organization: string;
   items: { source: string; path: string; caption: string; large?: boolean; url: string }[];
-  ranking: { rank: string; name: string; score: string; duration_seconds: string | null }[];
+  teams: { rank: number; name: string; score: number; duration_seconds: number | null; distance_m: number }[];
+  cover_url: string | null;
+  links: BookLinks;
   pdf_url: string | null;
+  shared_until: string | null;
 }
 
-/** Fotoboek voor de klant: werkt zonder inloggen, via de geheime link. */
+type Failure = 'wrong_password' | 'expired' | 'not_found';
+const STORE = 'hunt-fotoboek-wachtwoord';
+
+/** Fotoboek voor de klant: werkt zonder inloggen, met de link en het wachtwoord. */
 export default function SharedPhotobookPage() {
   const { token } = useParams<{ token: string }>();
-  const { t } = useLanguage();
+  const { lang: adminLang } = useLanguage();
+  const [password, setPassword] = useState('');
   const [book, setBook] = useState<SharedBook | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [failure, setFailure] = useState<Failure | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [zipping, setZipping] = useState<string | null>(null);
 
+  const open = async (pw: string) => {
+    setLoading(true);
+    setFailure(null);
+    const { data, error } = await supabase().functions.invoke('photobook', { body: { token, password: pw } });
+    setLoading(false);
+    if (error || !data) {
+      const status = (error as { context?: Response } | null)?.context?.status;
+      setFailure(status === 401 ? 'wrong_password' : status === 410 ? 'expired' : 'not_found');
+      try {
+        sessionStorage.removeItem(`${STORE}-${token}`);
+      } catch {
+        /* geen opslag */
+      }
+      return;
+    }
+    setBook(data as SharedBook);
+    try {
+      sessionStorage.setItem(`${STORE}-${token}`, pw);
+    } catch {
+      /* geen opslag */
+    }
+  };
+
+  // Na verversen hoeft het wachtwoord niet opnieuw.
   useEffect(() => {
-    void supabase()
-      .functions.invoke(`photobook?token=${encodeURIComponent(token)}`, { method: 'GET' })
-      .then(({ data, error }) => {
-        if (error || !data) setFailed(true);
-        else setBook(data as SharedBook);
-      });
+    let pw: string | null = null;
+    try {
+      pw = sessionStorage.getItem(`${STORE}-${token}`);
+    } catch {
+      /* geen opslag */
+    }
+    if (pw) {
+      setPassword(pw);
+      void open(pw);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   useEffect(() => {
     if (book) document.title = `${book.title} – Escape Game The Hunt`;
   }, [book]);
 
-  if (failed) return <p className="muted">{t('Dit fotoboek is niet (meer) gedeeld. Vraag de organisatie om een nieuwe link.')}</p>;
-  if (!book) return <p className="muted">{t('Laden…')}</p>;
+  const lang: AdminLanguage = book && isAdminLanguage(book.language) ? book.language : adminLang;
+  const T = (key: BookTextKey, vars?: Record<string, string | number>) => bookText(lang, key, vars);
+  const date = (iso: string, timeZone?: string) =>
+    new Intl.DateTimeFormat(LOCALES[lang], { dateStyle: 'long', ...(timeZone ? { timeZone } : {}) }).format(new Date(iso));
 
-  const lang = isAdminLanguage(book.language) ? book.language : 'nl';
-  const date = book.starts_at
-    ? new Intl.DateTimeFormat(LOCALES[lang], { dateStyle: 'long', timeZone: book.timezone || 'Europe/Amsterdam' }).format(new Date(book.starts_at))
-    : '';
+  if (!book) {
+    const submit = (e: FormEvent) => {
+      e.preventDefault();
+      void open(password);
+    };
+    return (
+      <div className="book">
+        <section className="book-gate">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="logo" src="/logo-full-light.png" alt="Escape Game The Hunt" />
+          <span className="book-label">{T('missionDone')}</span>
+          <h1>{T('thanks')}</h1>
+          <form onSubmit={submit}>
+            <label htmlFor="pw">{T('password')}</label>
+            <p>{T('passwordAsk')}</p>
+            <div className="book-pw">
+              <input
+                id="pw"
+                autoComplete="off"
+                autoCapitalize="characters"
+                placeholder="XXXX-XXXX-XXXX"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button type="submit" disabled={loading || !password.trim()}>
+                {T('open')}
+              </button>
+            </div>
+            {failure ? (
+              <p className="book-error">
+                {failure === 'wrong_password' ? T('wrongPassword') : failure === 'expired' ? T('expired') : T('notFound')}
+              </p>
+            ) : null}
+          </form>
+        </section>
+      </div>
+    );
+  }
+
+  const stats = book.teams.length ? huntStats(book.teams.map((x) => ({ name: x.name, distanceM: x.distance_m }))) : null;
+  const num = (v: number, d = 0) => formatNumber(lang, v, d);
+  const cover = book.cover_url ?? book.items[0]?.url ?? null;
+  const { google_review, website_review, vacancy, video, website, email, phone } = book.links;
+
+  const zip = () => {
+    setZipping(T('zipping', { n: 0, total: book.items.length }));
+    void buildPhotoZip(book.items, (n, total) => setZipping(T('zipping', { n, total })))
+      .then((blob) => saveBlob(blob, zipFileName(book.title)))
+      .finally(() => setZipping(null));
+  };
 
   return (
-    <>
-      <section className="book-hero">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="logo" src="/logo-full-light.png" alt="Escape Game The Hunt" />
-        <div>
-          <h1>{book.title}</h1>
-          <p>{[date, book.title !== book.session ? book.session : ''].filter(Boolean).join(' · ')}</p>
-          <div className="bar" />
+    <div className="book">
+      <section className="book-cover" style={cover ? { backgroundImage: `url("${cover}")` } : undefined}>
+        <div className="book-cover-panel">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="logo" src="/logo-full-light.png" alt="Escape Game The Hunt" />
+          <span className="book-label">{T('missionDone')}</span>
+          <h1>
+            {T('thanksFor')}
+            <br />
+            {book.city ? (
+              <>
+                {T('huntIn')} <span className="accent">{book.city}</span>
+              </>
+            ) : (
+              <span className="accent">The Hunt</span>
+            )}
+          </h1>
+          <p className="muted-light">
+            {[book.starts_at ? date(book.starts_at, book.timezone || undefined) : '', book.title !== book.session ? book.title : '']
+              .filter(Boolean)
+              .join(' · ')}
+          </p>
           {book.intro ? <p>{book.intro}</p> : null}
-          {book.pdf_url ? (
-            <p style={{ marginTop: 16 }}>
-              <a className="button" href={book.pdf_url} target="_blank" rel="noreferrer">
-                {bookText(lang, 'download')}
+          <div className="book-actions">
+            {book.pdf_url ? (
+              <a className="book-btn orange" href={book.pdf_url} target="_blank" rel="noreferrer">
+                {T('download')}
               </a>
-            </p>
-          ) : null}
+            ) : null}
+            <button className="book-btn outline" onClick={zip} disabled={!!zipping || book.items.length === 0}>
+              {zipping ?? T('downloadZip')}
+            </button>
+          </div>
+          {book.shared_until ? <p className="muted-light small">{T('availableUntil', { date: date(book.shared_until) })}</p> : null}
         </div>
       </section>
 
-      {book.ranking.length ? (
-        <>
-          <h2>{bookText(lang, 'ranking')}</h2>
+      {stats ? (
+        <section className="book-section">
+          <span className="book-label">{T('missionDone')}</span>
+          <h2>{T('statsTitle')}</h2>
+          <p className="muted">{T('statsIntro')}</p>
+          <div className="book-cards">
+            <div>
+              <strong>{num(stats.avgKm, 1)} km</strong>
+              <span>{T('avgKm')}</span>
+            </div>
+            <div>
+              <strong>{num(stats.avgStepsPP)}</strong>
+              <span>{T('stepsPP')}</span>
+            </div>
+            <div>
+              <strong>{num(stats.totalKm, 1)} km</strong>
+              <span>{T('totalKm', { n: stats.teams.length })}</span>
+            </div>
+            <div className="dark">
+              <strong>{num(stats.totalCo2Kg, 1)} kg</strong>
+              <span>{T('co2Saved')}</span>
+            </div>
+          </div>
           <div className="table-wrap">
-            <table>
+            <table className="book-table">
               <thead>
                 <tr>
-                  <th>{bookText(lang, 'place')}</th>
-                  <th>{bookText(lang, 'team')}</th>
-                  <th>{bookText(lang, 'points')}</th>
-                  <th>{bookText(lang, 'time')}</th>
+                  <th>{T('team')}</th>
+                  <th>{T('km')}</th>
+                  <th>{T('steps')}</th>
+                  <th>{T('kcal')}</th>
+                  <th>{T('co2')}</th>
                 </tr>
               </thead>
               <tbody>
-                {book.ranking.map((r) => (
-                  <tr key={`${r.rank}-${r.name}`}>
-                    <td>
-                      <strong>{r.rank}</strong>
-                    </td>
-                    <td>{r.name}</td>
-                    <td>{r.score}</td>
-                    <td>{formatDuration(r.duration_seconds === null ? null : Number(r.duration_seconds))}</td>
+                {stats.teams.map((x) => (
+                  <tr key={x.name}>
+                    <td>{x.name}</td>
+                    <td>{num(x.km, 1)}</td>
+                    <td>{num(x.stepsPP)}</td>
+                    <td>{num(x.kcalPP)}</td>
+                    <td>{num(x.co2Kg, 2)}</td>
                   </tr>
                 ))}
+                <tr className="total">
+                  <td>{T('together')}</td>
+                  <td>{num(stats.totalKm, 1)}</td>
+                  <td />
+                  <td />
+                  <td>{num(stats.totalCo2Kg, 1)}</td>
+                </tr>
               </tbody>
             </table>
           </div>
-        </>
+          <p className="muted small">{T('footnote')}</p>
+          {video ? (
+            <a className="book-video" href={href('url', video)} target="_blank" rel="noreferrer">
+              <strong>{T('videoTitle')}</strong> <span className="muted">{T('videoText')}</span> <span className="accent">{T('videoLink')} →</span>
+            </a>
+          ) : null}
+        </section>
       ) : null}
 
-      <h2>{bookText(lang, 'photos')}</h2>
-      <div className="book-photos">
-        {book.items.map((item) => (
-          <figure key={item.path} className={item.large ? 'large' : ''}>
-            <a href={item.url} target="_blank" rel="noreferrer">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={item.url} alt={item.caption} loading="lazy" />
-            </a>
-            {item.caption ? <figcaption>{item.caption}</figcaption> : null}
-          </figure>
-        ))}
-      </div>
-      <p className="muted small" style={{ marginTop: 32, textAlign: 'center' }}>
-        Escape Game The Hunt
-      </p>
-    </>
+      <section className="book-section">
+        <span className="book-label">{T('missionDone')}</span>
+        <h2>{T('yourPhotos')}</h2>
+        <div className="book-photos">
+          {book.items.map((item) => (
+            <figure key={item.path} className={item.large ? 'large' : ''}>
+              <a href={item.url} target="_blank" rel="noreferrer">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={item.url} alt={item.caption} loading="lazy" />
+              </a>
+              {item.caption ? <figcaption>{item.caption}</figcaption> : null}
+            </figure>
+          ))}
+        </div>
+      </section>
+
+      {google_review || website_review || vacancy ? (
+        <section className="book-section dark">
+          {google_review || website_review ? (
+            <>
+              <h2>{T('reviewTitle')}</h2>
+              <p>{T('reviewText')}</p>
+              <div className="book-actions">
+                {google_review ? (
+                  <a className="book-btn orange" href={href('url', google_review)} target="_blank" rel="noreferrer">
+                    {T('googleReview')}
+                  </a>
+                ) : null}
+                {website_review ? (
+                  <a className="book-btn outline" href={href('url', website_review)} target="_blank" rel="noreferrer">
+                    {T('websiteReview')}
+                  </a>
+                ) : null}
+              </div>
+            </>
+          ) : null}
+          {vacancy ? (
+            <div className="book-vacancy">
+              <span className="book-label">{T('vacancyLabel')}</span>
+              <h3>{T('vacancyTitle')}</h3>
+              <p>{T('vacancyText')}</p>
+              <p>
+                <strong>{T('vacancyAsk')}</strong>
+              </p>
+              <a className="book-btn dark" href={href('url', vacancy)} target="_blank" rel="noreferrer">
+                {T('vacancyLink')} →
+              </a>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
+      <footer className="book-footer">
+        <span className="book-label">THE HUNT{book.city ? ` · ${book.city}` : ''}</span>
+        <span>
+          {website ? <a href={href('url', website)}>{displayUrl(website)}</a> : null}
+          {email ? <a href={href('email', email)}>{email}</a> : null}
+          {phone ? <a href={href('phone', phone)}>{phone}</a> : null}
+        </span>
+      </footer>
+    </div>
   );
 }
