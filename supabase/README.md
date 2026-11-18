@@ -44,9 +44,10 @@ Deployen van de functie: `npx supabase functions deploy results-export`.
 
 ## Fotoboek voor de klant
 
-- `photobooks`: één fotoboek per sessie (titel, tekst, taal, gekozen foto's in volgorde). Spelleiding en de maker van het spel (`can_watch_session`) beheren het.
-- Eigen foto's en de PDF staan in de bucket `photobooks` onder `<sessie>/…`.
-- Geheime link per fotoboek (`photobooks.share_token`, aan met `shared`):
-  - `GET /functions/v1/photobook?token=…` geeft JSON met foto-links en de PDF-link (7 dagen geldig)
-  - `shared_photobook(token)` geeft alleen foto's van de eigen sessie door
-  - `rotate_photobook_token(sessie)` maakt een nieuwe link
+- `photobooks`: één fotoboek per sessie (stad, titel, tekst, taal, gekozen foto's in volgorde). Spelleiding en de maker van het spel (`can_watch_session`) beheren het.
+- `photobook_settings`: per organisatie de omslagfoto, vaste algemene foto's en links (video, reviews, vacature, contact). Redacteur of hoger wijzigt ze.
+- Bucket `photobooks`: eigen foto's en de PDF onder `<sessie>/…`, vaste foto's onder `huisstijl/<organisatie>/…`.
+- Delen met link en wachtwoord (`share_token`, `share_password`), 28 dagen (`share_photobook(sessie, aan)` zet `shared_until`):
+  - `POST /functions/v1/photobook` met `{ token, password }` geeft JSON met foto-links, omslag en PDF (1 dag geldig); 401 verkeerd wachtwoord, 410 verlopen
+  - `shared_photobook(token, wachtwoord)` geeft alleen foto's van de eigen sessie en organisatie door
+  - `rotate_photobook_token(sessie)` maakt een nieuwe link en een nieuw wachtwoord

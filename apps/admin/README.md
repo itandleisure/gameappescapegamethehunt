@@ -10,7 +10,7 @@ supabase-js; de toegangsregels zitten in de database (row level security).
 - Spellen: overzicht als boom (basisspel › stad › klant), importeren als bundel `{ base, variants }` of spelpakket, publiceren
 - Opdracht bewerken met tabbladen (Opdracht, Feedback, Hints, Media, Activatie, Instellingen, Gebruikt in), een taalkeuze bovenaan en tekst met opmaak (vet, cursief, onderstreept, kleur, links, lijsten, uitlijning); in een stad of klant alleen de aanpasbare velden
 - Sessies: aanmaken met automatische sessiecode, start en tijdzone, aantal tracks, testmodus, openen en sluiten
-- Fotoboek per hunt (tabblad Fotoboek): spelfoto's en eigen foto's kiezen en ordenen, een PDF in Escape Game The Hunt-stijl maken (in de browser, met pdf-lib) en delen via `/fotoboek/<link>`, een pagina die zonder inloggen werkt
+- Fotoboek per hunt (tabblad Fotoboek): spelfoto's, eigen foto's en vaste foto's kiezen en ordenen, een PDF in de stijl van het huidige fotoboek maken (in de browser, met pdf-lib en Lato) en 28 dagen delen via `/fotoboek/<link>` met wachtwoord, met PDF en zip van alle foto's. Vaste foto's en links staan op `/instellingen/fotoboek`
 
 Volgt nog: regels, kaarteditor (locaties per track, overlay), klantvariant maken, vertalingen,
 live monitor, resultaten en photowall.
