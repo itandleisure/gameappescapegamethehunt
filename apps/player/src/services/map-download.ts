@@ -1,5 +1,6 @@
 import { DEFAULT_MAP_SOURCE, type GamePackage } from '@hunt/engine';
 import { chooseMaxZoom, playAreaBounds } from '../core/play-area';
+import { prepareMapProvider } from './map-provider';
 import { IN_EXPO_GO } from './runtime';
 
 type OfflineManagerType = typeof import('@maplibre/maplibre-react-native').OfflineManager;
@@ -30,6 +31,8 @@ export async function downloadPlayArea(
 ): Promise<void> {
   const bounds = playAreaBounds(game);
   const OfflineManager = offlineManager();
+  // Downloaden bij dezelfde kaartdienst als waar de kaart straks uit leest.
+  await prepareMapProvider();
   if (!bounds || !OfflineManager) return;
   const name = packName(sessionId);
   const existing = (await OfflineManager.getPacks()).find((p) => (p.metadata as { name?: string } | undefined)?.name === name);

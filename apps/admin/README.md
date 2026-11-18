@@ -25,6 +25,10 @@ pnpm --filter @hunt/admin dev
 De Supabase-gegevens staan als standaard in `src/lib/supabase.ts` (publiek).
 Andere waarden kunnen via `NEXT_PUBLIC_SUPABASE_URL` en `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 
+Kaarttegels: met `NEXT_PUBLIC_MAPTILER_KEY` (in Vercel bij Environment Variables) komen de kaarten van
+MapTiler, zonder die sleutel van OpenFreeMap. Reageert MapTiler niet, dan valt de kaart vanzelf terug op
+OpenFreeMap. Beperk deze sleutel in MapTiler tot de domeinen van de beheeromgeving (Allowed HTTP origins).
+
 ## Vercel
 
 - Root Directory: `apps/admin`, Framework: Next.js
