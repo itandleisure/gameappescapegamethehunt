@@ -88,3 +88,4 @@ header.top .brand .logo { height: 32px; width: auto; }
   img.only-dark.loginlogo { display: block; }
   .only-light { display: none; }
 }
+button.danger { background: var(--danger); border-color: var(--danger); color: #fff; }

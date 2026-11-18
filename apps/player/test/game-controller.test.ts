@@ -9,10 +9,10 @@ const game = composeGame(theHuntBase, [leeuwarden], { id: 'the-hunt-leeuwarden',
 const T0 = Date.UTC(2026, 10, 21, 13, 0, 0);
 const SKEW = 90_000; // telefoonklok loopt anderhalve minuut achter
 
-function setup() {
+function setup(g = game) {
   let device = T0 - SKEW;
   let n = 0;
-  const backend = new FakeBackend(game, T0);
+  const backend = new FakeBackend(g, T0);
   const store = new MemoryStore();
   const deps = {
     backend,
@@ -61,6 +61,31 @@ describe('GameController', () => {
     // Opnieuw binnen de cirkel opent niets dubbel
     s.advance(1_000);
     expect(await c.onLocation(s.fix(leeuwardenPoints.start))).toEqual([]);
+  });
+
+  it('geeft na Nee op de bevestigingsvraag 20 seconden om de cirkel uit te lopen', async () => {
+    const base = JSON.parse(JSON.stringify(theHuntBase)) as typeof theHuntBase;
+    base.tasks.find((t) => t.id === 'start')!.confirm = { nl: 'Is dit het juiste extractiepunt?' };
+    const confirmGame = composeGame(base, [leeuwarden], { id: 'the-hunt-leeuwarden', version: 1 });
+    s = setup(confirmGame);
+    const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl');
+    await c.start();
+    const arrive = async () => {
+      await c.onLocation(s.fix(leeuwardenPoints.start));
+      s.advance(1_000);
+      return c.onLocation(s.fix(leeuwardenPoints.start));
+    };
+    expect(await arrive()).toEqual(['start']);
+    expect(c.snapshot().state!.tasks.start!.status).toBe('confirming');
+    expect(await c.decline('start')).toBe(20);
+    // Binnen de 20 seconden komt de vraag niet terug, ook niet als ze blijven staan.
+    s.advance(10_000);
+    expect(await arrive()).toEqual([]);
+    expect(c.snapshot().state!.tasks.start!.status).toBe('visible');
+    // Daarna wel, als ze er nog staan.
+    s.advance(10_000);
+    expect(await arrive()).toEqual(['start']);
+    expect(c.snapshot().state!.tasks.start!.status).toBe('confirming');
   });
 
   it('opent in een testsessie een opdracht zonder GPS, en anders niet', async () => {

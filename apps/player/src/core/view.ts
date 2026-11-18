@@ -45,9 +45,13 @@ export function listGroups(game: GamePackage, state: TeamState): ListGroup[] {
     const ts = state.tasks[task.id];
     if (!ts || ts.status === 'hidden' || ts.status === 'deactivated') continue;
     if (!ts.inList && ts.playground === undefined) continue;
+    // Gelezen uitleg (info) staat voortaan alleen nog op het tabblad met naslag, niet meer tussen de opdrachten.
+    if (ts.status === 'done' && task.answer.type === 'info') continue;
     const key = ts.playground;
     groups.set(key, [...(groups.get(key) ?? []), task]);
   }
+  // Een playground met een foto die stukje voor stukje zichtbaar wordt, staat er altijd.
+  for (const p of game.playgrounds) if ((p.reveal || p.body) && !groups.has(p.id)) groups.set(p.id, []);
   const order = [undefined, ...game.playgrounds.map((p) => p.id)];
   return order.filter((k) => groups.has(k)).map((k) => ({ ...(k === undefined ? {} : { playground: k }), tasks: groups.get(k)! }));
 }

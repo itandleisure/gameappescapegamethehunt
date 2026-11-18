@@ -42,4 +42,19 @@ describe('schermen', () => {
     const groups = listGroups(game, state);
     for (const g of groups) for (const t of g.tasks) expect(state.tasks[t.id]!.status).not.toBe('hidden');
   });
+
+  it('toont tabbladen met naslag of foto ook zonder opdrachten, en verbergt gelezen uitleg', () => {
+    const base = JSON.parse(JSON.stringify(theHuntBase)) as typeof theHuntBase;
+    const uitleg = base.playgrounds.find((p) => p.id === 'speluitleg')!;
+    uitleg.body = { nl: 'Tijdlijn van het spel' };
+    const g = composeGame(base, [leeuwarden], { id: 'lwd', version: 1 });
+    const events = [
+      { id: '1', at: at(10), type: 'locationReached' as const, task: 'start', ...P.start, accuracy: 5 },
+      { id: '2', at: at(20), type: 'answered' as const, task: 'start', answer: { type: 'info' as const } },
+    ];
+    const state = computeState(g, team, events, at(25));
+    const groups = listGroups(g, state);
+    expect(groups.some((gr) => gr.playground === 'speluitleg')).toBe(true);
+    expect(groups.flatMap((gr) => gr.tasks).map((t) => t.id)).not.toContain('start');
+  });
 });

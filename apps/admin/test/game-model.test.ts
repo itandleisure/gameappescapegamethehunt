@@ -23,6 +23,17 @@ describe('spelmodel in de database', () => {
     expect(rowsToBase(rows).tasks[0]!.image).toBe('https://example.org/foto.jpg');
   });
 
+  it('bewaart tabbladen met naslagtekst, foto met vakken en nummers in kaarticonen', () => {
+    const base = json(theHuntBase);
+    const ids = base.tasks.map((t: { id: string }) => t.id);
+    base.tasks[0].mapLabel = '1';
+    base.playgrounds[0].reveal = { image: 'https://example.org/gps.png', width: 1440, height: 6500, pieces: [{ task: ids[1], x: 40, y: 880, w: 440, h: 420 }] };
+    base.playgrounds[1].body = { nl: 'Tijdlijn', en: 'Timeline' };
+    const rows = baseToRows(base, { id: 'base', slug: 'the-hunt' });
+    expect(rows.game.settings.playgroundReveal).toEqual({ [base.playgrounds[0].id]: base.playgrounds[0].reveal });
+    expect(json(rowsToBase(rows))).toEqual(base);
+  });
+
   it('bewaart afbeeldingen bij hints op hun plek', () => {
     const base = json(theHuntBase);
     const task = base.tasks.find((t: { hints: unknown[] }) => t.hints.length >= 2);

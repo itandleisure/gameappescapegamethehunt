@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { computeState } from '../src/engine.js';
 import { composeGame } from '../src/layers.js';
-import { rank, routeDistance, summarizeTeam } from '../src/stats.js';
+import { rank, hiddenPieces, routeDistance, summarizeTeam } from '../src/stats.js';
+import type { TeamState } from '../src/types.js';
 import { leeuwarden, leeuwardenPoints, LWD, offset, theHuntBase } from './fixtures/the-hunt.js';
 import { min, Script, T0 } from './helpers.js';
 
@@ -53,5 +54,38 @@ describe('samenvatting en ranglijst', () => {
       { name: 'D', score: 1200, durationMs: 65 },
     ]);
     expect(r.map((t) => `${t.rank}${t.name}`)).toEqual(['1B', '2C', '2D', '4A']);
+  });
+});
+
+describe('foto stukje voor stukje (extractiepunt)', () => {
+  const puzzles = ['p1', 'p2', 'p3'];
+  const withReveal = (pieces: { task: string; x: number; y: number; w: number; h: number }[]) => {
+    const base = JSON.parse(JSON.stringify(theHuntBase)) as typeof theHuntBase;
+    const ids = base.tasks.map((t) => t.id);
+    const real = pieces.map((p, i) => ({ ...p, task: p.task.startsWith('p') ? ids[i]! : p.task }));
+    base.playgrounds.find((p) => p.id === 'extractiepunt')!.reveal = { image: 'https://example.org/gps.jpg', width: 1440, height: 6500, pieces: real };
+    return { base, ids: real.map((p) => p.task) };
+  };
+  const stateWith = (correct: string[], wrong: string[] = []) =>
+    ({
+      tasks: Object.fromEntries([...correct.map((id) => [id, { correct: true }]), ...wrong.map((id) => [id, { correct: false }])]),
+    }) as unknown as TeamState;
+
+  it('dekt alleen de vakken af van opdrachten die nog niet goed zijn', () => {
+    const { base, ids } = withReveal(puzzles.map((task, i) => ({ task, x: 40 + i * 440, y: 880, w: 440, h: 420 })));
+    const game = composeGame(base, [leeuwarden], { id: 'lwd', version: 1 });
+    expect(hiddenPieces(game, stateWith([]), 'extractiepunt')).toHaveLength(3);
+    const left = hiddenPieces(game, stateWith([ids[0]!], [ids[1]!]), 'extractiepunt');
+    expect(left.map((p) => p.task)).toEqual([ids[1], ids[2]]);
+    expect(hiddenPieces(game, stateWith(ids), 'extractiepunt')).toEqual([]);
+    expect(hiddenPieces(game, stateWith([]), 'speluitleg')).toEqual([]);
+  });
+
+  it('weigert een onbekende opdracht of een vak buiten de foto', () => {
+    const { base } = withReveal([
+      { task: 'bestaat-niet', x: 0, y: 0, w: 10, h: 10 },
+      { task: 'p', x: 1400, y: 0, w: 100, h: 10 },
+    ]);
+    expect(() => composeGame(base, [leeuwarden], { id: 'x', version: 1 })).toThrow(/onbekende opdracht bestaat-niet[\s\S]*vak 2 valt buiten de foto/);
   });
 });

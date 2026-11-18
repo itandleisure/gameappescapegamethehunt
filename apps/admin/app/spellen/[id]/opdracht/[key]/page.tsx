@@ -367,6 +367,10 @@ export default function TaskPage() {
                 <label htmlFor="tags">Labels (komma's)</label>
                 <input id="tags" value={form.tags} onChange={(e) => set({ tags: e.target.value })} placeholder="puzzel" />
               </div>
+              <div>
+                <label htmlFor="mapLabel">Nummer in kaarticoon</label>
+                <input id="mapLabel" value={form.mapLabel} maxLength={3} onChange={(e) => set({ mapLabel: e.target.value })} placeholder="leeg = titel" />
+              </div>
             </>
           ) : null}
         </div>

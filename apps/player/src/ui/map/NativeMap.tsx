@@ -1,13 +1,40 @@
-import { Camera, ImageSource, Layer, Map, Marker, NativeUserLocation } from '@maplibre/maplibre-react-native';
-import { StyleSheet, Text, View } from 'react-native';
-import { colors, radius, space } from '../theme';
-import type { GameMapProps } from './types';
+import {
+  Camera,
+  ImageSource,
+  Layer,
+  Map,
+  Marker,
+  NativeUserLocation,
+} from "@maplibre/maplibre-react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { colors, radius, space } from "../theme";
+import type { GameMapProps } from "./types";
 
 /** Kaart met de native MapLibre-module (in de echte app). */
-export default function NativeMap({ styleUrl, bounds, markers, overlay }: GameMapProps) {
+export default function NativeMap({
+  styleUrl,
+  bounds,
+  markers,
+  overlay,
+}: GameMapProps) {
   return (
-    <Map style={StyleSheet.absoluteFill} mapStyle={styleUrl} attribution attributionPosition={{ bottom: 8, left: 8 }} logo={false}>
-      <Camera initialViewState={bounds ? { bounds, padding: { top: 120, bottom: 120, left: 40, right: 40 } } : undefined} />
+    <Map
+      style={StyleSheet.absoluteFill}
+      mapStyle={styleUrl}
+      attribution
+      attributionPosition={{ bottom: 8, left: 8 }}
+      logo={false}
+    >
+      <Camera
+        initialViewState={
+          bounds
+            ? {
+                bounds,
+                padding: { top: 120, bottom: 120, left: 40, right: 40 },
+              }
+            : undefined
+        }
+      />
       {overlay ? (
         <ImageSource
           id="overlay"
@@ -19,14 +46,21 @@ export default function NativeMap({ styleUrl, bounds, markers, overlay }: GameMa
             [overlay.nw.lng, overlay.se.lat],
           ]}
         >
-          <Layer type="raster" id="overlay-layer" paint={{ 'raster-opacity': 0.85 }} />
+          <Layer
+            type="raster"
+            id="overlay-layer"
+            paint={{ "raster-opacity": 0.85 }}
+          />
         </ImageSource>
       ) : null}
       {markers.map((m) => (
         <Marker key={m.id} id={m.id} lngLat={[m.lng, m.lat]} anchor="bottom">
-          <View style={styles.pin}>
-            <Text style={styles.pinText} numberOfLines={1}>
-              {m.label}
+          <View style={[styles.pin, m.badge ? styles.badge : null]}>
+            <Text
+              style={[styles.pinText, m.badge ? styles.badgeText : null]}
+              numberOfLines={1}
+            >
+              {m.badge ?? m.label}
             </Text>
           </View>
         </Marker>
@@ -46,5 +80,15 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.background,
   },
-  pinText: { color: colors.accentText, fontWeight: '700', fontSize: 13 },
+  badge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badgeText: { fontSize: 16 },
+  pinText: { color: colors.accentText, fontWeight: "700", fontSize: 13 },
 });
