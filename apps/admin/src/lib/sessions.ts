@@ -7,6 +7,8 @@ export interface SessionInput {
   timezone: string;
   trackCount: number;
   testMode: boolean;
+  /** De spelleider start het spel voor alle teams tegelijk. */
+  centralStart?: boolean;
   /** Eigen sessiecode; leeg = de database kiest er een van 5 tekens. */
   joinCode?: string;
 }

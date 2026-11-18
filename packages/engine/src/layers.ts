@@ -229,6 +229,7 @@ export function validateGame(game: GamePackage): string[] {
       if (!inside) issues.push(`playground ${p.id}: vak ${i + 1} valt buiten de foto`);
     });
   }
+  if (game.briefing !== undefined && !sequences.has(game.briefing)) issues.push(`speluitleg: onbekende reeks ${game.briefing}`);
   if (game.boundary) {
     const b = game.boundary;
     if (!Array.isArray(b.points) || b.points.length < 3) issues.push('speelveldgrens: minstens 3 punten nodig');

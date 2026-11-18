@@ -10,6 +10,7 @@ import { Answers } from '@/results/Answers';
 import { LiveMap } from '@/results/LiveMap';
 import { Photowall } from '@/results/Photowall';
 import { Standings } from '@/results/Standings';
+import { StartControl } from '@/results/StartControl';
 
 const TABS = [
   { id: 'kaart', label: 'Kaart' },
@@ -94,6 +95,11 @@ export default function SessionLivePage() {
         {new Intl.DateTimeFormat('nl-NL', { timeStyle: 'medium' }).format(new Date(updatedAt))}
         {error ? <span className="error"> · {error}</span> : null}
       </p>
+
+      {session.central_start && !session.started_at ? <StartControl data={data} onChange={() => void reload()} /> : null}
+      {session.central_start && session.started_at ? (
+        <p className="muted">Spel gestart om {formatInZone(session.started_at, session.timezone)} voor alle teams.</p>
+      ) : null}
 
       <nav className="tabs">
         {TABS.map((t) => (

@@ -10,6 +10,8 @@ export interface TeamRecord {
   teamCode: string;
   startedAt: number | null;
   endedAt: number | null;
+  /** Speluitleg gelezen, klaar voor de centrale start. */
+  readyAt?: number | null;
 }
 
 export interface SessionInfo {
@@ -18,6 +20,8 @@ export interface SessionInfo {
   timezone: string;
   status: 'draft' | 'open' | 'closed';
   testMode: boolean;
+  /** De spelleider start het spel voor alle teams tegelijk. */
+  centralStart?: boolean;
 }
 
 export interface LoadedGame {
@@ -44,6 +48,8 @@ export interface Backend {
   joinSession(joinCode: string, teamName: string, language: string, phone: string): Promise<TeamRecord>;
   rejoinTeam(teamCode: string): Promise<TeamRecord>;
   startTeam(teamId: string): Promise<TeamRecord>;
+  /** Meldt dat het team de speluitleg heeft gelezen (centrale start). */
+  teamReady(teamId: string): Promise<TeamRecord>;
   loadTeam(teamId: string): Promise<TeamRecord>;
   loadGame(team: TeamRecord): Promise<LoadedGame>;
   loadEvents(teamId: string): Promise<GameEvent[]>;

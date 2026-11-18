@@ -291,6 +291,12 @@ export interface GamePackage {
   mapOverlay?: MapOverlay;
   map?: MapSource;
   boundary?: PlayBoundary;
+  /**
+   * Reeks met de speluitleg die teams vóór de start lezen (bij een centrale
+   * start door de spelleider). Zijn ze gelezen, dan tellen die opdrachten bij
+   * de start als afgerond.
+   */
+  briefing?: string;
   gps: GpsSettings;
 }
 
@@ -321,6 +327,8 @@ export interface TeamContext {
   track: number;
   /** Starttijd van het team volgens de server (ms). */
   startedAt: number;
+  /** De speluitleg (GamePackage.briefing) is vóór de start gelezen. */
+  briefingRead?: boolean;
 }
 
 // ---------------------------------------------------------------------------

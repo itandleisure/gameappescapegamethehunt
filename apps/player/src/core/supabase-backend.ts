@@ -5,7 +5,7 @@ import type { Backend, LoadedGame, PendingPhoto, SessionInfo, TeamRecord } from 
 /** Fout met een tekstsleutel uit i18n, zodat het scherm een nette melding toont. */
 export class BackendError extends Error {
   constructor(
-    readonly key: 'errorUnknownSession' | 'errorUnknownTeam' | 'errorLanguage' | 'errorPhone' | 'errorNetwork' | 'errorGeneric',
+    readonly key: 'errorUnknownSession' | 'errorLocked' | 'errorUnknownTeam' | 'errorLanguage' | 'errorPhone' | 'errorNetwork' | 'errorGeneric',
     cause?: unknown,
   ) {
     super(key);
@@ -23,6 +23,7 @@ interface TeamRow {
   team_code: string;
   started_at: string | null;
   ended_at: string | null;
+  ready_at?: string | null;
 }
 
 interface EventRow {
@@ -45,6 +46,7 @@ export function toTeam(row: TeamRow): TeamRecord {
     teamCode: row.team_code,
     startedAt: ms(row.started_at),
     endedAt: ms(row.ended_at),
+    readyAt: ms(row.ready_at ?? null),
   };
 }
 
@@ -75,6 +77,7 @@ export function fromEventRow(row: EventRow): GameEvent {
 
 function translate(error: { code?: string; message?: string } | null, fallback: BackendError['key'] = 'errorGeneric') {
   if (!error) return new BackendError(fallback);
+  if (error.code === 'P0003') return new BackendError('errorLocked', error);
   if (error.code === 'P0002') return new BackendError(fallback === 'errorUnknownTeam' ? 'errorUnknownTeam' : 'errorUnknownSession', error);
   if (error.code === '22023' && error.message?.includes('telefoon')) return new BackendError('errorPhone', error);
   if (error.code === '22023') return new BackendError('errorLanguage', error);
@@ -125,6 +128,12 @@ export class SupabaseBackend implements Backend {
     return toTeam(data as TeamRow);
   }
 
+  async teamReady(teamId: string) {
+    const { data, error } = await this.client.rpc('team_ready', { p_team: teamId });
+    if (error) throw translate(error);
+    return toTeam(data as TeamRow);
+  }
+
   async loadTeam(teamId: string) {
     const { data, error } = await this.client.from('teams').select('*').eq('id', teamId).single();
     if (error) throw translate(error);
@@ -134,7 +143,7 @@ export class SupabaseBackend implements Backend {
   async loadGame(team: TeamRecord): Promise<LoadedGame> {
     const { data, error } = await this.client
       .from('sessions')
-      .select('id, name, timezone, status, test_mode, game_versions(package)')
+      .select('id, name, timezone, status, test_mode, central_start, game_versions(package)')
       .eq('id', team.sessionId)
       .single();
     if (error || !data) throw translate(error);
@@ -144,11 +153,12 @@ export class SupabaseBackend implements Backend {
       timezone: string;
       status: SessionInfo['status'];
       test_mode: boolean;
+      central_start?: boolean;
       game_versions: { package: GamePackage } | null;
     };
     if (!row.game_versions) throw new BackendError('errorGeneric');
     return {
-      session: { id: row.id, name: row.name, timezone: row.timezone, status: row.status, testMode: row.test_mode },
+      session: { id: row.id, name: row.name, timezone: row.timezone, status: row.status, testMode: row.test_mode, centralStart: row.central_start ?? false },
       game: row.game_versions.package,
     };
   }
