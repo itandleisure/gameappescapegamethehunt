@@ -20,6 +20,8 @@ interface AuthState {
 const AuthContext = createContext<AuthState>({ loading: true, user: null, org: null, reload: async () => {} });
 
 const PUBLIC_PATHS = ['/login'];
+/** Pagina's die zonder inloggen werken, zoals het fotoboek voor de klant. */
+const PUBLIC_PREFIXES = ['/fotoboek/'];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<Omit<AuthState, 'reload'>>({ loading: true, user: null, org: null });
@@ -51,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Doorsturen: niet ingelogd → inloggen; nog geen organisatie → aanmaken.
   useEffect(() => {
     if (state.loading) return;
+    if (PUBLIC_PREFIXES.some((p) => path.startsWith(p))) return;
     if (!state.user && !PUBLIC_PATHS.includes(path)) router.replace('/login');
     else if (state.user && !state.org && path !== '/start') router.replace('/start');
     else if (state.user && state.org && (path === '/login' || path === '/start')) router.replace('/sessies');

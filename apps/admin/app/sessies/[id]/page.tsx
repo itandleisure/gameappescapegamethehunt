@@ -11,6 +11,7 @@ import { useSessionLive } from '@/lib/session-live';
 import { Answers } from '@/results/Answers';
 import { LiveMap } from '@/results/LiveMap';
 import { OpenToggle } from '@/results/OpenToggle';
+import { PhotobookEditor } from '@/results/PhotobookEditor';
 import { Photowall } from '@/results/Photowall';
 import { Standings } from '@/results/Standings';
 import { StartControl } from '@/results/StartControl';
@@ -20,6 +21,7 @@ const TABS = [
   { id: 'ranglijst', label: tKey('Ranglijst') },
   { id: 'antwoorden', label: tKey('Antwoorden') },
   { id: 'fotos', label: tKey('Fotomuur') },
+  { id: 'fotoboek', label: tKey('Fotoboek') },
 ] as const;
 type Tab = (typeof TABS)[number]['id'];
 
@@ -123,6 +125,7 @@ export default function SessionLivePage() {
       {tab === 'fotos' ? (
         <Photowall photos={data.photos} game={data.game} teamName={teamName} colors={colors} timeZone={session.timezone} />
       ) : null}
+      {tab === 'fotoboek' ? <PhotobookEditor data={data} view={view} /> : null}
     </>
   );
 }
