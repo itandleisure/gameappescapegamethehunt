@@ -32,6 +32,7 @@ import {
   toImagePoint,
 } from "@/lib/playgrounds";
 import { supabase } from "@/lib/supabase";
+import { GameNav } from '@/editor/GameNav';
 
 /**
  * Tabbladen (playgrounds) van het basisspel: naam, naslagtekst per taal (zoals
@@ -193,6 +194,7 @@ export default function TabbladenPage() {
         <Link href={`/spellen/${id}`}>{self.game.slug}</Link> › {t("Tabbladen")}
       </p>
       <h1>{t('Tabbladen')}</h1>
+      <GameNav id={id} layer={self.game.layer} active="tabbladen" />
       <p className="muted">
         {t('Tabbladen staan in de app onder Opdrachten, zoals Speluitleg en Extractiepunt. Een tabblad kan een naslagtekst hebben (per taal) en een foto met afgedekte vakken: elk vak wordt zichtbaar zodra de opdracht die erbij hoort goed is. Gelezen uitleg verdwijnt uit de lijst; de naslagtekst blijft hier staan.')}
       </p>

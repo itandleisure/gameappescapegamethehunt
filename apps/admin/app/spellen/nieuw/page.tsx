@@ -12,6 +12,7 @@ import {
   type CityList,
   type Place,
 } from '@/lib/city-rollout';
+import { GameNav } from '@/editor/GameNav';
 import { cleanName } from '@/lib/game-name';
 import { loadBaseVersions, rolloutCity, type BaseVersion } from '@/lib/game-store';
 import { useLanguage } from '@/lib/language';
@@ -155,6 +156,7 @@ function NewCity() {
         <Link href="/spellen">{t('Spellen')}</Link>
       </p>
       <h1>{t('Nieuwe stad uitrollen')}</h1>
+      {base && params.get('basis') === base.id ? <GameNav id={base.id} layer="base" active="nieuw" /> : null}
       <p className="muted">
         {t('Maakt een nieuwe stad op een vaste versie van het basisspel. Alle iconen van de opdrachten komen alvast in het centrum van de stad te staan, zodat je ze daarna naar de juiste plek sleept.')}
       </p>

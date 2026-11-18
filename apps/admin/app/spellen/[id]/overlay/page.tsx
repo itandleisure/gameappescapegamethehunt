@@ -21,6 +21,7 @@ import {
 } from '@/lib/map-settings';
 import { loadMaplibre } from '@/lib/maplibre';
 import { supabase } from '@/lib/supabase';
+import { GameNav } from '@/editor/GameNav';
 
 const round = (n: number) => Math.round(n * 1e6) / 1e6;
 
@@ -312,6 +313,7 @@ export default function OverlayPage() {
         <Link href="/spellen">{t('Spellen')}</Link> › <Link href={`/spellen/${id}`}>{self.game.slug}</Link> › {t('Kaartstijl, overlay en verzamelpunt')}
       </p>
       <h1>{t('Kaartstijl, overlay en verzamelpunt')}</h1>
+      <GameNav id={id} layer={self.game.layer} active="overlay" />
       <p className="muted">
         {t('Een overlay is een eigen kaartafbeelding (bijvoorbeeld een getekende spelkaart) die over de gewone kaart ligt. Het verzamelpunt is waar teams aan het begin en einde samenkomen.')}
       </p>
