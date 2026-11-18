@@ -66,3 +66,21 @@ describe('klokcorrectie', () => {
     expect(estimateClockOffset([])).toBe(0);
   });
 });
+
+describe('speelveldgrens met bochten', () => {
+  it('schrijft een bocht uit tot korte stukjes die door het stuurpunt worden getrokken', async () => {
+    const { boundaryPath, boundaryGeoJson, curvePoint } = await import('../src/geo.js');
+    const a = { lat: 0, lng: 0 };
+    const b = { lat: 0, lng: 1 };
+    const c = { lat: 1, lng: 0.5 };
+    const straight = boundaryPath({ points: [a, b, { lat: 1, lng: 1 }] });
+    expect(straight).toHaveLength(3);
+    const curved = boundaryPath({ points: [{ ...a, curve: c }, b, { lat: 1, lng: 1 }] });
+    expect(curved).toHaveLength(3 + 15);
+    expect(curvePoint(a, c, b, 0.5)).toEqual({ lat: 0.5, lng: 0.5 });
+    expect(curved).toContainEqual({ lat: 0.5, lng: 0.5 });
+    const geo = boundaryGeoJson({ points: [{ ...a, curve: c }, b, { lat: 1, lng: 1 }] });
+    const coords = geo.features[0]!.geometry.coordinates;
+    expect(coords.at(-1)).toEqual(coords[0]);
+  });
+});

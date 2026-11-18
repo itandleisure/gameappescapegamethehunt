@@ -214,9 +214,17 @@ export interface MapOverlay {
 export const MAP_ICONS = ['logo', 'flag'] as const;
 export type MapIcon = (typeof MAP_ICONS)[number];
 
+export interface BoundaryPoint extends LatLng {
+  /**
+   * Maakt van de lijn naar het volgende punt een bocht: het stuurpunt van een
+   * kwadratische bocht (Bézier). Zonder stuurpunt is die lijn recht.
+   */
+  curve?: LatLng;
+}
+
 export interface PlayBoundary {
   /** Hoekpunten in volgorde; de lijn sluit vanzelf terug naar het eerste punt. */
-  points: LatLng[];
+  points: BoundaryPoint[];
   /** Lijnkleur als #rrggbb. Standaard rood. */
   color?: string;
 }

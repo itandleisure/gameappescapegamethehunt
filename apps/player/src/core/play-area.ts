@@ -1,4 +1,4 @@
-import { locationFor, type GamePackage, type LatLng } from '@hunt/engine';
+import { boundaryPath, locationFor, type GamePackage, type LatLng } from '@hunt/engine';
 
 /** [west, zuid, oost, noord] in graden, zoals MapLibre die verwacht. */
 export type Bounds = [number, number, number, number];
@@ -18,7 +18,7 @@ export function playAreaBounds(game: GamePackage, marginMeters = 300): Bounds | 
   }
   if (game.meetingPoint) points.push(game.meetingPoint);
   // De hele speelveldgrens moet op de kaart (en in de download) passen.
-  for (const p of game.boundary?.points ?? []) points.push(p);
+  for (const p of boundaryPath(game.boundary)) points.push(p);
   if (points.length === 0) return undefined;
 
   let west = Infinity, south = Infinity, east = -Infinity, north = -Infinity;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boundaryGeoJson, insertPoint, movePoint, rectAround, removePoint } from '../src/lib/boundary.js';
+import { bendSegment, boundaryGeoJson, insertPoint, movePoint, rectAround, removePoint, segmentHandle, straightenSegment } from '../src/lib/boundary.js';
 
 const p = (lat: number, lng: number) => ({ lat, lng });
 
@@ -33,5 +33,19 @@ describe('speelveldgrens', () => {
     expect(boundaryGeoJson(null).features).toHaveLength(0);
     const g = boundaryGeoJson({ points: [p(0, 0), p(0, 1), p(1, 1)] });
     expect(g.features[0]!.geometry.coordinates).toEqual([[0, 0], [1, 0], [1, 1], [0, 0]]);
+  });
+
+  it('maakt van een zijde een bocht door het gesleepte handvat en weer recht', () => {
+    const square = [p(0, 0), p(0, 0.01), p(0.01, 0.01), p(0.01, 0)];
+    expect(segmentHandle(square, 0)).toEqual(p(0, 0.005));
+    const bent = bendSegment(square, 0, p(-0.002, 0.005));
+    expect(bent[0]!.curve).toEqual(p(-0.004, 0.005));
+    const h = segmentHandle(bent, 0);
+    expect(h.lat).toBeCloseTo(-0.002, 9);
+    expect(h.lng).toBeCloseTo(0.005, 9);
+    // Verplaatsen houdt de bocht; een punt erin zetten maakt die zijde recht.
+    expect(movePoint(bent, 0, p(0.001, 0))[0]!.curve).toEqual(p(-0.004, 0.005));
+    expect(insertPoint(bent, p(-0.003, 0.005))[0]!.curve).toBeUndefined();
+    expect(straightenSegment(bent, 0)[0]).toEqual(p(0, 0));
   });
 });
