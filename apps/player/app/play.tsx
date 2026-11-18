@@ -184,14 +184,39 @@ export default function PlayScreen() {
     );
   }
 
+  // Eerst de teamfoto, als eigen scherm vóór de teamcode.
+  if (!started && snapshot.teamPhotoNeeded && !teamPhoto) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <Screen>
+          <Title>{t("teamPhotoTitle")}</Title>
+          <Body>{t("teamPhotoExplain")}</Body>
+          <View style={styles.spacer} />
+          <Button
+            label={t("takeTeamPhoto")}
+            onPress={async () => {
+              const uri = await takePhoto();
+              if (!uri) return;
+              await controller.submitTeamPhoto(uri);
+              setTeamPhoto(uri);
+            }}
+          />
+          <LeaveGame showCode={false} />
+        </Screen>
+      </SafeAreaView>
+    );
+  }
+
   if (!started) {
     return (
       <SafeAreaView style={styles.safe}>
         <Screen>
           <Title>{tx(game.name, lang, game.defaultLanguage)}</Title>
-          <Body muted>{t("yourTeamCode")}</Body>
-          <Text style={styles.teamCode}>{snapshot.team.teamCode}</Text>
-          <Body muted>{t("teamCodeExplain")}</Body>
+          <View style={styles.codeCard}>
+            <Text style={styles.codeLabel}>{t("yourTeamCode")}</Text>
+            <Text style={styles.teamCode}>{snapshot.team.teamCode}</Text>
+            <Body>{t("teamCodeExplain")}</Body>
+          </View>
           <View style={styles.spacer} />
           <Body>{t("locationNeeded")}</Body>
           <Body muted>{t("locationAlways")}</Body>
@@ -203,32 +228,6 @@ export default function PlayScreen() {
                 label={t("openSettings")}
                 onPress={() => void Linking.openSettings()}
               />
-            </>
-          ) : null}
-          {snapshot.teamPhotoNeeded || teamPhoto ? (
-            <>
-              <View style={styles.spacer} />
-              <Title>{t("teamPhotoTitle")}</Title>
-              {teamPhoto ? (
-                <>
-                  <Image source={{ uri: teamPhoto }} style={styles.teamPhoto} />
-                  <Body muted>{t("teamPhotoDone")}</Body>
-                </>
-              ) : (
-                <>
-                  <Body>{t("teamPhotoExplain")}</Body>
-                  <Button
-                    kind="secondary"
-                    label={t("takeTeamPhoto")}
-                    onPress={async () => {
-                      const uri = await takePhoto();
-                      if (!uri) return;
-                      await controller.submitTeamPhoto(uri);
-                      setTeamPhoto(uri);
-                    }}
-                  />
-                </>
-              )}
             </>
           ) : null}
           <View style={styles.spacer} />
@@ -430,7 +429,15 @@ const styles = StyleSheet.create({
   test: { marginBottom: space.sm },
   skipRow: { flexDirection: "row", gap: space.sm },
   skipButton: { flex: 1 },
-  teamPhoto: { width: "100%", aspectRatio: 4 / 3, borderRadius: radius.md, marginVertical: space.sm },
+  codeCard: {
+    borderWidth: 2,
+    borderColor: colors.accent,
+    borderRadius: radius.md,
+    padding: space.md,
+    gap: space.sm,
+    marginTop: space.sm,
+  },
+  codeLabel: { color: colors.accent, fontWeight: "700", fontSize: 15 },
   teamCode: {
     color: colors.accent,
     fontSize: 40,
