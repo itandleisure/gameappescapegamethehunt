@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Internationaal symbool "meeting point": vier pijlen die naar het midden wijzen. -->
+  <g fill="#fff">
+    <path d="M32 26 L23 15 H28 V6 H36 V15 H41 Z"/>
+    <path d="M32 38 L41 49 H36 V58 H28 V49 H23 Z"/>
+    <path d="M26 32 L15 41 V36 H6 V28 H15 V23 Z"/>
+    <path d="M38 32 L49 23 V28 H58 V36 H49 V41 Z"/>
+  </g>
+</svg>
