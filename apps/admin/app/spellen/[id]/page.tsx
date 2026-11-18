@@ -23,6 +23,8 @@ import {
 import { tKey } from "@/lib/i18n";
 import { useLanguage } from "@/lib/language";
 import { supabase } from "@/lib/supabase";
+import { missingPerTask, newTranslationRows, sourceLanguage } from "@/lib/task-translate";
+import { translateTexts } from "@/lib/translate-client";
 
 const LAYER_LABEL = {
   base: tKey("Basisspel"),
@@ -87,6 +89,8 @@ export default function GamePage() {
   const [baseVersions, setBaseVersions] = useState<BaseVersion[]>([]);
   /** Naam per taal terwijl die wordt aangepast; null als het formulier dicht is. */
   const [nameDraft, setNameDraft] = useState<NameByLang | null>(null);
+  /** Voortgang van "Alle opdrachten vertalen". */
+  const [bulk, setBulk] = useState<{ done: number; total: number } | null>(null);
 
   const load = useCallback(async () => {
     const db = supabase();
@@ -318,6 +322,49 @@ export default function GamePage() {
   };
 
   const tasks = [...base.tasks].sort((a, b) => a.position - b.position);
+  const source = sourceLanguage(base.game.languages, base.game.default_language);
+  const targets = base.game.languages.filter((l) => l !== source);
+
+  /** Basisspel: alle lege vertalingen van alle opdrachten vullen vanuit het Nederlands. */
+  const doTranslateAll = async () => {
+    const todo = missingPerTask(base.translations, tasks.map((tk) => tk.key), source, targets);
+    setErrors([]);
+    setNotice(null);
+    if (todo.size === 0) {
+      setNotice(t("Alle opdrachten zijn al vertaald."));
+      return;
+    }
+    const order = tasks.map((tk) => tk.key).filter((k) => todo.has(k));
+    setBusy(true);
+    setBulk({ done: 0, total: order.length });
+    let added = 0;
+    try {
+      for (const [i, key] of order.entries()) {
+        const result = await translateTexts(source, targets, todo.get(key)!);
+        const rows = newTranslationRows(base.translations, key, result);
+        if (rows.length) {
+          const { error } = await supabase()
+            .from("translations")
+            .insert(rows.map((r) => ({ ...r, game_id: id })));
+          if (error) throw new Error(error.message);
+          added += rows.length;
+        }
+        setBulk({ done: i + 1, total: order.length });
+      }
+      setNotice(
+        t("{n} opdrachten vertaald ({rows} teksten). Controleer ze in de opdrachten en publiceer daarna het spel.", {
+          n: order.length,
+          rows: added,
+        }),
+      );
+    } catch (err) {
+      setErrors([err instanceof Error ? err.message : String(err)]);
+    } finally {
+      setBusy(false);
+      setBulk(null);
+      await load();
+    }
+  };
 
   return (
     <>
@@ -612,6 +659,25 @@ export default function GamePage() {
       {!legacy ? (
         <>
           <h2 id="opdrachten">{t('Opdrachten')}</h2>
+          {isBase && targets.length > 0 && tasks.length > 0 ? (
+            <div className="actions" style={{ marginTop: 0, marginBottom: 12 }}>
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => void doTranslateAll()}
+                disabled={busy}
+              >
+                {bulk
+                  ? t("Vertalen… {done} van {n}", { done: bulk.done, n: bulk.total })
+                  : t("Alle opdrachten vertalen vanuit het Nederlands")}
+              </button>
+              <span className="muted small">
+                {t("Vult alleen lege vertalingen in ({langs}); wat er al staat blijft staan.", {
+                  langs: targets.map((l) => l.toUpperCase()).join(", "),
+                })}
+              </span>
+            </div>
+          ) : null}
           {!isBase ? (
             <p className="muted">
               {self.game.layer === "city"

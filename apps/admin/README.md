@@ -47,3 +47,22 @@ op het inlogscherm, en wordt per gebruiker in het account bewaard.
 - De vertalingen staan in `src/i18n/<taal>.ts`. `test/i18n.test.ts` faalt als een tekst
   in een taal ontbreekt; tot die er is, toont de app gewoon de Nederlandse tekst.
 - Spelinhoud (opdrachten, uitleg) wordt niet hier vertaald; die staat per taal in het spel.
+
+## Opdrachten automatisch vertalen
+
+Nederlands is de brontaal. In een opdracht staat de knop **Vertaal vanuit het Nederlands**:
+die vult alle teksten van de opdracht (titel, tekst, antwoordopties, hints, bevestigingsvraag,
+feedback) in de andere talen van het spel. Staan er al vertalingen, dan kies je
+"Alleen lege velden vullen" (met de hand verbeterde teksten blijven staan) of "Alles opnieuw
+vertalen". Daarna kun je alles aanpassen en sla je op zoals altijd. In een stad of klant
+worden alleen de velden vertaald die die variant zelf aanpast.
+
+Op de pagina van een basisspel vult **Alle opdrachten vertalen vanuit het Nederlands** in één keer
+alle lege vertalingen van alle opdrachten (bestaande teksten blijven staan) en slaat ze op.
+
+Vertalen gaat via Claude (Anthropic) in `app/api/vertalen/route.ts`. De sleutel staat alleen
+op de server:
+
+- Vercel → project → Settings → Environment Variables: `ANTHROPIC_API_KEY` (sleutel van
+  console.anthropic.com), daarna opnieuw deployen.
+- Alleen ingelogde eigenaren, beheerders en redacteuren kunnen vertalen.

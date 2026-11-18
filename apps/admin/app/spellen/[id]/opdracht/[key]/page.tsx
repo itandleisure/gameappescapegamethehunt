@@ -11,6 +11,8 @@ import { useT } from '@/lib/language';
 import { mediaPath } from '@/lib/map-settings';
 import { supabase } from '@/lib/supabase';
 import { cleanText, formToTask, taskToForm, type AnswerType, type TaskForm, type Texts } from '@/lib/task-form';
+import { applyTranslations, sourceLanguage, translationJob, type FieldGroup, type TranslationJob } from '@/lib/task-translate';
+import { translateTexts } from '@/lib/translate-client';
 
 const ANSWER_TYPES: { value: AnswerType; label: string }[] = [
   { value: 'info', label: tKey('Geen antwoord (alleen OK)') },
@@ -87,6 +89,9 @@ export default function TaskPage() {
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<Tab>('task');
   const [lang, setLang] = useState<string | null>(null);
+  /** Vertalen: bezig, of wachten op de keuze "alleen lege velden" of "alles opnieuw". */
+  const [translating, setTranslating] = useState(false);
+  const [askOverwrite, setAskOverwrite] = useState<TranslationJob | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -282,6 +287,42 @@ export default function TaskPage() {
     }
   };
 
+  // Vertalen vanuit het Nederlands (of de standaardtaal als het spel geen Nederlands heeft).
+  const source = sourceLanguage(languages, defaultLang);
+  const targets = languages.filter((code) => code !== source);
+  /** In een stad of klant alleen de velden die deze variant zelf aanpast. */
+  const translatable = (group: FieldGroup) => !isVariant || (may(group) && Boolean(on[group]));
+  const fullJob = translationJob(form, source, targets, { only: translatable });
+  const canTranslate = targets.length > 0 && Object.keys(fullJob.texts).length > 0;
+
+  const runTranslation = async (emptyOnly: boolean) => {
+    setAskOverwrite(null);
+    const job = translationJob(form, source, targets, { only: translatable, emptyOnly });
+    if (Object.keys(job.texts).length === 0) {
+      setErrors([]);
+      setNotice(t('Alle velden zijn al vertaald.'));
+      return;
+    }
+    setTranslating(true);
+    setErrors([]);
+    setNotice(null);
+    try {
+      const result = await translateTexts(source, targets, job.texts);
+      // Het formulier kan intussen zijn aangepast; vertalingen op de nieuwste versie zetten.
+      setForm((current) => (current ? applyTranslations(current, result, emptyOnly) : current));
+      setLang(targets[0]!);
+      setNotice(t('Vertaald naar {langs}. Controleer de teksten en klik op Wijzigingen opslaan.', { langs: targets.map((c) => c.toUpperCase()).join(', ') }));
+    } catch (err) {
+      setErrors([err instanceof Error ? err.message : String(err)]);
+    } finally {
+      setTranslating(false);
+    }
+  };
+  const startTranslation = () => {
+    if (fullJob.filled > 0) setAskOverwrite(fullJob);
+    else void runTranslation(false);
+  };
+
   const answer = form.answerType;
   const trackCount = Object.keys(inherited?.trackLocations ?? {}).length;
   const title = cleanText(form.title)[defaultLang] ?? key;
@@ -340,6 +381,42 @@ export default function TaskPage() {
           </button>
         ))}
       </nav>
+
+      {canTranslate ? (
+        <div className="te-translate">
+          {askOverwrite ? (
+            <>
+              <span>
+                {askOverwrite.filled === 1
+                  ? t('In 1 veld staat al een vertaling. Wat wil je doen?')
+                  : t('In {n} velden staat al een vertaling. Wat wil je doen?', { n: askOverwrite.filled })}
+              </span>
+              <button type="button" onClick={() => void runTranslation(true)}>
+                {t('Alleen lege velden vullen')}
+              </button>
+              <button type="button" className="secondary" onClick={() => void runTranslation(false)}>
+                {t('Alles opnieuw vertalen')}
+              </button>
+              <button type="button" className="link" onClick={() => setAskOverwrite(null)}>
+                {t('Annuleren')}
+              </button>
+            </>
+          ) : (
+            <>
+              <button type="button" className="secondary" onClick={startTranslation} disabled={translating || busy}>
+                {translating
+                  ? t('Bezig met vertalen…')
+                  : source === 'nl'
+                    ? t('Vertaal vanuit het Nederlands')
+                    : t('Vertaal vanuit {lang}', { lang: LANG_NAME[source] ? t(LANG_NAME[source]!) : source.toUpperCase() })}
+              </button>
+              <span className="muted small">
+                {t('Vult {langs} automatisch in. Je kunt alles daarna nog aanpassen.', { langs: targets.map((c) => c.toUpperCase()).join(', ') })}
+              </span>
+            </>
+          )}
+        </div>
+      ) : null}
 
       <div className="te-body">
         {isVariant && allowed.size === 0 ? (
