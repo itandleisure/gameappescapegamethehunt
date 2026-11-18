@@ -18,6 +18,7 @@ class PreviewBackend extends FakeBackend {
 const backend = new PreviewBackend(previewGame(scene, img, long), Date.now());
 backend.testMode = scene === 'play';
 backend.centralStart = scene === 'central';
+backend.teamChat = scene === 'chat' || scene === 'play';
 let n = 0;
 const deps: ControllerDeps = { backend, store: new MemoryStore(), newId: () => `voorbeeld-${++n}` };
 
@@ -46,6 +47,19 @@ async function prepare(): Promise<GameController | null> {
   await controller.submitTeamPhoto(testImage(4000, 3000));
   if (scene === 'teamcode' || scene === 'central') return controller;
   await controller.start();
+  if (scene === 'chat') {
+    const lang = long ? ' Dit is een heel lang bericht om te zien of het netjes afbreekt op een klein scherm.'.repeat(4) : '';
+    backend.postChat('team-9', long ? 'De Allerlangste Teamnaam Van Heel Nederland En Omstreken' : 'De Wolven', `Wie heeft de sleutel al gevonden?${lang}`);
+    backend.postChat(null, null, 'Nog 20 minuten, zet hem op!');
+    backend.postChat('team-8', 'Vossen', 'Wij zitten bij de Oldehove 🦊');
+    await controller.refreshChat();
+    if (long) for (let i = 1; i <= 12; i++) backend.postChat('team-8', 'Vossen', `Bericht ${i}`);
+    await controller.refreshChat();
+    await controller.sendChat(long ? `Wij zijn er bijna!${lang}` : 'Wij zijn er bijna!');
+    if (long) backend.offline = true;
+    else await controller.tick();
+    return controller;
+  }
   if (long) backend.offline = true;
   await controller.tick();
   return controller;

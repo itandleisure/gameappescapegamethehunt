@@ -27,6 +27,7 @@ export default function RootLayout() {
           <Stack.Screen name="index" />
           <Stack.Screen name="play" />
           <Stack.Screen name="tasks" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="chat" options={{ presentation: 'modal' }} />
           <Stack.Screen name="task/[id]" options={{ presentation: 'modal', gestureEnabled: false }} />
           <Stack.Screen name="end" options={{ gestureEnabled: false }} />
         </Stack>

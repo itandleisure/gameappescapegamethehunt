@@ -8,6 +8,7 @@ React Native + Expo (TypeScript) voor iPhone en Android.
 - **Kaart** (MapLibre, OpenStreetMap) met de opdrachten van de eigen track, de eigen positie en eventueel de overlay. Alleen het speelveld wordt bij het inloggen gedownload en na afloop verwijderd.
 - **GPS**: opdrachten openen vanzelf op locatie (twee goede metingen of 3 seconden binnen de cirkel, slechte metingen tellen niet). Werkt ook met het scherm uit, op Android met een melding.
 - **Opdrachten**: bevestigen, tekst, getal, meerkeuze, foto, hints met puntaftrek, reeksen zoals de speluitleg, playgrounds zoals het extractiepunt, berichten van de spelregels, timer en score.
+- **Teamchat** (als de spelleider hem aanzet bij de hunt): één gesprek met alle teams van de hunt en de spelleiding. Berichten zonder bereik gaan mee zodra er weer verbinding is.
 - **Offline doorspelen**: het spel rekent op de telefoon met dezelfde engine als de server. Gebeurtenissen, GPS-bundels en foto's gaan naar de server zodra er bereik is.
 - **Foto's** worden verkleind tot maximaal 2048 px aan de langste zijde (nooit vergroot, staand blijft staand) en op de achtergrond geüpload voor de fotowall en het fotoboek.
 - Teksten van de app in NL, EN, DE, ES, PT en IT.

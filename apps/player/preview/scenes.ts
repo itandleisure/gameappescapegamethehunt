@@ -8,7 +8,7 @@ import { leeuwarden, leeuwardenPoints, PUZZLES, theHuntBase } from '../../../pac
  *
  * De scène staat in de URL: `?scene=task&img=tall`.
  */
-export type Scene = 'join' | 'teamphoto' | 'teamcode' | 'central' | 'play' | 'task' | 'end';
+export type Scene = 'join' | 'teamphoto' | 'teamcode' | 'central' | 'play' | 'task' | 'chat' | 'end';
 export type ImageKind = 'none' | 'normal' | 'huge' | 'tiny' | 'wide' | 'tall' | 'broken';
 
 export function currentScene(): { scene: Scene; img: ImageKind; long: boolean } {

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GameEvent, GamePackage, GpsFix } from '@hunt/engine';
-import type { Backend, LoadedGame, PendingPhoto, SessionInfo, TeamRecord } from './types.js';
+import type { Backend, ChatMessage, LoadedGame, PendingPhoto, SessionInfo, TeamRecord } from './types.js';
 
 /** Fout met een tekstsleutel uit i18n, zodat het scherm een nette melding toont. */
 export class BackendError extends Error {
@@ -32,6 +32,21 @@ interface EventRow {
   task_key: string | null;
   payload: Record<string, unknown>;
   client_time: string;
+}
+
+interface MessageRow {
+  id: string;
+  team_id: string | null;
+  sender_name: string | null;
+  body: string;
+  created_at: string;
+}
+
+/** Zoveel berichten van de teamchat haalt de app hooguit op. */
+export const CHAT_LIMIT = 200;
+
+export function toChatMessage(row: MessageRow): ChatMessage {
+  return { id: row.id, teamId: row.team_id, name: row.sender_name, body: row.body, createdAt: Date.parse(row.created_at) };
 }
 
 const ms = (iso: string | null) => (iso === null ? null : Date.parse(iso));
@@ -143,7 +158,7 @@ export class SupabaseBackend implements Backend {
   async loadGame(team: TeamRecord): Promise<LoadedGame> {
     const { data, error } = await this.client
       .from('sessions')
-      .select('id, name, timezone, status, test_mode, central_start, game_versions(package)')
+      .select('id, name, timezone, status, test_mode, central_start, team_chat, game_versions(package)')
       .eq('id', team.sessionId)
       .single();
     if (error || !data) throw translate(error);
@@ -154,11 +169,12 @@ export class SupabaseBackend implements Backend {
       status: SessionInfo['status'];
       test_mode: boolean;
       central_start?: boolean;
+      team_chat?: boolean;
       game_versions: { package: GamePackage } | null;
     };
     if (!row.game_versions) throw new BackendError('errorGeneric');
     return {
-      session: { id: row.id, name: row.name, timezone: row.timezone, status: row.status, testMode: row.test_mode, centralStart: row.central_start ?? false },
+      session: { id: row.id, name: row.name, timezone: row.timezone, status: row.status, testMode: row.test_mode, centralStart: row.central_start ?? false, teamChat: row.team_chat ?? false },
       game: row.game_versions.package,
     };
   }
@@ -203,5 +219,53 @@ export class SupabaseBackend implements Backend {
     const { data, error } = await this.client.rpc('server_time');
     if (error) throw translate(error, 'errorNetwork');
     return Date.parse(data as string);
+  }
+
+  async loadChat(sessionId: string, since?: number) {
+    let query = this.client
+      .from('messages')
+      .select('id, team_id, sender_name, body, created_at')
+      .eq('session_id', sessionId)
+      .eq('channel', 'teams');
+    if (since !== undefined) query = query.gt('created_at', new Date(since).toISOString());
+    const { data, error } = await query.order('created_at', { ascending: false }).limit(CHAT_LIMIT);
+    if (error) throw translate(error, 'errorNetwork');
+    return (data as MessageRow[]).map(toChatMessage).reverse();
+  }
+
+  async sendChat(sessionId: string, teamId: string, message: { id: string; body: string }) {
+    // Afzender, teamnaam en tijd vult de database zelf in.
+    const { data } = await this.client.auth.getSession();
+    const { error } = await this.client.from('messages').upsert(
+      {
+        id: message.id,
+        session_id: sessionId,
+        team_id: teamId,
+        sender: 'team',
+        sender_user: data.session?.user.id,
+        channel: 'teams',
+        body: message.body,
+      },
+      { onConflict: 'id', ignoreDuplicates: true },
+    );
+    if (error) throw translate(error, 'errorNetwork');
+  }
+
+  watchChat(sessionId: string, onChange: (deleted: boolean) => void) {
+    const channel = this.client
+      .channel(`teamchat-${sessionId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `session_id=eq.${sessionId}` }, () => onChange(false))
+      // Bij verwijderen kan Supabase niet filteren: alleen het id komt mee, van elke hunt.
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, () => onChange(true))
+      .subscribe();
+    return () => {
+      void this.client.removeChannel(channel);
+    };
+  }
+
+  async loadTeamChat(sessionId: string) {
+    const { data, error } = await this.client.from('sessions').select('team_chat').eq('id', sessionId).single();
+    if (error) throw translate(error, 'errorNetwork');
+    return Boolean((data as { team_chat?: boolean }).team_chat);
   }
 }

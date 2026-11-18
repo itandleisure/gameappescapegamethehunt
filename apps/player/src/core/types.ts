@@ -22,6 +22,22 @@ export interface SessionInfo {
   testMode: boolean;
   /** De spelleider start het spel voor alle teams tegelijk. */
   centralStart?: boolean;
+  /** Teams in deze hunt kunnen met elkaar chatten. */
+  teamChat?: boolean;
+}
+
+/** Bericht in de teamchat van de hunt. */
+export interface ChatMessage {
+  id: string;
+  /** Team dat het stuurde; null bij een bericht van de spelleiding. */
+  teamId: string | null;
+  /** Teamnaam van de afzender (door de server ingevuld); null bij de spelleiding. */
+  name: string | null;
+  body: string;
+  /** Servertijd in ms; bij een bericht dat nog verstuurd moet de tijd van deze telefoon. */
+  createdAt: number;
+  /** Nog niet bij de server (geen bereik). */
+  pending?: boolean;
 }
 
 export interface LoadedGame {
@@ -60,6 +76,20 @@ export interface Backend {
   uploadPhoto(teamId: string, photo: PendingPhoto): Promise<string>;
   /** Servertijd in ms. */
   serverTime(): Promise<number>;
+  /**
+   * Teamchat van de hunt, oudste eerst. Met `since` (servertijd in ms) alleen
+   * nieuwere berichten, anders de laatste berichten.
+   */
+  loadChat(sessionId: string, since?: number): Promise<ChatMessage[]>;
+  /** Stuurt een bericht; dubbel versturen mag (zelfde id wordt genegeerd). */
+  sendChat(sessionId: string, teamId: string, message: { id: string; body: string }): Promise<void>;
+  /**
+   * Live melding bij een nieuw (`deleted` false) of verwijderd bericht in de
+   * teamchat. Optioneel: zonder live verbinding haalt de app de chat regelmatig op.
+   */
+  watchChat?(sessionId: string, onChange: (deleted: boolean) => void): () => void;
+  /** Staat de teamchat (nog) aan? De spelleider kan hem tijdens het spel aan- of uitzetten. */
+  loadTeamChat(sessionId: string): Promise<boolean>;
 }
 
 /** Sleutel-waardeopslag op de telefoon (AsyncStorage heeft dezelfde vorm). */

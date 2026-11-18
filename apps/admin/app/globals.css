@@ -346,3 +346,14 @@ a.button.secondary { background: transparent; color: var(--text); border-color: 
 .book-footer .book-label { color: #6b7280; margin: 0; }
 .book-footer span { display: flex; gap: 16px; flex-wrap: wrap; }
 .help { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+
+/* Teamchat */
+.teamchat .chatlist { max-height: 60vh; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.teamchat .chatmsg { max-width: 80%; }
+.teamchat .chatmsg.staff { align-self: flex-end; text-align: right; }
+.teamchat .chatmeta { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.teamchat .chatmsg.staff .chatmeta { justify-content: flex-end; }
+.teamchat .chatmeta button.link { font-size: 12px; }
+.teamchat .chatbody { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--line); border-radius: 8px; padding: 6px 10px; margin-top: 2px; display: inline-block; text-align: left; }
+.teamchat .chatform { display: flex; gap: 8px; margin-top: 12px; }
+.teamchat .chatform input { flex: 1 1 auto; }

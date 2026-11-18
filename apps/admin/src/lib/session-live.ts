@@ -21,6 +21,8 @@ export interface SessionInfo {
   locked: boolean;
   /** Moment van de centrale start. */
   started_at: string | null;
+  /** Teams kunnen elkaar berichten sturen. */
+  team_chat: boolean;
 }
 
 export interface LiveTeam extends TeamRow {
@@ -84,7 +86,7 @@ export function useSessionLive(id: string) {
     try {
       const s = await db
         .from('sessions')
-        .select('id, name, status, test_mode, starts_at, timezone, join_code, central_start, locked, started_at, game_versions(package)')
+        .select('id, name, status, test_mode, starts_at, timezone, join_code, central_start, locked, started_at, team_chat, game_versions(package)')
         .eq('id', id)
         .single();
       if (s.error) throw new Error(s.error.message);
