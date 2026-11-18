@@ -227,9 +227,21 @@ export interface PlayBoundary {
   points: BoundaryPoint[];
   /** Lijnkleur als #rrggbb. Standaard rood. */
   color?: string;
+  /** Kleur van de laag over alles buiten het speelveld, als #rrggbb. Standaard grijs. */
+  outsideColor?: string;
+  /** Dekking van die laag, van 0 (uit) tot 1 (helemaal dicht). Standaard 0,45. */
+  outsideOpacity?: number;
 }
 
 export const DEFAULT_BOUNDARY_COLOR = '#dc2626';
+export const DEFAULT_OUTSIDE_COLOR = '#4b5563';
+export const DEFAULT_OUTSIDE_OPACITY = 0.45;
+
+/** Kleur en dekking van de laag buiten het speelveld, met standaardwaarden. */
+export function outsideShade(boundary: Pick<PlayBoundary, 'outsideColor' | 'outsideOpacity'> | null | undefined): { color: string; opacity: number } {
+  const opacity = boundary?.outsideOpacity ?? DEFAULT_OUTSIDE_OPACITY;
+  return { color: boundary?.outsideColor ?? DEFAULT_OUTSIDE_COLOR, opacity: Math.min(1, Math.max(0, opacity)) };
+}
 
 /**
  * Kaartbron, instelbaar zodat we kunnen wisselen (OpenFreeMap, eigen

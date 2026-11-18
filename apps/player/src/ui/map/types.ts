@@ -26,7 +26,12 @@ export interface GameMapProps {
   markers: MapMarker[];
   overlay?: MapOverlayImage;
   /** Speelveldgrens: gesloten lijn om het speelgebied. */
-  boundary?: { points: { lat: number; lng: number }[]; color: string };
+  boundary?: {
+    points: { lat: number; lng: number }[];
+    color: string;
+    /** Laag over alles buiten de grens; dekking 0 = geen laag. */
+    outside: { color: string; opacity: number };
+  };
   /** Eigen positie (voor de webkaart; de native kaart toont hem zelf). */
   position?: { lat: number; lng: number; accuracy: number } | null;
 }

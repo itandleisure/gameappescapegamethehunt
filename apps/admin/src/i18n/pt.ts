@@ -87,6 +87,8 @@ export const pt: Record<string, string> = {
   "Rechthoek om alle locaties": "Retângulo à volta de todos os locais",
   "Speelveldgrens wissen?": "Apagar o limite da área de jogo?",
   "Wissen": "Apagar",
+  "Buiten het speelveld": "Fora da área de jogo",
+  "Dekking": "Opacidade",
   "Kleur": "Cor",
   "Opdrachten": "Missões",
   "Opdrachten zonder locatie plaats je door hierboven één track of de vaste locaties te kiezen.": "Para colocar missões sem local, escolhe acima um track ou os locais fixos.",

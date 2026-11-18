@@ -1,9 +1,9 @@
 'use client';
-import { DEFAULT_BOUNDARY_COLOR, DEFAULT_MAP_SOURCE, MAP_STYLES } from '@hunt/engine';
+import { DEFAULT_BOUNDARY_COLOR, DEFAULT_MAP_SOURCE, MAP_STYLES, outsideShade } from '@hunt/engine';
 import type { GeoJSONSource, Map as MlMap, Marker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { boundaryGeoJson } from '@/lib/boundary';
+import { boundaryGeoJson, boundaryMaskGeoJson } from '@/lib/boundary';
 import { ago, boundsOf, buildTrails, isStale, taskPoints, trailsGeoJson, type MapTeam } from '@/lib/live-map';
 import { useLanguage } from '@/lib/language';
 import { imageCorners } from '@/lib/map-settings';
@@ -95,6 +95,11 @@ export function LiveMap({ data, colors }: { data: SessionLive; colors: Map<strin
           m.addLayer({ id: 'overlay', type: 'raster', source: 'overlay', paint: { 'raster-opacity': 0.85 } });
         }
         if (game.boundary) {
+          const shade = outsideShade(game.boundary);
+          if (shade.opacity > 0) {
+            m.addSource('outside', { type: 'geojson', data: boundaryMaskGeoJson(game.boundary) as never });
+            m.addLayer({ id: 'outside', type: 'fill', source: 'outside', paint: { 'fill-color': shade.color, 'fill-opacity': shade.opacity } });
+          }
           m.addSource('boundary', { type: 'geojson', data: boundaryGeoJson(game.boundary) as never });
           m.addLayer({
             id: 'boundary',

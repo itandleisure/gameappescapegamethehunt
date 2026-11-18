@@ -1,11 +1,11 @@
 'use client';
-import { DEFAULT_BOUNDARY_COLOR, DEFAULT_MAP_SOURCE, type GamePackage, type LatLng, type PlayBoundary, type TaskLocation } from '@hunt/engine';
+import { DEFAULT_BOUNDARY_COLOR, DEFAULT_MAP_SOURCE, outsideShade, type GamePackage, type LatLng, type PlayBoundary, type TaskLocation } from '@hunt/engine';
 import type { GeoJSONSource, Map as MlMap, MapMouseEvent, Marker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { bendSegment, boundaryGeoJson, insertPoint, movePoint, rectAround, removePoint, segmentHandle, straightenSegment } from '@/lib/boundary';
+import { bendSegment, boundaryGeoJson, boundaryMaskGeoJson, insertPoint, movePoint, rectAround, removePoint, segmentHandle, straightenSegment } from '@/lib/boundary';
 import type { LayerRows } from '@/lib/game-model';
 import { composeChain, loadChain } from '@/lib/game-store';
 import { t as tr } from '@/lib/i18n';
@@ -113,6 +113,9 @@ export default function MapPage() {
           m.addSource('overlay', { type: 'image', url: overlay.image, coordinates: imageCorners(overlay.bounds) });
           m.addLayer({ id: 'overlay', type: 'raster', source: 'overlay', paint: { 'raster-opacity': 0.85 } });
         }
+        // Grijze (of gekleurde) laag over alles buiten het speelveld.
+        m.addSource('outside', { type: 'geojson', data: boundaryMaskGeoJson(null) });
+        m.addLayer({ id: 'outside', type: 'fill', source: 'outside', paint: { 'fill-color': outsideShade(null).color, 'fill-opacity': 0 } });
         m.addSource('radius', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
         m.addLayer({ id: 'radius-fill', type: 'fill', source: 'radius', paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.15 } });
         m.addLayer({ id: 'radius-line', type: 'line', source: 'radius', paint: { 'line-color': ['get', 'color'], 'line-width': 1.5 } });
@@ -192,6 +195,14 @@ export default function MapPage() {
     if (!m || !ready) return;
     (m.getSource('boundary') as GeoJSONSource | undefined)?.setData(boundaryGeoJson(boundary) as never);
     if (m.getLayer('boundary')) m.setPaintProperty('boundary', 'line-color', boundary?.color ?? DEFAULT_BOUNDARY_COLOR);
+    (m.getSource('outside') as GeoJSONSource | undefined)?.setData(boundaryMaskGeoJson(boundary) as never);
+    if (m.getLayer('outside')) {
+      const shade = outsideShade(boundary);
+      m.setPaintProperty('outside', 'fill-color', shade.color);
+      m.setPaintProperty('outside', 'fill-opacity', shade.opacity);
+      // Tijdens het tekenen weg, zodat je de hele kaart ziet.
+      m.setLayoutProperty('outside', 'visibility', showOverlay && !drawing ? 'visible' : 'none');
+    }
     m.getCanvas().style.cursor = drawing ? 'crosshair' : '';
     for (const layer of ['overlay', 'boundary']) {
       if (m.getLayer(layer)) m.setLayoutProperty(layer, 'visibility', showOverlay || (layer === 'boundary' && drawing) ? 'visible' : 'none');
@@ -447,6 +458,37 @@ export default function MapPage() {
                     }}
                   />
                 </label>
+              ) : null}
+              {boundary ? (
+                <>
+                  <p className="muted small">{t('Buiten het speelveld')}</p>
+                  <label className="check">
+                    {t('Kleur')}{' '}
+                    <input
+                      type="color"
+                      value={outsideShade(boundary).color}
+                      onChange={(e) => {
+                        setBoundary({ ...boundary, outsideColor: e.target.value });
+                        setBoundaryDirty(true);
+                      }}
+                    />
+                  </label>
+                  <label className="check">
+                    {t('Dekking')}{' '}
+                    <input
+                      type="range"
+                      min={0}
+                      max={90}
+                      step={5}
+                      value={Math.round(outsideShade(boundary).opacity * 100)}
+                      onChange={(e) => {
+                        setBoundary({ ...boundary, outsideOpacity: Number(e.target.value) / 100 });
+                        setBoundaryDirty(true);
+                      }}
+                    />{' '}
+                    {Math.round(outsideShade(boundary).opacity * 100)}%
+                  </label>
+                </>
               ) : null}
             </>
           ) : (

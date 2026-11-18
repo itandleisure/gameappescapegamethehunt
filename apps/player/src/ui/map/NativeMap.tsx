@@ -7,7 +7,7 @@ import {
   Marker,
   NativeUserLocation,
 } from "@maplibre/maplibre-react-native";
-import { boundaryGeoJson } from "@hunt/engine";
+import { boundaryGeoJson, boundaryMaskGeoJson } from "@hunt/engine";
 import { Image, StyleSheet, Text, View } from "react-native";
 import { colors, radius, space } from "../theme";
 import type { GameMapProps } from "./types";
@@ -55,6 +55,15 @@ export default function NativeMap({
             paint={{ "raster-opacity": 0.85 }}
           />
         </ImageSource>
+      ) : null}
+      {boundary && boundary.outside.opacity > 0 ? (
+        <GeoJSONSource id="outside" data={boundaryMaskGeoJson(boundary) as GeoJSON.GeoJSON}>
+          <Layer
+            type="fill"
+            id="outside-fill"
+            paint={{ "fill-color": boundary.outside.color, "fill-opacity": boundary.outside.opacity }}
+          />
+        </GeoJSONSource>
       ) : null}
       {boundary ? (
         <GeoJSONSource id="boundary" data={boundaryGeoJson(boundary) as GeoJSON.GeoJSON}>
