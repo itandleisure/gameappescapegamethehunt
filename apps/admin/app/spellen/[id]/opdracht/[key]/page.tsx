@@ -13,7 +13,7 @@ import { shrinkImage } from '@/lib/shrink-image';
 import { supabase } from '@/lib/supabase';
 import { cleanText, formToTask, taskToForm, type AnswerType, type TaskForm, type Texts } from '@/lib/task-form';
 import { applyTranslations, sourceLanguage, translationJob, type FieldGroup, type TranslationJob } from '@/lib/task-translate';
-import { translateTexts } from '@/lib/translate-client';
+import { PartialTranslation, translateTexts } from '@/lib/translate-client';
 
 const ANSWER_TYPES: { value: AnswerType; label: string }[] = [
   { value: 'info', label: tKey('Geen antwoord (alleen OK)') },
@@ -316,6 +316,10 @@ export default function TaskPage() {
       setLang(targets[0]!);
       setNotice(t('Vertaald naar {langs}. Controleer de teksten en klik op Wijzigingen opslaan.', { langs: targets.map((c) => c.toUpperCase()).join(', ') }));
     } catch (err) {
+      if (err instanceof PartialTranslation) {
+        // Wat wel gelukt is alvast invullen.
+        setForm((current) => (current ? applyTranslations(current, err.translations, emptyOnly) : current));
+      }
       setErrors([err instanceof Error ? err.message : String(err)]);
     } finally {
       setTranslating(false);

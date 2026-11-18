@@ -24,7 +24,7 @@ import { tKey } from "@/lib/i18n";
 import { useLanguage } from "@/lib/language";
 import { supabase } from "@/lib/supabase";
 import { missingPerTask, newTranslationRows, sourceLanguage } from "@/lib/task-translate";
-import { translateTexts } from "@/lib/translate-client";
+import { PartialTranslation, translateTexts } from "@/lib/translate-client";
 
 const LAYER_LABEL = {
   base: tKey("Template"),
@@ -340,7 +340,16 @@ export default function GamePage() {
     let added = 0;
     try {
       for (const [i, key] of order.entries()) {
-        const result = await translateTexts(source, targets, todo.get(key)!);
+        let result;
+        let partial: PartialTranslation | null = null;
+        try {
+          result = await translateTexts(source, targets, todo.get(key)!);
+        } catch (err) {
+          if (!(err instanceof PartialTranslation)) throw err;
+          // Wat wel gelukt is opslaan, daarna stoppen met de melding.
+          result = err.translations;
+          partial = err;
+        }
         const rows = newTranslationRows(base.translations, key, result);
         if (rows.length) {
           const { error } = await supabase()
@@ -349,6 +358,7 @@ export default function GamePage() {
           if (error) throw new Error(error.message);
           added += rows.length;
         }
+        if (partial) throw partial;
         setBulk({ done: i + 1, total: order.length });
       }
       setNotice(

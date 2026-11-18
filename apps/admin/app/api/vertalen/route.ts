@@ -104,15 +104,15 @@ export async function POST(request: Request) {
     return json(413, { error: 'Te veel tekst om in één keer te vertalen.' });
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = readKey();
   if (!apiKey) {
-    return json(503, { error: 'Vertalen is nog niet ingesteld: de sleutel ANTHROPIC_API_KEY ontbreekt op de server (Vercel).' });
+    return json(503, { error: 'Vertalen is nog niet ingesteld: de sleutel ANTHROPIC_API_KEY ontbreekt op de server (Vercel). Zet hem bij Settings → Environment Variables en deploy opnieuw.' });
   }
 
   // 3. Vertalen. Ids zijn t0, t1, …, zodat veldnamen geen rol spelen.
   const ids = entries.map((_, i) => `t${i}`);
   const payload = entries.map(([, text], i) => ({ id: ids[i], text }));
-  const client = new Anthropic({ apiKey });
+  const client = new Anthropic({ apiKey, maxRetries: 1 });
   try {
     const response = await client.beta.messages.create({
       model: MODEL,
@@ -130,12 +130,18 @@ export async function POST(request: Request) {
         },
       ],
     });
-    if (response.stop_reason === 'refusal') return json(422, { error: 'Deze tekst kon niet worden vertaald.' });
+    if (response.stop_reason === 'refusal') return json(422, { error: 'De vertaaldienst wilde deze tekst niet vertalen.' });
     if (response.stop_reason === 'max_tokens') return json(413, { error: 'Te veel tekst om in één keer te vertalen.' });
     const text = response.content.flatMap((b) => (b.type === 'text' ? [b.text] : [])).join('');
-    const parsed = JSON.parse(text) as { items: Record<string, string>[] };
+    let parsed: { items?: Record<string, string>[] };
+    try {
+      parsed = JSON.parse(text) as typeof parsed;
+    } catch {
+      console.error('[vertalen] geen JSON van de vertaaldienst', response.stop_reason, text.slice(0, 500));
+      return json(502, { error: `De vertaaldienst gaf een onverwacht antwoord (${response.stop_reason ?? 'onbekend'}). Probeer het opnieuw.` });
+    }
     const translations: Record<string, Record<string, string>> = Object.fromEntries(targets.map((l) => [l, {}]));
-    for (const item of parsed.items) {
+    for (const item of parsed.items ?? []) {
       const i = ids.indexOf(item.id ?? '');
       if (i < 0) continue;
       const field = entries[i]![0];
@@ -143,12 +149,46 @@ export async function POST(request: Request) {
     }
     return json(200, { translations });
   } catch (err) {
-    if (err instanceof Anthropic.AuthenticationError) return json(503, { error: 'De vertaalsleutel (ANTHROPIC_API_KEY) klopt niet.' });
-    if (err instanceof Anthropic.BadRequestError) {
-      return json(502, { error: 'De vertaaldienst weigerde de aanvraag. Controleer of er nog tegoed op het Anthropic-account staat.' });
-    }
-    if (err instanceof Anthropic.RateLimitError) return json(429, { error: 'Even te veel vertalingen tegelijk. Probeer het over een minuut opnieuw.' });
-    if (err instanceof Anthropic.APIError) return json(502, { error: `De vertaaldienst gaf een fout (${err.status ?? '?'}). Probeer het opnieuw.` });
-    return json(502, { error: 'Vertalen is mislukt. Probeer het opnieuw.' });
+    console.error('[vertalen]', err);
+    return json(502, { error: describeError(err) });
+  }
+}
+
+/** De sleutel zonder spaties of regeleinden (die komen makkelijk mee bij plakken). */
+function readKey(): string {
+  return (process.env.ANTHROPIC_API_KEY ?? '').trim().replace(/^["']|["']$/g, '');
+}
+
+/** Begrijpelijke melding per soort fout, met de technische reden erachter. */
+function describeError(err: unknown): string {
+  const detail = (err instanceof Error ? err.message : String(err)).replace(/\s+/g, ' ').slice(0, 300);
+  if (err instanceof Anthropic.AuthenticationError) return 'De vertaalsleutel (ANTHROPIC_API_KEY) wordt niet geaccepteerd. Maak in console.anthropic.com een nieuwe sleutel en zet die in Vercel.';
+  if (err instanceof Anthropic.PermissionDeniedError) return `De vertaalsleutel mag dit model niet gebruiken. (${detail})`;
+  if (err instanceof Anthropic.NotFoundError) return `Het vertaalmodel is niet gevonden. (${detail})`;
+  if (err instanceof Anthropic.RateLimitError) return 'Even te veel vertalingen tegelijk. Probeer het over een minuut opnieuw.';
+  if (err instanceof Anthropic.BadRequestError) {
+    if (/credit|balance|billing/i.test(detail)) return 'Er staat geen (of te weinig) tegoed op het Anthropic-account. Zet tegoed op het account bij console.anthropic.com → Billing.';
+    return `De vertaaldienst weigerde de aanvraag. (${detail})`;
+  }
+  if (err instanceof Anthropic.APIConnectionTimeoutError) return 'De vertaaldienst reageerde niet op tijd. Probeer het opnieuw.';
+  if (err instanceof Anthropic.APIConnectionError) return `Geen verbinding met de vertaaldienst. (${detail})`;
+  if (err instanceof Anthropic.APIError) return `De vertaaldienst gaf een fout (${err.status ?? '?'}). (${detail})`;
+  if (/header|ByteString|character/i.test(detail)) return 'De vertaalsleutel in Vercel bevat een ongeldig teken. Plak hem opnieuw, zonder spaties of aanhalingstekens.';
+  return `Vertalen is mislukt. (${detail})`;
+}
+
+/**
+ * GET /api/vertalen: controleert de instelling zonder iets te vertalen
+ * (open dit adres in de browser). Zegt alleen of de sleutel er is en werkt.
+ */
+export async function GET() {
+  const apiKey = readKey();
+  if (!apiKey) return json(200, { sleutel: 'ontbreekt', uitleg: 'Zet ANTHROPIC_API_KEY in Vercel (Settings → Environment Variables) en deploy opnieuw.' });
+  try {
+    const model = await new Anthropic({ apiKey, maxRetries: 0 }).models.retrieve(MODEL);
+    return json(200, { sleutel: 'werkt', model: model.id, uitleg: 'De sleutel en het model zijn in orde. Werkt vertalen toch niet, kijk dan of er tegoed op het account staat.' });
+  } catch (err) {
+    console.error('[vertalen] controle', err);
+    return json(200, { sleutel: 'werkt niet', uitleg: describeError(err) });
   }
 }
