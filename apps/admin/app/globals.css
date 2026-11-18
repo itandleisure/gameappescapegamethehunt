@@ -232,3 +232,15 @@ button.icon:hover { background: var(--bg); color: var(--danger); }
 .startcontrol .steps > li.done > strong::after { content: ' ✓'; color: var(--ok); }
 .startcontrol .readylist { list-style: none; padding: 0; margin: 6px 0 0; columns: 2 220px; }
 .startcontrol .readylist .ok { color: var(--ok); font-weight: 700; }
+/* Handvat midden op een zijde van de speelveldgrens: slepen maakt een bocht. */
+.bend {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: #dc2626;
+  border: 2px solid #fff;
+  opacity: 0.75;
+  cursor: grab;
+
+}
+.bend.curved { opacity: 1; }

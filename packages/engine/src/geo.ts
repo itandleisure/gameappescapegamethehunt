@@ -99,14 +99,39 @@ export class LocationGate {
   }
 }
 
+const CURVE_STEPS = 16;
+
+/** Punt op een kwadratische bocht van a naar b met stuurpunt c (t van 0 tot 1). */
+export function curvePoint(a: LatLng, c: LatLng, b: LatLng, t: number): LatLng {
+  const u = 1 - t;
+  return { lat: u * u * a.lat + 2 * u * t * c.lat + t * t * b.lat, lng: u * u * a.lng + 2 * u * t * c.lng + t * t * b.lng };
+}
+
+/**
+ * De hele grens als losse punten, met bochten uitgeschreven tot korte rechte
+ * stukjes. Niet gesloten: het laatste punt loopt niet terug naar het eerste.
+ */
+export function boundaryPath(boundary: { points: (LatLng & { curve?: LatLng })[] } | null | undefined): LatLng[] {
+  const pts = boundary?.points ?? [];
+  const closed = pts.length >= 3;
+  const out: LatLng[] = [];
+  pts.forEach((p, i) => {
+    out.push({ lat: p.lat, lng: p.lng });
+    const next = pts[(i + 1) % pts.length];
+    if (!p.curve || !next || (!closed && i === pts.length - 1)) return;
+    for (let s = 1; s < CURVE_STEPS; s++) out.push(curvePoint(p, p.curve, next, s / CURVE_STEPS));
+  });
+  return out;
+}
+
 /**
  * Speelveldgrens als gesloten lijn in GeoJSON, voor MapLibre (beheerapp en
- * speler-app). Leeg zonder minstens 2 punten.
+ * speler-app), met bochten. Leeg zonder minstens 2 punten.
  */
-export function boundaryGeoJson(boundary: { points: { lat: number; lng: number }[] } | null | undefined) {
+export function boundaryGeoJson(boundary: { points: (LatLng & { curve?: LatLng })[] } | null | undefined) {
   const pts = boundary?.points ?? [];
   if (pts.length < 2) return { type: 'FeatureCollection' as const, features: [] };
-  const coords = pts.map((p) => [p.lng, p.lat]);
+  const coords = boundaryPath(boundary).map((p) => [p.lng, p.lat]);
   if (pts.length >= 3) coords.push(coords[0]!);
   return {
     type: 'FeatureCollection' as const,

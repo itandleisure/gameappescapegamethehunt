@@ -5,7 +5,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { boundaryGeoJson, insertPoint, movePoint, rectAround, removePoint } from '@/lib/boundary';
+import { bendSegment, boundaryGeoJson, insertPoint, movePoint, rectAround, removePoint, segmentHandle, straightenSegment } from '@/lib/boundary';
 import type { LayerRows } from '@/lib/game-model';
 import { composeChain, loadChain } from '@/lib/game-store';
 import { allPins, circle, pinsFor, trackColor, trackCount, type Pin, type TrackChoice } from '@/lib/map-edit';
@@ -216,6 +216,34 @@ export default function MapPage() {
         });
         vertexMarkers.current.push(marker);
       });
+      // Handvat midden op elke zijde: slepen maakt er een bocht van, dubbelklikken weer recht.
+      const sides = boundary.points.length >= 3 ? boundary.points.length : boundary.points.length - 1;
+      for (let i = 0; i < sides; i++) {
+        const h = segmentHandle(boundary.points, i);
+        const el = document.createElement('div');
+        el.className = `bend${boundary.points[i]!.curve ? ' curved' : ''}`;
+        el.title = 'Sleep voor een bocht; dubbelklik om de lijn weer recht te maken';
+        el.addEventListener('click', (ev) => ev.stopPropagation());
+        el.addEventListener('dblclick', (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          setBoundary((b) => (b ? { ...b, points: straightenSegment(b.points, i) } : b));
+          setBoundaryDirty(true);
+        });
+        const marker = new MarkerClass({ element: el, draggable: true }).setLngLat([h.lng, h.lat]).addTo(m);
+        marker.on('drag', () => {
+          // Tijdens het slepen de lijn live laten meebuigen.
+          const { lat, lng } = marker.getLngLat();
+          const preview = { ...boundary, points: bendSegment(boundary.points, i, { lat, lng }) };
+          (m.getSource('boundary') as GeoJSONSource | undefined)?.setData(boundaryGeoJson(preview) as never);
+        });
+        marker.on('dragend', () => {
+          const { lat, lng } = marker.getLngLat();
+          setBoundary((b) => (b ? { ...b, points: bendSegment(b.points, i, { lat, lng }) } : b));
+          setBoundaryDirty(true);
+        });
+        vertexMarkers.current.push(marker);
+      }
     });
   }, [boundary, drawing, ready, showOverlay]);
 
@@ -385,7 +413,9 @@ export default function MapPage() {
             <>
               {drawing ? (
                 <p className="muted small">
-                  Klik op de kaart om een punt toe te voegen. Sleep een punt om het te verplaatsen; rechtsklik om het weg te halen.
+                  Klik op de kaart om een punt toe te voegen. Sleep een punt om het te verplaatsen; rechtsklik om het weg te
+                  halen. Sleep het kleine handvat midden op een lijn voor een bocht; dubbelklik het handvat om de lijn weer
+                  recht te maken.
                 </p>
               ) : null}
               <div className="actions">

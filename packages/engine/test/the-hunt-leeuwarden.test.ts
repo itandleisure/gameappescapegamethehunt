@@ -3,7 +3,7 @@
  * Elke wijziging aan de engine moet deze scenario's blijven halen.
  */
 import { describe, expect, it } from 'vitest';
-import { canUseHint, computeState, reachableTargets } from '../src/engine.js';
+import { briefingTasks, canUseHint, computeState, reachableTargets } from '../src/engine.js';
 import { composeGame } from '../src/layers.js';
 import { assignTrack } from '../src/tracks.js';
 import type { GameEvent } from '../src/types.js';
@@ -269,5 +269,14 @@ describe('speluitleg vóór een centrale start', () => {
     // Zonder klaarmelding blijft alles zoals het was.
     const before = computeState(withBriefing, team, [], min(1));
     expect(before.tasks[INTRO[0]!]!.status).not.toBe('done');
+  });
+
+  it('zonder ingestelde speluitleg: de introreeks uit de regels', () => {
+    const without = { ...game, briefing: undefined };
+    expect(briefingTasks(without)).toEqual(INTRO);
+    const state = computeState(without, { ...team, briefingRead: true }, [], min(1));
+    for (const id of INTRO) expect(state.tasks[id]!.status).toBe('done');
+    expect(state.activeSequence).toBeUndefined();
+    expect(state.tasks[PUZZLES[0].id]!.status).toBe('visible');
   });
 });

@@ -1,4 +1,4 @@
-import { DEFAULT_BOUNDARY_COLOR, trackColor, t as tx } from "@hunt/engine";
+import { boundaryPath, DEFAULT_BOUNDARY_COLOR, trackColor, t as tx } from "@hunt/engine";
 import { Redirect, router, useSegments } from "expo-router";
 import { useKeepAwake } from "expo-keep-awake";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -319,7 +319,8 @@ export default function PlayScreen() {
         boundary={
           game.boundary
             ? {
-                points: game.boundary.points,
+                // Bochten uitgeschreven tot korte rechte stukjes.
+                points: boundaryPath(game.boundary),
                 color: game.boundary.color ?? DEFAULT_BOUNDARY_COLOR,
               }
             : undefined

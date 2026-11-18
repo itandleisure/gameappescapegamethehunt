@@ -233,7 +233,8 @@ export function validateGame(game: GamePackage): string[] {
   if (game.boundary) {
     const b = game.boundary;
     if (!Array.isArray(b.points) || b.points.length < 3) issues.push('speelveldgrens: minstens 3 punten nodig');
-    else if (b.points.some((p) => !(Math.abs(p.lat) <= 90 && Math.abs(p.lng) <= 180))) issues.push('speelveldgrens: ongeldig punt');
+    else if (b.points.some((p) => [p, ...(p.curve ? [p.curve] : [])].some((q) => !(Math.abs(q.lat) <= 90 && Math.abs(q.lng) <= 180))))
+      issues.push('speelveldgrens: ongeldig punt');
     if (b.color !== undefined && !/^#[0-9a-f]{6}$/i.test(b.color)) issues.push('speelveldgrens: kleur moet #rrggbb zijn');
   }
   for (const t of game.tasks) {
