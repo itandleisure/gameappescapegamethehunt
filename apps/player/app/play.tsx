@@ -6,9 +6,11 @@ import {
   Image,
   Linking,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { formatDuration } from "../src/core/i18n";
@@ -30,13 +32,14 @@ import { takePhoto } from "../src/ui/camera";
 import { playSiren } from "../src/services/siren";
 import { useGame } from "../src/ui/GameProvider";
 import GameMap from "../src/ui/map/GameMap";
-import { colors, radius, space } from "../src/ui/theme";
+import { colors, contentColumn, radius, space } from "../src/ui/theme";
 
 const SIREN_GAP_MS = 8_000;
 const MAP_STYLE_KEY = "hunt.kaartstijl";
 
 export default function PlayScreen() {
   const { controller, snapshot, t, lang } = useGame();
+  const { height: screenHeight } = useWindowDimensions();
   const segments = useSegments();
   const [permission, setPermission] = useState<PermissionResult | null>(null);
   const [position, setPosition] = useState<{
@@ -185,17 +188,17 @@ export default function PlayScreen() {
   if (!started && snapshot.teamPhotoNeeded && !teamPhoto) {
     return (
       <SafeAreaView style={styles.safe}>
-        <Screen>
+        <Screen scroll>
           <Title>{t("teamPhotoTitle")}</Title>
           <Body>{t("teamPhotoExplain")}</Body>
           <View style={styles.spacer} />
           <Button
             label={t("takeTeamPhoto")}
             onPress={async () => {
-              const uri = await takePhoto();
-              if (!uri) return;
-              await controller.submitTeamPhoto(uri);
-              setTeamPhoto(uri);
+              const photo = await takePhoto();
+              if (!photo) return;
+              await controller.submitTeamPhoto(photo.uri);
+              setTeamPhoto(photo.uri);
             }}
           />
           <LeaveGame showCode={false} />
@@ -207,11 +210,13 @@ export default function PlayScreen() {
   if (!started) {
     return (
       <SafeAreaView style={styles.safe}>
-        <Screen>
+        <Screen scroll>
           <Title>{tx(game.name, lang, game.defaultLanguage)}</Title>
           <View style={styles.codeCard}>
             <Text style={styles.codeLabel}>{t("yourTeamCode")}</Text>
-            <Text style={styles.teamCode}>{snapshot.team.teamCode}</Text>
+            <Text style={styles.teamCode} numberOfLines={1} adjustsFontSizeToFit>
+              {snapshot.team.teamCode}
+            </Text>
             <Body>{t("teamCodeExplain")}</Body>
           </View>
           <View style={styles.spacer} />
@@ -340,7 +345,9 @@ export default function PlayScreen() {
             }}
           >
             <Text style={styles.headerLabel}>{t("mapStyle")}</Text>
-            <Text style={styles.styleName}>{t(`style_${style.id}` as MessageKey)} ›</Text>
+            <Text style={styles.styleName} numberOfLines={1}>
+              {t(`style_${style.id}` as MessageKey)} ›
+            </Text>
           </Pressable>
           <View style={styles.headerRight}>
             <Text style={styles.headerLabel}>{t("time")}</Text>
@@ -349,46 +356,49 @@ export default function PlayScreen() {
             </Text>
           </View>
         </View>
-        {!snapshot.online ? (
-          <Banner tone="warning">{t("offline")}</Banner>
-        ) : null}
-        {weakGps ? <Banner tone="warning">{t("gpsWeak")}</Banner> : null}
-        {permission === "denied" ? (
-          <Banner tone="danger">{t("locationDenied")}</Banner>
-        ) : null}
-        {download !== null && download < 100 ? (
-          <Banner>{t("mapDownloading", { percent: download })}</Banner>
-        ) : null}
-        {toShow ? (
-          <Pressable
-            onPress={() =>
-              router.push({ pathname: "/task/[id]", params: { id: toShow } })
-            }
-          >
-            <Banner tone="warning">
-              {tx(
-                game.tasks.find((x) => x.id === toShow)?.title,
-                lang,
-                game.defaultLanguage,
-              )}{" "}
-              ›
-            </Banner>
-          </Pressable>
-        ) : null}
-        {latestMessage ? (
-          <Pressable
-            onPress={() => setDismissedMessages(state.messages.length)}
-          >
-            <Banner tone="success">
-              {tx(latestMessage.text, lang, game.defaultLanguage)}
-            </Banner>
-          </Pressable>
-        ) : null}
+        {/* Meldingen kunnen samen nooit meer dan een derde van het scherm bedekken; een lang bericht scrollt. */}
+        <ScrollView style={{ maxHeight: screenHeight * 0.35 }} bounces={false}>
+          {!snapshot.online ? (
+            <Banner tone="warning">{t("offline")}</Banner>
+          ) : null}
+          {weakGps ? <Banner tone="warning">{t("gpsWeak")}</Banner> : null}
+          {permission === "denied" ? (
+            <Banner tone="danger">{t("locationDenied")}</Banner>
+          ) : null}
+          {download !== null && download < 100 ? (
+            <Banner>{t("mapDownloading", { percent: download })}</Banner>
+          ) : null}
+          {toShow ? (
+            <Pressable
+              onPress={() =>
+                router.push({ pathname: "/task/[id]", params: { id: toShow } })
+              }
+            >
+              <Banner tone="warning" lines={2}>
+                {tx(
+                  game.tasks.find((x) => x.id === toShow)?.title,
+                  lang,
+                  game.defaultLanguage,
+                )}{" "}
+                ›
+              </Banner>
+            </Pressable>
+          ) : null}
+          {latestMessage ? (
+            <Pressable
+              onPress={() => setDismissedMessages(state.messages.length)}
+            >
+              <Banner tone="success">
+                {tx(latestMessage.text, lang, game.defaultLanguage)}
+              </Banner>
+            </Pressable>
+          ) : null}
+        </ScrollView>
       </SafeAreaView>
 
       <SafeAreaView edges={["bottom"]} style={styles.bottom}>
         {snapshot.session.testMode ? (
-          <View style={styles.test}>
+          <ScrollView style={[styles.test, { maxHeight: screenHeight * 0.4 }]} bounces={false}>
             <Banner>{t("testMode")}</Banner>
             <View style={styles.skipRow}>
               {[1, 5, 10].map((minutes) => (
@@ -409,7 +419,7 @@ export default function PlayScreen() {
                 onPress={() => void controller.simulateArrival(id)}
               />
             ))}
-          </View>
+          </ScrollView>
         ) : null}
         <Button
           label={listCount > 0 ? `${t("tasks")} (${listCount})` : t("tasks")}
@@ -448,6 +458,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     paddingHorizontal: space.md,
+    ...contentColumn,
   },
   header: {
     flexDirection: "row",
@@ -459,7 +470,7 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
   },
   headerRight: { alignItems: "flex-end" },
-  styleButton: { alignItems: "center", paddingHorizontal: space.sm },
+  styleButton: { alignItems: "center", paddingHorizontal: space.sm, flexShrink: 1 },
   styleName: { color: colors.accent, fontSize: 15, fontWeight: "700" },
   headerLabel: { color: colors.textMuted, fontSize: 13 },
   headerValue: {
@@ -475,5 +486,6 @@ const styles = StyleSheet.create({
     right: 0,
     paddingHorizontal: space.md,
     paddingBottom: space.md,
+    ...contentColumn,
   },
 });

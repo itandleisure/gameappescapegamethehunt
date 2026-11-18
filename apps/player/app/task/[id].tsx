@@ -5,8 +5,6 @@ import {
   type TeamState,
   type Text as GameText,
 } from "@hunt/engine";
-import * as ImageManipulator from "expo-image-manipulator";
-import * as ImagePicker from "expo-image-picker";
 import { Redirect, router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -17,9 +15,12 @@ import {
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { fitImage } from "../../src/core/photo";
 import { answerFeedback, isAnswerable } from "../../src/core/view";
+import { takePhoto, type Photo } from "../../src/ui/camera";
 import {
   Banner,
   Body,
@@ -29,7 +30,7 @@ import {
   Title,
 } from "../../src/ui/components";
 import { useGame } from "../../src/ui/GameProvider";
-import { colors, radius, space } from "../../src/ui/theme";
+import { CONTENT_MAX_WIDTH, colors, contentColumn, radius, space } from "../../src/ui/theme";
 
 type Feedback = "correct" | "wrong" | "tryAgain" | "rejected" | null;
 
@@ -39,7 +40,7 @@ export default function TaskScreen() {
   const { controller, snapshot, t, lang } = useGame();
   const [text, setText] = useState("");
   const [choice, setChoice] = useState<number[]>([]);
-  const [photo, setPhoto] = useState<string | null>(null);
+  const [photo, setPhoto] = useState<Photo | null>(null);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
   /** Afteltimer na "Nee" op de bevestigingsvraag: seconden om de cirkel uit te lopen. */
@@ -80,11 +81,11 @@ export default function TaskScreen() {
   if (leaveLeft !== null) {
     return (
       <SafeAreaView style={styles.safe}>
-        <View style={styles.content}>
+        <ScrollView contentContainerStyle={styles.content}>
           <Title>{tr0(task.title)}</Title>
           <Text style={styles.countdown}>{leaveLeft}</Text>
           <Body>{t("leaveArea", { seconds: leaveLeft })}</Body>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -131,12 +132,12 @@ export default function TaskScreen() {
   if (!isAnswerable(game, ctx, state, task.id)) {
     return (
       <SafeAreaView style={styles.safe}>
-        <View style={styles.content}>
+        <ScrollView contentContainerStyle={styles.content}>
           <Title>{tr(task.title)}</Title>
           {task.image ? <TaskImage uri={task.image} /> : null}
           <Body muted>{tr(task.body)}</Body>
           <Button kind="secondary" label={t("close")} onPress={close} />
-        </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -144,7 +145,7 @@ export default function TaskScreen() {
   if (ts.status === "confirming") {
     return (
       <SafeAreaView style={styles.safe}>
-        <View style={styles.content}>
+        <ScrollView contentContainerStyle={styles.content}>
           <Title>{tr(task.title)}</Title>
           <Body>{tr(task.confirm)}</Body>
           <Button
@@ -158,7 +159,7 @@ export default function TaskScreen() {
               setLeaveLeft(await controller.decline(task.id));
             }}
           />
-        </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -167,24 +168,9 @@ export default function TaskScreen() {
   const nextHint = task.hints[ts.hintsUsed];
   const answer = task.answer;
 
-  const takePhoto = async () => {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) return;
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ["images"],
-      quality: 0.8,
-    });
-    if (result.canceled || !result.assets[0]) return;
-    // Verkleinen scheelt data en uploadtijd; ruim genoeg voor het fotoboek.
-    const resized = await ImageManipulator.manipulateAsync(
-      result.assets[0].uri,
-      [{ resize: { width: 2048 } }],
-      {
-        compress: 0.85,
-        format: ImageManipulator.SaveFormat.JPEG,
-      },
-    );
-    setPhoto(resized.uri);
+  const snapPhoto = async () => {
+    const taken = await takePhoto();
+    if (taken) setPhoto(taken);
   };
 
   return (
@@ -288,17 +274,11 @@ export default function TaskScreen() {
 
           {answer.type === "photo" ? (
             <>
-              {photo ? (
-                <Image
-                  source={{ uri: photo }}
-                  style={styles.photo}
-                  resizeMode="cover"
-                />
-              ) : null}
+              {photo ? <TaskImage uri={photo.uri} size={photo} /> : null}
               <Button
                 kind={photo ? "secondary" : "primary"}
                 label={photo ? t("retakePhoto") : t("takePhoto")}
-                onPress={() => void takePhoto()}
+                onPress={() => void snapPhoto()}
               />
               {photo ? (
                 <Button
@@ -307,7 +287,7 @@ export default function TaskScreen() {
                   onPress={async () => {
                     setBusy(true);
                     try {
-                      await controller.submitPhoto(task.id, photo);
+                      await controller.submitPhoto(task.id, photo.uri);
                       setFeedback("correct");
                     } finally {
                       setBusy(false);
@@ -357,27 +337,45 @@ export default function TaskScreen() {
   );
 }
 
-/** Ondersteunende foto bij de opdrachttekst, in de eigen verhouding van de foto. */
-function TaskImage({ uri }: { uri: string }) {
-  const [ratio, setRatio] = useState(4 / 3);
+/**
+ * Foto bij de opdrachttekst (of de eigen foto vóór het versturen), in de
+ * eigen verhouding: heel groot, piepklein, panorama of heel lang past altijd
+ * binnen het scherm. Laadt de foto niet (geen bereik, kapotte link), dan
+ * blijft er een leeg vak staan en gaat de opdracht gewoon door.
+ */
+function TaskImage({ uri, size }: { uri: string; size?: { width: number; height: number } }) {
+  const screen = useWindowDimensions();
+  const [loaded, setLoaded] = useState<{ width: number; height: number } | null>(size ?? null);
+  useEffect(() => {
+    if (size) return;
+    let live = true;
+    Image.getSize(
+      uri,
+      (width, height) => live && setLoaded({ width, height }),
+      () => undefined,
+    );
+    return () => {
+      live = false;
+    };
+  }, [uri, size]);
+  const box = fitImage(loaded, {
+    width: Math.min(screen.width, CONTENT_MAX_WIDTH) - 2 * space.md,
+    maxHeight: screen.height * 0.6,
+  });
   return (
     <Image
       source={{ uri }}
-      style={[styles.taskImage, { aspectRatio: ratio }]}
+      style={[styles.taskImage, box]}
       resizeMode="contain"
+      resizeMethod="resize"
       accessibilityIgnoresInvertColors
-      onLoad={(e) => {
-        const { width, height } = e.nativeEvent.source;
-        if (width > 0 && height > 0)
-          setRatio(Math.max(0.6, Math.min(2.5, width / height)));
-      }}
     />
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
-  content: { padding: space.md, paddingBottom: space.xl },
+  content: { padding: space.md, paddingBottom: space.xl, ...contentColumn },
   spacer: { height: space.md },
   countdown: {
     color: colors.accent,
@@ -398,14 +396,8 @@ const styles = StyleSheet.create({
     marginBottom: space.xs,
   },
   options: { flexDirection: "row", flexWrap: "wrap" },
-  photo: {
-    width: "100%",
-    aspectRatio: 4 / 3,
-    borderRadius: radius.md,
-    marginBottom: space.sm,
-  },
   taskImage: {
-    width: "100%",
+    alignSelf: "center",
     borderRadius: radius.md,
     marginBottom: space.md,
     backgroundColor: colors.surface,

@@ -7,7 +7,7 @@ import { Body, Button, Title } from "../src/ui/components";
 import { LeaveGame } from "../src/ui/LeaveGame";
 import { RevealImage } from "../src/ui/RevealImage";
 import { useGame } from "../src/ui/GameProvider";
-import { colors, radius, space } from "../src/ui/theme";
+import { colors, radius, space, contentColumn } from "../src/ui/theme";
 
 /** Opdrachten in de lijst en op de playgrounds (zoals het extractiepunt). */
 export default function TasksScreen() {
@@ -80,7 +80,7 @@ export default function TasksScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
-  content: { padding: space.md, paddingBottom: space.xl },
+  content: { padding: space.md, paddingBottom: space.xl, ...contentColumn },
   group: { marginBottom: space.lg },
   groupTitle: {
     color: colors.accent,

@@ -8,7 +8,7 @@ import { joinGame, rejoinGame } from '../src/services/game';
 import { isValidPhone } from '../src/core/view';
 import { Banner, Body, Button, Chip, Field, Title } from '../src/ui/components';
 import { useGame } from '../src/ui/GameProvider';
-import { colors, space } from '../src/ui/theme';
+import { colors, space, contentColumn } from '../src/ui/theme';
 import { msg, type MessageKey } from '../src/core/i18n';
 
 /** Aanmelden met de sessiecode, of verder spelen met een teamcode. */
@@ -131,8 +131,8 @@ export default function JoinScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
-  content: { padding: space.md, paddingBottom: space.xl },
-  logo: { height: 88, aspectRatio: 496 / 600, alignSelf: 'center', marginTop: space.sm, marginBottom: space.sm },
+  content: { padding: space.md, paddingBottom: space.xl, ...contentColumn },
+  logo: { height: 88, width: (88 * 496) / 600, alignSelf: 'center', marginTop: space.sm, marginBottom: space.sm },
   chips: { flexDirection: 'row', flexWrap: 'wrap', marginTop: space.sm, marginBottom: space.sm },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: space.xl },
 });

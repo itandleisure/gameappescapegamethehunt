@@ -9,7 +9,7 @@ React Native + Expo (TypeScript) voor iPhone en Android.
 - **GPS**: opdrachten openen vanzelf op locatie (twee goede metingen of 3 seconden binnen de cirkel, slechte metingen tellen niet). Werkt ook met het scherm uit, op Android met een melding.
 - **Opdrachten**: bevestigen, tekst, getal, meerkeuze, foto, hints met puntaftrek, reeksen zoals de speluitleg, playgrounds zoals het extractiepunt, berichten van de spelregels, timer en score.
 - **Offline doorspelen**: het spel rekent op de telefoon met dezelfde engine als de server. Gebeurtenissen, GPS-bundels en foto's gaan naar de server zodra er bereik is.
-- **Foto's** worden verkleind (2048 px) en op de achtergrond geüpload voor de fotowall en het fotoboek.
+- **Foto's** worden verkleind tot maximaal 2048 px aan de langste zijde (nooit vergroot, staand blijft staand) en op de achtergrond geüpload voor de fotowall en het fotoboek.
 - Teksten van de app in NL, EN, DE, ES, PT en IT.
 
 ## Opbouw
@@ -29,6 +29,17 @@ pnpm --filter @hunt/player test        # tests
 pnpm --filter @hunt/player typecheck   # typecontrole
 pnpm --filter @hunt/player exec expo export --platform android   # bundel bouwen als controle
 ```
+
+### Schermcontrole op veel schermmaten
+
+```bash
+pnpm --filter @hunt/player screens                       # bouwen en alles controleren
+pnpm --filter @hunt/player screens --device=klein --scene=opdracht
+```
+
+Bouwt de app voor de browser met nepdata (`SCREEN_PREVIEW=1`: server, GPS, kaart en camera komen uit `preview/`) en opent elk scherm op zeven schermmaten, van 320 px breed tot een tablet. Met opdrachtfoto's van normaal tot 8000 × 6000, 40 × 30, panorama, heel lang en een kapotte link, en met extra lange teksten. Hij controleert of niets buiten beeld valt, elke knop bereikbaar en groot genoeg is, foto's binnen het scherm blijven en de app geen fouten geeft. Schermafbeeldingen en een overzicht komen in `screens/index.html`. Draait ook in CI.
+
+Op een Android-emulator testen (ook nep-GPS): zie `testen-op-laptop.md` in de projectmap.
 
 Op een telefoon testen vraagt een development build (de kaart en GPS op de achtergrond zitten niet in Expo Go):
 

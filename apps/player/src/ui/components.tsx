@@ -1,9 +1,20 @@
 import { isRich, parseRich, type RichSpan } from '@hunt/engine';
 import type { ReactNode } from 'react';
-import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps, type TextStyle, type ViewStyle } from 'react-native';
-import { colors, radius, space } from './theme';
+import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps, type TextStyle, type ViewStyle } from 'react-native';
+import { colors, contentColumn, radius, space } from './theme';
 
-export function Screen({ children, style }: { children: ReactNode; style?: ViewStyle }) {
+/**
+ * Een scherm met marge rondom. Met `scroll` kan de inhoud scrollen, zodat
+ * ook op een kleine telefoon of met grote letters alle knoppen bereikbaar zijn.
+ */
+export function Screen({ children, style, scroll }: { children: ReactNode; style?: ViewStyle; scroll?: boolean }) {
+  if (scroll) {
+    return (
+      <ScrollView style={styles.scroll} contentContainerStyle={[styles.screen, styles.scrollContent, style]} keyboardShouldPersistTaps="handled">
+        {children}
+      </ScrollView>
+    );
+  }
   return <View style={[styles.screen, style]}>{children}</View>;
 }
 
@@ -98,12 +109,23 @@ export function Field(props: TextInputProps & { label: string; hint?: string }) 
   );
 }
 
-export function Banner({ children, tone = 'info' }: { children: ReactNode; tone?: 'info' | 'warning' | 'success' | 'danger' }) {
+export function Banner({
+  children,
+  tone = 'info',
+  lines,
+}: {
+  children: ReactNode;
+  tone?: 'info' | 'warning' | 'success' | 'danger';
+  /** Hoogstens zoveel regels (met … erachter), zodat een lang bericht de kaart niet bedekt. */
+  lines?: number;
+}) {
   const background = { info: colors.surfaceRaised, warning: colors.accent, success: colors.success, danger: colors.danger }[tone];
   const color = tone === 'warning' ? colors.accentText : colors.text;
   return (
     <View style={[styles.banner, { backgroundColor: background }]}>
-      <Text style={[styles.bannerText, { color }]}>{children}</Text>
+      <Text style={[styles.bannerText, { color }]} numberOfLines={lines}>
+        {children}
+      </Text>
     </View>
   );
 }
@@ -117,7 +139,9 @@ export function Chip({ label, selected, onPress }: { label: string; selected: bo
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background, padding: space.md },
+  screen: { flex: 1, backgroundColor: colors.background, padding: space.md, ...contentColumn },
+  scroll: { flex: 1, backgroundColor: colors.background },
+  scrollContent: { flexGrow: 1, flex: undefined, paddingBottom: space.xl },
   title: { color: colors.text, fontSize: 26, fontWeight: '700', marginBottom: space.md },
   body: { color: colors.text, fontSize: 17, lineHeight: 24 },
   muted: { color: colors.textMuted },

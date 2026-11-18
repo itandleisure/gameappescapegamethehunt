@@ -9,6 +9,7 @@ import { loadChain } from '@/lib/game-store';
 import { tKey } from '@/lib/i18n';
 import { useT } from '@/lib/language';
 import { mediaPath } from '@/lib/map-settings';
+import { shrinkImage } from '@/lib/shrink-image';
 import { supabase } from '@/lib/supabase';
 import { cleanText, formToTask, taskToForm, type AnswerType, type TaskForm, type Texts } from '@/lib/task-form';
 
@@ -264,12 +265,14 @@ export default function TaskPage() {
   }
 
   const uploadImage = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const chosen = e.target.files?.[0];
     e.target.value = '';
-    if (!file) return;
+    if (!chosen) return;
     setBusy(true);
     setErrors([]);
     try {
+      // Grote foto's eerst verkleinen: elke speler downloadt ze bij de start.
+      const file = await shrinkImage(chosen);
       const path = mediaPath(id, `opdracht-${key}`, file.type);
       const up = await db.storage.from('media').upload(path, file, { contentType: file.type });
       if (up.error) throw new Error(up.error.message);
