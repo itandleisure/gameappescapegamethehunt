@@ -1,6 +1,7 @@
 import {
   LocationGate,
   PositionUploader,
+  briefingTasks,
   canUseHint,
   computeState,
   reachableTargets,
@@ -145,8 +146,7 @@ export class GameController {
 
   /** Opdrachten van de speluitleg die het team vóór een centrale start leest. */
   briefingTasks(): string[] {
-    const id = this.game.briefing;
-    return (id && this.game.sequences.find((s) => s.id === id)?.tasks) || [];
+    return briefingTasks(this.game);
   }
 
   /** Team heeft de speluitleg gelezen en wacht op de start. */

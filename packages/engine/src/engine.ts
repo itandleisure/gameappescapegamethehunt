@@ -65,6 +65,25 @@ export function canUseHint(game: GamePackage, state: TeamState, taskId: string):
   return ts.hintsUsed < task.hints.length;
 }
 
+/**
+ * De opdrachten van de speluitleg die teams vóór een centrale start lezen.
+ * Is er geen speluitleg ingesteld, dan de eerste reeks die de regels starten
+ * (bij The Hunt de introreeks), zodat teams niet eerst op de start wachten.
+ */
+export function briefingTasks(game: GamePackage): string[] {
+  let id = game.briefing;
+  if (!id) {
+    for (const rule of game.rules) {
+      const a = rule.then.find((x) => x.kind === 'startSequence');
+      if (a?.kind === 'startSequence') {
+        id = a.sequence;
+        break;
+      }
+    }
+  }
+  return (id && game.sequences.find((s) => s.id === id)?.tasks) || [];
+}
+
 class Run {
   private readonly tasks = new Map<string, Task>();
   private readonly state: TeamState;
@@ -87,8 +106,7 @@ class Run {
       rejected: [],
     };
     // Speluitleg al vóór de start gelezen: die opdrachten zijn bij de start afgerond.
-    const briefing = team.briefingRead && game.briefing ? game.sequences.find((s) => s.id === game.briefing) : undefined;
-    for (const id of briefing?.tasks ?? []) {
+    for (const id of team.briefingRead ? briefingTasks(game) : []) {
       const ts = this.state.tasks[id];
       if (ts) Object.assign(ts, { status: 'done', correct: true, completedAt: team.startedAt });
     }
@@ -270,6 +288,8 @@ class Run {
       case 'startSequence': {
         const seq = this.game.sequences.find((s) => s.id === action.sequence);
         if (!seq || seq.tasks.length === 0) break;
+        // Al vóór de start gelezen (speluitleg bij een centrale start): niet opnieuw tonen.
+        if (seq.tasks.every((id) => this.state.tasks[id]?.status === 'done')) break;
         this.state.activeSequence = { id: seq.id, index: 0 };
         this.open(seq.tasks[0]!);
         break;
