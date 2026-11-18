@@ -244,3 +244,15 @@ button.icon:hover { background: var(--bg); color: var(--danger); }
 
 }
 .bend.curved { opacity: 1; }
+
+/* Schuifknop open/dicht */
+.switch { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; vertical-align: middle; }
+.switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.switch .slider { position: relative; width: 36px; height: 20px; border-radius: 999px; background: var(--line); transition: background .15s; flex: none; }
+.switch .slider::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .15s; }
+.switch input:checked + .slider { background: var(--ok); }
+.switch input:checked + .slider::after { transform: translateX(16px); }
+.switch input:focus-visible + .slider { outline: 2px solid var(--accent); outline-offset: 2px; }
+.switch input:disabled + .slider { opacity: .6; }
+.switch .on { color: var(--ok); font-weight: 600; }
+.switch .off { color: var(--muted); }

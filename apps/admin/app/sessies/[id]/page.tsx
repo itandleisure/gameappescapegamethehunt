@@ -4,10 +4,11 @@ import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { buildTrails, teamColor } from '@/lib/live-map';
 import { buildResults, resultsToCsv } from '@/lib/results';
-import { formatInZone, STATUS_LABEL } from '@/lib/sessions';
+import { formatInZone } from '@/lib/sessions';
 import { useSessionLive } from '@/lib/session-live';
 import { Answers } from '@/results/Answers';
 import { LiveMap } from '@/results/LiveMap';
+import { OpenToggle } from '@/results/OpenToggle';
 import { Photowall } from '@/results/Photowall';
 import { Standings } from '@/results/Standings';
 import { StartControl } from '@/results/StartControl';
@@ -88,7 +89,7 @@ export default function SessionLivePage() {
         </div>
       </div>
       <p className="muted">
-        <span className={`badge ${session.status === 'open' ? 'open' : ''}`}>{STATUS_LABEL[session.status]}</span>{' '}
+        <OpenToggle id={session.id} status={session.status} onChange={() => void reload()} />{' '}
         {session.test_mode ? <span className="badge test">Test</span> : null} Code <strong>{session.join_code}</strong> ·{' '}
         {data.teams.length} team{data.teams.length === 1 ? '' : 's'}
         {playing ? `, ${playing} aan het spelen` : ''} · bijgewerkt{' '}
