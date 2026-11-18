@@ -168,10 +168,25 @@ export function formatDuration(total: number, tr: (nl: string, vars?: Record<str
 /** Nederlands, voor omschrijvingen uit het spel zelf (die zijn Nederlands). */
 const formatDurationNl = (total: number) => formatDuration(total, (nl, vars) => translate('nl', nl, vars));
 
+/** Minuten vooraan een omschrijving: "10", of "10:30" bij losse seconden. */
+export function formatMinutes(total: number): string {
+  const n = Math.max(0, Math.round(total));
+  const m = Math.floor(n / 60);
+  const s = n % 60;
+  return s ? `${m}:${String(s).padStart(2, '0')}` : String(m);
+}
+
+/** Minuten in de vorm van formatMinutes, terug naar seconden. */
+function minutesPrefixSeconds(text: string): number {
+  const [m, s] = text.split(':');
+  return Number(m) * 60 + (s ? Number(s) : 0);
+}
+
 /**
  * Omschrijving van een regel met de nieuwe tijden, zodat "Na 10 minuten: …"
- * meeloopt als de tijd verandert. Alleen tijden "na de start" die letterlijk
- * als "N minuten" in de omschrijving staan worden vervangen.
+ * en "10 - Puzzel 1 vrijgeven" meelopen als de tijd verandert. Alleen tijden
+ * "na de start" die letterlijk als "N minuten" of als "N - " vooraan in de
+ * omschrijving staan worden vervangen.
  */
 export function relabel(label: string, settings: TimeSetting[], seconds: number[]): string {
   let out = label;
@@ -179,6 +194,11 @@ export function relabel(label: string, settings: TimeSetting[], seconds: number[
     if (s.kind !== 'elapsed') return;
     const next = seconds[i];
     if (next === undefined || next === settingSeconds(s)) return;
+    const prefix = /^(\d+(?::\d{2})?) - /.exec(out);
+    if (prefix && minutesPrefixSeconds(prefix[1]!) === settingSeconds(s)) {
+      out = `${formatMinutes(next)} - ${out.slice(prefix[0].length)}`;
+      return;
+    }
     const old = String(s.minutes).replace('.', '[.,]');
     out = out.replace(new RegExp(`\\b${old} (minuten|minuut|min)\\b`), formatDurationNl(next));
   });
