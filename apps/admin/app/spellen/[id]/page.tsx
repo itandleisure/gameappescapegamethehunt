@@ -23,7 +23,7 @@ import {
 import { tKey } from "@/lib/i18n";
 import { useLanguage } from "@/lib/language";
 import { supabase } from "@/lib/supabase";
-import { missingPerTask, newTranslationRows, sourceLanguage } from "@/lib/task-translate";
+import { missingPerTask, newTranslationRows, sourceLanguage, taskLanguageStates } from "@/lib/task-translate";
 import { PartialTranslation, translateTexts } from "@/lib/translate-client";
 
 const LAYER_LABEL = {
@@ -703,6 +703,7 @@ export default function GamePage() {
                   <th>{t('Antwoord')}</th>
                   <th>{t('Punten')}</th>
                   <th>{t('Locatie')}</th>
+                  {base.game.languages.length > 1 ? <th>{t('Talen')}</th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -735,6 +736,29 @@ export default function GamePage() {
                       </td>
                       <td>{tk.points}</td>
                       <td>{located ? t("Ja") : "–"}</td>
+                      {base.game.languages.length > 1 ? (
+                        <td>
+                          <span className="langstate">
+                            {Object.entries(
+                              taskLanguageStates(base.translations, tk.key, source, base.game.languages),
+                            ).map(([lang, state]) => (
+                              <span
+                                key={lang}
+                                className={state}
+                                title={
+                                  state === "done"
+                                    ? t("{lang}: vertaald", { lang: lang.toUpperCase() })
+                                    : state === "partial"
+                                      ? t("{lang}: deels vertaald", { lang: lang.toUpperCase() })
+                                      : t("{lang}: nog niet vertaald", { lang: lang.toUpperCase() })
+                                }
+                              >
+                                {state === "done" ? "✓" : state === "partial" ? "◐" : "○"} {lang.toUpperCase()}
+                              </span>
+                            ))}
+                          </span>
+                        </td>
+                      ) : null}
                     </tr>
                   );
                 })}

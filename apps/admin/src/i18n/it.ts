@@ -734,4 +734,7 @@ export const it: Record<string, string> = {
   "Vul de GPS-code van het extractiepunt in deze stad in, één stukje per vakje. Een leeg vakje neemt de code van het basisspel over.": "Inserisci il codice GPS del punto di estrazione in questa città, una parte per riquadro. Un riquadro vuoto usa il codice del gioco base.",
   "Vakje {n}": "Riquadro {n}",
   "De hinttekst pas je aan bij de opdracht:": "Modifica il testo dell'indizio nella missione:",
+  "{lang}: vertaald": "{lang}: tradotto",
+  "{lang}: deels vertaald": "{lang}: tradotto in parte",
+  "{lang}: nog niet vertaald": "{lang}: non ancora tradotto",
 };

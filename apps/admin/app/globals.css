@@ -61,6 +61,10 @@ tr:last-child td { border-bottom: none; }
 .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--line); }
 .badge.open { color: var(--ok); border-color: var(--ok); }
 .badge.test { color: var(--accent); border-color: var(--accent); }
+.langstate { display: inline-flex; flex-wrap: wrap; gap: 4px 10px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.langstate .done { color: var(--ok); }
+.langstate .partial { color: var(--accent); }
+.langstate .none { color: var(--muted); font-weight: 400; }
 .table-wrap { overflow-x: auto; }
 ul.errors { margin: 8px 0; padding-left: 20px; color: var(--danger); }
 .filebutton { display: inline-block; margin: 0; font-size: 15px; font-weight: 600; padding: 9px 16px; border-radius: 8px; background: var(--accent); color: var(--accent-text); cursor: pointer; }
