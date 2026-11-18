@@ -26,10 +26,12 @@ import {
 import { downloadPlayArea } from "../src/services/map-download";
 import { Banner, Body, Button, Screen, Title } from "../src/ui/components";
 import { takePhoto } from "../src/ui/camera";
+import { playSiren } from "../src/services/siren";
 import { useGame } from "../src/ui/GameProvider";
 import GameMap from "../src/ui/map/GameMap";
 import { colors, radius, space } from "../src/ui/theme";
 
+const SIREN_GAP_MS = 8_000;
 const MAP_STYLE_KEY = "hunt.kaartstijl";
 
 export default function PlayScreen() {
@@ -53,6 +55,7 @@ export default function PlayScreen() {
   }, []);
   const [dismissedMessages, setDismissedMessages] = useState(0);
   const lastShown = useRef<string | undefined>(undefined);
+  const lastClosed = useRef(0);
   useKeepAwake();
 
   const state = snapshot?.state ?? null;
@@ -97,8 +100,24 @@ export default function PlayScreen() {
   useEffect(() => {
     if (!toShow || onTaskScreen || toShow === lastShown.current) return;
     lastShown.current = toShow;
+    // Sirene bij een popup, maar niet bij elk volgend scherm van een reeks
+    // (zoals de speluitleg): die volgen binnen een paar seconden op elkaar.
+    if (Date.now() - lastClosed.current > SIREN_GAP_MS) void playSiren();
     router.push({ pathname: "/task/[id]", params: { id: toShow } });
   }, [toShow, onTaskScreen]);
+  const wasOnTask = useRef(false);
+  useEffect(() => {
+    if (wasOnTask.current && !onTaskScreen) lastClosed.current = Date.now();
+    wasOnTask.current = onTaskScreen;
+  }, [onTaskScreen]);
+
+  // Nieuw bericht van de spelleiding of uit een regel: ook de sirene.
+  const messageCount = state?.messages.length ?? 0;
+  const seenMessages = useRef<number | null>(null);
+  useEffect(() => {
+    if (seenMessages.current !== null && messageCount > seenMessages.current) void playSiren();
+    seenMessages.current = messageCount;
+  }, [messageCount]);
 
   const bounds = useMemo(
     () => (game ? playAreaBounds(game) : undefined),
@@ -296,9 +315,20 @@ export default function PlayScreen() {
       </SafeAreaView>
 
       <SafeAreaView edges={["bottom"]} style={styles.bottom}>
-        {testTargets.length > 0 ? (
+        {snapshot.session.testMode ? (
           <View style={styles.test}>
             <Banner>{t("testMode")}</Banner>
+            <View style={styles.skipRow}>
+              {[1, 5, 10].map((minutes) => (
+                <View key={minutes} style={styles.skipButton}>
+                  <Button
+                    kind="secondary"
+                    label={`⏩ +${minutes} min`}
+                    onPress={() => void controller.skipTime(minutes)}
+                  />
+                </View>
+              ))}
+            </View>
             {testTargets.map((id) => (
               <Button
                 key={id}
@@ -322,6 +352,8 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   spacer: { height: space.lg },
   test: { marginBottom: space.sm },
+  skipRow: { flexDirection: "row", gap: space.sm },
+  skipButton: { flex: 1 },
   teamPhoto: { width: "100%", aspectRatio: 4 / 3, borderRadius: radius.md, marginVertical: space.sm },
   teamCode: {
     color: colors.accent,

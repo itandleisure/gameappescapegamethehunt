@@ -22,3 +22,12 @@ describe('regels', () => {
     expect(parseRule('r', '', '{"kind":"elapsed"}', '{}').error).toContain('acties');
   });
 });
+
+describe('tijden in regels', () => {
+  it('leest en wijzigt tijden, ook in samengestelde voorwaarden', async () => {
+    const { timeSettings, withTimes } = await import('../src/lib/rules.js');
+    const c = { kind: 'and' as const, conditions: [{ kind: 'elapsed' as const, minutes: 10 }, { kind: 'not' as const, condition: { kind: 'afterCompleted' as const, task: 'a', seconds: 30 } }] };
+    expect(timeSettings(c)).toEqual([{ kind: 'elapsed', minutes: 10 }, { kind: 'afterCompleted', task: 'a', seconds: 30 }]);
+    expect(timeSettings(withTimes(c, [2, 5]))).toEqual([{ kind: 'elapsed', minutes: 2 }, { kind: 'afterCompleted', task: 'a', seconds: 5 }]);
+  });
+});
