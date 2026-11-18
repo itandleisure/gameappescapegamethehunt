@@ -140,11 +140,9 @@ export default function GamesPage() {
         {t('Een basisspel bevat de opdrachten en regels. Een stad vult locaties en lokale vragen in, een klant alleen de velden die het basisspel als aanpasbaar markeert. Publiceren maakt een vaste versie waarmee je hunts maakt.')}
       </p>
       <div className="actions">
-        {games?.some((g) => g.layer === 'base') ? (
-          <Link href="/spellen/nieuw" className="filebutton">
-            {t('Nieuwe stad uitrollen')}
-          </Link>
-        ) : null}
+        <Link href="/templates" className="filebutton">
+          {t('Nieuwe stad uitrollen')}
+        </Link>
         <label className={`filebutton${busy ? ' disabled' : ''}`}>
           <input type="file" accept="application/json,.json" onChange={importFile} disabled={busy} />
           {busy ? t('Bezig…') : t('Spel importeren (JSON)')}

@@ -160,7 +160,9 @@ function NewCity() {
       </p>
 
       {bases.length === 0 ? (
-        <p className="card">{t('Er is nog geen basisspel. Importeer eerst een spel.')}</p>
+        <p className="card">
+          {t('Er is nog geen template.')} <Link href="/templates">{t('Naar Templates')}</Link>
+        </p>
       ) : (
         <form onSubmit={doRollout}>
           <section className="card">
