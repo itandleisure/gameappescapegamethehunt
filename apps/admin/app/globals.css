@@ -274,15 +274,48 @@ a.button.secondary { background: transparent; color: var(--text); border-color: 
 .pb-tools { display: flex; gap: 6px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
 .pb-tools button.secondary { padding: 4px 10px; }
 .pb-tools .check { margin: 0; font-size: 13px; }
-/* Fotoboek voor de klant (openbare pagina) */
-.book-hero { background: #1c1b19; color: #f2efe9; border-radius: var(--radius); padding: 32px; display: grid; grid-template-columns: auto 1fr; gap: 28px; align-items: center; }
-.book-hero img.logo { width: 110px; height: auto; }
-.book-hero h1 { font-size: 30px; margin: 0 0 6px; color: #fff; }
-.book-hero .bar { width: 56px; height: 4px; background: #c2410c; margin: 12px 0; }
-.book-hero p { margin: 6px 0; color: #d9d4cc; white-space: pre-line; }
-@media (max-width: 600px) { .book-hero { grid-template-columns: 1fr; padding: 24px; } }
-.book-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
-.book-photos figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+/* Fotoboek voor de klant (openbare pagina), in de stijl van het fotoboek */
+.book { --navy: #141e29; --orange: #f29222; --paper: #ffffff; color: #141e29; font-family: Lato, system-ui, sans-serif; margin: -24px -16px 0; }
+.book .accent { color: var(--orange); }
+.book .muted-light { color: #c9ced6; }
+.book-label { display: block; font: 700 11px/1.4 ui-monospace, Menlo, monospace; letter-spacing: 0.12em; text-transform: uppercase; color: var(--orange); margin-bottom: 6px; }
+.book img.logo { width: 64px; height: auto; display: block; margin-bottom: 20px; }
+.book-gate { background: var(--navy); color: #fff; max-width: 520px; margin: 48px auto; padding: 36px 32px; border-radius: 4px; }
+.book-gate h1 { color: #fff; font-size: 26px; margin: 0 0 20px; }
+.book-gate label { color: #fff; margin: 0; }
+.book-gate p { color: #c9ced6; margin: 4px 0 12px; font-size: 14px; }
+.book-pw { display: flex; gap: 8px; }
+.book-pw input { flex: 1 1 auto; font: 700 16px ui-monospace, Menlo, monospace; letter-spacing: 0.08em; background: #fff; color: #141e29; border: none; }
+.book-pw button, .book-btn.orange { background: var(--orange); border-color: var(--orange); color: var(--navy); }
+.book-error { color: #fca5a5 !important; }
+.book-cover { min-height: 78vh; background: var(--navy) center / cover no-repeat; display: flex; align-items: flex-end; position: relative; }
+.book-cover::after { content: ''; position: absolute; right: 0; bottom: 0; width: 34%; height: 8px; background: var(--orange); }
+.book-cover-panel { background: var(--navy); color: #fff; width: 100%; padding: 32px max(24px, calc(50% - 480px)) 40px; }
+.book-cover-panel h1 { color: #fff; font-size: clamp(26px, 5vw, 40px); line-height: 1.15; margin: 0 0 12px; }
+.book-cover-panel p { color: #e5e7eb; max-width: 640px; white-space: pre-line; }
+.book-actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 18px 0 8px; }
+.book-btn { display: inline-block; font: 700 14px/1 Lato, system-ui, sans-serif; padding: 12px 20px; border-radius: 999px; text-decoration: none; border: 1.5px solid transparent; cursor: pointer; }
+.book-btn.outline { background: transparent; border-color: #fff; color: #fff; }
+.book-btn.dark { background: var(--navy); color: #fff; }
+.book-section { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+.book-section h2 { font-size: 26px; margin: 0 0 8px; }
+.book-section.dark { max-width: none; background: var(--navy); color: #fff; padding: 40px max(24px, calc(50% - 456px)); }
+.book-section.dark h2 { color: #fff; }
+.book-section.dark p { color: #c9ced6; max-width: 640px; }
+.book-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 20px 0; }
+.book-cards div { background: #f2f3f5; padding: 16px; border-radius: 4px; }
+.book-cards div.dark { background: var(--navy); color: #c9ced6; }
+.book-cards strong { display: block; font-size: 24px; color: var(--navy); }
+.book-cards .dark strong { color: var(--orange); }
+.book-cards span { font-size: 12px; }
+@media (max-width: 700px) { .book-cards { grid-template-columns: repeat(2, 1fr); } }
+.book-table { border: none; border-radius: 0; }
+.book-table th { border-bottom: 1.5px solid var(--navy); color: #6b7280; font: 700 11px ui-monospace, Menlo, monospace; }
+.book-table th:not(:first-child), .book-table td:not(:first-child) { text-align: right; }
+.book-table tr.total td { font-weight: 700; border-top: 1.5px solid var(--navy); }
+.book-video { display: block; margin-top: 20px; padding: 16px 20px; background: #f2f3f5; border-radius: 4px; text-decoration: none; }
+.book-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-top: 16px; }
+.book-photos figure { margin: 0; }
 .book-photos figure.large { grid-column: 1 / -1; }
 .book-photos img { display: block; width: 100%; height: auto; }
 .book-photos figure.large img { max-height: 80vh; object-fit: contain; background: #1c1b19; }
@@ -300,3 +333,14 @@ a.button.secondary { background: transparent; color: var(--text); border-color: 
 .version-body { padding: 0 14px 14px; border-top: 1px solid var(--line); }
 .version-body h3 { font-size: 14px; margin: 16px 0 6px; }
 .version-new { margin-top: 12px; padding: 14px; border: 1px dashed var(--accent); border-radius: 8px; }
+.book-photos img { display: block; width: 100%; aspect-ratio: 3 / 4; object-fit: cover; }
+.book-photos figure.large img { aspect-ratio: auto; max-height: 85vh; object-fit: contain; background: var(--navy); }
+.book-photos figcaption { padding: 6px 0; font: 700 11px ui-monospace, Menlo, monospace; letter-spacing: 0.08em; text-transform: uppercase; color: #6b7280; }
+.book-vacancy { background: var(--orange); color: var(--navy); padding: 24px; border-radius: 4px; margin-top: 32px; max-width: 640px; }
+.book-vacancy .book-label { color: var(--navy); }
+.book-vacancy h3 { margin: 0 0 8px; font-size: 20px; }
+.book-section.dark .book-vacancy p { color: var(--navy); }
+.book-footer { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: center; max-width: 960px; margin: 0 auto; padding: 24px; color: #6b7280; font-size: 13px; }
+.book-footer .book-label { color: #6b7280; margin: 0; }
+.book-footer span { display: flex; gap: 16px; flex-wrap: wrap; }
+.help { color: var(--muted); font-size: 13px; margin: 6px 0 0; }

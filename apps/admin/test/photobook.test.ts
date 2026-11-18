@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   bookText,
   defaultItems,
-  fit,
+  coverCrop,
+  huntStats,
+  zipEntryNames,
+  displayUrl,
+  href,
+  parseLinks,
   gameCaption,
   mailBody,
   moveItem,
@@ -32,17 +37,24 @@ const photos = [
 ];
 
 describe('fotoboek', () => {
-  it('zet de foto\'s per team in volgorde van de ranglijst, teamfoto eerst en groot', () => {
-    const items = defaultItems(photos, ['vossen', 'wolven'], (p) => gameCaption(p, p.team_id, p.task_key === '_teamfoto' ? '' : 'Opdracht'));
+  it('zet eerst de teamfoto\'s in volgorde van de ranglijst, dan de opdrachtfoto\'s en de vaste foto\'s', () => {
+    const items = defaultItems(
+      photos,
+      ['vossen', 'wolven'],
+      (p) => gameCaption(p, p.team_id, p.task_key === '_teamfoto' ? '' : 'Opdracht'),
+      ['huisstijl/org/a.jpg'],
+    );
     expect(items.map((i) => i.path)).toEqual([
       'vossen/_teamfoto/3.jpg',
+      'wolven/_teamfoto/4.jpg',
       'vossen/brug/5.jpg',
       'vossen/fotomissie/2.jpg',
-      'wolven/_teamfoto/4.jpg',
       'wolven/fotomissie/1.jpg',
+      'huisstijl/org/a.jpg',
     ]);
-    expect(items[0]).toMatchObject({ source: 'game', caption: 'vossen', large: true });
-    expect(items[1]).toEqual({ source: 'game', path: 'vossen/brug/5.jpg', caption: 'vossen · Opdracht' });
+    expect(items[0]).toEqual({ source: 'game', path: 'vossen/_teamfoto/3.jpg', caption: 'vossen' });
+    expect(items[2]).toEqual({ source: 'game', path: 'vossen/brug/5.jpg', caption: 'vossen · Opdracht' });
+    expect(items[5]).toEqual({ source: 'stock', path: 'huisstijl/org/a.jpg', caption: '' });
   });
 
   it('toont foto\'s die nog niet in het boek staan', () => {
@@ -62,6 +74,7 @@ describe('fotoboek', () => {
       parseItems([
         { source: 'game', path: 'a.jpg', caption: 'A', large: true },
         { source: 'own', path: 'b.jpg' },
+        { source: 'stock', path: 'c.jpg', caption: 'C' },
         { source: 'elders', path: 'c.jpg' },
         { source: 'game', path: '' },
         null,
@@ -69,6 +82,7 @@ describe('fotoboek', () => {
     ).toEqual([
       { source: 'game', path: 'a.jpg', caption: 'A', large: true },
       { source: 'own', path: 'b.jpg', caption: '' },
+      { source: 'stock', path: 'c.jpg', caption: 'C' },
     ]);
     expect(parseItems('kapot')).toEqual([]);
   });
@@ -102,9 +116,52 @@ describe('fotoboek', () => {
     expect(b!.x).toBeGreaterThan(a!.x);
   });
 
-  it('past een foto in een vak zonder bij te snijden', () => {
-    expect(fit(4000, 3000, { x: 0, y: 0, w: 200, h: 200 })).toEqual({ x: 0, y: 25, w: 200, h: 150 });
-    expect(fit(1000, 2000, { x: 0, y: 0, w: 200, h: 200 })).toEqual({ x: 50, y: 0, w: 100, h: 200 });
+  it('legt twee foto\'s op een staande pagina boven elkaar', () => {
+    const [a, b] = slots(2, { x: 0, y: 0, w: 500, h: 700 }, 10);
+    expect(a).toEqual({ x: 0, y: 355, w: 500, h: 345 });
+    expect(b).toEqual({ x: 0, y: 0, w: 500, h: 345 });
+  });
+
+  it('snijdt een foto bij om een vak te vullen', () => {
+    expect(coverCrop(4000, 3000, 100, 100)).toEqual({ sx: 500, sy: 0, sw: 3000, sh: 3000 });
+    const tall = coverCrop(3000, 4000, 200, 100);
+    expect(tall.sw).toBe(3000);
+    expect(tall.sh).toBe(1500);
+    expect(tall.sy).toBeCloseTo(2500 * 0.35);
+  });
+
+  it('rekent de cijfers van de hunt uit zoals het huidige fotoboek', () => {
+    const s = huntStats([
+      { name: 'Rent chasers', distanceM: 2000 },
+      { name: 'Hunters', distanceM: 4400 },
+      { name: 'Niet gestart', distanceM: 0 },
+      { name: 'Geen gps', distanceM: null },
+    ]);
+    expect(s.teams.map((x) => x.name)).toEqual(['Hunters', 'Rent chasers']);
+    expect(s.teams[0]).toMatchObject({ km: 4.4, stepsPP: 5940, kcalPP: 242 });
+    expect(s.teams[0]!.co2Kg).toBeCloseTo(0.792);
+    expect(s.totalKm).toBeCloseTo(6.4);
+    expect(s.avgKm).toBeCloseTo(3.2);
+    expect(s.avgStepsPP).toBe(Math.round((5940 + 2700) / 2));
+    expect(s.totalCo2Kg).toBeCloseTo(1.152);
+    expect(huntStats([]).avgKm).toBe(0);
+  });
+
+  it('maakt links klikbaar', () => {
+    expect(href('url', 'escapegamethehunt.nl/werken-bij')).toBe('https://escapegamethehunt.nl/werken-bij');
+    expect(href('url', 'http://x.nl')).toBe('http://x.nl');
+    expect(href('email', 'info@x.nl')).toBe('mailto:info@x.nl');
+    expect(href('phone', '085 004 77 19')).toBe('tel:0850047719');
+    expect(displayUrl('https://www.escapegamethehunt.nl/')).toBe('escapegamethehunt.nl');
+    expect(parseLinks({ video: ' https://v ', onbekend: 'x', email: '' })).toEqual({ video: 'https://v' });
+  });
+
+  it('geeft de foto\'s in de zip nette, unieke namen', () => {
+    expect(zipEntryNames([{ caption: 'Vossen' }, { caption: '' }, { caption: 'Vossen · Brug!' }])).toEqual([
+      '01-vossen.jpg',
+      '02.jpg',
+      '03-vossen-brug.jpg',
+    ]);
   });
 
   it('breekt tekst af op woorden', () => {
@@ -120,12 +177,13 @@ describe('fotoboek', () => {
   });
 
   it('teksten in de taal van het fotoboek', () => {
-    expect(bookText('en', 'ranking')).toBe('Leaderboard');
-    expect(bookText('xx', 'ranking')).toBe('Ranglijst');
-    expect(bookText('nl', 'page', { n: 3 })).toBe('Pagina 3');
-    const mail = mailBody('nl', 'Uitje', 'https://x/fotoboek/abc');
+    expect(bookText('en', 'yourPhotos')).toBe('Your photos');
+    expect(bookText('xx', 'yourPhotos')).toBe("Jullie foto's");
+    expect(bookText('nl', 'totalKm', { n: 5 })).toBe('samen gelopen door 5 teams');
+    const mail = mailBody('nl', 'Uitje', 'https://x/fotoboek/abc', 'ABCD-EFGH-JKLM', '2026-12-16T12:00:00Z');
     expect(mail.subject).toBe('Jullie fotoboek: Uitje');
-    expect(mail.body).toContain('https://x/fotoboek/abc');
-    expect(mailBody('de', 'Ausflug', 'L').subject).toContain('Ausflug');
+    expect(mail.body).toContain('https://x/fotoboek/abc\nWachtwoord: ABCD-EFGH-JKLM');
+    expect(mail.body).toContain('16 december 2026');
+    expect(mailBody('de', 'Ausflug', 'L', 'P', null).subject).toContain('Ausflug');
   });
 });
