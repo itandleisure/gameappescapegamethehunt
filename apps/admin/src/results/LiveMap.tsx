@@ -1,5 +1,5 @@
 'use client';
-import { DEFAULT_BOUNDARY_COLOR, DEFAULT_MAP_SOURCE } from '@hunt/engine';
+import { DEFAULT_BOUNDARY_COLOR, DEFAULT_MAP_SOURCE, MAP_STYLES } from '@hunt/engine';
 import type { GeoJSONSource, Map as MlMap, Marker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -13,6 +13,17 @@ import { tx } from '@/lib/text';
 /** Standaard alleen een kort stukje route achter elk team, zoals in Loquiz. */
 const TAIL_MINUTES = 5;
 
+/** Kaartstijl die deze spelleider koos, onthouden in deze browser. */
+const STYLE_KEY = 'hunt.livekaart.stijl';
+
+function savedStyle(): string | null {
+  try {
+    return window.localStorage.getItem(STYLE_KEY);
+  } catch {
+    return null;
+  }
+}
+
 export function LiveMap({ data, colors }: { data: SessionLive; colors: Map<string, string> }) {
   const { game, teams, positions } = data;
   const [focus, setFocus] = useState<string>(''); // '' = alle teams
@@ -22,8 +33,14 @@ export function LiveMap({ data, colors }: { data: SessionLive; colors: Map<strin
   const map = useRef<MlMap | null>(null);
   const teamMarkers = useRef<Map<string, Marker>>(new Map());
   const taskMarkers = useRef<Marker[]>([]);
-  const [ready, setReady] = useState(false);
+  // Telt op bij elke (nieuwe) kaartstijl, zodat routes opnieuw getekend worden.
+  const [ready, setReady] = useState(0);
   const fitted = useRef(false);
+  const gameStyle = game.map?.styleUrl ?? DEFAULT_MAP_SOURCE.styleUrl;
+  const [styleUrl, setStyleUrl] = useState<string>(() => savedStyle() ?? gameStyle);
+  const styleOptions = MAP_STYLES.some((x) => x.source.styleUrl === gameStyle)
+    ? MAP_STYLES.map((x) => ({ url: x.source.styleUrl, name: x.name }))
+    : [{ url: gameStyle, name: 'Stijl van het spel' }, ...MAP_STYLES.map((x) => ({ url: x.source.styleUrl, name: x.name }))];
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 5_000);
@@ -59,13 +76,16 @@ export function LiveMap({ data, colors }: { data: SessionLive; colors: Map<strin
       const b = boundsOf(pts);
       const m = new Map({
         container: container.current,
-        style: game.map?.styleUrl ?? DEFAULT_MAP_SOURCE.styleUrl,
+        style: styleUrl,
         center: b ? [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2] : [5.8, 53.2],
         zoom: 15,
       });
       m.addControl(new NavigationControl({ showCompass: false }), 'top-left');
-      m.on('load', () => {
+      m.once('load', () => {
         if (b) m.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: 50, maxZoom: 17, duration: 0 });
+      });
+      // Ook na het wisselen van kaartstijl: overlay en routes opnieuw toevoegen.
+      m.on('style.load', () => {
         const overlay = game.mapOverlay;
         if (overlay && /^https?:/.test(overlay.image)) {
           m.addSource('overlay', { type: 'image', url: overlay.image, coordinates: imageCorners(overlay.bounds) });
@@ -96,14 +116,25 @@ export function LiveMap({ data, colors }: { data: SessionLive; colors: Map<strin
           layout: { 'line-cap': 'round', 'line-join': 'round' },
           paint: { 'line-color': ['get', 'color'], 'line-width': 3.5 },
         });
-        setReady(true);
+        setReady((n) => n + 1);
       });
       map.current = m;
     });
     return () => {
       cancelled = true;
     };
+    // De stijl wisselt via setStyle hieronder, niet door de kaart opnieuw te maken.
   }, [game]);
+
+  const chooseStyle = (url: string) => {
+    setStyleUrl(url);
+    try {
+      window.localStorage.setItem(STYLE_KEY, url);
+    } catch {
+      // Geen opslag (privévenster): de keuze geldt dan alleen voor nu.
+    }
+    map.current?.setStyle(url);
+  };
 
   useEffect(
     () => () => {
@@ -216,6 +247,15 @@ export function LiveMap({ data, colors }: { data: SessionLive; colors: Map<strin
               {t.name} (hele route)
             </option>
           ))}
+        </select>
+        <label htmlFor="stijl">Kaartstijl</label>
+        <select id="stijl" value={styleUrl} onChange={(e) => chooseStyle(e.target.value)}>
+          {styleOptions.map((o) => (
+            <option key={o.url} value={o.url}>
+              {o.name}
+            </option>
+          ))}
+          {styleOptions.some((o) => o.url === styleUrl) ? null : <option value={styleUrl}>Eerder gekozen stijl</option>}
         </select>
         <label className="check" style={{ marginTop: 12 }}>
           <input type="checkbox" checked={showTasks} onChange={(e) => setShowTasks(e.target.checked)} />

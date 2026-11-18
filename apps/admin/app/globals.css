@@ -154,3 +154,74 @@ td.wrong, li.wrong { color: var(--danger); }
   cursor: grab;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
+
+/* Opdrachteditor (rustig, met tabbladen, zoals in Loquiz) */
+.taskedit { max-width: 920px; margin: 0 auto; }
+.taskedit .crumbs { margin: 0 0 4px; }
+.te-head { display: flex; align-items: center; gap: 16px; }
+.te-head h1 { margin: 0; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 22px; }
+.te-close { font-size: 28px; line-height: 1; text-decoration: none; color: var(--muted); padding: 0 4px; }
+.te-close:hover { color: var(--text); }
+.te-tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin: 12px 0 16px; overflow-x: auto; }
+.te-tabs button { display: inline-flex; align-items: center; gap: 7px; background: none; border: none; border-bottom: 3px solid transparent; border-radius: 0; color: var(--muted); padding: 10px 14px; white-space: nowrap; font-weight: 500; }
+.te-tabs button:hover { color: var(--text); }
+.te-tabs button.active { color: var(--text); border-bottom-color: var(--text); font-weight: 600; }
+.te-tabs .count { font-size: 11px; font-weight: 700; background: var(--line); color: var(--text); border-radius: 999px; padding: 0 6px; line-height: 17px; }
+.te-body { display: grid; gap: 16px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 24px; margin: 0; }
+.panel-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+.panel-head h3 { margin: 0; font-size: 17px; flex: 1; }
+.panel > label:first-of-type, .panel .langs + label { margin-top: 8px; }
+.panel .help { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+.switch { display: inline-flex; align-items: center; margin: 0; font-weight: 400; font-size: 13px; color: var(--muted); }
+.panel input.wide, .panel textarea { max-width: 640px; }
+.panel input:not(.wide), .panel select { max-width: 100%; }
+.row.compact { gap: 12px; }
+.row.compact > * { flex: 1 1 140px; max-width: 280px; }
+.langs { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin: 8px 0 4px; }
+.langs button { position: relative; background: none; border: none; border-radius: 0; color: var(--muted); padding: 5px 12px; font-size: 13px; }
+.langs button + button { border-left: 1px solid var(--line); }
+.langs button.active { background: var(--text); color: var(--surface); }
+.langs .todo { position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.small-input { margin-top: 8px; font-size: 13px; padding: 6px 10px; }
+
+/* Tekstvak met opmaak */
+.rte { max-width: 640px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); overflow: visible; }
+.rte:focus-within { border-color: var(--muted); }
+.rte-bar { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; padding: 4px 6px; border-bottom: 1px solid var(--line); background: var(--surface); border-radius: 8px 8px 0 0; }
+.rte-bar .tool { display: inline-grid; place-items: center; width: 30px; height: 28px; padding: 0; border: none; border-radius: 6px; background: none; color: var(--text); font-weight: 500; font-size: 15px; }
+.rte-bar .tool:hover { background: var(--bg); }
+.rte-bar .tool.active { background: var(--line); }
+.rte-sep { width: 1px; height: 18px; background: var(--line); margin: 0 4px; }
+.rte-color { position: relative; display: inline-flex; }
+.rte-palette { position: absolute; top: 32px; left: 0; z-index: 5; display: flex; gap: 6px; padding: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.15); }
+.rte-palette .swatch { width: 22px; height: 22px; padding: 0; border-radius: 50%; border: 2px solid var(--surface); outline: 1px solid var(--line); }
+.rte-area { padding: 10px 12px; outline: none; line-height: 1.55; overflow-wrap: anywhere; }
+.rte-area p, .rte-area div { margin: 0; }
+.rte-area ul, .rte-area ol { margin: 0; padding-left: 24px; }
+.rte-area a { color: #2563eb; }
+.rte-area:empty::before { content: attr(data-placeholder); color: var(--muted); }
+
+/* Antwoordopties en hints */
+ul.options { list-style: none; padding: 0; margin: 4px 0 8px; display: grid; gap: 6px; max-width: 640px; }
+ul.options li { display: flex; align-items: center; gap: 8px; }
+ul.options li input[type='radio'], ul.options li input[type='checkbox'] { width: 18px; height: 18px; margin: 0; flex: 0 0 auto; accent-color: var(--ok); }
+ul.options li.is-correct input:not([type='radio']):not([type='checkbox']) { border-color: var(--ok); }
+button.icon { flex: 0 0 auto; width: 30px; height: 30px; padding: 0; border: none; border-radius: 6px; background: none; color: var(--muted); font-size: 20px; line-height: 1; font-weight: 400; }
+button.icon:hover { background: var(--bg); color: var(--danger); }
+.hint { border-top: 1px solid var(--line); padding: 12px 0 14px; }
+.hint:first-of-type { border-top: none; }
+.hint-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.hint-head strong { flex: 0 0 auto; }
+.hint-head .cost { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; margin-right: auto; }
+.hint-head .cost input { width: 64px; padding: 4px 8px; }
+.te-photo { max-width: 100%; max-height: 260px; border-radius: 8px; display: block; margin-bottom: 12px; }
+.usedlist { margin: 8px 0 0; padding-left: 20px; }
+
+/* Onderbalk */
+.te-warn { position: sticky; bottom: 60px; margin: 16px 0 0; padding: 10px 16px; background: #fde68a; color: #422006; border-radius: 8px 8px 0 0; font-size: 14px; }
+.te-foot { position: sticky; bottom: 0; display: flex; align-items: center; gap: 16px; margin-top: 16px; padding: 12px 0; background: var(--bg); border-top: 1px solid var(--line); }
+.te-warn + .te-foot { margin-top: 0; }
+.te-foot .te-status { flex: 1; min-width: 0; font-size: 14px; }
+.te-foot .te-status ul.errors { margin: 0; }
+.te-foot .te-status .notice { margin: 0; }
