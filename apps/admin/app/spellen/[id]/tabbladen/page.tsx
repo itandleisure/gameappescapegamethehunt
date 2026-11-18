@@ -48,6 +48,10 @@ export default function TabbladenPage() {
   const [errors, setErrors] = useState<string[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  /** Taal van de tekstvelden op de pagina; één keuze voor alle tabbladen. */
+  const [lang, setLang] = useState("");
+  /** Welk tabblad open staat in de beheeromgeving; "nieuw" is het formulier voor een nieuw tabblad. */
+  const [active, setActive] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -97,6 +101,7 @@ export default function TabbladenPage() {
       { id: key, name: { [base.defaultLanguage]: newName.trim() } },
     ]);
     setNewName("");
+    setActive(key);
     setErrors([]);
     setDirty(true);
   };
@@ -184,6 +189,11 @@ export default function TabbladenPage() {
     }
   };
 
+  const shown =
+    active === "nieuw" || list.some((p) => p.id === active)
+      ? active
+      : (list[0]?.id ?? "nieuw");
+
   return (
     <>
       <p className="muted">
@@ -222,15 +232,63 @@ export default function TabbladenPage() {
             </ul>
           ) : null}
 
-          {list.map((p) => (
+          <nav className="tabs" role="tablist">
+            {list.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                role="tab"
+                aria-selected={p.id === shown}
+                className={p.id === shown ? "active" : ""}
+                onClick={() => setActive(p.id)}
+              >
+                {p.name[base.defaultLanguage] || p.id}
+              </button>
+            ))}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={shown === "nieuw"}
+              className={shown === "nieuw" ? "active" : ""}
+              onClick={() => setActive("nieuw")}
+            >
+              {t("+ Nieuw tabblad")}
+            </button>
+          </nav>
+
+          {shown !== "nieuw" && base.languages.length > 1 ? (
+            <div className="row" style={{ alignItems: "center", gap: 8 }}>
+              <span className="muted" style={{ flex: "0 0 auto" }}>
+                {t("Teksten in")}
+              </span>
+              <div className="langs" role="tablist" aria-label={t("Taal")}>
+                {base.languages.map((code) => (
+                  <button
+                    key={code}
+                    type="button"
+                    role="tab"
+                    aria-selected={code === (lang || base.defaultLanguage)}
+                    className={code === (lang || base.defaultLanguage) ? "active" : ""}
+                    onClick={() => setLang(code)}
+                  >
+                    {code.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {list.filter((p) => p.id === shown).map((p) => (
             <PlaygroundCard
               key={p.id}
               base={base}
+              lang={lang || base.defaultLanguage}
               playground={p}
               onChange={(change) => update(p.id, change)}
             />
           ))}
 
+          {shown === "nieuw" ? (
           <section className="card" style={{ marginTop: 16 }}>
             <h2 style={{ marginTop: 0 }}>{t('Nieuw tabblad')}</h2>
             <div className="row">
@@ -250,6 +308,7 @@ export default function TabbladenPage() {
               </div>
             </div>
           </section>
+          ) : null}
         </>
       )}
     </>
@@ -258,10 +317,12 @@ export default function TabbladenPage() {
 
 function PlaygroundCard({
   base,
+  lang,
   playground: p,
   onChange,
 }: {
   base: BaseGame;
+  lang: string;
   playground: Playground;
   onChange: (change: (p: Playground) => Playground) => void;
 }) {
@@ -311,40 +372,33 @@ function PlaygroundCard({
         {p.name[base.defaultLanguage] || p.id}{" "}
         <span className="muted">({p.id})</span>
       </h2>
-      <div className="row">
-        {base.languages.map((lang) => (
-          <div key={lang}>
-            <label htmlFor={`${p.id}-name-${lang}`}>
-              {t("Naam ({lang})", { lang: lang.toUpperCase() })}
-            </label>
-            <input
-              id={`${p.id}-name-${lang}`}
-              value={p.name[lang] ?? ""}
-              onChange={(e) => setText("name", lang, e.target.value)}
-            />
-          </div>
-        ))}
-      </div>
+      <label htmlFor={`${p.id}-name`}>
+        {t("Naam in de app ({lang})", { lang: lang.toUpperCase() })}
+      </label>
+      <input
+        id={`${p.id}-name`}
+        value={p.name[lang] ?? ""}
+        placeholder={p.name[base.defaultLanguage] ?? ""}
+        onChange={(e) => setText("name", lang, e.target.value)}
+      />
 
-      <h3>{t('Naslagtekst')}</h3>
-      <p className="muted">
-        {t('Staat altijd bovenaan dit tabblad, bijvoorbeeld de tijdlijn van het spel.')}
+      <label htmlFor={`${p.id}-body`}>
+        {t("Naslagtekst ({lang})", { lang: lang.toUpperCase() })}
+      </label>
+      <p className="muted" style={{ marginTop: 0 }}>
+        {t("Vaste tekst bovenaan dit tabblad, zoals de tijdlijn van het spel. Mag leeg blijven.")}
       </p>
-      {base.languages.map((lang) => (
-        <div key={lang}>
-          <label htmlFor={`${p.id}-body-${lang}`}>
-            {t("Tekst ({lang})", { lang: lang.toUpperCase() })}
-          </label>
-          <textarea
-            id={`${p.id}-body-${lang}`}
-            rows={6}
-            value={p.body?.[lang] ?? ""}
-            onChange={(e) => setText("body", lang, e.target.value)}
-          />
-        </div>
-      ))}
+      <textarea
+        id={`${p.id}-body`}
+        rows={p.body?.[lang] ? 8 : 3}
+        value={p.body?.[lang] ?? ""}
+        onChange={(e) => setText("body", lang, e.target.value)}
+      />
 
-      <CodeEditor base={base} playground={p} onChange={onChange} />
+      {/* De codevakjes horen alleen bij het extractiepunt. */}
+      {p.code || p.reveal || p.id === "extractiepunt" ? (
+        <CodeEditor base={base} playground={p} onChange={onChange} />
+      ) : null}
 
       {/* De oude foto met afgedekte vakken staat er alleen nog als een tabblad er een heeft, om hem weg te halen. */}
       {reveal ? (
