@@ -15,14 +15,11 @@ import {
   useEffect,
   useRef,
   useState,
-  type ChangeEvent,
   type PointerEvent,
 } from "react";
 import { rowsToBase, type LayerRows } from "@/lib/game-model";
 import { loadChain } from "@/lib/game-store";
-import { t as tr } from "@/lib/i18n";
 import { useT } from "@/lib/language";
-import { mediaPath } from "@/lib/map-settings";
 import {
   cityCodeValues,
   initialCode,
@@ -194,7 +191,7 @@ export default function TabbladenPage() {
       </p>
       <h1>{t('Tabbladen')}</h1>
       <p className="muted">
-        {t('Tabbladen staan in de app onder Opdrachten, zoals Speluitleg en Extractiepunt. Een tabblad kan een naslagtekst hebben (per taal) en een foto met afgedekte vakken: elk vak wordt zichtbaar zodra de opdracht die erbij hoort goed is. Gelezen uitleg verdwijnt uit de lijst; de naslagtekst blijft hier staan.')}
+        {t('Tabbladen staan in de app onder Opdrachten, zoals Speluitleg en Extractiepunt. Een tabblad kan een naslagtekst hebben (per taal) en vakjes met de GPS-code: elk vakje gaat open zodra de opdracht die erbij hoort goed is. Gelezen uitleg verdwijnt uit de lijst; de naslagtekst blijft hier staan.')}
       </p>
       {!isBase ? (
         <>
@@ -226,11 +223,9 @@ export default function TabbladenPage() {
           {list.map((p) => (
             <PlaygroundCard
               key={p.id}
-              gameId={id}
               base={base}
               playground={p}
               onChange={(change) => update(p.id, change)}
-              onError={(e) => setErrors([e])}
             />
           ))}
 
@@ -260,20 +255,15 @@ export default function TabbladenPage() {
 }
 
 function PlaygroundCard({
-  gameId,
   base,
   playground: p,
   onChange,
-  onError,
 }: {
-  gameId: string;
   base: BaseGame;
   playground: Playground;
   onChange: (change: (p: Playground) => Playground) => void;
-  onError: (message: string) => void;
 }) {
   const t = useT();
-  const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState(0);
   const preview = useRef<HTMLDivElement>(null);
   const drag = useRef<{ x: number; y: number } | null>(null);
@@ -288,39 +278,6 @@ function PlaygroundCard({
       ...pg,
       [field]: { ...(pg[field] ?? {}), [lang]: value },
     }));
-
-  const upload = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    setBusy(true);
-    try {
-      const size = await imageSize(file);
-      const db = supabase();
-      const path = mediaPath(gameId, `playground-${p.id}`, file.type);
-      const up = await db.storage
-        .from("media")
-        .upload(path, file, { contentType: file.type, upsert: false });
-      if (up.error) throw new Error(up.error.message);
-      const url = db.storage.from("media").getPublicUrl(path).data.publicUrl;
-      // Een foto met dezelfde verhouding houdt zijn vakken; anders schalen we ze mee.
-      const old = reveal;
-      const sx = old ? size.width / old.width : 1;
-      const sy = old ? size.height / old.height : 1;
-      const pieces = (old?.pieces ?? []).map((piece) => ({
-        ...piece,
-        x: Math.round(piece.x * sx),
-        y: Math.round(piece.y * sy),
-        w: Math.round(piece.w * sx),
-        h: Math.round(piece.h * sy),
-      }));
-      setReveal({ image: url, width: size.width, height: size.height, pieces });
-    } catch (err) {
-      onError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const point = (e: PointerEvent<HTMLDivElement>) => {
     const box = preview.current!.getBoundingClientRect();
@@ -387,28 +344,20 @@ function PlaygroundCard({
 
       <CodeEditor base={base} playground={p} onChange={onChange} />
 
-      <h3>{t('Foto met afgedekte vakken')}</h3>
-      {p.code ? (
-        <p className="muted">
-          {t('Dit tabblad heeft codevakjes. Een foto is dan niet meer nodig; staat er nog een, dan toont de app allebei.')}
-        </p>
+      {/* De oude foto met afgedekte vakken staat er alleen nog als een tabblad er een heeft, om hem weg te halen. */}
+      {reveal ? (
+        <>
+          <h3>{t('Foto met afgedekte vakken')}</h3>
+          <p className="muted">
+            {t('Dit tabblad heeft nog een foto met afgedekte vakken van vóór de codevakjes. Haal die weg zodra de codevakjes klaar zijn; tot die tijd toont de app allebei.')}
+          </p>
+          <div className="actions" style={{ marginTop: 0 }}>
+            <button className="link" onClick={() => setReveal(undefined)}>
+              {t('Foto weghalen')}
+            </button>
+          </div>
+        </>
       ) : null}
-      <div className="actions" style={{ marginTop: 0 }}>
-        <label className={`filebutton${busy ? " disabled" : ""}`}>
-          {busy ? t("Bezig…") : reveal ? t("Andere foto") : t("Foto uploaden")}
-          <input
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            onChange={(e) => void upload(e)}
-            disabled={busy}
-          />
-        </label>
-        {reveal ? (
-          <button className="link" onClick={() => setReveal(undefined)}>
-            {t('Foto weghalen')}
-          </button>
-        ) : null}
-      </div>
       {reveal ? (
         <div
           style={{
@@ -547,9 +496,7 @@ function PlaygroundCard({
             </button>
           </div>
         </div>
-      ) : (
-        <p className="muted">{t('Geen foto op dit tabblad.')}</p>
-      )}
+      ) : null}
     </section>
   );
 }
@@ -587,20 +534,6 @@ function textRows(key: string, field: string, text: Text) {
     lang,
     text: tk,
   }));
-}
-
-function imageSize(file: File): Promise<{ width: number; height: number }> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      resolve({ width: img.naturalWidth, height: img.naturalHeight });
-      URL.revokeObjectURL(url);
-    };
-    img.onerror = () =>
-      reject(new Error(tr("Deze afbeelding kan niet worden gelezen.")));
-    img.src = url;
-  });
 }
 
 /** Titel van een opdracht voor in een keuzelijst van de beheeromgeving. */
