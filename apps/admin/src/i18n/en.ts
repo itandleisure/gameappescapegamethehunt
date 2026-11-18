@@ -498,8 +498,6 @@ export const en: Record<string, string> = {
   "Publiceer de stad (en de klantvarianten eronder) opnieuw om dit in nieuwe hunts te gebruiken.": "Publish the city (and the client variants under it) again to use this in new hunts.",
   "Versies van het basisspel": "Versions of the base game",
   "Wat je hier aanpast, is de werkversie. Zet een nieuwe versie vast als de wijzigingen klaar zijn. Daarna kies je per stad wanneer die overgaat.": "What you change here is the working version. Save a new version when the changes are ready. Then choose per city when it moves over.",
-  "gebruikt door {cities}": "used by {cities}",
-  "door geen enkele stad gebruikt": "not used by any city",
   "Nog geen versies vastgezet.": "No versions saved yet.",
   "Wat is er nieuw? (optioneel)": "What's new? (optional)",
   "Bijvoorbeeld: nieuwe puzzel bij het extractiepunt": "For example: new puzzle at the extraction point",
@@ -515,4 +513,9 @@ export const en: Record<string, string> = {
   "versie {n}": "version {n}",
   "basisspel: werkversie": "base game: working version",
   "basisspel: versie {n}": "base game: version {n}",
+  "Versie": "Version",
+  "Vastgezet": "Saved",
+  "Werkversie": "Working version",
+  "1 stad": "1 city",
+  "{n} steden": "{n} cities",
 };

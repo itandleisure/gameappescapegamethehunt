@@ -44,6 +44,18 @@ function gameTitle(g: { slug: string; layer: string; settings: { name?: unknown 
   return tx(g.settings.name) || g.slug;
 }
 
+/** Per versie van het basisspel hoeveel steden erop zitten, bijvoorbeeld "v1: 3 steden · v2: 1 stad". */
+function versionSummary(games: GameRow[], baseId: string, t: (nl: string, vars?: Record<string, string | number>) => string): string {
+  const counts = new Map<number | null, number>();
+  for (const c of games) if (c.parent_id === baseId && c.layer === 'city') counts.set(c.base_version, (counts.get(c.base_version) ?? 0) + 1);
+  return [...counts.entries()]
+    .sort(([a], [b]) => (a ?? Infinity) - (b ?? Infinity))
+    .map(([version, n]) =>
+      (version === null ? t('werkversie') : t('versie {n}', { n: version })) + ': ' + (n === 1 ? t('1 stad') : t('{n} steden', { n })),
+    )
+    .join(' · ');
+}
+
 export default function GamesPage() {
   const { org } = useAuth();
   const { t, locale } = useLanguage();
@@ -170,6 +182,9 @@ export default function GamesPage() {
                     </td>
                     <td>
                       {t(LAYER_LABEL[g.layer])}
+                      {g.layer === 'base' && games.some((c) => c.parent_id === g.id && c.layer === 'city') ? (
+                        <div className="muted">{versionSummary(games, g.id, t)}</div>
+                      ) : null}
                       {g.layer === 'city' ? (
                         <div className="muted">
                           {g.base_version === null

@@ -498,8 +498,6 @@ export const es: Record<string, string> = {
   "Publiceer de stad (en de klantvarianten eronder) opnieuw om dit in nieuwe hunts te gebruiken.": "Vuelve a publicar la ciudad (y las variantes de cliente que dependen de ella) para usarlo en nuevas hunts.",
   "Versies van het basisspel": "Versiones del juego base",
   "Wat je hier aanpast, is de werkversie. Zet een nieuwe versie vast als de wijzigingen klaar zijn. Daarna kies je per stad wanneer die overgaat.": "Lo que cambias aquí es la versión de trabajo. Fija una nueva versión cuando los cambios estén listos. Después eliges por ciudad cuándo se cambia.",
-  "gebruikt door {cities}": "usada por {cities}",
-  "door geen enkele stad gebruikt": "no la usa ninguna ciudad",
   "Nog geen versies vastgezet.": "Aún no hay versiones fijadas.",
   "Wat is er nieuw? (optioneel)": "¿Qué hay de nuevo? (opcional)",
   "Bijvoorbeeld: nieuwe puzzel bij het extractiepunt": "Por ejemplo: nuevo puzle en el punto de extracción",
@@ -515,4 +513,9 @@ export const es: Record<string, string> = {
   "versie {n}": "versión {n}",
   "basisspel: werkversie": "juego base: versión de trabajo",
   "basisspel: versie {n}": "juego base: versión {n}",
+  "Versie": "Versión",
+  "Vastgezet": "Fijada",
+  "Werkversie": "Versión de trabajo",
+  "1 stad": "1 ciudad",
+  "{n} steden": "{n} ciudades",
 };

@@ -348,25 +348,61 @@ export default function GamePage() {
             {t("Wat je hier aanpast, is de werkversie. Zet een nieuwe versie vast als de wijzigingen klaar zijn. Daarna kies je per stad wanneer die overgaat.")}
           </p>
           {baseVersions.length > 0 ? (
-            <ul>
-              {baseVersions.map((v) => {
-                const used = children.filter(
-                  (c) => c.layer === "city" && c.base_version === v.version,
-                );
-                return (
-                  <li key={v.version}>
-                    <strong>{versionLabel(v)}</strong>{" "}
-                    <span className="muted">
-                      {used.length > 0
-                        ? t("gebruikt door {cities}", {
-                            cities: used.map((c) => c.slug).join(", "),
-                          })
-                        : t("door geen enkele stad gebruikt")}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>{t("Versie")}</th>
+                    <th>{t("Vastgezet")}</th>
+                    <th>{t("Steden")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ...baseVersions.map((v) => ({
+                      key: String(v.version),
+                      name: t("Versie {n}", { n: v.version }),
+                      when:
+                        new Date(v.created_at).toLocaleDateString(locale) +
+                        (v.note ? ` · ${v.note}` : ""),
+                      version: v.version as number | null,
+                    })),
+                    { key: "werk", name: t("Werkversie"), when: "–", version: null },
+                  ].map((row) => {
+                    const used = children.filter(
+                      (c) => c.layer === "city" && c.base_version === row.version,
+                    );
+                    // De werkversie alleen tonen als er een stad op staat.
+                    if (row.version === null && used.length === 0) return null;
+                    return (
+                      <tr key={row.key}>
+                        <td>
+                          <strong>{row.name}</strong>
+                        </td>
+                        <td className="muted">{row.when}</td>
+                        <td>
+                          <strong>
+                            {used.length === 1
+                              ? t("1 stad")
+                              : t("{n} steden", { n: used.length })}
+                          </strong>
+                          {used.length > 0 ? (
+                            <div className="muted">
+                              {used.map((c, i) => (
+                                <span key={c.id}>
+                                  {i > 0 ? ", " : ""}
+                                  <Link href={`/spellen/${c.id}`}>{c.slug}</Link>
+                                </span>
+                              ))}
+                            </div>
+                          ) : null}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           ) : (
             <p className="muted">{t("Nog geen versies vastgezet.")}</p>
           )}
