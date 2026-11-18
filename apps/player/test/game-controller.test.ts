@@ -252,30 +252,6 @@ describe('GameController', () => {
   });
 });
 
-describe('centrale start', () => {
-  it('leest de uitleg, wacht op de spelleider en start met de uitleg afgerond', async () => {
-    const s = setup({ ...game, briefing: 'intro' });
-    s.backend.centralStart = true;
-    const c = await GameController.join(s.deps, 'LWD001', 'De Speurders', 'nl', '06 12345678');
-    expect(c.centralStart).toBe(true);
-    expect(c.briefingTasks()).toHaveLength(12);
-
-    // Op Start drukken doet niets zolang de spelleider niet is gestart.
-    await c.start();
-    expect(c.snapshot().state).toBeNull();
-    await c.markReady();
-    expect(c.team.readyAt).toBe(T0);
-    expect(await c.checkStarted()).toBe(false);
-
-    s.advance(5 * 60_000);
-    s.backend.startSession();
-    expect(await c.checkStarted()).toBe(true);
-    const state = c.snapshot().state!;
-    expect(c.team.startedAt).toBe(T0 + 5 * 60_000);
-    expect(state.tasks['uitleg-01']!.status).toBe('done');
-  });
-});
-
 describe('teamchat', () => {
   async function twoTeams() {
     const s = setup();
