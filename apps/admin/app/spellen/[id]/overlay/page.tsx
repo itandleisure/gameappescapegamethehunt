@@ -17,6 +17,7 @@ import {
   ownGameField,
   type MapGameField,
 } from '@/lib/map-settings';
+import { loadMaplibre } from '@/lib/maplibre';
 import { supabase } from '@/lib/supabase';
 
 const round = (n: number) => Math.round(n * 1e6) / 1e6;
@@ -65,7 +66,7 @@ export default function OverlayPage() {
   useEffect(() => {
     if (!game || !container.current || map.current) return;
     let cancelled = false;
-    void import('maplibre-gl').then(({ Map }) => {
+    void loadMaplibre().then(({ Map }) => {
       if (cancelled || !container.current) return;
       const start =
         game.meetingPoint ??
@@ -117,7 +118,7 @@ export default function OverlayPage() {
   useEffect(() => {
     const m = map.current;
     if (!m || !ready) return;
-    void import('maplibre-gl').then(({ Marker: MarkerClass }) => {
+    void loadMaplibre().then(({ Marker: MarkerClass }) => {
       for (const marker of markers.current) marker.remove();
       markers.current = [];
       if (overlay) {
