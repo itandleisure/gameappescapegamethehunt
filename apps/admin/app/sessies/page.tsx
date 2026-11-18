@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useAuth } from '@/lib/auth';
 import {
   formatInZone,
-  STATUS_LABEL,
   TIMEZONES,
   toJoinCode,
   validateSession,
@@ -13,6 +12,7 @@ import {
   type SessionStatus,
 } from '@/lib/sessions';
 import { supabase } from '@/lib/supabase';
+import { OpenToggle } from '@/results/OpenToggle';
 import { tx } from '@/lib/text';
 
 interface SessionRow {
@@ -102,7 +102,7 @@ export default function SessionsPage() {
         track_count: form.trackCount,
         test_mode: form.testMode,
         central_start: form.centralStart ?? false,
-        status: 'draft',
+        status: 'open',
         ...(form.joinCode?.trim() ? { join_code: form.joinCode.trim().toUpperCase() } : {}),
       });
     setBusy(false);
@@ -112,12 +112,6 @@ export default function SessionsPage() {
     }
     setForm({ ...EMPTY, gameVersionId: form.gameVersionId });
     setShowForm(false);
-    await load();
-  };
-
-  const setStatus = async (id: string, status: SessionStatus) => {
-    const { error } = await supabase().from('sessions').update({ status }).eq('id', id);
-    if (error) setErrors([error.message]);
     await load();
   };
 
@@ -265,7 +259,7 @@ export default function SessionsPage() {
                   <td className="code">{s.join_code}</td>
                   <td>{formatInZone(s.starts_at, s.timezone)}</td>
                   <td>
-                    <span className={`badge ${s.status === 'open' ? 'open' : ''}`}>{STATUS_LABEL[s.status]}</span>{' '}
+                    <OpenToggle id={s.id} status={s.status} onChange={() => void load()} />{' '}
                     {s.test_mode ? <span className="badge test">Test</span> : null}
                   </td>
                   <td>
@@ -273,15 +267,6 @@ export default function SessionsPage() {
                     <Link href={`/sessies/${s.id}`} className="buttonlink">
                       Live &amp; resultaten
                     </Link>
-                    {s.status !== 'open' ? (
-                      <button className="secondary" onClick={() => void setStatus(s.id, 'open')}>
-                        Openen
-                      </button>
-                    ) : (
-                      <button className="secondary" onClick={() => void setStatus(s.id, 'closed')}>
-                        Sluiten
-                      </button>
-                    )}
                     </div>
                   </td>
                 </tr>
