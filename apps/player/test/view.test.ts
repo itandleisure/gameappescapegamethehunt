@@ -1,7 +1,8 @@
 import { composeGame, computeState } from '@hunt/engine';
 import { describe, expect, it } from 'vitest';
 import { INTRO, leeuwarden, leeuwardenPoints, theHuntBase } from '../../../packages/engine/test/fixtures/the-hunt.js';
-import { answerFeedback, isAnswerable, isValidPhone, listGroups, taskToShow } from '../src/core/view.js';
+import { answerFeedback, isAnswerable, isValidPhone, listGroups, mapStyleChoice, taskToShow } from '../src/core/view.js';
+import { MAP_STYLES } from '@hunt/engine';
 
 const game = composeGame(theHuntBase, [leeuwarden], { id: 'lwd', version: 1 });
 const T0 = Date.UTC(2026, 10, 21, 13, 0, 0);
@@ -61,5 +62,17 @@ describe('schermen', () => {
   it('controleert telefoonnummers', () => {
     for (const ok of ['0612345678', '+31 6 1234 5678', '058-1234567']) expect(isValidPhone(ok)).toBe(true);
     for (const bad of ['', '12345', 'bel me', '06-1234567a']) expect(isValidPhone(bad)).toBe(false);
+  });
+
+  it('wisselt de kaartstijl, met de stijl van het spel als begin', () => {
+    const first = mapStyleChoice(game, null);
+    expect(first.id).toBe('zwart-wit');
+    const second = mapStyleChoice(game, first.next);
+    expect(second.id).toBe(MAP_STYLES[1]!.id);
+    // Een onbekende bewaarde stijl valt terug op die van het spel.
+    expect(mapStyleChoice(game, 'https://example.org/weg.json').url).toBe(first.url);
+    // Een eigen stijl van het spel staat vooraan.
+    const own = mapStyleChoice({ ...game, map: { styleUrl: 'https://example.org/eigen.json' } }, null);
+    expect(own.id).toBe('spel');
   });
 });

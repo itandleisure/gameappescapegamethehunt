@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ComponentType, type Ref } from 'react';
+import { useEffect, useRef, type ComponentType, type Ref, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { WebView as RNWebView, type WebViewProps } from 'react-native-webview';
 import { colors } from '../theme';
@@ -37,7 +37,11 @@ if (!window.maplibregl) { showError('kon niet laden (geen internet?)'); window.h
 const map = new maplibregl.Map({ container: 'map', style: ${JSON.stringify(styleUrl)}, attributionControl: { compact: true } });
 map.on('error', (e) => showError((e && e.error && e.error.message) || 'onbekende fout'));
 let markers = [], me = null, fitted = false;
+let current = ${JSON.stringify(styleUrl)}, last = null;
 window.hunt = (data) => {
+  last = data;
+  // Andere kaartstijl gekozen: stijl wisselen zonder het beeld te verplaatsen, daarna alles er weer op.
+  if (data.style && data.style !== current) { current = data.style; map.setStyle(data.style); map.once('style.load', () => apply(last)); return; }
   map.loaded() ? apply(data) : map.once('load', () => apply(data));
 };
 function apply(d) {
@@ -60,7 +64,9 @@ function apply(d) {
 
 export default function WebMap({ styleUrl, bounds, markers, overlay, position }: GameMapProps) {
   const ref = useRef<WebViewHandle>(null);
-  const payload = JSON.stringify({ bounds, markers, overlay, position });
+  const payload = JSON.stringify({ bounds, markers, overlay, position, style: styleUrl });
+  // De pagina zelf blijft op de eerste stijl; wisselen gaat via window.hunt.
+  const [firstStyle] = useState(styleUrl);
 
   useEffect(() => {
     ref.current?.injectJavaScript(`window.hunt && window.hunt(${payload}); true;`);
@@ -73,7 +79,7 @@ export default function WebMap({ styleUrl, bounds, markers, overlay, position }:
       originWhitelist={['*']}
       // Met een https-basisadres: zonder dat heeft de pagina geen eigen herkomst
       // en kan MapLibre op iOS zijn achtergrondtaak (web worker) niet starten.
-      source={{ html: html(styleUrl, colors.accent, colors.background), baseUrl: 'https://kaart.escapegamethehunt.app/' }}
+      source={{ html: html(firstStyle, colors.accent, colors.background), baseUrl: 'https://kaart.escapegamethehunt.app/' }}
       onLoadEnd={() => ref.current?.injectJavaScript(`window.hunt && window.hunt(${payload}); true;`)}
       scrollEnabled={false}
       onError={(e) => console.warn('webkaart', e.nativeEvent.description)}

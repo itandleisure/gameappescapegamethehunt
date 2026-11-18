@@ -1,0 +1,539 @@
+{
+  "version": 8,
+  "name": "Escape Game The Hunt – Nacht",
+  "metadata": {
+    "omschrijving": "Donkere spelkaart voor avondspellen, op OpenStreetMap-data via OpenFreeMap."
+  },
+  "sources": {
+    "omt": {
+      "type": "vector",
+      "url": "https://tiles.openfreemap.org/planet",
+      "attribution": "© OpenStreetMap-bijdragers, OpenFreeMap"
+    }
+  },
+  "glyphs": "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf",
+  "layers": [
+    {
+      "id": "papier",
+      "type": "background",
+      "paint": {
+        "background-color": "#14171b"
+      }
+    },
+    {
+      "id": "groen",
+      "type": "fill",
+      "source": "omt",
+      "source-layer": "landcover",
+      "filter": [
+        "in",
+        [
+          "get",
+          "class"
+        ],
+        [
+          "literal",
+          [
+            "grass",
+            "wood",
+            "farmland",
+            "wetland"
+          ]
+        ]
+      ],
+      "paint": {
+        "fill-color": "#1b2024"
+      }
+    },
+    {
+      "id": "park",
+      "type": "fill",
+      "source": "omt",
+      "source-layer": "park",
+      "paint": {
+        "fill-color": "#1b2024",
+        "fill-outline-color": "#2e353b"
+      }
+    },
+    {
+      "id": "terrein",
+      "type": "fill",
+      "source": "omt",
+      "source-layer": "landuse",
+      "filter": [
+        "in",
+        [
+          "get",
+          "class"
+        ],
+        [
+          "literal",
+          [
+            "cemetery",
+            "pitch",
+            "stadium",
+            "playground"
+          ]
+        ]
+      ],
+      "paint": {
+        "fill-color": "#171b1f"
+      }
+    },
+    {
+      "id": "water",
+      "type": "fill",
+      "source": "omt",
+      "source-layer": "water",
+      "paint": {
+        "fill-color": "#0d2533"
+      }
+    },
+    {
+      "id": "water-rand",
+      "type": "line",
+      "source": "omt",
+      "source-layer": "water",
+      "paint": {
+        "line-color": "#2f5a70",
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          12,
+          0.5,
+          17,
+          1.5
+        ]
+      }
+    },
+    {
+      "id": "vaarwater",
+      "type": "line",
+      "source": "omt",
+      "source-layer": "waterway",
+      "paint": {
+        "line-color": "#245066",
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          12,
+          1,
+          17,
+          4
+        ]
+      }
+    },
+    {
+      "id": "gebouw",
+      "type": "fill",
+      "source": "omt",
+      "source-layer": "building",
+      "minzoom": 13,
+      "paint": {
+        "fill-color": "#262b31",
+        "fill-outline-color": "#3a4148"
+      }
+    },
+    {
+      "id": "spoor",
+      "type": "line",
+      "source": "omt",
+      "source-layer": "transportation",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "rail"
+      ],
+      "paint": {
+        "line-color": "#e9e4d6",
+        "line-width": 1.5,
+        "line-dasharray": [
+          3,
+          2
+        ]
+      }
+    },
+    {
+      "id": "pad",
+      "type": "line",
+      "source": "omt",
+      "source-layer": "transportation",
+      "filter": [
+        "in",
+        [
+          "get",
+          "class"
+        ],
+        [
+          "literal",
+          [
+            "path",
+            "track"
+          ]
+        ]
+      ],
+      "minzoom": 14,
+      "paint": {
+        "line-color": "#9a958a",
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          14,
+          0.7,
+          18,
+          2
+        ],
+        "line-dasharray": [
+          2,
+          1.5
+        ]
+      }
+    },
+    {
+      "id": "straat-klein",
+      "type": "line",
+      "source": "omt",
+      "source-layer": "transportation",
+      "filter": [
+        "in",
+        [
+          "get",
+          "class"
+        ],
+        [
+          "literal",
+          [
+            "minor",
+            "service"
+          ]
+        ]
+      ],
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      "paint": {
+        "line-color": "#b7b1a3",
+        "line-width": [
+          "interpolate",
+          [
+            "exponential",
+            1.5
+          ],
+          [
+            "zoom"
+          ],
+          13,
+          0.6,
+          16,
+          2.5,
+          19,
+          9
+        ]
+      }
+    },
+    {
+      "id": "straat",
+      "type": "line",
+      "source": "omt",
+      "source-layer": "transportation",
+      "filter": [
+        "in",
+        [
+          "get",
+          "class"
+        ],
+        [
+          "literal",
+          [
+            "tertiary",
+            "secondary",
+            "primary",
+            "trunk"
+          ]
+        ]
+      ],
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      "paint": {
+        "line-color": "#e9e4d6",
+        "line-width": [
+          "interpolate",
+          [
+            "exponential",
+            1.5
+          ],
+          [
+            "zoom"
+          ],
+          10,
+          0.8,
+          14,
+          3,
+          17,
+          8,
+          19,
+          16
+        ]
+      }
+    },
+    {
+      "id": "snelweg",
+      "type": "line",
+      "source": "omt",
+      "source-layer": "transportation",
+      "filter": [
+        "==",
+        [
+          "get",
+          "class"
+        ],
+        "motorway"
+      ],
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      "paint": {
+        "line-color": "#e9e4d6",
+        "line-width": [
+          "interpolate",
+          [
+            "exponential",
+            1.5
+          ],
+          [
+            "zoom"
+          ],
+          8,
+          1,
+          14,
+          4,
+          18,
+          14
+        ]
+      }
+    },
+    {
+      "id": "brug",
+      "type": "line",
+      "source": "omt",
+      "source-layer": "transportation",
+      "filter": [
+        "==",
+        [
+          "get",
+          "brunnel"
+        ],
+        "bridge"
+      ],
+      "minzoom": 14,
+      "layout": {
+        "line-cap": "butt"
+      },
+      "paint": {
+        "line-color": "#14171b",
+        "line-width": [
+          "interpolate",
+          [
+            "exponential",
+            1.5
+          ],
+          [
+            "zoom"
+          ],
+          14,
+          1,
+          18,
+          5
+        ],
+        "line-gap-width": [
+          "interpolate",
+          [
+            "exponential",
+            1.5
+          ],
+          [
+            "zoom"
+          ],
+          14,
+          2,
+          18,
+          10
+        ]
+      }
+    },
+    {
+      "id": "water-naam",
+      "type": "symbol",
+      "source": "omt",
+      "source-layer": "water_name",
+      "layout": {
+        "text-field": [
+          "get",
+          "name"
+        ],
+        "text-font": [
+          "Noto Sans Italic"
+        ],
+        "text-size": 13
+      },
+      "paint": {
+        "text-color": "#7fb3cc",
+        "text-halo-color": "#14171b",
+        "text-halo-width": 1.5
+      }
+    },
+    {
+      "id": "straatnaam",
+      "type": "symbol",
+      "source": "omt",
+      "source-layer": "transportation_name",
+      "minzoom": 14,
+      "layout": {
+        "symbol-placement": "line",
+        "text-field": [
+          "get",
+          "name"
+        ],
+        "text-font": [
+          "Noto Sans Regular"
+        ],
+        "text-size": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          14,
+          10,
+          18,
+          14
+        ],
+        "text-max-angle": 30
+      },
+      "paint": {
+        "text-color": "#e9e4d6",
+        "text-halo-color": "#14171b",
+        "text-halo-width": 2
+      }
+    },
+    {
+      "id": "wijk",
+      "type": "symbol",
+      "source": "omt",
+      "source-layer": "place",
+      "filter": [
+        "in",
+        [
+          "get",
+          "class"
+        ],
+        [
+          "literal",
+          [
+            "suburb",
+            "neighbourhood",
+            "quarter"
+          ]
+        ]
+      ],
+      "minzoom": 12,
+      "maxzoom": 16,
+      "layout": {
+        "text-field": [
+          "upcase",
+          [
+            "get",
+            "name"
+          ]
+        ],
+        "text-font": [
+          "Noto Sans Bold"
+        ],
+        "text-size": 12,
+        "text-letter-spacing": 0.15
+      },
+      "paint": {
+        "text-color": "#a59f91",
+        "text-halo-color": "#14171b",
+        "text-halo-width": 2
+      }
+    },
+    {
+      "id": "plaats",
+      "type": "symbol",
+      "source": "omt",
+      "source-layer": "place",
+      "filter": [
+        "in",
+        [
+          "get",
+          "class"
+        ],
+        [
+          "literal",
+          [
+            "city",
+            "town",
+            "village"
+          ]
+        ]
+      ],
+      "maxzoom": 15,
+      "layout": {
+        "text-field": [
+          "upcase",
+          [
+            "get",
+            "name"
+          ]
+        ],
+        "text-font": [
+          "Noto Sans Bold"
+        ],
+        "text-size": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          8,
+          12,
+          14,
+          20
+        ],
+        "text-letter-spacing": 0.12
+      },
+      "paint": {
+        "text-color": "#e9e4d6",
+        "text-halo-color": "#14171b",
+        "text-halo-width": 2.5
+      }
+    }
+  ]
+}
