@@ -32,6 +32,8 @@ export interface GameMapProps {
     /** Laag over alles buiten de grens; dekking 0 = geen laag. */
     outside: { color: string; opacity: number };
   };
+  /** Cirkels op de kaart, bijvoorbeeld om het verzamelpunt. */
+  circles?: { lat: number; lng: number; radius: number; color: string }[];
   /** Eigen positie (voor de webkaart; de native kaart toont hem zelf). */
   position?: { lat: number; lng: number; accuracy: number } | null;
 }

@@ -89,6 +89,8 @@ export const pt: Record<string, string> = {
   "Wissen": "Apagar",
   "Buiten het speelveld": "Fora da área de jogo",
   "Dekking": "Opacidade",
+  "Straal van de cirkel (meter)": "Raio do círculo (metros)",
+  "Binnen deze cirkel is een team bij het verzamelpunt.": "Dentro deste círculo uma equipa está no ponto de encontro.",
   "Kleur": "Cor",
   "Opdrachten": "Missões",
   "Opdrachten zonder locatie plaats je door hierboven één track of de vaste locaties te kiezen.": "Para colocar missões sem local, escolhe acima um track ou os locais fixos.",

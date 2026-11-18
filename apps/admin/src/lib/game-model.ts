@@ -128,7 +128,7 @@ interface BaseSettings {
   /** Foto die stukje voor stukje zichtbaar wordt, per playground. */
   playgroundReveal?: Record<string, PlaygroundReveal>;
   gps: BaseGame['gps'];
-  meetingPoint?: LatLng;
+  meetingPoint?: LatLng & { radius?: number };
   mapOverlay?: MapOverlay;
   map?: MapSource;
   boundary?: PlayBoundary;

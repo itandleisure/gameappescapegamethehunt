@@ -1,6 +1,6 @@
 'use client';
-import { DEFAULT_MAP_SOURCE, MAP_STYLES, type GamePackage, type Layer, type LatLng, type MapOverlay, type MapSource, type Text } from '@hunt/engine';
-import type { ImageSource, Map as MlMap, Marker } from 'maplibre-gl';
+import { circlesGeoJson, DEFAULT_MAP_SOURCE, DEFAULT_MEETING_RADIUS, MAP_STYLES, type GamePackage, type Layer, type LatLng, type MapOverlay, type MapSource, type Text } from '@hunt/engine';
+import type { GeoJSONSource, ImageSource, Map as MlMap, Marker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -32,6 +32,7 @@ export default function OverlayPage() {
   const [overlay, setOverlay] = useState<MapOverlay | null>(null);
   const [meeting, setMeeting] = useState<LatLng | null>(null);
   const [meetingText, setMeetingText] = useState<Text>({});
+  const [meetingRadius, setMeetingRadius] = useState(DEFAULT_MEETING_RADIUS);
   const [opacity, setOpacity] = useState(0.7);
   const [mapSource, setMapSource] = useState<MapSource | null>(null);
   /** Welke lagen (stad, klant) een veld mogen aanpassen; alleen in het basisspel in te stellen. */
@@ -56,6 +57,7 @@ export default function OverlayPage() {
       setOverlay(g.mapOverlay ?? null);
       setMeeting(g.meetingPoint ? { lat: g.meetingPoint.lat, lng: g.meetingPoint.lng } : null);
       setMeetingText(g.meetingPoint?.text ?? {});
+      setMeetingRadius(g.meetingPoint?.radius ?? DEFAULT_MEETING_RADIUS);
       setMapSource(g.map ?? null);
       const fields: MapGameField[] = ['map', 'mapOverlay', 'meetingPoint', 'boundary'];
       setAllowed(
@@ -142,6 +144,24 @@ export default function OverlayPage() {
     if (m?.getLayer('overlay')) m.setPaintProperty('overlay', 'raster-opacity', opacity);
   }, [opacity]);
 
+  // Cirkel om het verzamelpunt: daarbinnen is een team er.
+  const drawMeetingCircle = useCallback(
+    (at: LatLng | null) => {
+      const m = map.current;
+      if (!m || !ready) return;
+      const data = circlesGeoJson(at ? [{ ...at, radius: meetingRadius, color: '#ea580c' }] : []);
+      const source = m.getSource('meeting-radius') as GeoJSONSource | undefined;
+      if (source) source.setData(data as never);
+      else {
+        m.addSource('meeting-radius', { type: 'geojson', data: data as never });
+        m.addLayer({ id: 'meeting-radius-fill', type: 'fill', source: 'meeting-radius', paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.15 } });
+        m.addLayer({ id: 'meeting-radius-line', type: 'line', source: 'meeting-radius', paint: { 'line-color': ['get', 'color'], 'line-width': 2 } });
+      }
+    },
+    [meetingRadius, ready],
+  );
+  useEffect(() => drawMeetingCircle(meeting), [drawMeetingCircle, meeting]);
+
   // Hoekpunten en verzamelpunt als versleepbare markeringen.
   useEffect(() => {
     const m = map.current;
@@ -169,6 +189,7 @@ export default function OverlayPage() {
         el.className = `pin meeting${canMeeting ? ' editable' : ''}`;
         el.title = t('Verzamelpunt');
         const marker = new MarkerClass({ element: el, draggable: canMeeting }).setLngLat([meeting.lng, meeting.lat]).addTo(m);
+        marker.on('drag', () => drawMeetingCircle(marker.getLngLat()));
         marker.on('dragend', () => {
           const { lat, lng } = marker.getLngLat();
           setMeeting({ lat: round(lat), lng: round(lng) });
@@ -177,7 +198,7 @@ export default function OverlayPage() {
         markers.current.push(marker);
       }
     });
-  }, [overlay, meeting, ready, canOverlay, canMeeting, t]);
+  }, [overlay, meeting, ready, canOverlay, canMeeting, drawMeetingCircle, t]);
 
   if (!chain || !game) return errors.length ? <ul className="errors">{errors.map((e, i) => <li key={i}>{e}</li>)}</ul> : <p className="muted">{t('Laden…')}</p>;
 
@@ -246,7 +267,7 @@ export default function OverlayPage() {
           }
         }
         if (dirty.has('meetingPoint')) {
-          if (meeting) settings.meetingPoint = meeting;
+          if (meeting) settings.meetingPoint = { ...meeting, radius: meetingRadius };
           else delete settings.meetingPoint;
           must(await db.from('translations').delete().eq('game_id', id).eq('entity', 'game').eq('entity_id', '').eq('field', 'meetingPoint'));
           const rows = meeting ? textRows(meetingText) : [];
@@ -256,7 +277,7 @@ export default function OverlayPage() {
       } else {
         for (const field of dirty) {
           must(await db.from('overrides').delete().eq('game_id', id).is('task_id', null).eq('field', field));
-          const value = field === 'mapOverlay' ? overlay : field === 'map' ? mapSource : meeting ? { ...meeting, text: cleanText(meetingText) } : null;
+          const value = field === 'mapOverlay' ? overlay : field === 'map' ? mapSource : meeting ? { ...meeting, radius: meetingRadius, text: cleanText(meetingText) } : null;
           if (value) must(await db.from('overrides').insert({ game_id: id, task_id: null, field, value }));
         }
       }
@@ -426,6 +447,25 @@ export default function OverlayPage() {
                   </button>
                 ) : null}
               </div>
+              {meeting ? (
+                <div>
+                  <label htmlFor="mp-radius">{t('Straal van de cirkel (meter)')}</label>
+                  <input
+                    id="mp-radius"
+                    type="number"
+                    min={1}
+                    max={1000}
+                    value={meetingRadius}
+                    onChange={(e) => {
+                      const r = Math.round(Number(e.target.value));
+                      if (!(r > 0 && r <= 1000)) return;
+                      setMeetingRadius(r);
+                      touch('meetingPoint');
+                    }}
+                  />
+                  <p className="muted small">{t('Binnen deze cirkel is een team bij het verzamelpunt.')}</p>
+                </div>
+              ) : null}
               {meeting
                 ? game.languages.map((lang) => (
                     <div key={lang}>

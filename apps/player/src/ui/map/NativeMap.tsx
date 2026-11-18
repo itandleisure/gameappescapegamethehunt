@@ -7,7 +7,7 @@ import {
   Marker,
   NativeUserLocation,
 } from "@maplibre/maplibre-react-native";
-import { boundaryGeoJson, boundaryMaskGeoJson } from "@hunt/engine";
+import { boundaryGeoJson, boundaryMaskGeoJson, circlesGeoJson } from "@hunt/engine";
 import { Image, StyleSheet, Text, View } from "react-native";
 import { colors, radius, space } from "../theme";
 import type { GameMapProps } from "./types";
@@ -19,6 +19,7 @@ export default function NativeMap({
   markers,
   overlay,
   boundary,
+  circles,
 }: GameMapProps) {
   return (
     <Map
@@ -73,6 +74,12 @@ export default function NativeMap({
             layout={{ "line-join": "round" }}
             paint={{ "line-color": boundary.color, "line-width": 3 }}
           />
+        </GeoJSONSource>
+      ) : null}
+      {circles?.length ? (
+        <GeoJSONSource id="circles" data={circlesGeoJson(circles) as GeoJSON.GeoJSON}>
+          <Layer type="fill" id="circles-fill" paint={{ "fill-color": ["get", "color"], "fill-opacity": 0.15 }} />
+          <Layer type="line" id="circles-line" paint={{ "line-color": ["get", "color"], "line-width": 2 }} />
         </GeoJSONSource>
       ) : null}
       {markers.map((m) => (

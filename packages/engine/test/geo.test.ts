@@ -118,3 +118,14 @@ describe('laag buiten het speelveld', () => {
     expect(outsideShade({ outsideOpacity: 3 }).opacity).toBe(1);
   });
 });
+
+describe('cirkels op de kaart', () => {
+  it('maakt een gesloten ring met de juiste straal', async () => {
+    const { circleRing, distanceMeters } = await import('../src/geo.js');
+    const c = { lat: 53.2, lng: 5.8 };
+    const ring = circleRing(c, 10);
+    expect(ring.at(-1)![0]).toBeCloseTo(ring[0]![0], 9);
+    expect(ring.at(-1)![1]).toBeCloseTo(ring[0]![1], 9);
+    for (const [lng, lat] of ring) expect(distanceMeters(c, { lat, lng })).toBeCloseTo(10, 0);
+  });
+});
