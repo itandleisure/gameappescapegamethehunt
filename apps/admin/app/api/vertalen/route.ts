@@ -114,22 +114,25 @@ export async function POST(request: Request) {
   const payload = entries.map(([, text], i) => ({ id: ids[i], text }));
   const client = new Anthropic({ apiKey, maxRetries: 1 });
   try {
-    const response = await client.beta.messages.create({
-      model: MODEL,
-      max_tokens: 32000,
-      betas: ['server-side-fallback-2026-07-01'],
-      fallbacks: 'default',
-      output_config: { effort: 'low', format: { type: 'json_schema', schema: outputSchema(targets) } },
-      system: SYSTEM,
-      messages: [
-        {
-          role: 'user',
-          content:
-            `Translate from ${LANGUAGE_NAMES[source]} into: ${targets.map((l) => `${l} = ${LANGUAGE_NAMES[l]}`).join(', ')}.\n` +
-            `Use the language codes as keys.\n\n${JSON.stringify(payload, null, 1)}`,
-        },
-      ],
-    });
+    // Streamen: de SDK weigert anders een aanvraag met een grote max_tokens.
+    const response = await client.beta.messages
+      .stream({
+        model: MODEL,
+        max_tokens: 16000,
+        betas: ['server-side-fallback-2026-07-01'],
+        fallbacks: 'default',
+        output_config: { effort: 'low', format: { type: 'json_schema', schema: outputSchema(targets) } },
+        system: SYSTEM,
+        messages: [
+          {
+            role: 'user',
+            content:
+              `Translate from ${LANGUAGE_NAMES[source]} into: ${targets.map((l) => `${l} = ${LANGUAGE_NAMES[l]}`).join(', ')}.\n` +
+              `Use the language codes as keys.\n\n${JSON.stringify(payload, null, 1)}`,
+          },
+        ],
+      })
+      .finalMessage();
     if (response.stop_reason === 'refusal') return json(422, { error: 'De vertaaldienst wilde deze tekst niet vertalen.' });
     if (response.stop_reason === 'max_tokens') return json(413, { error: 'Te veel tekst om in één keer te vertalen.' });
     const text = response.content.flatMap((b) => (b.type === 'text' ? [b.text] : [])).join('');
