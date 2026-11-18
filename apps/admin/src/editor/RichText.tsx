@@ -1,16 +1,18 @@
 'use client';
 import { blocksToHtml, parseRich, sanitizeRich } from '@hunt/engine';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { tKey } from '@/lib/i18n';
+import { useT } from '@/lib/language';
 
 /** Kleuren die ook op de donkere achtergrond van de speler-app goed leesbaar zijn. */
 const COLORS = [
-  { value: '', label: 'Standaard' },
-  { value: '#f5a524', label: 'Oranje' },
-  { value: '#f85149', label: 'Rood' },
-  { value: '#3fb950', label: 'Groen' },
-  { value: '#58a6ff', label: 'Blauw' },
-  { value: '#bc8cff', label: 'Paars' },
-  { value: '#9ca3af', label: 'Grijs' },
+  { value: '', label: tKey('Standaard') },
+  { value: '#f5a524', label: tKey('Oranje') },
+  { value: '#f85149', label: tKey('Rood') },
+  { value: '#3fb950', label: tKey('Groen') },
+  { value: '#58a6ff', label: tKey('Blauw') },
+  { value: '#bc8cff', label: tKey('Paars') },
+  { value: '#9ca3af', label: tKey('Grijs') },
 ];
 
 function Tool(props: { title: string; onClick: () => void; children: ReactNode; active?: boolean }) {
@@ -77,6 +79,7 @@ const icons = {
  * in zit, anders een klein stukje schone HTML (zie parseRich in de engine).
  */
 export function RichText(props: { value: string; onChange: (value: string) => void; placeholder?: string; minHeight?: number; id?: string }) {
+  const t = useT();
   const ref = useRef<HTMLDivElement>(null);
   const emitted = useRef<string | null>(null);
   const [colorOpen, setColorOpen] = useState(false);
@@ -126,27 +129,27 @@ export function RichText(props: { value: string; onChange: (value: string) => vo
   };
 
   const link = () => {
-    const url = window.prompt('Adres van de link (https://…)', 'https://');
+    const url = window.prompt(t('Adres van de link (https://…)'), 'https://');
     if (url === null) return;
     if (url.trim() === '' || url.trim() === 'https://') run('unlink');
     else if (/^(https?:\/\/|mailto:|tel:)\S+$/i.test(url.trim())) run('createLink', url.trim());
-    else window.alert('Een link moet beginnen met https://, mailto: of tel:');
+    else window.alert(t('Een link moet beginnen met https://, mailto: of tel:'));
   };
 
   return (
     <div className="rte">
       <div className="rte-bar">
-        <Tool title="Vet (Ctrl+B)" active={state('bold')} onClick={() => run('bold')}>
+        <Tool title={t('Vet (Ctrl+B)')} active={state('bold')} onClick={() => run('bold')}>
           <b>B</b>
         </Tool>
-        <Tool title="Cursief (Ctrl+I)" active={state('italic')} onClick={() => run('italic')}>
+        <Tool title={t('Cursief (Ctrl+I)')} active={state('italic')} onClick={() => run('italic')}>
           <i style={{ fontFamily: 'Georgia, serif' }}>I</i>
         </Tool>
-        <Tool title="Onderstrepen (Ctrl+U)" active={state('underline')} onClick={() => run('underline')}>
+        <Tool title={t('Onderstrepen (Ctrl+U)')} active={state('underline')} onClick={() => run('underline')}>
           <u>U</u>
         </Tool>
         <span className="rte-color">
-          <Tool title="Tekstkleur" onClick={() => setColorOpen(!colorOpen)}>
+          <Tool title={t('Tekstkleur')} onClick={() => setColorOpen(!colorOpen)}>
             <span style={{ borderBottom: '3px solid var(--accent)', lineHeight: 1, fontWeight: 700 }}>A</span>
           </Tool>
           {colorOpen ? (
@@ -155,8 +158,8 @@ export function RichText(props: { value: string; onChange: (value: string) => vo
                 <button
                   key={c.label}
                   type="button"
-                  title={c.label}
-                  aria-label={c.label}
+                  title={t(c.label)}
+                  aria-label={t(c.label)}
                   className="swatch"
                   style={{ background: c.value || 'var(--text)' }}
                   onClick={() => {
@@ -176,29 +179,29 @@ export function RichText(props: { value: string; onChange: (value: string) => vo
             </span>
           ) : null}
         </span>
-        <Tool title="Link" active={false} onClick={link}>
+        <Tool title={t('Link')} active={false} onClick={link}>
           {icons.link}
         </Tool>
         <span className="rte-sep" />
-        <Tool title="Genummerde lijst" active={state('insertOrderedList')} onClick={() => run('insertOrderedList')}>
+        <Tool title={t('Genummerde lijst')} active={state('insertOrderedList')} onClick={() => run('insertOrderedList')}>
           {icons.ol}
         </Tool>
-        <Tool title="Lijst met bolletjes" active={state('insertUnorderedList')} onClick={() => run('insertUnorderedList')}>
+        <Tool title={t('Lijst met bolletjes')} active={state('insertUnorderedList')} onClick={() => run('insertUnorderedList')}>
           {icons.ul}
         </Tool>
         <span className="rte-sep" />
-        <Tool title="Links uitlijnen" active={state('justifyLeft') && !state('justifyCenter')} onClick={() => run('justifyLeft')}>
+        <Tool title={t('Links uitlijnen')} active={state('justifyLeft') && !state('justifyCenter')} onClick={() => run('justifyLeft')}>
           {icons.left}
         </Tool>
-        <Tool title="Centreren" active={state('justifyCenter')} onClick={() => run('justifyCenter')}>
+        <Tool title={t('Centreren')} active={state('justifyCenter')} onClick={() => run('justifyCenter')}>
           {icons.center}
         </Tool>
-        <Tool title="Rechts uitlijnen" active={state('justifyRight')} onClick={() => run('justifyRight')}>
+        <Tool title={t('Rechts uitlijnen')} active={state('justifyRight')} onClick={() => run('justifyRight')}>
           {icons.right}
         </Tool>
         <span className="rte-sep" />
         <Tool
-          title="Opmaak wissen"
+          title={t('Opmaak wissen')}
           onClick={() => {
             run('removeFormat');
             run('unlink');

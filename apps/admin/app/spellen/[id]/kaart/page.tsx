@@ -8,6 +8,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { bendSegment, boundaryGeoJson, insertPoint, movePoint, rectAround, removePoint, segmentHandle, straightenSegment } from '@/lib/boundary';
 import type { LayerRows } from '@/lib/game-model';
 import { composeChain, loadChain } from '@/lib/game-store';
+import { t as tr } from '@/lib/i18n';
+import { useT } from '@/lib/language';
 import { allPins, circle, pinsFor, trackColor, trackCount, type Pin, type TrackChoice } from '@/lib/map-edit';
 import { gameFieldEditable, imageCorners } from '@/lib/map-settings';
 import { loadMaplibre } from '@/lib/maplibre';
@@ -20,10 +22,11 @@ const changeKey = (task: string, track: TrackChoice) => `${task}|${track ?? ''}`
 const pinKey = (p: Pin) => changeKey(p.key, p.track);
 /** Welke pinnen de kaart toont: alle tracks tegelijk, de vaste locaties of één track. */
 type View = TrackChoice | 'all';
-const trackName = (t: TrackChoice) => (t === null ? 'alle tracks' : `track ${t}`);
+const trackName = (tk: TrackChoice) => (tk === null ? tr('alle tracks') : tr('track {n}', { n: tk }));
 
 export default function MapPage() {
   const { id } = useParams<{ id: string }>();
+  const t = useT();
   const [chain, setChain] = useState<LayerRows[] | null>(null);
   const [game, setGame] = useState<GamePackage | null>(null);
   const [view, setView] = useState<View>('all');
@@ -65,7 +68,7 @@ export default function MapPage() {
 
   const pins: Pin[] = useMemo(() => {
     if (!chain || !game) return [];
-    const title = (key: string) => tx(game.tasks.find((t) => t.id === key)?.title) || key;
+    const title = (key: string) => tx(game.tasks.find((tk) => tk.id === key)?.title) || key;
     // In "alle tracks" ook pinnen die net een (nieuwe) locatie kregen.
     const list = view === 'all' ? allPins(chain, game, title) : pinsFor(chain, game, view, title);
     const keys = new Set(list.map(pinKey));
@@ -74,8 +77,8 @@ export default function MapPage() {
         ? Object.keys(changes)
             .filter((k) => !keys.has(k))
             .flatMap((k) => {
-              const [task, t] = k.split('|');
-              return pinsFor(chain, game, t === '' ? null : Number(t), title).filter((p) => p.key === task);
+              const [task, tk] = k.split('|');
+              return pinsFor(chain, game, tk === '' ? null : Number(tk), title).filter((p) => p.key === task);
             })
         : [];
     return [...list, ...extra].map((p) => {
@@ -90,7 +93,7 @@ export default function MapPage() {
     let cancelled = false;
     void loadMaplibre().then(({ Map }) => {
       if (cancelled || !container.current) return;
-      const located = game.tasks.flatMap((t) => [t.location, ...Object.values(t.trackLocations ?? {})]).filter(Boolean) as TaskLocation[];
+      const located = game.tasks.flatMap((tk) => [tk.location, ...Object.values(tk.trackLocations ?? {})]).filter(Boolean) as TaskLocation[];
       const first = located[0] ?? { lat: 52.37, lng: 4.89 };
       const m = new Map({
         container: container.current,
@@ -180,7 +183,7 @@ export default function MapPage() {
           })),
       });
     });
-  }, [pins, ready, selected]);
+  }, [pins, ready, selected, t]);
 
   // Grens tekenen, met versleepbare hoekpunten in tekenmodus.
   useEffect(() => {
@@ -200,7 +203,7 @@ export default function MapPage() {
       boundary.points.forEach((pt, i) => {
         const el = document.createElement('div');
         el.className = 'vertex';
-        el.title = 'Sleep om te verplaatsen, rechtsklik om weg te halen';
+        el.title = t('Sleep om te verplaatsen, rechtsklik om weg te halen');
         el.addEventListener('contextmenu', (ev) => {
           ev.preventDefault();
           ev.stopPropagation();
@@ -222,7 +225,7 @@ export default function MapPage() {
         const h = segmentHandle(boundary.points, i);
         const el = document.createElement('div');
         el.className = `bend${boundary.points[i]!.curve ? ' curved' : ''}`;
-        el.title = 'Sleep voor een bocht; dubbelklik om de lijn weer recht te maken';
+        el.title = t('Sleep voor een bocht; dubbelklik om de lijn weer recht te maken');
         el.addEventListener('click', (ev) => ev.stopPropagation());
         el.addEventListener('dblclick', (ev) => {
           ev.preventDefault();
@@ -245,9 +248,9 @@ export default function MapPage() {
         vertexMarkers.current.push(marker);
       }
     });
-  }, [boundary, drawing, ready, showOverlay]);
+  }, [boundary, drawing, ready, showOverlay, t]);
 
-  if (!chain || !game) return errors.length ? <ul className="errors">{errors.map((e, i) => <li key={i}>{e}</li>)}</ul> : <p className="muted">Laden…</p>;
+  if (!chain || !game) return errors.length ? <ul className="errors">{errors.map((e, i) => <li key={i}>{e}</li>)}</ul> : <p className="muted">{t('Laden…')}</p>;
 
   const self = chain[chain.length - 1]!;
   const tracks = trackCount(game);
@@ -255,7 +258,7 @@ export default function MapPage() {
   const dirty = Object.keys(changes).length + (boundaryDirty ? 1 : 0);
   const canBoundary = gameFieldEditable(chain, 'boundary');
   const allLocations = (): LatLng[] =>
-    game.tasks.flatMap((t) => [t.location, ...Object.values(t.trackLocations ?? {})]).filter((l): l is TaskLocation => !!l);
+    game.tasks.flatMap((tk) => [tk.location, ...Object.values(tk.trackLocations ?? {})]).filter((l): l is TaskLocation => !!l);
   const editBoundary = (points: LatLng[]) => {
     setBoundary(points.length ? { ...(boundary ?? {}), points } : null);
     setBoundaryDirty(true);
@@ -278,10 +281,10 @@ export default function MapPage() {
     setErrors([]);
     setNotice(null);
     const db = supabase();
-    const idByKey = new Map(chain[0]!.tasks.map((t) => [t.key, t.id]));
+    const idByKey = new Map(chain[0]!.tasks.map((tk) => [tk.key, tk.id]));
     try {
       if (boundaryDirty) {
-        if (boundary && boundary.points.length < 3) throw new Error('De speelveldgrens heeft minstens 3 punten nodig, of wis hem helemaal.');
+        if (boundary && boundary.points.length < 3) throw new Error(t('De speelveldgrens heeft minstens 3 punten nodig, of wis hem helemaal.'));
         const value = boundary && boundary.points.length ? boundary : null;
         if (self.game.layer === 'base') {
           const settings: Record<string, unknown> = { ...self.game.settings };
@@ -301,15 +304,15 @@ export default function MapPage() {
       for (const [k, loc] of Object.entries(changes)) {
         const [taskKey, trackText] = k.split('|');
         const taskId = idByKey.get(taskKey!)!;
-        const t = trackText === '' ? null : Number(trackText);
+        const tk = trackText === '' ? null : Number(trackText);
         let del = db.from('task_locations').delete().eq('game_id', id).eq('task_id', taskId);
-        del = t === null ? del.is('track', null) : del.eq('track', t);
+        del = tk === null ? del.is('track', null) : del.eq('track', tk);
         const d = await del;
         if (d.error) throw new Error(d.error.message);
-        const ins = await db.from('task_locations').insert({ game_id: id, task_id: taskId, track: t, ...loc });
+        const ins = await db.from('task_locations').insert({ game_id: id, task_id: taskId, track: tk, ...loc });
         if (ins.error) throw new Error(ins.error.message);
       }
-      setNotice('Opgeslagen. Publiceer het spel om het in de app te gebruiken.');
+      setNotice(t('Opgeslagen. Publiceer het spel om het in de app te gebruiken.'));
       setDrawing(false);
       await load();
     } catch (err) {
@@ -322,37 +325,37 @@ export default function MapPage() {
   return (
     <>
       <p className="muted">
-        <Link href="/spellen">Spellen</Link> › <Link href={`/spellen/${id}`}>{self.game.slug}</Link> › Kaart
+        <Link href="/spellen">{t('Spellen')}</Link> › <Link href={`/spellen/${id}`}>{self.game.slug}</Link> › {t('Kaart')}
       </p>
-      <h1>Locaties op de kaart</h1>
+      <h1>{t('Locaties op de kaart')}</h1>
       <p className="muted">
-        Sleep een pin naar de juiste plek. Elke track heeft een eigen kleur; oranje is een vaste locatie voor alle
-        tracks. Grijze pinnen mogen hier niet worden aangepast. {self.game.layer === 'client' ? 'Een klantvariant past geen locaties aan.' : ''}
+        {t('Sleep een pin naar de juiste plek. Elke track heeft een eigen kleur; oranje is een vaste locatie voor alle tracks. Grijze pinnen mogen hier niet worden aangepast.')}{' '}
+        {self.game.layer === 'client' ? t('Een klantvariant past geen locaties aan.') : ''}
       </p>
       <div className="row" style={{ alignItems: 'center' }}>
         <div style={{ flex: '0 1 260px' }}>
-          <label htmlFor="track">Toon</label>
+          <label htmlFor="track">{t('Toon')}</label>
           <select
             id="track"
             value={view === 'all' ? 'all' : (view ?? '')}
             onChange={(e) => setView(e.target.value === 'all' ? 'all' : e.target.value === '' ? null : Number(e.target.value))}
           >
-            <option value="all">Alles op één kaart</option>
-            <option value="">Vaste locaties (alle tracks)</option>
+            <option value="all">{t('Alles op één kaart')}</option>
+            <option value="">{t('Vaste locaties (alle tracks)')}</option>
             {Array.from({ length: tracks }, (_, i) => (
               <option key={i + 1} value={i + 1}>
-                Track {i + 1}
+                {t('Track {n}', { n: i + 1 })}
               </option>
             ))}
           </select>
         </div>
         <label className="check" style={{ flex: '0 1 auto', margin: 0 }}>
           <input type="checkbox" checked={showOverlay} onChange={(e) => setShowOverlay(e.target.checked)} />
-          Overlay en speelveldgrens tonen
+          {t('Overlay en speelveldgrens tonen')}
         </label>
         <div className="actions" style={{ flex: '1 1 auto', justifyContent: 'flex-end' }}>
           <button onClick={() => void save()} disabled={busy || dirty === 0}>
-            {busy ? 'Bezig…' : dirty ? `Opslaan (${dirty})` : 'Opgeslagen'}
+            {busy ? t('Bezig…') : dirty ? t('Opslaan ({n})', { n: dirty }) : t('Opgeslagen')}
           </button>
         </div>
       </div>
@@ -379,7 +382,7 @@ export default function MapPage() {
                   <p>
                     {current.location.lat.toFixed(6)}, {current.location.lng.toFixed(6)}
                   </p>
-                  <label htmlFor="r">Straal (m)</label>
+                  <label htmlFor="r">{t('Straal (m)')}</label>
                   <input
                     id="r"
                     type="number"
@@ -390,52 +393,51 @@ export default function MapPage() {
                   />
                 </>
               ) : (
-                <p className="muted">Nog geen locatie voor {trackName(current.track)}.</p>
+                <p className="muted">{t('Nog geen locatie voor {track}.', { track: trackName(current.track) })}</p>
               )}
               {current.editable ? (
                 <div className="actions">
                   <button className="secondary" onClick={() => place(current)}>
-                    Naar midden van de kaart
+                    {t('Naar midden van de kaart')}
                   </button>
                 </div>
               ) : (
-                <p className="muted">Niet aan te passen in deze laag.</p>
+                <p className="muted">{t('Niet aan te passen in deze laag.')}</p>
               )}
             </>
           ) : (
-            <p className="muted">Klik op een pin of kies een opdracht hieronder.</p>
+            <p className="muted">{t('Klik op een pin of kies een opdracht hieronder.')}</p>
           )}
-          <h2>Speelveldgrens</h2>
+          <h2>{t('Speelveldgrens')}</h2>
           <p className="muted small">
-            De rode lijn om het gebied waar teams spelen. {boundary ? `${boundary.points.length} punten.` : 'Nog geen grens.'}
+            {t('De rode lijn om het gebied waar teams spelen.')}{' '}
+            {boundary ? t('{n} punten.', { n: boundary.points.length }) : t('Nog geen grens.')}
           </p>
           {canBoundary ? (
             <>
               {drawing ? (
                 <p className="muted small">
-                  Klik op de kaart om een punt toe te voegen. Sleep een punt om het te verplaatsen; rechtsklik om het weg te
-                  halen. Sleep het kleine handvat midden op een lijn voor een bocht; dubbelklik het handvat om de lijn weer
-                  recht te maken.
+                  {t('Klik op de kaart om een punt toe te voegen. Sleep een punt om het te verplaatsen; rechtsklik om het weg te halen. Sleep het kleine handvat midden op een lijn voor een bocht; dubbelklik het handvat om de lijn weer recht te maken.')}
                 </p>
               ) : null}
               <div className="actions">
                 <button className={drawing ? '' : 'secondary'} onClick={() => setDrawing(!drawing)}>
-                  {drawing ? 'Klaar met tekenen' : boundary ? 'Grens bewerken' : 'Grens tekenen'}
+                  {drawing ? t('Klaar met tekenen') : boundary ? t('Grens bewerken') : t('Grens tekenen')}
                 </button>
                 {!boundary ? (
                   <button className="secondary" onClick={() => { editBoundary(rectAround(allLocations())); setDrawing(true); }}>
-                    Rechthoek om alle locaties
+                    {t('Rechthoek om alle locaties')}
                   </button>
                 ) : null}
                 {boundary ? (
-                  <button className="link" onClick={() => { if (window.confirm('Speelveldgrens wissen?')) editBoundary([]); }}>
-                    Wissen
+                  <button className="link" onClick={() => { if (window.confirm(t('Speelveldgrens wissen?'))) editBoundary([]); }}>
+                    {t('Wissen')}
                   </button>
                 ) : null}
               </div>
               {boundary ? (
                 <label className="check">
-                  Kleur{' '}
+                  {t('Kleur')}{' '}
                   <input
                     type="color"
                     value={boundary.color ?? DEFAULT_BOUNDARY_COLOR}
@@ -448,11 +450,11 @@ export default function MapPage() {
               ) : null}
             </>
           ) : (
-            <p className="muted small">Niet aan te passen in deze laag.</p>
+            <p className="muted small">{t('Niet aan te passen in deze laag.')}</p>
           )}
-          <h2>Opdrachten</h2>
+          <h2>{t('Opdrachten')}</h2>
           {view === 'all' ? (
-            <p className="muted">Opdrachten zonder locatie plaats je door hierboven één track of de vaste locaties te kiezen.</p>
+            <p className="muted">{t('Opdrachten zonder locatie plaats je door hierboven één track of de vaste locaties te kiezen.')}</p>
           ) : null}
           <ul className="pinlist">
             {pins
@@ -464,8 +466,8 @@ export default function MapPage() {
                     {p.title}
                   </button>{' '}
                   {view === 'all' && p.track !== null ? <span className="muted">T{p.track}</span> : null}
-                  {p.location ? '' : <span className="muted">(geen locatie)</span>}
-                  {changes[pinKey(p)] ? <span className="badge test">gewijzigd</span> : null}
+                  {p.location ? '' : <span className="muted">{t('(geen locatie)')}</span>}
+                  {changes[pinKey(p)] ? <span className="badge test">{t('gewijzigd')}</span> : null}
                 </li>
               ))}
           </ul>

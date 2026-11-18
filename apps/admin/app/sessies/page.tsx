@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useAuth } from '@/lib/auth';
+import { useT } from '@/lib/language';
 import {
   formatInZone,
   TIMEZONES,
@@ -45,6 +46,7 @@ const EMPTY: SessionInput = {
 
 export default function SessionsPage() {
   const { org } = useAuth();
+  const t = useT();
   const [sessions, setSessions] = useState<SessionRow[] | null>(null);
   const [versions, setVersions] = useState<VersionOption[]>([]);
   const [form, setForm] = useState<SessionInput>(EMPTY);
@@ -107,7 +109,7 @@ export default function SessionsPage() {
       });
     setBusy(false);
     if (error) {
-      setErrors([/join_code/.test(error.message) ? 'Deze hunt-code is al in gebruik. Kies een andere.' : error.message]);
+      setErrors([/join_code/.test(error.message) ? t('Deze hunt-code is al in gebruik. Kies een andere.') : error.message]);
       return;
     }
     setForm({ ...EMPTY, gameVersionId: form.gameVersionId });
@@ -117,45 +119,44 @@ export default function SessionsPage() {
 
   return (
     <>
-      <h1>Hunts</h1>
+      <h1>{t('Hunts')}</h1>
       <p className="muted">
-        Een hunt is één spel op één moment, bijvoorbeeld een bedrijfsuitje. Teams doen mee met de hunt-code, zolang de
-        hunt open staat. In testmodus kunnen opdrachten in de app geopend worden zonder ter plekke te zijn.
+        {t('Een hunt is één spel op één moment, bijvoorbeeld een bedrijfsuitje. Teams doen mee met de hunt-code, zolang de hunt open staat. In testmodus kunnen opdrachten in de app geopend worden zonder ter plekke te zijn.')}
       </p>
 
       {!showForm ? (
         <div className="actions">
           <button onClick={() => setShowForm(true)} disabled={versions.length === 0}>
-            Nieuwe hunt
+            {t('Nieuwe hunt')}
           </button>
           {versions.length === 0 && sessions !== null ? (
-            <span className="muted">Publiceer eerst een spel onder Spellen.</span>
+            <span className="muted">{t('Publiceer eerst een spel onder Spellen.')}</span>
           ) : null}
         </div>
       ) : (
         <form className="card" onSubmit={create}>
           <div className="row">
             <div>
-              <label htmlFor="name">Naam</label>
-              <input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Bedrijfsuitje Parteon" />
+              <label htmlFor="name">{t('Naam')}</label>
+              <input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t('Bedrijfsuitje Parteon')} />
             </div>
             <div>
-              <label htmlFor="code">Hunt-code (optioneel)</label>
+              <label htmlFor="code">{t('Hunt-code (optioneel)')}</label>
               <input
                 id="code"
                 value={form.joinCode ?? ''}
                 maxLength={12}
                 onChange={(e) => setForm({ ...form, joinCode: toJoinCode(e.target.value) })}
-                placeholder="bijv. PARTEON (leeg = 5 willekeurige tekens)"
+                placeholder={t('bijv. PARTEON (leeg = 5 willekeurige tekens)')}
               />
               {form.name.trim() && toJoinCode(form.name) !== (form.joinCode ?? '') && toJoinCode(form.name).length >= 4 ? (
                 <button type="button" className="link small" onClick={() => setForm({ ...form, joinCode: toJoinCode(form.name) })}>
-                  Gebruik {toJoinCode(form.name)}
+                  {t('Gebruik {code}', { code: toJoinCode(form.name) })}
                 </button>
               ) : null}
             </div>
             <div>
-              <label htmlFor="game">Spel</label>
+              <label htmlFor="game">{t('Spel')}</label>
               <select id="game" value={form.gameVersionId} onChange={(e) => setForm({ ...form, gameVersionId: e.target.value })}>
                 {versions.map((v) => (
                   <option key={v.id} value={v.id}>
@@ -167,11 +168,11 @@ export default function SessionsPage() {
           </div>
           <div className="row">
             <div>
-              <label htmlFor="start">Start (optioneel)</label>
+              <label htmlFor="start">{t('Start (optioneel)')}</label>
               <input id="start" type="datetime-local" value={form.startsAt} onChange={(e) => setForm({ ...form, startsAt: e.target.value })} />
             </div>
             <div>
-              <label htmlFor="tz">Tijdzone</label>
+              <label htmlFor="tz">{t('Tijdzone')}</label>
               <select id="tz" value={form.timezone} onChange={(e) => setForm({ ...form, timezone: e.target.value })}>
                 {TIMEZONES.map((z) => (
                   <option key={z}>{z}</option>
@@ -179,7 +180,7 @@ export default function SessionsPage() {
               </select>
             </div>
             <div>
-              <label htmlFor="tracks">Tracks</label>
+              <label htmlFor="tracks">{t('Tracks')}</label>
               <input
                 id="tracks"
                 type="number"
@@ -192,7 +193,7 @@ export default function SessionsPage() {
           </div>
           <label className="check">
             <input type="checkbox" checked={form.testMode} onChange={(e) => setForm({ ...form, testMode: e.target.checked })} />
-            Testmodus
+            {t('Testmodus')}
           </label>
           <label className="check">
             <input
@@ -200,7 +201,7 @@ export default function SessionsPage() {
               checked={form.centralStart ?? false}
               onChange={(e) => setForm({ ...form, centralStart: e.target.checked })}
             />
-            Centrale start: teams lezen eerst de speluitleg, daarna start de spelleider het spel voor iedereen tegelijk
+            {t('Centrale start: teams lezen eerst de speluitleg, daarna start de spelleider het spel voor iedereen tegelijk')}
           </label>
           {errors.length > 0 ? (
             <ul className="errors">
@@ -211,10 +212,10 @@ export default function SessionsPage() {
           ) : null}
           <div className="actions">
             <button type="submit" disabled={busy}>
-              Hunt aanmaken
+              {t('Hunt aanmaken')}
             </button>
             <button type="button" className="secondary" onClick={() => setShowForm(false)}>
-              Annuleren
+              {t('Annuleren')}
             </button>
           </div>
         </form>
@@ -228,20 +229,20 @@ export default function SessionsPage() {
         </ul>
       ) : null}
 
-      <h2>Overzicht</h2>
+      <h2>{t('Overzicht')}</h2>
       {sessions === null ? (
-        <p className="muted">Laden…</p>
+        <p className="muted">{t('Laden…')}</p>
       ) : sessions.length === 0 ? (
-        <p className="muted">Nog geen hunts.</p>
+        <p className="muted">{t('Nog geen hunts.')}</p>
       ) : (
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Hunt</th>
-                <th>Hunt-code</th>
-                <th>Start</th>
-                <th>Status</th>
+                <th>{t('Hunt')}</th>
+                <th>{t('Hunt-code')}</th>
+                <th>{t('Start')}</th>
+                <th>{t('Status')}</th>
                 <th></th>
               </tr>
             </thead>
@@ -253,19 +254,19 @@ export default function SessionsPage() {
                       <strong>{s.name}</strong>
                     </Link>
                     <div className="muted">
-                      {s.game_versions ? `${tx(s.game_versions.name)} v${s.game_versions.version}` : ''} · {s.track_count} tracks
+                      {s.game_versions ? `${tx(s.game_versions.name)} v${s.game_versions.version}` : ''} · {t('{n} tracks', { n: s.track_count })}
                     </div>
                   </td>
                   <td className="code">{s.join_code}</td>
                   <td>{formatInZone(s.starts_at, s.timezone)}</td>
                   <td>
                     <OpenToggle id={s.id} status={s.status} onChange={() => void load()} />{' '}
-                    {s.test_mode ? <span className="badge test">Test</span> : null}
+                    {s.test_mode ? <span className="badge test">{t('Test')}</span> : null}
                   </td>
                   <td>
                     <div className="actions" style={{ marginTop: 0, flexWrap: 'nowrap' }}>
                     <Link href={`/sessies/${s.id}`} className="buttonlink">
-                      Live &amp; resultaten
+                      {t('Live & resultaten')}
                     </Link>
                     </div>
                   </td>

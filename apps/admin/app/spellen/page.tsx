@@ -2,6 +2,8 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
 import { useAuth } from '@/lib/auth';
+import { currentLanguage, tKey } from '@/lib/i18n';
+import { useLanguage } from '@/lib/language';
 import { parseGameFile } from '@/lib/game-import';
 import { copyExternalImages, importBundle } from '@/lib/game-store';
 import { supabase } from '@/lib/supabase';
@@ -18,7 +20,7 @@ interface GameRow {
   name: { text: string; lang: string }[];
 }
 
-const LAYER_LABEL: Record<GameRow['layer'], string> = { base: 'Basisspel', city: 'Stad', client: 'Klant' };
+const LAYER_LABEL: Record<GameRow['layer'], string> = { base: tKey('Basisspel'), city: tKey('Stad'), client: tKey('Klant') };
 
 /** Zet de spellen in boomvolgorde: basisspel, dan zijn steden, dan hun klanten. */
 function tree(games: GameRow[]): { game: GameRow; depth: number }[] {
@@ -36,13 +38,14 @@ function tree(games: GameRow[]): { game: GameRow; depth: number }[] {
 }
 
 function gameTitle(g: { slug: string; layer: string; settings: { name?: unknown }; name?: { text: string; lang: string }[] }) {
-  const own = g.name?.find((n) => n.lang === 'nl') ?? g.name?.[0];
+  const own = g.name?.find((n) => n.lang === currentLanguage()) ?? g.name?.find((n) => n.lang === 'nl') ?? g.name?.[0];
   if (g.layer === 'base' && own) return own.text;
   return tx(g.settings.name) || g.slug;
 }
 
 export default function GamesPage() {
   const { org } = useAuth();
+  const { t, locale } = useLanguage();
   const [games, setGames] = useState<GameRow[] | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
@@ -84,19 +87,29 @@ export default function GamesPage() {
         return;
       }
       if (games?.some((g) => g.slug === parsed.slug || parsed.bundle.variants.some((v) => v.id === g.slug))) {
-        setErrors([`Er bestaat al een spel met de naam ${parsed.slug} of een van de varianten. Pas het id in het bestand aan.`]);
+        setErrors([t('Er bestaat al een spel met de naam {name} of een van de varianten. Pas het id in het bestand aan.', { name: parsed.slug })]);
         return;
       }
       const baseId = await importBundle(supabase(), org.id, parsed.bundle);
       const n = parsed.bundle.variants.length;
       const photos = await copyExternalImages(supabase(), baseId);
       setNotice(
-        `${parsed.slug} geïmporteerd${n > 0 ? `, met ${n} variant${n === 1 ? '' : 'en'}` : ''}.` +
-          (photos.copied ? ` ${photos.copied} foto${photos.copied === 1 ? '' : "'s"} naar de eigen opslag gekopieerd.` : '') +
-          ' Publiceer het spel om er hunts mee te maken.',
+        (n === 0
+          ? t('{name} geïmporteerd.', { name: parsed.slug })
+          : n === 1
+            ? t('{name} geïmporteerd, met 1 variant.', { name: parsed.slug })
+            : t('{name} geïmporteerd, met {n} varianten.', { name: parsed.slug, n })) +
+          (photos.copied
+            ? ' ' +
+              (photos.copied === 1
+                ? t('1 foto naar de eigen opslag gekopieerd.')
+                : t("{n} foto's naar de eigen opslag gekopieerd.", { n: photos.copied }))
+            : '') +
+          ' ' +
+          t('Publiceer het spel om er hunts mee te maken.'),
       );
       if (photos.failed.length) {
-        setErrors([`Deze foto's konden niet worden gekopieerd en wijzen nog naar de oude site:`, ...photos.failed]);
+        setErrors([t("Deze foto's konden niet worden gekopieerd en wijzen nog naar de oude site:"), ...photos.failed]);
       }
       await load();
     } catch (err) {
@@ -108,15 +121,14 @@ export default function GamesPage() {
 
   return (
     <>
-      <h1>Spellen</h1>
+      <h1>{t('Spellen')}</h1>
       <p className="muted">
-        Een basisspel bevat de opdrachten en regels. Een stad vult locaties en lokale vragen in, een klant alleen de
-        velden die het basisspel als aanpasbaar markeert. Publiceren maakt een vaste versie waarmee je hunts maakt.
+        {t('Een basisspel bevat de opdrachten en regels. Een stad vult locaties en lokale vragen in, een klant alleen de velden die het basisspel als aanpasbaar markeert. Publiceren maakt een vaste versie waarmee je hunts maakt.')}
       </p>
       <div className="actions">
         <label className={`filebutton${busy ? ' disabled' : ''}`}>
           <input type="file" accept="application/json,.json" onChange={importFile} disabled={busy} />
-          {busy ? 'Bezig…' : 'Spel importeren (JSON)'}
+          {busy ? t('Bezig…') : t('Spel importeren (JSON)')}
         </label>
       </div>
       {notice ? <p className="notice">{notice}</p> : null}
@@ -128,20 +140,20 @@ export default function GamesPage() {
         </ul>
       ) : null}
 
-      <h2>Overzicht</h2>
+      <h2>{t('Overzicht')}</h2>
       {games === null ? (
-        <p className="muted">Laden…</p>
+        <p className="muted">{t('Laden…')}</p>
       ) : games.length === 0 ? (
-        <p className="muted">Nog geen spellen.</p>
+        <p className="muted">{t('Nog geen spellen.')}</p>
       ) : (
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Spel</th>
-                <th>Soort</th>
-                <th>Talen</th>
-                <th>Gepubliceerd</th>
+                <th>{t('Spel')}</th>
+                <th>{t('Soort')}</th>
+                <th>{t('Talen')}</th>
+                <th>{t('Gepubliceerd')}</th>
               </tr>
             </thead>
             <tbody>
@@ -155,12 +167,12 @@ export default function GamesPage() {
                       </Link>
                       <div className="muted">{g.slug}</div>
                     </td>
-                    <td>{LAYER_LABEL[g.layer]}</td>
+                    <td>{t(LAYER_LABEL[g.layer])}</td>
                     <td>{g.languages.join(', ').toUpperCase()}</td>
                     <td>
                       {latest
-                        ? `v${latest.version} · ${new Date(latest.published_at).toLocaleDateString('nl-NL')}`
-                        : 'Nog niet'}
+                        ? `v${latest.version} · ${new Date(latest.published_at).toLocaleDateString(locale)}`
+                        : t('Nog niet')}
                     </td>
                   </tr>
                 );

@@ -12,6 +12,7 @@ import {
   type Lang,
   type Task,
 } from '@hunt/engine';
+import { currentLanguage, currentLocale, t as tr } from './i18n';
 
 export interface TeamRow {
   id: string;
@@ -115,24 +116,28 @@ function lang(game: GamePackage, value: string): Lang {
   return (game.languages as string[]).includes(value) ? (value as Lang) : game.defaultLanguage;
 }
 
-/** Antwoord van een team als tekst, in de taal van de beheerder (Nederlands). */
+/** Antwoord van een team als tekst, in de taal van de beheerder. */
 export function describeAnswer(spec: AnswerSpec, value: AnswerValue | undefined, language: Lang): string {
   if (!value) return '';
   switch (value.type) {
     case 'info':
-      return 'Gelezen';
+      return tr('Gelezen');
     case 'choice':
-      return spec.type === 'choice' ? t(spec.options[value.option], language) || `Optie ${value.option + 1}` : `Optie ${value.option + 1}`;
+      return spec.type === 'choice'
+        ? t(spec.options[value.option], language) || tr('Optie {n}', { n: value.option + 1 })
+        : tr('Optie {n}', { n: value.option + 1 });
     case 'multi':
       return value.options
-        .map((o) => (spec.type === 'multi' ? t(spec.options[o], language) || `Optie ${o + 1}` : `Optie ${o + 1}`))
+        .map((o) =>
+          spec.type === 'multi' ? t(spec.options[o], language) || tr('Optie {n}', { n: o + 1 }) : tr('Optie {n}', { n: o + 1 }),
+        )
         .join(', ');
     case 'text':
       return value.text;
     case 'number':
       return String(value.value);
     case 'photo':
-      return 'Foto';
+      return tr('Foto');
   }
 }
 
@@ -173,7 +178,12 @@ export function buildResults(
     byTeam.set(row.team_id, list);
   }
   const tasks = scoredTasks(game);
-  const display: Lang = (game.languages as string[]).includes('nl') ? ('nl' as Lang) : game.defaultLanguage;
+  // Spelteksten in de taal van de beheerder als het spel die heeft, anders Nederlands of de standaardtaal.
+  const display: Lang = (game.languages as string[]).includes(currentLanguage())
+    ? (currentLanguage() as Lang)
+    : (game.languages as string[]).includes('nl')
+      ? ('nl' as Lang)
+      : game.defaultLanguage;
 
   const results: Omit<TeamResult, 'rank'>[] = teams.map((team) => {
     const startedAt = ms(team.started_at);
@@ -302,7 +312,8 @@ export function formatDuration(seconds: number | null): string {
 
 export function formatDistance(meters: number | null): string {
   if (meters === null) return '–';
-  return meters < 1000 ? `${meters} m` : `${(meters / 1000).toFixed(1).replace('.', ',')} km`;
+  const km = (meters / 1000).toLocaleString(currentLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  return meters < 1000 ? `${meters} m` : `${km} km`;
 }
 
 function csvCell(value: unknown): string {
@@ -317,7 +328,7 @@ function csvCell(value: unknown): string {
  */
 export function resultsToCsv(view: SessionResultsView): string {
   const header = [
-    'plaats', 'team', 'punten', 'speeltijd', 'afstand_km', 'goed', 'fout', 'hints', 'uitkomst',
+    tr('plaats'), tr('team'), tr('punten'), tr('speeltijd'), tr('afstand_km'), tr('goed'), tr('fout'), tr('hints'), tr('uitkomst'),
     ...view.tasks.map((task) => task.title),
   ];
   const rows = view.teams.map((team) => [
@@ -325,7 +336,7 @@ export function resultsToCsv(view: SessionResultsView): string {
     team.name,
     team.score,
     formatDuration(team.durationSeconds),
-    team.distanceM === null ? '' : (team.distanceM / 1000).toFixed(2).replace('.', ','),
+    team.distanceM === null ? '' : (team.distanceM / 1000).toLocaleString(currentLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false }),
     team.correct,
     team.wrong,
     team.hintsUsed,

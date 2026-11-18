@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useT } from '@/lib/language';
 import { supabase } from '@/lib/supabase';
 import type { SessionStatus } from '@/lib/sessions';
 
@@ -13,6 +14,7 @@ export function OpenToggle({
   status: SessionStatus;
   onChange: (status: SessionStatus) => void;
 }) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const open = status === 'open';
@@ -28,10 +30,10 @@ export function OpenToggle({
   };
 
   return (
-    <label className="switch" title={open ? 'Teams kunnen aanmelden. Klik om te sluiten.' : 'Klik om de hunt te openen.'}>
+    <label className="switch" title={open ? t('Teams kunnen aanmelden. Klik om te sluiten.') : t('Klik om de hunt te openen.')}>
       <input type="checkbox" role="switch" checked={open} disabled={busy} onChange={() => void toggle()} />
       <span className="slider" aria-hidden="true" />
-      <span className={open ? 'on' : 'off'}>{open ? 'Open' : 'Dicht'}</span>
+      <span className={open ? 'on' : 'off'}>{open ? t('Open') : t('Dicht')}</span>
       {error ? <span className="error"> {error}</span> : null}
     </label>
   );

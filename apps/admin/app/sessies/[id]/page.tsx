@@ -2,6 +2,8 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { tKey } from '@/lib/i18n';
+import { useLanguage } from '@/lib/language';
 import { buildTrails, teamColor } from '@/lib/live-map';
 import { buildResults, resultsToCsv } from '@/lib/results';
 import { formatInZone } from '@/lib/sessions';
@@ -14,16 +16,17 @@ import { Standings } from '@/results/Standings';
 import { StartControl } from '@/results/StartControl';
 
 const TABS = [
-  { id: 'kaart', label: 'Kaart' },
-  { id: 'ranglijst', label: 'Ranglijst' },
-  { id: 'antwoorden', label: 'Antwoorden' },
-  { id: 'fotos', label: 'Fotomuur' },
+  { id: 'kaart', label: tKey('Kaart') },
+  { id: 'ranglijst', label: tKey('Ranglijst') },
+  { id: 'antwoorden', label: tKey('Antwoorden') },
+  { id: 'fotos', label: tKey('Fotomuur') },
 ] as const;
 type Tab = (typeof TABS)[number]['id'];
 
 export default function SessionLivePage() {
   const { id } = useParams<{ id: string }>();
   const { data, error, updatedAt, reload } = useSessionLive(id);
+  const { t, lang, locale } = useLanguage();
   const [tab, setTab] = useState<Tab>('kaart');
   const [now, setNow] = useState(() => Date.now());
 
@@ -50,21 +53,22 @@ export default function SessionLivePage() {
     const trails = buildTrails(data.positions, { maxAccuracy: data.game.gps?.maxAccuracy ?? 30 });
     const teams = data.teams.map((t) => ({ ...t, distance_m: trails.get(t.id)?.distanceM ?? 0 }));
     return buildResults(data.game, teams, data.events, Math.max(now, updatedAt));
-  }, [data, now, updatedAt]);
+    // lang: resultaten bevatten teksten in de gekozen taal.
+  }, [data, now, updatedAt, lang]);
 
   if (error && !data) return <ul className="errors"><li>{error}</li></ul>;
-  if (!data || !view) return <p className="muted">Laden…</p>;
+  if (!data || !view) return <p className="muted">{t('Laden…')}</p>;
   const { session } = data;
 
   const download = () => {
     const blob = new Blob([resultsToCsv(view)], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `resultaten-${session.name.replace(/[^a-z0-9-]+/gi, '-').toLowerCase()}.csv`;
+    a.download = `${t('resultaten')}-${session.name.replace(/[^a-z0-9-]+/gi, '-').toLowerCase()}.csv`;
     a.click();
     URL.revokeObjectURL(a.href);
   };
-  const teamName = (teamId: string) => data.teams.find((t) => t.id === teamId)?.name ?? 'Onbekend team';
+  const teamName = (teamId: string) => data.teams.find((t) => t.id === teamId)?.name ?? t('Onbekend team');
   const phone = (teamId: string) => data.teams.find((t) => t.id === teamId)?.phone ?? null;
   const startedAt = (teamId: string) => {
     const iso = data.teams.find((t) => t.id === teamId)?.started_at ?? null;
@@ -75,38 +79,40 @@ export default function SessionLivePage() {
   return (
     <>
       <p className="muted">
-        <Link href="/sessies">Hunts</Link> › {session.name}
+        <Link href="/sessies">{t('Hunts')}</Link> › {session.name}
       </p>
       <div className="row" style={{ alignItems: 'center' }}>
         <h1 style={{ margin: 0, flex: '1 1 auto' }}>{session.name}</h1>
         <div className="actions" style={{ marginTop: 0, flex: '0 0 auto' }}>
           <button className="secondary" onClick={() => void reload()}>
-            Vernieuwen
+            {t('Vernieuwen')}
           </button>
           <button className="secondary" onClick={download} disabled={view.teams.length === 0}>
-            Excel-export
+            {t('Excel-export')}
           </button>
         </div>
       </div>
       <p className="muted">
         <OpenToggle id={session.id} status={session.status} onChange={() => void reload()} />{' '}
-        {session.test_mode ? <span className="badge test">Test</span> : null} Code <strong>{session.join_code}</strong> ·{' '}
-        {data.teams.length} team{data.teams.length === 1 ? '' : 's'}
-        {playing ? `, ${playing} aan het spelen` : ''} · bijgewerkt{' '}
-        {new Intl.DateTimeFormat('nl-NL', { timeStyle: 'medium' }).format(new Date(updatedAt))}
+        {session.test_mode ? <span className="badge test">{t('Test')}</span> : null} {t('Code')} <strong>{session.join_code}</strong> ·{' '}
+        {data.teams.length === 1 ? t('1 team') : t('{n} teams', { n: data.teams.length })}
+        {playing ? `, ${t('{n} aan het spelen', { n: playing })}` : ''} · {t('bijgewerkt')}{' '}
+        {new Intl.DateTimeFormat(locale, { timeStyle: 'medium' }).format(new Date(updatedAt))}
         {error ? <span className="error"> · {error}</span> : null}
       </p>
 
       {session.central_start && !session.started_at ? <StartControl data={data} onChange={() => void reload()} /> : null}
       {session.central_start && session.started_at ? (
-        <p className="muted">Spel gestart om {formatInZone(session.started_at, session.timezone)} voor alle teams.</p>
+        <p className="muted">
+          {t('Spel gestart om {time} voor alle teams.', { time: formatInZone(session.started_at, session.timezone) })}
+        </p>
       ) : null}
 
       <nav className="tabs">
-        {TABS.map((t) => (
-          <button key={t.id} className={tab === t.id ? 'active' : ''} onClick={() => choose(t.id)}>
-            {t.label}
-            {t.id === 'fotos' && data.photos.length ? ` (${data.photos.length})` : ''}
+        {TABS.map((x) => (
+          <button key={x.id} className={tab === x.id ? 'active' : ''} onClick={() => choose(x.id)}>
+            {t(x.label)}
+            {x.id === 'fotos' && data.photos.length ? ` (${data.photos.length})` : ''}
           </button>
         ))}
       </nav>

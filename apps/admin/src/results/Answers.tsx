@@ -1,10 +1,13 @@
 'use client';
-import { richToPlain, t as text, type GamePackage } from '@hunt/engine';
+import { richToPlain, t as text, type GamePackage, type Lang } from '@hunt/engine';
 import { useState } from 'react';
+import { useLanguage } from '@/lib/language';
 import type { SessionResultsView } from '@/lib/results';
 
 /** Per opdracht: welk team gaf welk antwoord, goed of fout, met punten (zoals "Answers" in Loquiz). */
 export function Answers({ view, game, colors }: { view: SessionResultsView; game: GamePackage; colors: Map<string, string> }) {
+  const { t, lang } = useLanguage();
+  const show = ((game.languages as string[]).includes(lang) ? lang : 'nl') as Lang;
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [onlyAnswered, setOnlyAnswered] = useState(true);
   const tasks = onlyAnswered ? view.tasks.filter((x) => x.answered > 0) : view.tasks;
@@ -13,17 +16,20 @@ export function Answers({ view, game, colors }: { view: SessionResultsView; game
     <>
       <div className="row" style={{ alignItems: 'center', marginBottom: 12 }}>
         <p className="muted" style={{ margin: 0 }}>
-          {view.tasks.length} opdrachten met een antwoord, {view.tasks.filter((x) => x.answered > 0).length} al beantwoord.
+          {t('{n} opdrachten met een antwoord, {done} al beantwoord.', {
+            n: view.tasks.length,
+            done: view.tasks.filter((x) => x.answered > 0).length,
+          })}
         </p>
         <label className="check" style={{ margin: 0, flex: '0 0 auto' }}>
           <input type="checkbox" checked={onlyAnswered} onChange={(e) => setOnlyAnswered(e.target.checked)} />
-          Alleen beantwoorde opdrachten
+          {t('Alleen beantwoorde opdrachten')}
         </label>
       </div>
       <div className="answers">
         {tasks.map((col, i) => {
           const task = game.tasks.find((x) => x.id === col.id)!;
-          const body = richToPlain(text(task.body, 'nl', game.defaultLanguage));
+          const body = richToPlain(text(task.body, show, game.defaultLanguage));
           const isOpen = expanded.has(col.id);
           const given = view.teams.flatMap((team) => {
             const a = team.answers.find((x) => x.task === col.id);
@@ -50,7 +56,7 @@ export function Answers({ view, game, colors }: { view: SessionResultsView; game
                         setExpanded(next);
                       }}
                     >
-                      {isOpen ? 'Minder' : 'Meer tekst'}
+                      {isOpen ? t('Minder') : t('Meer tekst')}
                     </button>
                     ) : null}
                   </>
@@ -62,21 +68,21 @@ export function Answers({ view, game, colors }: { view: SessionResultsView; game
                       const ok = spec.type === 'choice' ? spec.correct === n : spec.correct.includes(n);
                       return (
                         <span key={n} className={`option${ok ? ' correct' : ''}`}>
-                          {text(o, 'nl', game.defaultLanguage)}
+                          {text(o, show, game.defaultLanguage)}
                         </span>
                       );
                     })}
                   </div>
                 ) : null}
                 {task.answer.type === 'text' ? (
-                  <p className="muted small">Goed: {task.answer.accepted.join(' / ')}</p>
+                  <p className="muted small">{t('Goed:')} {task.answer.accepted.join(' / ')}</p>
                 ) : null}
               </div>
               <div className="given">
                 <div className="small muted">
-                  Antwoorden {col.answered ? `· ${col.correct} van ${col.answered} goed` : ''}
+                  {t('Antwoorden')} {col.answered ? `· ${t('{correct} van {n} goed', { correct: col.correct, n: col.answered })}` : ''}
                 </div>
-                {given.length === 0 ? <p className="muted">Nog geen antwoorden</p> : null}
+                {given.length === 0 ? <p className="muted">{t('Nog geen antwoorden')}</p> : null}
                 <ul>
                   {given.map(({ team, a }) => (
                     <li key={team.id} className={a.result}>

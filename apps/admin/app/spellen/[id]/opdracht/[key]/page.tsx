@@ -6,20 +6,30 @@ import { useCallback, useEffect, useState, type ChangeEvent, type ReactNode } fr
 import { RichText } from '@/editor/RichText';
 import { answerToRow, rowsToBase, taskSettings, rowsToVariant, type GameRow, type LayerRows, type TranslationRow } from '@/lib/game-model';
 import { loadChain } from '@/lib/game-store';
+import { tKey } from '@/lib/i18n';
+import { useT } from '@/lib/language';
 import { mediaPath } from '@/lib/map-settings';
 import { supabase } from '@/lib/supabase';
 import { cleanText, formToTask, taskToForm, type AnswerType, type TaskForm, type Texts } from '@/lib/task-form';
 
 const ANSWER_TYPES: { value: AnswerType; label: string }[] = [
-  { value: 'info', label: 'Geen antwoord (alleen OK)' },
-  { value: 'choice', label: 'Meerkeuze, één goed' },
-  { value: 'multi', label: 'Meerkeuze, meerdere goed' },
-  { value: 'text', label: 'Tekst' },
-  { value: 'number', label: 'Getal' },
-  { value: 'photo', label: 'Foto' },
+  { value: 'info', label: tKey('Geen antwoord (alleen OK)') },
+  { value: 'choice', label: tKey('Meerkeuze, één goed') },
+  { value: 'multi', label: tKey('Meerkeuze, meerdere goed') },
+  { value: 'text', label: tKey('Tekst') },
+  { value: 'number', label: tKey('Getal') },
+  { value: 'photo', label: tKey('Foto') },
 ];
 
-const LANG_NAME: Record<string, string> = { nl: 'Nederlands', en: 'Engels', de: 'Duits', es: 'Spaans', pt: 'Portugees', it: 'Italiaans', fr: 'Frans' };
+const LANG_NAME: Record<string, string> = {
+  nl: tKey('Nederlands'),
+  en: tKey('Engels'),
+  de: tKey('Duits'),
+  es: tKey('Spaans'),
+  pt: tKey('Portugees'),
+  it: tKey('Italiaans'),
+  fr: tKey('Frans'),
+};
 
 /** Velden die een stad of klant mag aanpassen, met wat het formulier dan toont. */
 type Editable = 'title' | 'body' | 'image' | 'confirm' | 'correctComment' | 'wrongComment' | 'answer' | 'points' | 'hints' | 'location';
@@ -28,6 +38,7 @@ type Tab = 'task' | 'feedback' | 'hints' | 'media' | 'activation' | 'settings' |
 
 /** Een blok in een tabblad. In een variant met een schakelaar "Aanpassen in deze variant". */
 function Panel(props: { title: string; help?: ReactNode; enabled?: boolean; variant: boolean; on?: boolean; onToggle?: (on: boolean) => void; children: ReactNode }) {
+  const t = useT();
   if (props.enabled === false) return null;
   const open = !props.variant || props.on;
   return (
@@ -37,11 +48,11 @@ function Panel(props: { title: string; help?: ReactNode; enabled?: boolean; vari
         {props.variant ? (
           <label className="switch">
             <input type="checkbox" checked={props.on ?? false} onChange={(e) => props.onToggle?.(e.target.checked)} />
-            Aanpassen in deze variant
+            {t('Aanpassen in deze variant')}
           </label>
         ) : null}
       </div>
-      {open ? props.children : <p className="muted small">Gebruikt de waarde van het spel erboven.</p>}
+      {open ? props.children : <p className="muted small">{t('Gebruikt de waarde van het spel erboven.')}</p>}
       {open && props.help ? <p className="help">{props.help}</p> : null}
     </section>
   );
@@ -64,6 +75,7 @@ const TAB_ICONS: Record<Tab, string> = {
 
 export default function TaskPage() {
   const { id, key } = useParams<{ id: string; key: string }>();
+  const t = useT();
   const [chain, setChain] = useState<LayerRows[] | null>(null);
   const [form, setForm] = useState<TaskForm | null>(null);
   const [saved, setSaved] = useState<string>('');
@@ -83,11 +95,11 @@ export default function TaskPage() {
       const [baseRows, ...variantRows] = c;
       const base = rowsToBase(baseRows!);
       const variants = variantRows.map((r) => rowsToVariant(r, baseRows!));
-      const find = (tasks: Task[]) => tasks.find((t) => t.id === key);
+      const find = (tasks: Task[]) => tasks.find((tk) => tk.id === key);
       // Startwaarden: het spel tot en met deze laag. "Geërfd": tot en met de laag erboven.
       const compose = (n: number) => find(composeGame(base, variants.slice(0, n), { id: 'x', version: 0 }).tasks) ?? null;
       const current = variants.length ? compose(variants.length) : find(base.tasks);
-      if (!current) throw new Error(`Opdracht ${key} niet gevonden.`);
+      if (!current) throw new Error(t('Opdracht {key} niet gevonden.', { key }));
       const own = variants[variants.length - 1];
       const flags: Partial<Record<Editable, boolean>> = {};
       if (own) {
@@ -132,13 +144,13 @@ export default function TaskPage() {
     return () => window.removeEventListener('beforeunload', warn);
   }, [dirty]);
 
-  if (!chain || !form) return errors.length ? <ul className="errors">{errors.map((e, i) => <li key={i}>{e}</li>)}</ul> : <p className="muted">Laden…</p>;
+  if (!chain || !form) return errors.length ? <ul className="errors">{errors.map((e, i) => <li key={i}>{e}</li>)}</ul> : <p className="muted">{t('Laden…')}</p>;
 
   const baseRows = chain[0]!;
   const self = chain[chain.length - 1]!;
   const layer = self.game.layer;
   const isVariant = layer !== 'base';
-  const taskRow = baseRows.tasks.find((t) => t.key === key)!;
+  const taskRow = baseRows.tasks.find((tk) => tk.key === key)!;
   const languages = baseRows.game.languages;
   const defaultLang = baseRows.game.default_language;
   const l = lang && languages.includes(lang) ? lang : languages.includes(defaultLang) ? defaultLang : languages[0]!;
@@ -174,7 +186,7 @@ export default function TaskPage() {
     try {
       if (isVariant) await saveVariant(task);
       else await saveBase(task);
-      setNotice('Opgeslagen. Publiceer het spel om het in nieuwe hunts te gebruiken.');
+      setNotice(t('Opgeslagen. Publiceer het spel om het in nieuwe hunts te gebruiken.'));
       await load();
     } catch (err) {
       setErrors([err instanceof Error ? err.message : String(err)]);
@@ -262,7 +274,7 @@ export default function TaskPage() {
       const up = await db.storage.from('media').upload(path, file, { contentType: file.type });
       if (up.error) throw new Error(up.error.message);
       set({ image: db.storage.from('media').getPublicUrl(path).data.publicUrl });
-      setNotice('Foto geüpload. Klik op Wijzigingen opslaan om hem bij de opdracht te bewaren.');
+      setNotice(t('Foto geüpload. Klik op Wijzigingen opslaan om hem bij de opdracht te bewaren.'));
     } catch (err) {
       setErrors([err instanceof Error ? err.message : String(err)]);
     } finally {
@@ -276,26 +288,31 @@ export default function TaskPage() {
 
   // Tabbladen; alleen tonen wat deze laag mag aanpassen.
   const tabs: { id: Tab; label: string; show: boolean; count?: number }[] = [
-    { id: 'task', label: 'Opdracht', show: may('title') || may('body') || may('answer') || may('points') },
-    { id: 'feedback', label: 'Feedback', show: !isVariant || may('confirm') || may('correctComment') || may('wrongComment') },
-    { id: 'hints', label: 'Hints', show: may('hints'), count: form.hints.length },
-    { id: 'media', label: 'Media', show: may('image'), count: form.image ? 1 : 0 },
-    { id: 'activation', label: 'Activatie', show: may('location') },
-    { id: 'settings', label: 'Instellingen', show: !isVariant },
-    { id: 'used', label: usedIn.length ? `Gebruikt in ${usedIn.length} ${usedIn.length === 1 ? 'variant' : 'varianten'}` : 'Gebruikt in', show: !isVariant },
+    { id: 'task', label: t('Opdracht'), show: may('title') || may('body') || may('answer') || may('points') },
+    { id: 'feedback', label: t('Feedback'), show: !isVariant || may('confirm') || may('correctComment') || may('wrongComment') },
+    { id: 'hints', label: t('Hints'), show: may('hints'), count: form.hints.length },
+    { id: 'media', label: t('Media'), show: may('image'), count: form.image ? 1 : 0 },
+    { id: 'activation', label: t('Activatie'), show: may('location') },
+    { id: 'settings', label: t('Instellingen'), show: !isVariant },
+    { id: 'used', label: usedIn.length
+        ? usedIn.length === 1
+          ? t('Gebruikt in 1 variant')
+          : t('Gebruikt in {n} varianten', { n: usedIn.length })
+        : t('Gebruikt in'),
+      show: !isVariant },
   ];
-  const visible = tabs.filter((t) => t.show);
-  const active = visible.some((t) => t.id === tab) ? tab : (visible[0]?.id ?? 'task');
+  const visible = tabs.filter((tk) => tk.show);
+  const active = visible.some((tk) => tk.id === tab) ? tab : (visible[0]?.id ?? 'task');
 
   // Talen waarin de titel of tekst nog ontbreekt.
   const missing = (code: string) => (may('title') && !form.title[code]?.trim()) || (may('body') && !richToPlain(form.body[code]).trim());
   const langSwitch =
     languages.length > 1 ? (
-      <div className="langs" role="tablist" aria-label="Taal">
+      <div className="langs" role="tablist" aria-label={t('Taal')}>
         {languages.map((code) => (
-          <button key={code} type="button" role="tab" aria-selected={code === l} className={code === l ? 'active' : ''} onClick={() => setLang(code)} title={LANG_NAME[code] ?? code}>
+          <button key={code} type="button" role="tab" aria-selected={code === l} className={code === l ? 'active' : ''} onClick={() => setLang(code)} title={LANG_NAME[code] ? t(LANG_NAME[code]!) : code}>
             {code.toUpperCase()}
-            {missing(code) ? <span className="todo" title="Nog niet vertaald" /> : null}
+            {missing(code) ? <span className="todo" title={t('Nog niet vertaald')} /> : null}
           </button>
         ))}
       </div>
@@ -304,64 +321,68 @@ export default function TaskPage() {
   return (
     <div className="taskedit">
       <p className="muted small crumbs">
-        <Link href="/spellen">Spellen</Link> › <Link href={`/spellen/${id}`}>{self.game.slug}</Link> › opdracht {key}
-        {isVariant ? ` · ${layer === 'city' ? 'stadsvariant' : 'klantvariant'}` : ''}
+        <Link href="/spellen">{t('Spellen')}</Link> › <Link href={`/spellen/${id}`}>{self.game.slug}</Link> › {t('opdracht {key}', { key })}
+        {isVariant ? ` · ${layer === 'city' ? t('stadsvariant') : t('klantvariant')}` : ''}
       </p>
       <div className="te-head">
-        <h1 title={title}>Bewerk: {title}</h1>
-        <Link href={`/spellen/${id}`} className="te-close" aria-label="Sluiten" title="Terug naar het spel">
+        <h1 title={title}>{t('Bewerk: {title}', { title })}</h1>
+        <Link href={`/spellen/${id}`} className="te-close" aria-label={t('Sluiten')} title={t('Terug naar het spel')}>
           ×
         </Link>
       </div>
 
       <nav className="te-tabs" role="tablist">
-        {visible.map((t) => (
-          <button key={t.id} type="button" role="tab" aria-selected={active === t.id} className={active === t.id ? 'active' : ''} onClick={() => setTab(t.id)}>
-            <Icon d={TAB_ICONS[t.id]} />
-            {t.label}
-            {t.count ? <span className="count">{t.count}</span> : null}
+        {visible.map((tk) => (
+          <button key={tk.id} type="button" role="tab" aria-selected={active === tk.id} className={active === tk.id ? 'active' : ''} onClick={() => setTab(tk.id)}>
+            <Icon d={TAB_ICONS[tk.id]} />
+            {tk.label}
+            {tk.count ? <span className="count">{tk.count}</span> : null}
           </button>
         ))}
       </nav>
 
       <div className="te-body">
         {isVariant && allowed.size === 0 ? (
-          <p className="panel">Het basisspel markeert geen velden van deze opdracht als aanpasbaar voor een {layer === 'city' ? 'stad' : 'klant'}.</p>
+          <p className="panel">
+            {layer === 'city'
+              ? t('Het basisspel markeert geen velden van deze opdracht als aanpasbaar voor een stad.')
+              : t('Het basisspel markeert geen velden van deze opdracht als aanpasbaar voor een klant.')}
+          </p>
         ) : null}
 
         {active === 'task' ? (
           <>
             <Panel
-              title="Opdrachttekst"
+              title={t('Opdrachttekst')}
               enabled={may('title') || may('body')}
               variant={isVariant}
               on={on.title || on.body}
               onToggle={(v) => setOn({ ...on, title: v && may('title'), body: v && may('body') })}
-              help="Spelers zien dit als de opdracht opent."
+              help={t('Spelers zien dit als de opdracht opent.')}
             >
               {langSwitch}
               {may('title') ? (
                 <>
-                  <label htmlFor="title">Titel</label>
+                  <label htmlFor="title">{t('Titel')}</label>
                   <input id="title" className="wide" {...inputLang(form.title, (title) => set({ title }))} />
                 </>
               ) : null}
               {may('body') ? (
                 <>
-                  <label>Tekst</label>
-                  <RichText key={`body-${l}`} {...inLang(form.body, (body) => set({ body }))} placeholder="Wat moeten de spelers doen?" minHeight={140} />
+                  <label>{t('Tekst')}</label>
+                  <RichText key={`body-${l}`} {...inLang(form.body, (body) => set({ body }))} placeholder={t('Wat moeten de spelers doen?')} minHeight={140} />
                 </>
               ) : null}
             </Panel>
 
-            <Panel title="Antwoord" enabled={may('answer')} variant={isVariant} on={on.answer} onToggle={toggle('answer')}>
+            <Panel title={t('Antwoord')} enabled={may('answer')} variant={isVariant} on={on.answer} onToggle={toggle('answer')}>
               <div className="row compact">
                 <div style={{ flex: '0 1 300px' }}>
-                  <label htmlFor="type">Type</label>
+                  <label htmlFor="type">{t('Type')}</label>
                   <select id="type" value={answer} onChange={(e) => set({ answerType: e.target.value as AnswerType })}>
-                    {ANSWER_TYPES.map((t) => (
-                      <option key={t.value} value={t.value}>
-                        {t.label}
+                    {ANSWER_TYPES.map((tk) => (
+                      <option key={tk.value} value={tk.value}>
+                        {t(tk.label)}
                       </option>
                     ))}
                   </select>
@@ -370,7 +391,7 @@ export default function TaskPage() {
               {answer === 'choice' || answer === 'multi' ? (
                 <>
                   <label>
-                    Opties <span className="muted">({answer === 'choice' ? 'kies het goede antwoord' : 'vink alle goede antwoorden aan'})</span>
+                    {t('Opties')} <span className="muted">({answer === 'choice' ? t('kies het goede antwoord') : t('vink alle goede antwoorden aan')})</span>
                   </label>
                   {languages.length > 1 && !may('title') && !may('body') ? langSwitch : null}
                   <ul className="options">
@@ -379,7 +400,7 @@ export default function TaskPage() {
                         <input
                           type={answer === 'choice' ? 'radio' : 'checkbox'}
                           name="correct"
-                          title="Goed antwoord"
+                          title={t('Goed antwoord')}
                           checked={form.correct.includes(i)}
                           onChange={(e) =>
                             set({
@@ -389,14 +410,14 @@ export default function TaskPage() {
                         />
                         <input
                           value={option[l] ?? ''}
-                          placeholder={`Optie ${i + 1}${l !== defaultLang && option[defaultLang] ? ` (${option[defaultLang]})` : ''}`}
+                          placeholder={`${t('Optie {n}', { n: i + 1 })}${l !== defaultLang && option[defaultLang] ? ` (${option[defaultLang]})` : ''}`}
                           onChange={(e) => set({ options: form.options.map((o, j) => (j === i ? { ...o, [l]: e.target.value } : o)) })}
                         />
                         <button
                           type="button"
                           className="icon"
-                          title="Optie verwijderen"
-                          aria-label={`Optie ${i + 1} verwijderen`}
+                          title={t('Optie verwijderen')}
+                          aria-label={t('Optie {n} verwijderen', { n: i + 1 })}
                           onClick={() =>
                             set({
                               options: form.options.filter((_, j) => j !== i),
@@ -410,41 +431,41 @@ export default function TaskPage() {
                     ))}
                   </ul>
                   <button type="button" className="link" onClick={() => set({ options: [...form.options, {}] })}>
-                    + Optie toevoegen
+                    {t('+ Optie toevoegen')}
                   </button>
                 </>
               ) : null}
               {answer === 'text' ? (
                 <>
-                  <label htmlFor="accepted">Goede antwoorden</label>
+                  <label htmlFor="accepted">{t('Goede antwoorden')}</label>
                   <textarea id="accepted" rows={3} value={form.accepted} onChange={(e) => set({ accepted: e.target.value })} />
-                  <p className="help">Eén per regel. Hoofdletters, spaties en accenten tellen niet mee.</p>
+                  <p className="help">{t('Eén per regel. Hoofdletters, spaties en accenten tellen niet mee.')}</p>
                 </>
               ) : null}
               {answer === 'number' ? (
                 <div className="row compact">
                   <div>
-                    <label htmlFor="value">Goed getal</label>
+                    <label htmlFor="value">{t('Goed getal')}</label>
                     <input id="value" inputMode="decimal" value={form.numberValue} onChange={(e) => set({ numberValue: e.target.value })} />
                   </div>
                   <div>
-                    <label htmlFor="tol">Marge (optioneel)</label>
+                    <label htmlFor="tol">{t('Marge (optioneel)')}</label>
                     <input id="tol" inputMode="decimal" value={form.tolerance} onChange={(e) => set({ tolerance: e.target.value })} />
                   </div>
                 </div>
               ) : null}
-              {answer === 'photo' ? <p className="help">Spelers maken een foto. Die komt in het fotoboek en telt als goed.</p> : null}
+              {answer === 'photo' ? <p className="help">{t('Spelers maken een foto. Die komt in het fotoboek en telt als goed.')}</p> : null}
             </Panel>
 
-            <Panel title="Punten" enabled={may('points')} variant={isVariant} on={on.points} onToggle={toggle('points')}>
+            <Panel title={t('Punten')} enabled={may('points')} variant={isVariant} on={on.points} onToggle={toggle('points')}>
               <div className="row compact">
                 <div>
-                  <label htmlFor="points">Bij goed antwoord</label>
+                  <label htmlFor="points">{t('Bij goed antwoord')}</label>
                   <input id="points" inputMode="numeric" value={form.points} onChange={(e) => set({ points: e.target.value })} />
                 </div>
                 {!isVariant && answer !== 'info' ? (
                   <div>
-                    <label htmlFor="wrong">Per fout antwoord</label>
+                    <label htmlFor="wrong">{t('Per fout antwoord')}</label>
                     <input id="wrong" inputMode="numeric" value={form.wrongPoints} onChange={(e) => set({ wrongPoints: e.target.value })} />
                   </div>
                 ) : null}
@@ -452,7 +473,7 @@ export default function TaskPage() {
               {!isVariant && answer !== 'info' && answer !== 'photo' ? (
                 <label className="check" style={{ marginTop: 12 }}>
                   <input type="checkbox" checked={form.retryUntilCorrect} onChange={(e) => set({ retryUntilCorrect: e.target.checked })} />
-                  Bij een fout antwoord opnieuw laten proberen tot het goed is
+                  {t('Bij een fout antwoord opnieuw laten proberen tot het goed is')}
                 </label>
               ) : null}
             </Panel>
@@ -462,17 +483,17 @@ export default function TaskPage() {
         {active === 'feedback' ? (
           <>
             <Panel
-              title="Bevestigingsvraag"
+              title={t('Bevestigingsvraag')}
               enabled={!isVariant || may('confirm')}
               variant={isVariant}
               on={on.confirm}
               onToggle={toggle('confirm')}
-              help="Bijvoorbeeld: “Weten jullie zeker dat je deze opdracht wilt openen?” Spelers kiezen Ja of Nee."
+              help={t('Bijvoorbeeld: “Weten jullie zeker dat je deze opdracht wilt openen?” Spelers kiezen Ja of Nee.')}
             >
               {!isVariant ? (
                 <label className="check">
                   <input type="checkbox" checked={form.hasConfirm} onChange={(e) => set({ hasConfirm: e.target.checked })} />
-                  Eerst een bevestigingsvraag stellen
+                  {t('Eerst een bevestigingsvraag stellen')}
                 </label>
               ) : null}
               {form.hasConfirm && may('confirm') ? (
@@ -483,23 +504,23 @@ export default function TaskPage() {
               ) : null}
             </Panel>
             <Panel
-              title="Na het antwoord"
+              title={t('Na het antwoord')}
               enabled={may('correctComment') || may('wrongComment')}
               variant={isVariant}
               on={on.correctComment || on.wrongComment}
               onToggle={(v) => setOn({ ...on, correctComment: v && may('correctComment'), wrongComment: v && may('wrongComment') })}
-              help="Optioneel. Laat leeg om alleen “Goed” of “Fout” te tonen."
+              help={t('Optioneel. Laat leeg om alleen “Goed” of “Fout” te tonen.')}
             >
               {langSwitch}
               {may('correctComment') ? (
                 <>
-                  <label>Bij goed antwoord</label>
+                  <label>{t('Bij goed antwoord')}</label>
                   <RichText key={`ok-${l}`} {...inLang(form.correctComment, (correctComment) => set({ correctComment }))} minHeight={70} />
                 </>
               ) : null}
               {may('wrongComment') ? (
                 <>
-                  <label>Bij fout antwoord</label>
+                  <label>{t('Bij fout antwoord')}</label>
                   <RichText key={`wrong-${l}`} {...inLang(form.wrongComment, (wrongComment) => set({ wrongComment }))} minHeight={70} />
                 </>
               ) : null}
@@ -508,79 +529,79 @@ export default function TaskPage() {
         ) : null}
 
         {active === 'hints' ? (
-          <Panel title="Hints" variant={isVariant} on={on.hints} onToggle={toggle('hints')} help="Spelers kopen hints één voor één, in deze volgorde.">
+          <Panel title={t('Hints')} variant={isVariant} on={on.hints} onToggle={toggle('hints')} help={t('Spelers kopen hints één voor één, in deze volgorde.')}>
             {langSwitch}
-            {form.hints.length === 0 ? <p className="muted">Nog geen hints.</p> : null}
+            {form.hints.length === 0 ? <p className="muted">{t('Nog geen hints.')}</p> : null}
             {form.hints.map((hint, i) => (
               <div key={i} className="hint">
                 <div className="hint-head">
-                  <strong>Hint {i + 1}</strong>
+                  <strong>{t('Hint {n}', { n: i + 1 })}</strong>
                   {!isVariant ? (
                     <span className="cost">
-                      kost
-                      <input inputMode="numeric" value={hint.cost} aria-label={`Prijs hint ${i + 1}`} onChange={(e) => set({ hints: form.hints.map((h, j) => (j === i ? { ...h, cost: e.target.value } : h)) })} />
-                      punten
+                      {t('kost')}
+                      <input inputMode="numeric" value={hint.cost} aria-label={t('Prijs hint {n}', { n: i + 1 })} onChange={(e) => set({ hints: form.hints.map((h, j) => (j === i ? { ...h, cost: e.target.value } : h)) })} />
+                      {t('punten')}
                     </span>
                   ) : null}
                   {!isVariant ? (
-                    <button type="button" className="icon" title="Hint verwijderen" aria-label={`Hint ${i + 1} verwijderen`} onClick={() => set({ hints: form.hints.filter((_, j) => j !== i) })}>
+                    <button type="button" className="icon" title={t('Hint verwijderen')} aria-label={t('Hint {n} verwijderen', { n: i + 1 })} onClick={() => set({ hints: form.hints.filter((_, j) => j !== i) })}>
                       ×
                     </button>
                   ) : null}
                 </div>
                 <RichText key={`hint-${i}-${l}`} {...inLang(hint.text, (text) => set({ hints: form.hints.map((h, j) => (j === i ? { ...h, text } : h)) }))} minHeight={60} />
-                <input className="wide small-input" value={hint.image} placeholder="Afbeelding (optioneel): https://…" aria-label={`Afbeelding bij hint ${i + 1}`} onChange={(e) => set({ hints: form.hints.map((h, j) => (j === i ? { ...h, image: e.target.value } : h)) })} />
+                <input className="wide small-input" value={hint.image} placeholder={t('Afbeelding (optioneel): https://…')} aria-label={t('Afbeelding bij hint {n}', { n: i + 1 })} onChange={(e) => set({ hints: form.hints.map((h, j) => (j === i ? { ...h, image: e.target.value } : h)) })} />
               </div>
             ))}
             {!isVariant ? (
               <button type="button" className="link" onClick={() => set({ hints: [...form.hints, { cost: '25', text: {}, image: '' }] })}>
-                + Hint toevoegen
+                {t('+ Hint toevoegen')}
               </button>
             ) : null}
           </Panel>
         ) : null}
 
         {active === 'media' ? (
-          <Panel title="Foto" variant={isVariant} on={on.image} onToggle={toggle('image')} help="Spelers zien de foto boven de opdrachttekst.">
+          <Panel title={t('Foto')} variant={isVariant} on={on.image} onToggle={toggle('image')} help={t('Spelers zien de foto boven de opdrachttekst.')}>
             {form.image ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={form.image} alt="" className="te-photo" />
             ) : null}
             <div className="actions" style={{ marginTop: 0 }}>
               <label className="filebutton">
-                {form.image ? 'Andere foto' : 'Foto uploaden'}
+                {form.image ? t('Andere foto') : t('Foto uploaden')}
                 <input type="file" accept="image/png,image/jpeg,image/webp" hidden disabled={busy} onChange={(e) => void uploadImage(e)} />
               </label>
               {form.image ? (
                 <button className="link" onClick={() => set({ image: '' })}>
-                  Weghalen
+                  {t('Weghalen')}
                 </button>
               ) : null}
             </div>
-            <label htmlFor="image">Of een adres (https)</label>
+            <label htmlFor="image">{t('Of een adres (https)')}</label>
             <input id="image" className="wide" value={form.image} placeholder="https://…" onChange={(e) => set({ image: e.target.value })} />
           </Panel>
         ) : null}
 
         {active === 'activation' ? (
-          <Panel title="Locatie" variant={isVariant} on={on.location} onToggle={toggle('location')} help="De opdracht opent zodra een team binnen de straal komt. Punten slepen kan ook op de kaartpagina.">
-            {trackCount > 0 ? <p className="muted">Deze opdracht heeft ook {trackCount} locaties per track; die staan in de kaarteditor.</p> : null}
+          <Panel title={t('Locatie')} variant={isVariant} on={on.location} onToggle={toggle('location')} help={t('De opdracht opent zodra een team binnen de straal komt. Punten slepen kan ook op de kaartpagina.')}>
+            {trackCount > 0 ? <p className="muted">{t('Deze opdracht heeft ook {n} locaties per track; die staan in de kaarteditor.', { n: trackCount })}</p> : null}
             <label className="check">
               <input type="checkbox" checked={form.hasLocation} onChange={(e) => set({ hasLocation: e.target.checked })} />
-              Opent op een locatie
+              {t('Opent op een locatie')}
             </label>
             {form.hasLocation ? (
               <div className="row compact">
                 <div>
-                  <label htmlFor="lat">Breedtegraad</label>
+                  <label htmlFor="lat">{t('Breedtegraad')}</label>
                   <input id="lat" inputMode="decimal" value={form.lat} onChange={(e) => set({ lat: e.target.value })} placeholder="53.2037" />
                 </div>
                 <div>
-                  <label htmlFor="lng">Lengtegraad</label>
+                  <label htmlFor="lng">{t('Lengtegraad')}</label>
                   <input id="lng" inputMode="decimal" value={form.lng} onChange={(e) => set({ lng: e.target.value })} placeholder="5.7895" />
                 </div>
                 <div style={{ flex: '0 1 120px' }}>
-                  <label htmlFor="radius">Straal (m)</label>
+                  <label htmlFor="radius">{t('Straal (m)')}</label>
                   <input id="radius" inputMode="numeric" value={form.radius} onChange={(e) => set({ radius: e.target.value })} />
                 </div>
               </div>
@@ -589,40 +610,40 @@ export default function TaskPage() {
         ) : null}
 
         {active === 'settings' ? (
-          <Panel title="Instellingen" variant={false}>
+          <Panel title={t('Instellingen')} variant={false}>
             <div className="row compact">
               <div>
-                <label htmlFor="tags">Labels</label>
-                <input id="tags" value={form.tags} onChange={(e) => set({ tags: e.target.value })} placeholder="puzzel, binnen" />
+                <label htmlFor="tags">{t('Labels')}</label>
+                <input id="tags" value={form.tags} onChange={(e) => set({ tags: e.target.value })} placeholder={t('puzzel, binnen')} />
               </div>
               <div style={{ flex: '0 1 160px' }}>
-                <label htmlFor="mapLabel">Nummer in kaarticoon</label>
-                <input id="mapLabel" value={form.mapLabel} maxLength={3} onChange={(e) => set({ mapLabel: e.target.value })} placeholder="leeg = titel" />
+                <label htmlFor="mapLabel">{t('Nummer in kaarticoon')}</label>
+                <input id="mapLabel" value={form.mapLabel} maxLength={3} onChange={(e) => set({ mapLabel: e.target.value })} placeholder={t('leeg = titel')} />
               </div>
               <div style={{ flex: '0 1 220px' }}>
-                <label htmlFor="mapIcon">Kaarticoon</label>
+                <label htmlFor="mapIcon">{t('Kaarticoon')}</label>
                 <select id="mapIcon" value={form.mapIcon} onChange={(e) => set({ mapIcon: e.target.value as '' | 'logo' | 'flag' })}>
-                  <option value="">Standaard</option>
-                  <option value="logo">Logo in trackkleur</option>
-                  <option value="flag">Finishvlag (met nummer)</option>
+                  <option value="">{t('Standaard')}</option>
+                  <option value="logo">{t('Logo in trackkleur')}</option>
+                  <option value="flag">{t('Finishvlag (met nummer)')}</option>
                 </select>
               </div>
             </div>
-            <p className="help">Labels scheiden met komma&apos;s. Spelregels kunnen labels gebruiken, bijvoorbeeld “alle puzzels af”.</p>
+            <p className="help">{t("Labels scheiden met komma's. Spelregels kunnen labels gebruiken, bijvoorbeeld “alle puzzels af”.")}</p>
           </Panel>
         ) : null}
 
         {active === 'used' ? (
-          <Panel title="Gebruikt in" variant={false}>
+          <Panel title={t('Gebruikt in')} variant={false}>
             {usedIn.length === 0 ? (
-              <p className="muted">Alleen in dit spel. Er zijn geen stads- of klantvarianten die erop voortbouwen.</p>
+              <p className="muted">{t('Alleen in dit spel. Er zijn geen stads- of klantvarianten die erop voortbouwen.')}</p>
             ) : (
               <>
-                <p>Wijzigingen hier gelden ook voor deze varianten, behalve voor velden die een variant zelf heeft aangepast:</p>
+                <p>{t('Wijzigingen hier gelden ook voor deze varianten, behalve voor velden die een variant zelf heeft aangepast:')}</p>
                 <ul className="usedlist">
                   {usedIn.map((g) => (
                     <li key={g.id}>
-                      <Link href={`/spellen/${g.id}/opdracht/${key}`}>{g.slug}</Link> <span className="muted small">{g.layer === 'city' ? 'stad' : 'klant'}</span>
+                      <Link href={`/spellen/${g.id}/opdracht/${key}`}>{g.slug}</Link> <span className="muted small">{g.layer === 'city' ? t('stad') : t('klant')}</span>
                     </li>
                   ))}
                 </ul>
@@ -634,12 +655,14 @@ export default function TaskPage() {
 
       {!isVariant && usedIn.length > 0 && dirty ? (
         <p className="te-warn">
-          Deze opdracht wordt ook gebruikt in {usedIn.length} {usedIn.length === 1 ? 'variant' : 'varianten'}. Je wijziging geldt daar ook.
+          {usedIn.length === 1
+            ? t('Deze opdracht wordt ook gebruikt in 1 variant. Je wijziging geldt daar ook.')
+            : t('Deze opdracht wordt ook gebruikt in {n} varianten. Je wijziging geldt daar ook.', { n: usedIn.length })}
         </p>
       ) : null}
       <footer className="te-foot">
         <button onClick={() => void save()} disabled={busy || !dirty}>
-          {busy ? 'Bezig…' : 'Wijzigingen opslaan'}
+          {busy ? t('Bezig…') : t('Wijzigingen opslaan')}
         </button>
         <div className="te-status">
           {errors.length > 0 ? (
@@ -649,13 +672,13 @@ export default function TaskPage() {
               ))}
             </ul>
           ) : dirty ? (
-            <span className="muted">Niet opgeslagen wijzigingen</span>
+            <span className="muted">{t('Niet opgeslagen wijzigingen')}</span>
           ) : notice ? (
             <span className="notice">{notice}</span>
           ) : null}
         </div>
         <Link href={`/spellen/${id}`} className="muted">
-          Terug naar het spel
+          {t('Terug naar het spel')}
         </Link>
       </footer>
     </div>

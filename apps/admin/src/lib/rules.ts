@@ -1,75 +1,76 @@
 import type { Action, Condition, Placement, Rule, Selector } from '@hunt/engine';
+import { t, translate } from './i18n';
 import { tx } from './text';
 
 /** Leesbare zinnen voor regels, zodat de spelleiding ze kan nalopen. */
 
 function selector(s: Selector): string {
-  if ('task' in s) return `opdracht ${s.task}`;
-  if ('tasks' in s) return `opdrachten ${s.tasks.join(', ')}`;
-  if ('tag' in s) return `opdrachten met label ${s.tag}`;
-  return 'alle opdrachten';
+  if ('task' in s) return t('opdracht {task}', { task: s.task });
+  if ('tasks' in s) return t('opdrachten {tasks}', { tasks: s.tasks.join(', ') });
+  if ('tag' in s) return t('opdrachten met label {tag}', { tag: s.tag });
+  return t('alle opdrachten');
 }
 
 function placement(p: Placement): string {
-  if (p === 'map') return 'op de kaart';
-  if (p === 'list') return 'in de lijst';
-  return `in playground ${p.playground}`;
+  if (p === 'map') return t('op de kaart');
+  if (p === 'list') return t('in de lijst');
+  return t('in playground {name}', { name: p.playground });
 }
 
-const match = (m: 'all' | 'any' | undefined) => (m === 'any' ? 'een van ' : '');
+const match = (m: 'all' | 'any' | undefined, s: Selector) => (m === 'any' ? t('een van {what}', { what: selector(s) }) : selector(s));
 
 export function describeCondition(c: Condition): string {
   switch (c.kind) {
     case 'completed':
-      return `${match(c.match)}${selector(c.select)} afgerond`;
+      return t('{what} afgerond', { what: match(c.match, c.select) });
     case 'correct':
-      return `${match(c.match)}${selector(c.select)} goed beantwoord`;
+      return t('{what} goed beantwoord', { what: match(c.match, c.select) });
     case 'incorrect':
-      return `${match(c.match)}${selector(c.select)} fout beantwoord`;
+      return t('{what} fout beantwoord', { what: match(c.match, c.select) });
     case 'elapsed':
-      return `${formatDuration(c.minutes * 60)} na de start`;
+      return t('{time} na de start', { time: formatDuration(c.minutes * 60) });
     case 'afterCompleted':
-      return `${formatDuration(c.seconds)} nadat ${c.task} is afgerond`;
+      return t('{time} nadat {task} is afgerond', { time: formatDuration(c.seconds), task: c.task });
     case 'score':
-      return `score ${c.op} ${c.value}`;
+      return t('score {op} {value}', { op: c.op, value: c.value });
     case 'onTrack':
-      return `team speelt track ${c.track}`;
+      return t('team speelt track {n}', { n: c.track });
     case 'and':
-      return c.conditions.map(describeCondition).map(wrap).join(' én ');
+      return c.conditions.map(describeCondition).map(wrap).join(` ${t('én')} `);
     case 'or':
-      return c.conditions.map(describeCondition).map(wrap).join(' of ');
+      return c.conditions.map(describeCondition).map(wrap).join(` ${t('of')} `);
     case 'not':
-      return `niet (${describeCondition(c.condition)})`;
+      return t('niet ({what})', { what: describeCondition(c.condition) });
     default:
       return JSON.stringify(c);
   }
 }
 
-const wrap = (s: string) => (s.includes(' én ') || s.includes(' of ') ? `(${s})` : s);
+const wrap = (s: string) => (s.includes(` ${t('én')} `) || s.includes(` ${t('of')} `) ? `(${s})` : s);
 
 export function describeAction(a: Action): string {
   switch (a.kind) {
     case 'show':
-      return `toon ${selector(a.select)} ${placement(a.on)}`;
+      return t('toon {what} {where}', { what: selector(a.select), where: placement(a.on) });
     case 'open':
-      return `open ${a.task} direct`;
+      return t('open {task} direct', { task: a.task });
     case 'deactivate':
-      return `zet ${selector(a.select)} uit`;
+      return t('zet {what} uit', { what: selector(a.select) });
     case 'award':
-      return `${a.points >= 0 ? '+' : ''}${a.points} punten${a.reason ? ` (${a.reason})` : ''}`;
+      return `${t('{n} punten', { n: `${a.points >= 0 ? '+' : ''}${a.points}` })}${a.reason ? ` (${a.reason})` : ''}`;
     case 'message':
-      return `bericht: “${tx(a.text)}”`;
+      return t('bericht: “{text}”', { text: tx(a.text) });
     case 'startSequence':
-      return `start reeks ${a.sequence}`;
+      return t('start reeks {name}', { name: a.sequence });
     case 'end':
-      return `einde: ${a.ending}`;
+      return t('einde: {name}', { name: a.ending });
     default:
       return JSON.stringify(a);
   }
 }
 
 export function describeRule(r: Rule): string {
-  return `Als ${describeCondition(r.when)}, dan ${r.then.map(describeAction).join('; ')}.`;
+  return t('Als {when}, dan {then}.', { when: describeCondition(r.when), then: r.then.map(describeAction).join('; ') });
 }
 
 /** Leest een regel uit het JSON-veld van de editor. */
@@ -79,18 +80,18 @@ export function parseRule(id: string, label: string, whenText: string, thenText:
   try {
     when = JSON.parse(whenText);
   } catch {
-    return { error: 'De voorwaarde is geen geldige JSON.' };
+    return { error: t('De voorwaarde is geen geldige JSON.') };
   }
   try {
     then = JSON.parse(thenText);
   } catch {
-    return { error: 'De acties zijn geen geldige JSON.' };
+    return { error: t('De acties zijn geen geldige JSON.') };
   }
   if (typeof when !== 'object' || when === null || typeof (when as { kind?: unknown }).kind !== 'string') {
-    return { error: 'De voorwaarde moet een object met "kind" zijn.' };
+    return { error: t('De voorwaarde moet een object met "kind" zijn.') };
   }
   if (!Array.isArray(then) || then.some((a) => typeof a !== 'object' || a === null || typeof a.kind !== 'string')) {
-    return { error: 'De acties moeten een lijst van objecten met "kind" zijn.' };
+    return { error: t('De acties moeten een lijst van objecten met "kind" zijn.') };
   }
   const rule: Rule = { id, when: when as Condition, then: then as Action[] };
   if (label.trim()) rule.label = label.trim();
@@ -150,19 +151,22 @@ export function settingValue(s: TimeSetting, seconds: number): number {
 
 /** Seconden als uren, minuten en seconden. */
 export function splitDuration(total: number): { h: number; m: number; s: number } {
-  const t = Math.max(0, Math.round(total));
-  return { h: Math.floor(t / 3600), m: Math.floor((t % 3600) / 60), s: t % 60 };
+  const n = Math.max(0, Math.round(total));
+  return { h: Math.floor(n / 3600), m: Math.floor((n % 3600) / 60), s: n % 60 };
 }
 
 /** Leesbare tijd: "1 uur 5 minuten", "1 minuut 30 seconden", "45 seconden". */
-export function formatDuration(total: number): string {
+export function formatDuration(total: number, tr: (nl: string, vars?: Record<string, string | number>) => string = t): string {
   const { h, m, s } = splitDuration(total);
   const parts: string[] = [];
-  if (h) parts.push(`${h} uur`);
-  if (m) parts.push(`${m} ${m === 1 ? 'minuut' : 'minuten'}`);
-  if (s) parts.push(`${s} ${s === 1 ? 'seconde' : 'seconden'}`);
-  return parts.length ? parts.join(' ') : '0 minuten';
+  if (h) parts.push(h === 1 ? tr('1 uur') : tr('{n} uur', { n: h }));
+  if (m) parts.push(m === 1 ? tr('1 minuut') : tr('{n} minuten', { n: m }));
+  if (s) parts.push(s === 1 ? tr('1 seconde') : tr('{n} seconden', { n: s }));
+  return parts.length ? parts.join(' ') : tr('{n} minuten', { n: 0 });
 }
+
+/** Nederlands, voor omschrijvingen uit het spel zelf (die zijn Nederlands). */
+const formatDurationNl = (total: number) => formatDuration(total, (nl, vars) => translate('nl', nl, vars));
 
 /**
  * Omschrijving van een regel met de nieuwe tijden, zodat "Na 10 minuten: …"
@@ -176,7 +180,7 @@ export function relabel(label: string, settings: TimeSetting[], seconds: number[
     const next = seconds[i];
     if (next === undefined || next === settingSeconds(s)) return;
     const old = String(s.minutes).replace('.', '[.,]');
-    out = out.replace(new RegExp(`\\b${old} (minuten|minuut|min)\\b`), formatDuration(next));
+    out = out.replace(new RegExp(`\\b${old} (minuten|minuut|min)\\b`), formatDurationNl(next));
   });
   return out;
 }

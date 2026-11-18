@@ -5,6 +5,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { boundaryGeoJson } from '@/lib/boundary';
 import { ago, boundsOf, buildTrails, isStale, taskPoints, trailsGeoJson, type MapTeam } from '@/lib/live-map';
+import { useLanguage } from '@/lib/language';
 import { imageCorners } from '@/lib/map-settings';
 import { loadMaplibre } from '@/lib/maplibre';
 import type { SessionLive } from '@/lib/session-live';
@@ -26,6 +27,7 @@ function savedStyle(): string | null {
 
 export function LiveMap({ data, colors }: { data: SessionLive; colors: Map<string, string> }) {
   const { game, teams, positions } = data;
+  const { t, locale } = useLanguage();
   const [focus, setFocus] = useState<string>(''); // '' = alle teams
   const [showTasks, setShowTasks] = useState(true);
   const [now, setNow] = useState(() => Date.now());
@@ -39,8 +41,8 @@ export function LiveMap({ data, colors }: { data: SessionLive; colors: Map<strin
   const gameStyle = game.map?.styleUrl ?? DEFAULT_MAP_SOURCE.styleUrl;
   const [styleUrl, setStyleUrl] = useState<string>(() => savedStyle() ?? gameStyle);
   const styleOptions = MAP_STYLES.some((x) => x.source.styleUrl === gameStyle)
-    ? MAP_STYLES.map((x) => ({ url: x.source.styleUrl, name: x.name }))
-    : [{ url: gameStyle, name: 'Stijl van het spel' }, ...MAP_STYLES.map((x) => ({ url: x.source.styleUrl, name: x.name }))];
+    ? MAP_STYLES.map((x) => ({ url: x.source.styleUrl, name: t(x.name) }))
+    : [{ url: gameStyle, name: t('Stijl van het spel') }, ...MAP_STYLES.map((x) => ({ url: x.source.styleUrl, name: t(x.name) }))];
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 5_000);
@@ -48,12 +50,12 @@ export function LiveMap({ data, colors }: { data: SessionLive; colors: Map<strin
   }, []);
 
   const mapTeams: MapTeam[] = useMemo(
-    () => teams.map((t) => ({ id: t.id, name: t.name, track: t.track, color: colors.get(t.id) ?? '#555' })),
+    () => teams.map((x) => ({ id: x.id, name: x.name, track: x.track, color: colors.get(x.id) ?? '#555' })),
     [teams, colors],
   );
-  const phones = useMemo(() => new Map(teams.map((t) => [t.id, t.phone ?? ''])), [teams]);
-  const codes = useMemo(() => new Map(teams.map((t) => [t.id, t.team_code ?? ''])), [teams]);
-  const visible = focus ? mapTeams.filter((t) => t.id === focus) : mapTeams;
+  const phones = useMemo(() => new Map(teams.map((x) => [x.id, x.phone ?? ''])), [teams]);
+  const codes = useMemo(() => new Map(teams.map((x) => [x.id, x.team_code ?? ''])), [teams]);
+  const visible = focus ? mapTeams.filter((x) => x.id === focus) : mapTeams;
 
   // Hele route bij één gekozen team; anders alleen de laatste minuten.
   const trails = useMemo(
@@ -63,8 +65,8 @@ export function LiveMap({ data, colors }: { data: SessionLive; colors: Map<strin
   const fullTrails = useMemo(() => buildTrails(positions, { maxAccuracy: game.gps?.maxAccuracy ?? 30 }), [positions, game]);
 
   const tasks = useMemo(() => {
-    const tracks = [...new Set(visible.map((t) => t.track))];
-    return taskPoints(game, tracks, (id) => tx(game.tasks.find((t) => t.id === id)?.title) || id);
+    const tracks = [...new Set(visible.map((x) => x.track))];
+    return taskPoints(game, tracks, (id) => tx(game.tasks.find((x) => x.id === id)?.title) || id);
   }, [game, visible]);
 
   // Kaart één keer aanmaken.
@@ -185,7 +187,7 @@ export function LiveMap({ data, colors }: { data: SessionLive; colors: Map<strin
         }
       }
     });
-  }, [ready, visible, fullTrails, now]);
+  }, [ready, visible, fullTrails, now, t]);
 
   // Opdrachten.
   useEffect(() => {
@@ -199,11 +201,11 @@ export function LiveMap({ data, colors }: { data: SessionLive; colors: Map<strin
         const el = document.createElement('div');
         el.className = 'taskmarker';
         el.textContent = p.label || '•';
-        el.title = p.track ? `${p.title} (track ${p.track})` : p.title;
+        el.title = p.track ? `${p.title} (${t('track {n}', { n: p.track })})` : p.title;
         taskMarkers.current.push(new MarkerClass({ element: el }).setLngLat([p.lng, p.lat]).addTo(m));
       }
     });
-  }, [ready, tasks, showTasks]);
+  }, [ready, tasks, showTasks, t]);
 
   // Eén team gekozen: inzoomen op zijn hele route.
   useEffect(() => {
@@ -232,7 +234,7 @@ export function LiveMap({ data, colors }: { data: SessionLive; colors: Map<strin
       <div ref={container} className="map livemap" />
       <aside className="card">
         <label htmlFor="focus" style={{ marginTop: 0 }}>
-          Filter teams
+          {t('Filter teams')}
         </label>
         <select
           id="focus"
@@ -242,47 +244,47 @@ export function LiveMap({ data, colors }: { data: SessionLive; colors: Map<strin
             setFocus(e.target.value);
           }}
         >
-          <option value="">Alle teams (laatste {TAIL_MINUTES} min route)</option>
-          {mapTeams.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name} (hele route)
+          <option value="">{t('Alle teams (laatste {n} min route)', { n: TAIL_MINUTES })}</option>
+          {mapTeams.map((x) => (
+            <option key={x.id} value={x.id}>
+              {x.name} ({t('hele route')})
             </option>
           ))}
         </select>
-        <label htmlFor="stijl">Kaartstijl</label>
+        <label htmlFor="stijl">{t('Kaartstijl')}</label>
         <select id="stijl" value={styleUrl} onChange={(e) => chooseStyle(e.target.value)}>
           {styleOptions.map((o) => (
             <option key={o.url} value={o.url}>
               {o.name}
             </option>
           ))}
-          {styleOptions.some((o) => o.url === styleUrl) ? null : <option value={styleUrl}>Eerder gekozen stijl</option>}
+          {styleOptions.some((o) => o.url === styleUrl) ? null : <option value={styleUrl}>{t('Eerder gekozen stijl')}</option>}
         </select>
         <label className="check" style={{ marginTop: 12 }}>
           <input type="checkbox" checked={showTasks} onChange={(e) => setShowTasks(e.target.checked)} />
-          Opdrachten tonen
+          {t('Opdrachten tonen')}
         </label>
 
-        <h2>Teams</h2>
-        {mapTeams.length === 0 ? <p className="muted">Nog geen teams in deze hunt.</p> : null}
+        <h2>{t('Teams')}</h2>
+        {mapTeams.length === 0 ? <p className="muted">{t('Nog geen teams in deze hunt.')}</p> : null}
         <ul className="teamlist">
-          {mapTeams.map((t) => {
-            const trail = fullTrails.get(t.id);
+          {mapTeams.map((tm) => {
+            const trail = fullTrails.get(tm.id);
             const last = trail?.last;
             return (
-              <li key={t.id} className={focus === t.id ? 'active' : ''}>
-                <span className="dot" style={{ background: t.color }} />
-                <button className="link" onClick={() => (last ? flyTo(t.id) : undefined)} title="Naar dit team">
-                  {t.name}
+              <li key={tm.id} className={focus === tm.id ? 'active' : ''}>
+                <span className="dot" style={{ background: tm.color }} />
+                <button className="link" onClick={() => (last ? flyTo(tm.id) : undefined)} title={t('Naar dit team')}>
+                  {tm.name}
                 </button>
                 <span className={`muted small${last && isStale(last.at, now) ? ' warn' : ''}`}>
-                  {last ? ago(last.at, now) : 'nog geen locatie'}
-                  {trail ? ` · ${(trail.distanceM / 1000).toFixed(1).replace('.', ',')} km` : ''}
-                  {codes.get(t.id) ? ` · teamcode ${codes.get(t.id)}` : ''}
-                  {phones.get(t.id) ? (
+                  {last ? ago(last.at, now) : t('nog geen locatie')}
+                  {trail ? ` · ${(trail.distanceM / 1000).toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km` : ''}
+                  {codes.get(tm.id) ? ` · ${t('teamcode {code}', { code: codes.get(tm.id) ?? '' })}` : ''}
+                  {phones.get(tm.id) ? (
                     <>
                       {' · '}
-                      <a href={`tel:${phones.get(t.id)}`}>{phones.get(t.id)}</a>
+                      <a href={`tel:${phones.get(tm.id)}`}>{phones.get(tm.id)}</a>
                     </>
                   ) : null}
                 </span>
@@ -290,17 +292,17 @@ export function LiveMap({ data, colors }: { data: SessionLive; colors: Map<strin
                   className="link small"
                   onClick={() => {
                     fitted.current = false;
-                    setFocus(focus === t.id ? '' : t.id);
+                    setFocus(focus === tm.id ? '' : tm.id);
                   }}
                 >
-                  {focus === t.id ? 'alle teams' : 'route'}
+                  {focus === tm.id ? t('alle teams') : t('route')}
                 </button>
               </li>
             );
           })}
         </ul>
         <p className="muted small">
-          Een grijs team heeft al meer dan 2 minuten geen locatie gestuurd (geen bereik of GPS uit).
+          {t('Een grijs team heeft al meer dan 2 minuten geen locatie gestuurd (geen bereik of GPS uit).')}
         </p>
       </aside>
     </div>

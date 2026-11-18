@@ -1,5 +1,6 @@
 import { composeGame, CompositionError, type BaseGame, type GamePackage, type Variant } from '@hunt/engine';
 import type { GameBundle } from './game-store';
+import { t } from './i18n';
 
 export type ImportResult = { ok: true; bundle: GameBundle; slug: string } | { ok: false; errors: string[] };
 
@@ -18,10 +19,10 @@ export function parseGameFile(text: string): ImportResult {
   try {
     data = JSON.parse(text);
   } catch {
-    return { ok: false, errors: ['Dit is geen geldig JSON-bestand.'] };
+    return { ok: false, errors: [t('Dit is geen geldig JSON-bestand.')] };
   }
   if (typeof data !== 'object' || data === null || Array.isArray(data)) {
-    return { ok: false, errors: ['Het bestand bevat geen spel.'] };
+    return { ok: false, errors: [t('Het bestand bevat geen spel.')] };
   }
 
   const record = data as Record<string, unknown>;
@@ -30,7 +31,7 @@ export function parseGameFile(text: string): ImportResult {
   const variants = (isBundle ? (record.variants ?? []) : []) as Variant[];
 
   const errors = shapeErrors(base);
-  if (!Array.isArray(variants)) errors.push('variants is geen lijst.');
+  if (!Array.isArray(variants)) errors.push(t('variants is geen lijst.'));
   for (const v of Array.isArray(variants) ? variants : []) {
     if (typeof v?.id !== 'string' || !SLUG.test(v.id)) errors.push(`variant met ongeldig id: ${String(v?.id)}`);
     else if (v.layer !== 'city' && v.layer !== 'client') errors.push(`variant ${v.id}: layer moet city of client zijn`);
@@ -57,15 +58,15 @@ export function parseGameFile(text: string): ImportResult {
 function shapeErrors(game: Partial<GamePackage>): string[] {
   const errors: string[] = [];
   if (typeof game.id !== 'string' || !SLUG.test(game.id)) {
-    errors.push('id ontbreekt of bevat andere tekens dan kleine letters, cijfers en streepjes.');
+    errors.push(t('id ontbreekt of bevat andere tekens dan kleine letters, cijfers en streepjes.'));
   }
-  if (!Array.isArray(game.languages) || game.languages.length === 0) errors.push('languages ontbreekt.');
+  if (!Array.isArray(game.languages) || game.languages.length === 0) errors.push(t('languages ontbreekt.'));
   else if (typeof game.defaultLanguage !== 'string' || !game.languages.includes(game.defaultLanguage)) {
-    errors.push('defaultLanguage moet een van de talen uit languages zijn.');
+    errors.push(t('defaultLanguage moet een van de talen uit languages zijn.'));
   }
   for (const key of ['tasks', 'rules', 'sequences', 'endings', 'playgrounds'] as const) {
     if (!Array.isArray(game[key])) errors.push(`${key} ontbreekt of is geen lijst.`);
   }
-  if (typeof game.gps?.maxAccuracy !== 'number') errors.push('gps.maxAccuracy ontbreekt.');
+  if (typeof game.gps?.maxAccuracy !== 'number') errors.push(t('gps.maxAccuracy ontbreekt.'));
   return errors;
 }

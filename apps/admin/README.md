@@ -33,3 +33,16 @@ Andere waarden kunnen via `NEXT_PUBLIC_SUPABASE_URL` en `NEXT_PUBLIC_SUPABASE_AN
 
 - `validateGame` bij het importeren van een spelpakket
 - Later: `composeGame` (publiceren), `missingTranslations`, `computeState` (simulator en live monitor)
+
+## Talen
+
+De beheerapp is er in het Nederlands, Engels, Duits, Spaans, Portugees en
+Italiaans (dezelfde talen als de speler-app). De taalkeuze staat rechtsboven en
+op het inlogscherm, en wordt per gebruiker in het account bewaard.
+
+- Schrijf teksten in het Nederlands en zet ze in `t('…')` (component: `const t = useT()`;
+  buiten een component: `t` uit `@/lib/i18n`). De Nederlandse tekst is de sleutel.
+- Vaste lijsten met labels markeer je met `tKey('…')` en vertaal je bij het tonen met `t(label)`.
+- De vertalingen staan in `src/i18n/<taal>.ts`. `test/i18n.test.ts` faalt als een tekst
+  in een taal ontbreekt; tot die er is, toont de app gewoon de Nederlandse tekst.
+- Spelinhoud (opdrachten, uitleg) wordt niet hier vertaald; die staat per taal in het spel.
