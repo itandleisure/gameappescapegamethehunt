@@ -26,6 +26,13 @@ describe('speelveld', () => {
     expect(tileCount(bounds, 12, maxZoom)).toBeLessThanOrEqual(3000);
   });
 
+  it('omvat ook de hele speelveldgrens', () => {
+    const far = { lat: 53.5, lng: 6.2 };
+    const [, , e, n] = playAreaBounds({ ...game, boundary: { points: [far, leeuwardenPoints.start, leeuwardenPoints.extractieA] } })!;
+    expect(e).toBeGreaterThan(far.lng);
+    expect(n).toBeGreaterThan(far.lat);
+  });
+
   it('heeft geen speelveld zonder locaties', () => {
     expect(playAreaBounds({ ...game, tasks: [], meetingPoint: undefined })).toBeUndefined();
   });

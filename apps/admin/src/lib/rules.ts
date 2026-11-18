@@ -27,9 +27,9 @@ export function describeCondition(c: Condition): string {
     case 'incorrect':
       return `${match(c.match)}${selector(c.select)} fout beantwoord`;
     case 'elapsed':
-      return `${c.minutes} minuten na de start`;
+      return `${formatDuration(c.minutes * 60)} na de start`;
     case 'afterCompleted':
-      return `${c.seconds} seconden nadat ${c.task} is afgerond`;
+      return `${formatDuration(c.seconds)} nadat ${c.task} is afgerond`;
     case 'score':
       return `score ${c.op} ${c.value}`;
     case 'onTrack':
@@ -136,4 +136,47 @@ export function withTimes(c: Condition, values: number[]): Condition {
     }
   };
   return walk(c);
+}
+
+/** Tijd van een instelling in seconden. */
+export function settingSeconds(s: TimeSetting): number {
+  return s.kind === 'elapsed' ? Math.round(s.minutes * 60) : s.seconds;
+}
+
+/** Waarde voor withTimes uit seconden: minuten bij "na de start", anders seconden. */
+export function settingValue(s: TimeSetting, seconds: number): number {
+  return s.kind === 'elapsed' ? Math.round((seconds / 60) * 10_000) / 10_000 : seconds;
+}
+
+/** Seconden als uren, minuten en seconden. */
+export function splitDuration(total: number): { h: number; m: number; s: number } {
+  const t = Math.max(0, Math.round(total));
+  return { h: Math.floor(t / 3600), m: Math.floor((t % 3600) / 60), s: t % 60 };
+}
+
+/** Leesbare tijd: "1 uur 5 minuten", "1 minuut 30 seconden", "45 seconden". */
+export function formatDuration(total: number): string {
+  const { h, m, s } = splitDuration(total);
+  const parts: string[] = [];
+  if (h) parts.push(`${h} uur`);
+  if (m) parts.push(`${m} ${m === 1 ? 'minuut' : 'minuten'}`);
+  if (s) parts.push(`${s} ${s === 1 ? 'seconde' : 'seconden'}`);
+  return parts.length ? parts.join(' ') : '0 minuten';
+}
+
+/**
+ * Omschrijving van een regel met de nieuwe tijden, zodat "Na 10 minuten: …"
+ * meeloopt als de tijd verandert. Alleen tijden "na de start" die letterlijk
+ * als "N minuten" in de omschrijving staan worden vervangen.
+ */
+export function relabel(label: string, settings: TimeSetting[], seconds: number[]): string {
+  let out = label;
+  settings.forEach((s, i) => {
+    if (s.kind !== 'elapsed') return;
+    const next = seconds[i];
+    if (next === undefined || next === settingSeconds(s)) return;
+    const old = String(s.minutes).replace('.', '[.,]');
+    out = out.replace(new RegExp(`\\b${old} (minuten|minuut|min)\\b`), formatDuration(next));
+  });
+  return out;
 }

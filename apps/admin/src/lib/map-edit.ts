@@ -12,6 +12,8 @@ export interface Pin {
   label: string;
   /** Logo-icoon in de trackkleur in plaats van letters of een nummer. */
   logo: boolean;
+  /** Finishvlag (met het nummer als label), zoals bij de extractiepunten. */
+  flag: boolean;
   title: string;
   location: TaskLocation | null;
   editable: boolean;
@@ -47,7 +49,9 @@ export function pinsFor(chain: LayerRows[], game: GamePackage, track: TrackChoic
         base.overridable.some((o) => o.task_id === taskId && o.field === field && o.layers.includes('city')));
     const own = self.locations.some((l) => l.task_id === taskId && l.track === track);
     const name = title(task.id);
-    return { key: task.id, track, label: task.mapLabel ?? name.slice(0, 2).toUpperCase(), logo: task.mapIcon === 'logo', title: name, location, editable, own };
+    const flag = task.mapIcon === 'flag';
+    const label = task.mapLabel ?? (flag ? '' : name.slice(0, 2).toUpperCase());
+    return { key: task.id, track, label, logo: task.mapIcon === 'logo', flag, title: name, location, editable, own };
   });
 }
 

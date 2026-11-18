@@ -6,6 +6,7 @@ import {
   formatInZone,
   STATUS_LABEL,
   TIMEZONES,
+  toJoinCode,
   validateSession,
   zonedToUtc,
   type SessionInput,
@@ -104,7 +105,7 @@ export default function SessionsPage() {
       });
     setBusy(false);
     if (error) {
-      setErrors([/join_code/.test(error.message) ? 'Deze sessiecode is al in gebruik. Kies een andere.' : error.message]);
+      setErrors([/join_code/.test(error.message) ? 'Deze hunt-code is al in gebruik. Kies een andere.' : error.message]);
       return;
     }
     setForm({ ...EMPTY, gameVersionId: form.gameVersionId });
@@ -120,16 +121,16 @@ export default function SessionsPage() {
 
   return (
     <>
-      <h1>Sessies</h1>
+      <h1>Hunts</h1>
       <p className="muted">
-        Een sessie is één spel op één moment, bijvoorbeeld een bedrijfsuitje. Teams doen mee met de sessiecode, zolang de
-        sessie open staat. In testmodus kunnen opdrachten in de app geopend worden zonder ter plekke te zijn.
+        Een hunt is één spel op één moment, bijvoorbeeld een bedrijfsuitje. Teams doen mee met de hunt-code, zolang de
+        hunt open staat. In testmodus kunnen opdrachten in de app geopend worden zonder ter plekke te zijn.
       </p>
 
       {!showForm ? (
         <div className="actions">
           <button onClick={() => setShowForm(true)} disabled={versions.length === 0}>
-            Nieuwe sessie
+            Nieuwe hunt
           </button>
           {versions.length === 0 && sessions !== null ? (
             <span className="muted">Publiceer eerst een spel onder Spellen.</span>
@@ -143,14 +144,19 @@ export default function SessionsPage() {
               <input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Bedrijfsuitje Parteon" />
             </div>
             <div>
-              <label htmlFor="code">Sessiecode (optioneel)</label>
+              <label htmlFor="code">Hunt-code (optioneel)</label>
               <input
                 id="code"
                 value={form.joinCode ?? ''}
                 maxLength={12}
-                onChange={(e) => setForm({ ...form, joinCode: e.target.value.toUpperCase() })}
-                placeholder="leeg = 5 tekens, bijv. K7XQM"
+                onChange={(e) => setForm({ ...form, joinCode: toJoinCode(e.target.value) })}
+                placeholder="bijv. PARTEON (leeg = 5 willekeurige tekens)"
               />
+              {form.name.trim() && toJoinCode(form.name) !== (form.joinCode ?? '') && toJoinCode(form.name).length >= 4 ? (
+                <button type="button" className="link small" onClick={() => setForm({ ...form, joinCode: toJoinCode(form.name) })}>
+                  Gebruik {toJoinCode(form.name)}
+                </button>
+              ) : null}
             </div>
             <div>
               <label htmlFor="game">Spel</label>
@@ -201,7 +207,7 @@ export default function SessionsPage() {
           ) : null}
           <div className="actions">
             <button type="submit" disabled={busy}>
-              Sessie aanmaken
+              Hunt aanmaken
             </button>
             <button type="button" className="secondary" onClick={() => setShowForm(false)}>
               Annuleren
@@ -222,14 +228,14 @@ export default function SessionsPage() {
       {sessions === null ? (
         <p className="muted">Laden…</p>
       ) : sessions.length === 0 ? (
-        <p className="muted">Nog geen sessies.</p>
+        <p className="muted">Nog geen hunts.</p>
       ) : (
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Sessie</th>
-                <th>Sessiecode</th>
+                <th>Hunt</th>
+                <th>Hunt-code</th>
                 <th>Start</th>
                 <th>Status</th>
                 <th></th>

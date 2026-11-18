@@ -128,7 +128,7 @@ export default function GamePage() {
     try {
       const version = await publish(supabase(), id);
       setNotice(
-        `Gepubliceerd als versie ${version}. Nieuwe sessies kunnen deze versie kiezen.`,
+        `Gepubliceerd als versie ${version}. Nieuwe hunts kunnen deze versie kiezen.`,
       );
       await load();
     } catch (err) {
@@ -273,7 +273,7 @@ export default function GamePage() {
       {legacy ? (
         <p className="card">
           Dit spel is als kant-en-klaar spelpakket geïmporteerd en heeft daarom
-          geen losse opdrachten om te bewerken. Je kunt er wel sessies mee
+          geen losse opdrachten om te bewerken. Je kunt er wel hunts mee
           maken. Importeer het spel opnieuw als bundel om het te bewerken.
         </p>
       ) : null}
@@ -369,8 +369,8 @@ export default function GamePage() {
       <section className="card" style={{ marginTop: 32 }}>
         <h2 style={{ marginTop: 0 }}>Spel verwijderen</h2>
         <p className="muted">
-          Verwijdert dit spel met alle opdrachten, versies en testsessies. Een
-          spel met varianten eronder of met echte sessies (geen testsessie) kan
+          Verwijdert dit spel met alle opdrachten, versies en testhunts. Een
+          spel met varianten eronder of met echte hunts (geen testhunt) kan
           niet weg. Dit is niet terug te draaien.
         </p>
         {confirmDelete ? (

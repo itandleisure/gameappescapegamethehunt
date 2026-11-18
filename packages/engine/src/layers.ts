@@ -1,4 +1,4 @@
-import type { Action, Condition, GamePackage, Hint, Lang, Selector, Task, Text } from './types.js';
+import { MAP_ICONS, type Action, type Condition, type GamePackage, type Hint, type Lang, type Selector, type Task, type Text } from './types.js';
 
 /**
  * Gelaagd gamemodel: basisspel → stadsvariant → klantvariant → taal.
@@ -22,7 +22,7 @@ export type TaskField =
   | 'correctComment'
   | 'wrongComment';
 
-export type GameField = 'name' | 'meetingPoint' | 'mapOverlay' | 'map';
+export type GameField = 'name' | 'meetingPoint' | 'mapOverlay' | 'map' | 'boundary';
 
 export type FieldRef = { task: string; field: TaskField } | { game: GameField };
 
@@ -229,9 +229,15 @@ export function validateGame(game: GamePackage): string[] {
       if (!inside) issues.push(`playground ${p.id}: vak ${i + 1} valt buiten de foto`);
     });
   }
+  if (game.boundary) {
+    const b = game.boundary;
+    if (!Array.isArray(b.points) || b.points.length < 3) issues.push('speelveldgrens: minstens 3 punten nodig');
+    else if (b.points.some((p) => !(Math.abs(p.lat) <= 90 && Math.abs(p.lng) <= 180))) issues.push('speelveldgrens: ongeldig punt');
+    if (b.color !== undefined && !/^#[0-9a-f]{6}$/i.test(b.color)) issues.push('speelveldgrens: kleur moet #rrggbb zijn');
+  }
   for (const t of game.tasks) {
     if (t.image !== undefined && !/^https:\/\/\S+$/.test(t.image)) issues.push(`opdracht ${t.id}: foto moet een https-adres zijn`);
-    if (t.mapIcon !== undefined && t.mapIcon !== 'logo') issues.push(`opdracht ${t.id}: onbekend kaarticoon ${String(t.mapIcon)}`);
+    if (t.mapIcon !== undefined && !(MAP_ICONS as readonly string[]).includes(t.mapIcon)) issues.push(`opdracht ${t.id}: onbekend kaarticoon ${String(t.mapIcon)}`);
     if (t.mapLabel !== undefined && (t.mapLabel.trim() === '' || t.mapLabel.length > 3)) issues.push(`opdracht ${t.id}: kaarticoon mag 1 tot 3 tekens hebben`);
     t.hints.forEach((h, i) => {
       if (h.image !== undefined && !/^https:\/\/\S+$/.test(h.image)) issues.push(`opdracht ${t.id}: afbeelding bij hint ${i + 1} moet een https-adres zijn`);

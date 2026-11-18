@@ -30,4 +30,22 @@ describe('tijden in regels', () => {
     expect(timeSettings(c)).toEqual([{ kind: 'elapsed', minutes: 10 }, { kind: 'afterCompleted', task: 'a', seconds: 30 }]);
     expect(timeSettings(withTimes(c, [2, 5]))).toEqual([{ kind: 'elapsed', minutes: 2 }, { kind: 'afterCompleted', task: 'a', seconds: 5 }]);
   });
+
+  it('rekent tijden om naar uren, minuten en seconden', async () => {
+    const { formatDuration, relabel, settingSeconds, settingValue, splitDuration } = await import('../src/lib/rules.js');
+    expect(splitDuration(3930)).toEqual({ h: 1, m: 5, s: 30 });
+    expect(formatDuration(3930)).toBe('1 uur 5 minuten 30 seconden');
+    expect(formatDuration(60)).toBe('1 minuut');
+    expect(formatDuration(0)).toBe('0 minuten');
+    const elapsed = { kind: 'elapsed' as const, minutes: 10 };
+    expect(settingSeconds(elapsed)).toBe(600);
+    expect(settingValue(elapsed, 90)).toBe(1.5);
+    expect(settingValue({ kind: 'afterCompleted', task: 'a', seconds: 1 }, 90)).toBe(90);
+    expect(relabel('Na 10 minuten: bericht', [elapsed], [60])).toBe('Na 1 minuut: bericht');
+    expect(relabel('Alle puzzels goed en minstens 60 minuten: klaar', [{ kind: 'elapsed', minutes: 60 }], [3600])).toBe(
+      'Alle puzzels goed en minstens 60 minuten: klaar',
+    );
+    expect(relabel('Na 75 minuten: einde', [{ kind: 'elapsed', minutes: 75 }], [4530])).toBe('Na 1 uur 15 minuten 30 seconden: einde');
+    expect(relabel('Na 100 minuten', [elapsed], [60])).toBe('Na 100 minuten');
+  });
 });

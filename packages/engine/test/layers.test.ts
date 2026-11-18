@@ -79,6 +79,14 @@ describe('gelaagd gamemodel', () => {
     const broken = { ...theHuntBase, version: 0, rules: [{ id: 'x', when: { kind: 'completed' as const, select: { task: 'bestaat-niet' } }, then: [{ kind: 'end' as const, ending: 'nee' }] }] };
     expect(validateGame(broken)).toEqual(['regel x: onbekende opdracht bestaat-niet', 'regel x: onbekend einde nee']);
   });
+
+  it('controleert de speelveldgrens', () => {
+    const p = (lat: number, lng: number) => ({ lat, lng });
+    const ok = { ...theHuntBase, version: 0, boundary: { points: [p(53.2, 5.79), p(53.21, 5.8), p(53.2, 5.81)] } };
+    expect(validateGame(ok)).toEqual([]);
+    expect(validateGame({ ...ok, boundary: { points: [p(53.2, 5.79), p(53.21, 5.8)] } })).toEqual(['speelveldgrens: minstens 3 punten nodig']);
+    expect(validateGame({ ...ok, boundary: { ...ok.boundary, color: 'rood' } })).toEqual(['speelveldgrens: kleur moet #rrggbb zijn']);
+  });
 });
 
 describe('vertalingen', () => {

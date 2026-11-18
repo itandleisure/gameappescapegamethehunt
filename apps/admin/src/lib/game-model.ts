@@ -7,6 +7,7 @@
  * vertaalscherm alles naast elkaar zetten, en houdt de database een stad of
  * klant tegen die een tekst wil wijzigen die niet aanpasbaar is.
  */
+import { MAP_ICONS } from '@hunt/engine';
 import type {
   Action,
   AnswerSpec,
@@ -16,7 +17,9 @@ import type {
   GameField,
   LatLng,
   MapOverlay,
+  MapIcon,
   MapSource,
+  PlayBoundary,
   MeetingPoint,
   Playground,
   PlaygroundReveal,
@@ -126,10 +129,11 @@ interface BaseSettings {
   meetingPoint?: LatLng;
   mapOverlay?: MapOverlay;
   map?: MapSource;
+  boundary?: PlayBoundary;
 }
 
 const TASK_TEXT_FIELDS = ['title', 'body', 'confirm', 'correctComment', 'wrongComment'] as const;
-const GAME_VALUE_FIELDS: GameField[] = ['meetingPoint', 'mapOverlay', 'map'];
+const GAME_VALUE_FIELDS: GameField[] = ['meetingPoint', 'mapOverlay', 'map', 'boundary'];
 
 // ---------------------------------------------------------------------------
 // Teksten
@@ -277,6 +281,7 @@ export function baseToRows(base: BaseGame, game: Omit<GameRow, 'languages' | 'de
   }
   if (base.mapOverlay) settings.mapOverlay = base.mapOverlay;
   if (base.map) settings.map = base.map;
+  if (base.boundary) settings.boundary = base.boundary;
   const reveal = Object.fromEntries(base.playgrounds.filter((p) => p.reveal).map((p) => [p.id, p.reveal!]));
   if (Object.keys(reveal).length) settings.playgroundReveal = reveal;
 
@@ -331,7 +336,7 @@ export function rowsToBase(rows: LayerRows): BaseGame {
       if (row.retry_until_correct) task.retryUntilCorrect = true;
       if (typeof row.settings?.image === 'string') task.image = row.settings.image;
       if (typeof row.settings?.mapLabel === 'string') task.mapLabel = row.settings.mapLabel;
-      if (row.settings?.mapIcon === 'logo') task.mapIcon = 'logo';
+      if ((MAP_ICONS as readonly unknown[]).includes(row.settings?.mapIcon)) task.mapIcon = row.settings!.mapIcon as MapIcon;
       const hintImages = row.settings?.hintImages;
       if (Array.isArray(hintImages)) {
         task.hints.forEach((h, i) => {
@@ -398,6 +403,7 @@ export function rowsToBase(rows: LayerRows): BaseGame {
   }
   if (settings.mapOverlay) base.mapOverlay = settings.mapOverlay;
   if (settings.map) base.map = settings.map;
+  if (settings.boundary) base.boundary = settings.boundary;
   return base;
 }
 

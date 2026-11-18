@@ -1,11 +1,13 @@
 import {
   Camera,
+  GeoJSONSource,
   ImageSource,
   Layer,
   Map,
   Marker,
   NativeUserLocation,
 } from "@maplibre/maplibre-react-native";
+import { boundaryGeoJson } from "@hunt/engine";
 import { Image, StyleSheet, Text, View } from "react-native";
 import { colors, radius, space } from "../theme";
 import type { GameMapProps } from "./types";
@@ -16,6 +18,7 @@ export default function NativeMap({
   bounds,
   markers,
   overlay,
+  boundary,
 }: GameMapProps) {
   return (
     <Map
@@ -53,9 +56,23 @@ export default function NativeMap({
           />
         </ImageSource>
       ) : null}
+      {boundary ? (
+        <GeoJSONSource id="boundary" data={boundaryGeoJson(boundary) as GeoJSON.GeoJSON}>
+          <Layer
+            type="line"
+            id="boundary-line"
+            layout={{ "line-join": "round" }}
+            paint={{ "line-color": boundary.color, "line-width": 3 }}
+          />
+        </GeoJSONSource>
+      ) : null}
       {markers.map((m) => (
         <Marker key={m.id} id={m.id} lngLat={[m.lng, m.lat]} anchor="bottom">
-          {m.logoColor ? (
+          {m.flag !== undefined ? (
+            <View style={[styles.pin, styles.flag]}>
+              <Text style={[styles.pinText, styles.flagText]}>{`\u{1F3C1}${m.flag}`}</Text>
+            </View>
+          ) : m.logoColor ? (
             <View style={[styles.logo, { backgroundColor: m.logoColor }]}>
               <Image
                 source={require("../../../assets/logo-icoon.png")}
@@ -102,5 +119,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   badgeText: { fontSize: 16 },
+  flag: { backgroundColor: "#ffffff", borderRadius: 16 },
+  flagText: { color: "#111111", fontSize: 15 },
   pinText: { color: colors.accentText, fontWeight: "700", fontSize: 13 },
 });

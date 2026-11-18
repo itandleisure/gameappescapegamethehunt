@@ -9,6 +9,8 @@ export interface MapMarker {
   badge?: string;
   /** Logo-icoon in deze kleur (de kleur van de track van het team). */
   logoColor?: string;
+  /** Finishvlag met dit nummer (mag leeg zijn), zoals bij de extractiepunten. */
+  flag?: string;
 }
 
 export interface MapOverlayImage {
@@ -23,6 +25,8 @@ export interface GameMapProps {
   bounds?: Bounds;
   markers: MapMarker[];
   overlay?: MapOverlayImage;
+  /** Speelveldgrens: gesloten lijn om het speelgebied. */
+  boundary?: { points: { lat: number; lng: number }[]; color: string };
   /** Eigen positie (voor de webkaart; de native kaart toont hem zelf). */
   position?: { lat: number; lng: number; accuracy: number } | null;
 }

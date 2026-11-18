@@ -32,7 +32,7 @@ export default function OverlayPage() {
   const [opacity, setOpacity] = useState(0.7);
   const [mapSource, setMapSource] = useState<MapSource | null>(null);
   /** Welke lagen (stad, klant) een veld mogen aanpassen; alleen in het basisspel in te stellen. */
-  const [allowed, setAllowed] = useState<Record<MapGameField, Layer[]>>({ map: [], mapOverlay: [], meetingPoint: [] });
+  const [allowed, setAllowed] = useState<Record<MapGameField, Layer[]>>({ map: [], mapOverlay: [], meetingPoint: [], boundary: [] });
   const [allowedDirty, setAllowedDirty] = useState(false);
   const shownStyle = useRef<string | null>(null);
   const [dirty, setDirty] = useState<Set<MapGameField>>(new Set());
@@ -54,7 +54,7 @@ export default function OverlayPage() {
       setMeeting(g.meetingPoint ? { lat: g.meetingPoint.lat, lng: g.meetingPoint.lng } : null);
       setMeetingText(g.meetingPoint?.text ?? {});
       setMapSource(g.map ?? null);
-      const fields: MapGameField[] = ['map', 'mapOverlay', 'meetingPoint'];
+      const fields: MapGameField[] = ['map', 'mapOverlay', 'meetingPoint', 'boundary'];
       setAllowed(
         Object.fromEntries(
           fields.map((f) => [f, c[0]!.overridable.find((o) => o.task_id === null && o.field === f)?.layers.filter((l) => l !== 'base') ?? []]),
@@ -165,7 +165,6 @@ export default function OverlayPage() {
         const el = document.createElement('div');
         el.className = `pin meeting${canMeeting ? ' editable' : ''}`;
         el.title = 'Verzamelpunt';
-        el.textContent = 'VP';
         const marker = new MarkerClass({ element: el, draggable: canMeeting }).setLngLat([meeting.lng, meeting.lat]).addTo(m);
         marker.on('dragend', () => {
           const { lat, lng } = marker.getLngLat();
@@ -466,6 +465,7 @@ export default function OverlayPage() {
                       ['map', 'Kaartstijl'],
                       ['mapOverlay', 'Overlay'],
                       ['meetingPoint', 'Verzamelpunt'],
+                      ['boundary', 'Speelveldgrens (rode lijn)'],
                     ] as const
                   ).map(([field, label]) => (
                     <tr key={field}>

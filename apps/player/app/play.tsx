@@ -1,4 +1,4 @@
-import { trackColor, t as tx } from "@hunt/engine";
+import { DEFAULT_BOUNDARY_COLOR, trackColor, t as tx } from "@hunt/engine";
 import { Redirect, router, useSegments } from "expo-router";
 import { useKeepAwake } from "expo-keep-awake";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -241,9 +241,11 @@ export default function PlayScreen() {
           ...(game.tasks.find((x) => x.id === m.id)?.mapIcon === "logo"
             ? { logoColor: trackColor(ctx.track) }
             : {}),
-          ...(game.tasks.find((x) => x.id === m.id)?.mapLabel
-            ? { badge: game.tasks.find((x) => x.id === m.id)!.mapLabel }
-            : {}),
+          ...(game.tasks.find((x) => x.id === m.id)?.mapIcon === "flag"
+            ? { flag: game.tasks.find((x) => x.id === m.id)!.mapLabel ?? "" }
+            : game.tasks.find((x) => x.id === m.id)?.mapLabel
+              ? { badge: game.tasks.find((x) => x.id === m.id)!.mapLabel }
+              : {}),
         }))}
         overlay={
           overlay && /^https?:/.test(overlay.image)
@@ -251,6 +253,14 @@ export default function PlayScreen() {
                 url: overlay.image,
                 nw: overlay.bounds[0],
                 se: overlay.bounds[1],
+              }
+            : undefined
+        }
+        boundary={
+          game.boundary
+            ? {
+                points: game.boundary.points,
+                color: game.boundary.color ?? DEFAULT_BOUNDARY_COLOR,
               }
             : undefined
         }

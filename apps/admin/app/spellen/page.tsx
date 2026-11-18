@@ -93,7 +93,7 @@ export default function GamesPage() {
       setNotice(
         `${parsed.slug} geïmporteerd${n > 0 ? `, met ${n} variant${n === 1 ? '' : 'en'}` : ''}.` +
           (photos.copied ? ` ${photos.copied} foto${photos.copied === 1 ? '' : "'s"} naar de eigen opslag gekopieerd.` : '') +
-          ' Publiceer het spel om er sessies mee te maken.',
+          ' Publiceer het spel om er hunts mee te maken.',
       );
       if (photos.failed.length) {
         setErrors([`Deze foto's konden niet worden gekopieerd en wijzen nog naar de oude site:`, ...photos.failed]);
@@ -111,7 +111,7 @@ export default function GamesPage() {
       <h1>Spellen</h1>
       <p className="muted">
         Een basisspel bevat de opdrachten en regels. Een stad vult locaties en lokale vragen in, een klant alleen de
-        velden die het basisspel als aanpasbaar markeert. Publiceren maakt een vaste versie waarmee je sessies maakt.
+        velden die het basisspel als aanpasbaar markeert. Publiceren maakt een vaste versie waarmee je hunts maakt.
       </p>
       <div className="actions">
         <label className={`filebutton${busy ? ' disabled' : ''}`}>

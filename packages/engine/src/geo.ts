@@ -98,3 +98,18 @@ export class LocationGate {
     else this.tracks.clear();
   }
 }
+
+/**
+ * Speelveldgrens als gesloten lijn in GeoJSON, voor MapLibre (beheerapp en
+ * speler-app). Leeg zonder minstens 2 punten.
+ */
+export function boundaryGeoJson(boundary: { points: { lat: number; lng: number }[] } | null | undefined) {
+  const pts = boundary?.points ?? [];
+  if (pts.length < 2) return { type: 'FeatureCollection' as const, features: [] };
+  const coords = pts.map((p) => [p.lng, p.lat]);
+  if (pts.length >= 3) coords.push(coords[0]!);
+  return {
+    type: 'FeatureCollection' as const,
+    features: [{ type: 'Feature' as const, properties: {}, geometry: { type: 'LineString' as const, coordinates: coords } }],
+  };
+}

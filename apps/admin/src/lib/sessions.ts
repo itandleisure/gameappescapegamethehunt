@@ -37,15 +37,28 @@ export const TIMEZONES = [
   'Europe/Sofia',
 ];
 
+/**
+ * Sessiecode uit vrije tekst, zoals een bedrijfsnaam: hoofdletters, zonder
+ * accenten, spaties of leestekens, hooguit 12 tekens. "Van Dijk B.V." wordt VANDIJKBV.
+ */
+export function toJoinCode(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 12);
+}
+
 export function validateSession(input: SessionInput): string[] {
   const errors: string[] = [];
-  if (input.name.trim().length < 2) errors.push('Geef de sessie een naam.');
+  if (input.name.trim().length < 2) errors.push('Geef de hunt een naam.');
   if (!input.gameVersionId) errors.push('Kies een spel.');
   if (!Number.isInteger(input.trackCount) || input.trackCount < 1 || input.trackCount > 50) {
     errors.push('Aantal tracks moet tussen 1 en 50 liggen.');
   }
   const code = input.joinCode?.trim() ?? '';
-  if (code && !/^[A-Za-z0-9]{4,12}$/.test(code)) errors.push('De sessiecode moet 4 tot 12 letters of cijfers zijn, zonder spaties.');
+  if (code && !/^[A-Za-z0-9]{4,12}$/.test(code)) errors.push('De hunt-code moet 4 tot 12 letters of cijfers zijn, zonder spaties.');
   if (input.startsAt && Number.isNaN(Date.parse(input.startsAt))) errors.push('Startmoment is ongeldig.');
   return errors;
 }
