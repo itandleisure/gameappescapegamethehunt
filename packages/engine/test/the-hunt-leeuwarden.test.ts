@@ -258,3 +258,16 @@ describe('Escape Game The Hunt Leeuwarden', () => {
     expect(assignTrack(4, 3)).toBe(1);
   });
 });
+
+describe('speluitleg vóór een centrale start', () => {
+  it('telt de gelezen uitleg bij de start als afgerond', () => {
+    const withBriefing = { ...game, briefing: 'intro' };
+    const state = computeState(withBriefing, { ...team, briefingRead: true }, [], min(1));
+    for (const id of INTRO) expect(state.tasks[id]!.status).toBe('done');
+    // De regel na de uitleg vuurt meteen bij de start: eerste puzzel staat klaar.
+    expect(state.tasks[PUZZLES[0].id]!.status).toBe('visible');
+    // Zonder klaarmelding blijft alles zoals het was.
+    const before = computeState(withBriefing, team, [], min(1));
+    expect(before.tasks[INTRO[0]!]!.status).not.toBe('done');
+  });
+});

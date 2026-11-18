@@ -39,6 +39,8 @@ export default function TabbladenPage() {
   const [list, setList] = useState<Playground[]>([]);
   const [known, setKnown] = useState<Set<string>>(new Set());
   const [dirty, setDirty] = useState(false);
+  /** Reeks met speluitleg die teams vóór een centrale start lezen. */
+  const [briefing, setBriefing] = useState("");
   const [newName, setNewName] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
@@ -52,6 +54,7 @@ export default function TabbladenPage() {
       setBase(b);
       setList(b.playgrounds);
       setKnown(new Set(b.playgrounds.map((p) => p.id)));
+      setBriefing(b.briefing ?? "");
       setDirty(false);
     } catch (err) {
       setErrors([err instanceof Error ? err.message : String(err)]);
@@ -150,6 +153,8 @@ export default function TabbladenPage() {
       );
       if (Object.keys(reveal).length) settings.playgroundReveal = reveal;
       else delete settings.playgroundReveal;
+      if (briefing) settings.briefing = briefing;
+      else delete settings.briefing;
       must(await db.from("games").update({ settings }).eq("id", id));
       setNotice("Opgeslagen. Publiceer het spel om het in de app te zien.");
       await load();
@@ -197,6 +202,30 @@ export default function TabbladenPage() {
               ))}
             </ul>
           ) : null}
+
+          <section className="card" style={{ marginBottom: 16 }}>
+            <h2 style={{ marginTop: 0 }}>Speluitleg vóór de start</h2>
+            <p className="muted">
+              Bij een hunt met centrale start lezen teams deze uitleg terwijl ze wachten. Pas als iedereen klaar is,
+              start de spelleider het spel. De gelezen uitleg telt dan bij de start als afgerond.
+            </p>
+            <label htmlFor="briefing">Reeks</label>
+            <select
+              id="briefing"
+              value={briefing}
+              onChange={(e) => {
+                setBriefing(e.target.value);
+                setDirty(true);
+              }}
+            >
+              <option value="">Geen (uitleg tijdens het spel)</option>
+              {base.sequences.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.id} ({s.tasks.length} schermen)
+                </option>
+              ))}
+            </select>
+          </section>
 
           {list.map((p) => (
             <PlaygroundCard

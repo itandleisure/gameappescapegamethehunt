@@ -62,6 +62,20 @@ export class FakeBackend implements Backend {
     return { ...team };
   }
 
+  async teamReady(teamId: string) {
+    this.guard();
+    const team = this.teams.get(teamId)!;
+    team.readyAt ??= this.serverNow;
+    return { ...team };
+  }
+
+  centralStart = false;
+
+  /** Spelleider start de hunt: alle teams krijgen dezelfde starttijd. */
+  startSession() {
+    for (const team of this.teams.values()) team.startedAt ??= this.serverNow;
+  }
+
   async loadTeam(teamId: string) {
     this.guard();
     return { ...this.teams.get(teamId)! };
@@ -70,7 +84,7 @@ export class FakeBackend implements Backend {
   async loadGame() {
     this.guard();
     return {
-      session: { id: 'sessie-1', name: 'Test', timezone: 'Europe/Amsterdam', status: 'open' as const, testMode: this.testMode },
+      session: { id: 'sessie-1', name: 'Test', timezone: 'Europe/Amsterdam', status: 'open' as const, testMode: this.testMode, centralStart: this.centralStart },
       game: this.game,
     };
   }

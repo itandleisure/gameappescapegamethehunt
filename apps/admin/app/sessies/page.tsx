@@ -39,6 +39,7 @@ const EMPTY: SessionInput = {
   timezone: 'Europe/Amsterdam',
   trackCount: 5,
   testMode: false,
+  centralStart: true,
   joinCode: '',
 };
 
@@ -100,6 +101,7 @@ export default function SessionsPage() {
         timezone: form.timezone,
         track_count: form.trackCount,
         test_mode: form.testMode,
+        central_start: form.centralStart ?? false,
         status: 'draft',
         ...(form.joinCode?.trim() ? { join_code: form.joinCode.trim().toUpperCase() } : {}),
       });
@@ -197,6 +199,14 @@ export default function SessionsPage() {
           <label className="check">
             <input type="checkbox" checked={form.testMode} onChange={(e) => setForm({ ...form, testMode: e.target.checked })} />
             Testmodus
+          </label>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={form.centralStart ?? false}
+              onChange={(e) => setForm({ ...form, centralStart: e.target.checked })}
+            />
+            Centrale start: teams lezen eerst de speluitleg, daarna start de spelleider het spel voor iedereen tegelijk
           </label>
           {errors.length > 0 ? (
             <ul className="errors">

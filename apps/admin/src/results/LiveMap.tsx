@@ -52,6 +52,7 @@ export function LiveMap({ data, colors }: { data: SessionLive; colors: Map<strin
     [teams, colors],
   );
   const phones = useMemo(() => new Map(teams.map((t) => [t.id, t.phone ?? ''])), [teams]);
+  const codes = useMemo(() => new Map(teams.map((t) => [t.id, t.team_code ?? ''])), [teams]);
   const visible = focus ? mapTeams.filter((t) => t.id === focus) : mapTeams;
 
   // Hele route bij één gekozen team; anders alleen de laatste minuten.
@@ -277,6 +278,7 @@ export function LiveMap({ data, colors }: { data: SessionLive; colors: Map<strin
                 <span className={`muted small${last && isStale(last.at, now) ? ' warn' : ''}`}>
                   {last ? ago(last.at, now) : 'nog geen locatie'}
                   {trail ? ` · ${(trail.distanceM / 1000).toFixed(1).replace('.', ',')} km` : ''}
+                  {codes.get(t.id) ? ` · teamcode ${codes.get(t.id)}` : ''}
                   {phones.get(t.id) ? (
                     <>
                       {' · '}

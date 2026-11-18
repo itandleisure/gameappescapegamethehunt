@@ -86,6 +86,12 @@ class Run {
       ledger: [],
       rejected: [],
     };
+    // Speluitleg al vóór de start gelezen: die opdrachten zijn bij de start afgerond.
+    const briefing = team.briefingRead && game.briefing ? game.sequences.find((s) => s.id === game.briefing) : undefined;
+    for (const id of briefing?.tasks ?? []) {
+      const ts = this.state.tasks[id];
+      if (ts) Object.assign(ts, { status: 'done', correct: true, completedAt: team.startedAt });
+    }
   }
 
   replay(events: readonly GameEvent[], now: number): TeamState {
