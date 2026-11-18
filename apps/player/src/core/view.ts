@@ -51,7 +51,7 @@ export function listGroups(game: GamePackage, state: TeamState): ListGroup[] {
     groups.set(key, [...(groups.get(key) ?? []), task]);
   }
   // Een playground met een foto die stukje voor stukje zichtbaar wordt, staat er altijd.
-  for (const p of game.playgrounds) if ((p.reveal || p.body) && !groups.has(p.id)) groups.set(p.id, []);
+  for (const p of game.playgrounds) if ((p.reveal || p.code || p.body) && !groups.has(p.id)) groups.set(p.id, []);
   const order = [undefined, ...game.playgrounds.map((p) => p.id)];
   return order.filter((k) => groups.has(k)).map((k) => ({ ...(k === undefined ? {} : { playground: k }), tasks: groups.get(k)! }));
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  initialCode,
   newPiece,
   playgroundKey,
   rectBetween,
@@ -37,5 +38,21 @@ describe("tabbladen", () => {
 
   it("maakt een sleutel van een naam", () => {
     expect(playgroundKey("Extractiepunt Één!")).toBe("extractiepunt-een");
+  });
+
+  it("zet de oude foto met vakken om naar zes codevakjes en een hintveld", () => {
+    const tasks = ["a", "b", "c", "d", "e", "f", "hint"].map((id) => ({ id, tags: [] }));
+    const pieces = tasks.map((t) => ({ task: t.id, x: 0, y: 0, w: 1, h: 1 }));
+    expect(initialCode({ pieces }, tasks)).toEqual({
+      boxes: ["a", "b", "c", "d", "e", "f"].map((task) => ({ task, value: "" })),
+      hint: "hint",
+    });
+    const fresh = initialCode(undefined, [
+      { id: "intro", tags: [] },
+      { id: "p1", tags: ["oplossing"] },
+      { id: "extractie-hint", tags: [] },
+    ]);
+    expect(fresh.boxes.map((b) => b.task)).toEqual(["p1", "intro", "intro", "intro", "intro", "intro"]);
+    expect(fresh.hint).toBe("extractie-hint");
   });
 });

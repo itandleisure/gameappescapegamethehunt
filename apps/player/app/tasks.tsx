@@ -1,10 +1,11 @@
-import { hiddenPieces, t as tx } from "@hunt/engine";
+import { codeView, hiddenPieces, t as tx } from "@hunt/engine";
 import { Redirect, router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { isAnswerable, listGroups } from "../src/core/view";
 import { Body, Button, Title } from "../src/ui/components";
 import { LeaveGame } from "../src/ui/LeaveGame";
+import { CodeBoxes } from "../src/ui/CodeBoxes";
 import { RevealImage } from "../src/ui/RevealImage";
 import { useGame } from "../src/ui/GameProvider";
 import { colors, radius, space, contentColumn } from "../src/ui/theme";
@@ -27,6 +28,7 @@ export default function TasksScreen() {
         {groups.length === 0 ? <Body muted>{t("noTasks")}</Body> : null}
         {groups.map((group) => {
           const pg = game.playgrounds.find((p) => p.id === group.playground);
+          const code = pg ? codeView(game, state, pg.id) : null;
           return (
             <View key={group.playground ?? "lijst"} style={styles.group}>
               {pg ? <Text style={styles.groupTitle}>{tr(pg.name)}</Text> : null}
@@ -35,6 +37,12 @@ export default function TasksScreen() {
                 <RevealImage
                   reveal={pg.reveal}
                   hidden={hiddenPieces(game, state, pg.id)}
+                />
+              ) : null}
+              {code ? (
+                <CodeBoxes
+                  view={code}
+                  hintText={code.hint?.open ? tr(code.hint.text) : undefined}
                 />
               ) : null}
               {group.tasks.map((task) => {

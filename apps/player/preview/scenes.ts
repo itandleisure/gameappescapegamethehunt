@@ -11,12 +11,14 @@ import { leeuwarden, leeuwardenPoints, PUZZLES, theHuntBase } from '../../../pac
 export type Scene = 'join' | 'teamphoto' | 'teamcode' | 'play' | 'task' | 'chat' | 'end';
 export type ImageKind = 'none' | 'normal' | 'huge' | 'tiny' | 'wide' | 'tall' | 'broken';
 
-export function currentScene(): { scene: Scene; img: ImageKind; long: boolean } {
+export function currentScene(): { scene: Scene; img: ImageKind; long: boolean; code: boolean } {
   const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
   return {
     scene: (params.get('scene') as Scene | null) ?? 'join',
     img: (params.get('img') as ImageKind | null) ?? 'normal',
     long: params.get('long') === '1',
+    // Codevakjes en hintveld op het extractiepunt in plaats van de foto.
+    code: params.get('code') === '1',
   };
 }
 
@@ -55,7 +57,7 @@ export function previewImage(kind: ImageKind): string | undefined {
 }
 
 /** Het spel voor de scène: Leeuwarden uit de tests, met opdrachten die meteen in de lijst staan. */
-export function previewGame(scene: Scene, img: ImageKind, long: boolean): GamePackage {
+export function previewGame(scene: Scene, img: ImageKind, long: boolean, code = false): GamePackage {
   const game = composeGame(theHuntBase, [leeuwarden], { id: 'voorbeeld', version: 1 });
   const image = previewImage(img);
   const tasks: Task[] = game.tasks.map((t) => {
@@ -76,6 +78,7 @@ export function previewGame(scene: Scene, img: ImageKind, long: boolean): GamePa
       ...[...PUZZLES.map((p) => p.id), 'fotomissie'].map((task) => ({ kind: 'show' as const, select: { task }, on: 'list' as const })),
       { kind: 'show', select: { task: 'start' }, on: 'map' },
       { kind: 'show', select: { task: 'extractie-a' }, on: { playground: 'extractiepunt' } },
+      ...(code ? [{ kind: 'show' as const, select: { task: 'extractie-hint' }, on: { playground: 'extractiepunt' } }] : []),
       ...(long ? [{ kind: 'message' as const, text: { nl: LONG, en: LONG } }] : []),
       ...(scene === 'end' ? [{ kind: 'end' as const, ending: 'ontsnapt' }] : []),
     ],
@@ -91,7 +94,20 @@ export function previewGame(scene: Scene, img: ImageKind, long: boolean): GamePa
     tasks,
     rules: [shown],
     playgrounds: game.playgrounds.map((p) =>
-      p.id === 'extractiepunt' ? { ...p, ...(long ? { body: { nl: LONG, en: LONG } } : {}), reveal } : p,
+      p.id === 'extractiepunt'
+        ? {
+            ...p,
+            ...(long ? { body: { nl: LONG, en: LONG } } : {}),
+            ...(code
+              ? {
+                  code: {
+                    boxes: PUZZLES.map((z, i) => ({ task: z.id, value: ['53.', '201', '895', '5.', '798', '789'][i] ?? '' })),
+                    hint: 'extractie-hint',
+                  },
+                }
+              : { reveal }),
+          }
+        : p,
     ),
     meetingPoint: { ...leeuwardenPoints.start, text: { nl: long ? LONG : 'Kom naar de ingang van het museum.', en: 'Meet at the museum entrance.' } },
   };

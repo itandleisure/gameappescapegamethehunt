@@ -171,6 +171,30 @@ export interface Playground {
   body?: Text;
   /** Een foto die stukje voor stukje zichtbaar wordt (zoals de GPS-code van het extractiepunt). */
   reveal?: PlaygroundReveal;
+  /** Vakjes met de GPS-code en een hintveld, die opengaan per opgeloste opdracht. */
+  code?: PlaygroundCode;
+}
+
+/**
+ * De GPS-code van het extractiepunt als losse vakjes. Elk vakje hoort bij één
+ * opdracht (zoals een puzzel) en toont zijn stukje code zodra die opdracht goed
+ * is. Puzzelnamen staan er niet bij, zodat dezelfde opzet in elke stad en elk
+ * land werkt. Een stad vult de stukjes code zelf in (spelveld `playgroundCodes`).
+ */
+export interface PlaygroundCode {
+  boxes: CodeBox[];
+  /**
+   * Opdracht waarvan de tekst in het hintveld komt, zoals de bonushint over het
+   * extractiepunt. Het veld gaat open zodra die opdracht zichtbaar wordt.
+   */
+  hint?: string;
+}
+
+export interface CodeBox {
+  /** De opdracht die dit vakje opent. */
+  task: string;
+  /** Het stukje GPS-code in dit vakje, bijvoorbeeld "53." of "201". */
+  value: string;
 }
 
 /**

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { computeState } from '../src/engine.js';
 import { composeGame } from '../src/layers.js';
-import { rank, hiddenPieces, routeDistance, summarizeTeam } from '../src/stats.js';
+import { codeView, rank, hiddenPieces, routeDistance, summarizeTeam } from '../src/stats.js';
 import type { TeamState } from '../src/types.js';
 import { leeuwarden, leeuwardenPoints, LWD, offset, theHuntBase } from './fixtures/the-hunt.js';
 import { min, Script, T0 } from './helpers.js';
@@ -87,5 +87,49 @@ describe('foto stukje voor stukje (extractiepunt)', () => {
       { task: 'p', x: 1400, y: 0, w: 100, h: 10 },
     ]);
     expect(() => composeGame(base, [leeuwarden], { id: 'x', version: 1 })).toThrow(/onbekende opdracht bestaat-niet[\s\S]*vak 2 valt buiten de foto/);
+  });
+});
+
+describe('GPS-code in vakjes (extractiepunt)', () => {
+  const withCode = () => {
+    const base = JSON.parse(JSON.stringify(theHuntBase)) as typeof theHuntBase;
+    const ids = base.tasks.map((t) => t.id);
+    base.playgrounds.find((p) => p.id === 'extractiepunt')!.code = {
+      boxes: [
+        { task: ids[0]!, value: '53.' },
+        { task: ids[1]!, value: '201' },
+        { task: ids[2]!, value: '895' },
+      ],
+      hint: ids[3]!,
+    };
+    base.overridable.push({ target: { game: 'playgroundCodes' }, layers: ['city'] });
+    return { base, ids };
+  };
+  const state = (tasks: Record<string, { correct?: boolean; status?: string }>) => ({ tasks }) as unknown as TeamState;
+
+  it('opent een vakje als de opdracht goed is en het hintveld als de hint verschijnt', () => {
+    const { base, ids } = withCode();
+    const game = composeGame(base, [leeuwarden], { id: 'lwd', version: 1 });
+    const none = codeView(game, state({ [ids[3]!]: { status: 'hidden' } }), 'extractiepunt')!;
+    expect(none.boxes).toEqual([null, null, null]);
+    expect(none.hint).toEqual({ open: false });
+    const some = codeView(game, state({ [ids[0]!]: { correct: true }, [ids[1]!]: { correct: false }, [ids[3]!]: { status: 'visible' } }), 'extractiepunt')!;
+    expect(some.boxes).toEqual(['53.', null, null]);
+    expect(some.hint).toEqual({ open: true, text: game.tasks.find((t) => t.id === ids[3])!.body });
+    expect(codeView(game, state({}), 'speluitleg')).toBeNull();
+  });
+
+  it('een stad vult haar eigen code in; lege vakjes houden die van het basisspel', () => {
+    const { base, ids } = withCode();
+    const city = { ...leeuwarden, overrides: [...leeuwarden.overrides, { target: { game: 'playgroundCodes' as const }, value: { extractiepunt: ['41.', '', '002'] } }] };
+    const game = composeGame(base, [city], { id: 'x', version: 1 });
+    const all = codeView(game, state(Object.fromEntries(ids.slice(0, 3).map((id) => [id, { correct: true }]))), 'extractiepunt')!;
+    expect(all.boxes).toEqual(['41.', '201', '002']);
+  });
+
+  it('weigert een vakje bij een onbekende opdracht', () => {
+    const { base } = withCode();
+    base.playgrounds.find((p) => p.id === 'extractiepunt')!.code!.boxes[1]!.task = 'bestaat-niet';
+    expect(() => composeGame(base, [leeuwarden], { id: 'x', version: 1 })).toThrow(/vakje 2 hoort bij onbekende opdracht bestaat-niet/);
   });
 });

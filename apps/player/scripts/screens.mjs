@@ -46,6 +46,7 @@ export const SCENES = [
   { id: 'kaart-lang-offline', url: '/?scene=play&long=1' },
   { id: 'opdrachtenlijst', url: '/?scene=task', clicks: [tasksButton] },
   { id: 'opdrachtenlijst-lang', url: '/?scene=task&long=1&img=tall', clicks: [tasksButton] },
+  { id: 'extractiepunt-codevakjes', url: '/?scene=task&code=1', clicks: [tasksButton] },
   ...['normal', 'huge', 'tiny', 'wide', 'tall', 'broken', 'none'].map((img) => ({
     id: `opdracht-foto-${img}`,
     url: `/?scene=task&img=${img}`,

@@ -36,8 +36,10 @@ describe('spelmodel in de database', () => {
     const ids = base.tasks.map((t: { id: string }) => t.id);
     base.tasks[0].mapLabel = '1';
     base.playgrounds[0].reveal = { image: 'https://example.org/gps.png', width: 1440, height: 6500, pieces: [{ task: ids[1], x: 40, y: 880, w: 440, h: 420 }] };
+    base.playgrounds[0].code = { boxes: [{ task: ids[1], value: '53.' }], hint: ids[2] };
     base.playgrounds[1].body = { nl: 'Tijdlijn', en: 'Timeline' };
     const rows = baseToRows(base, { id: 'base', slug: 'the-hunt' });
+    expect(rows.game.settings.playgroundCode).toEqual({ [base.playgrounds[0].id]: base.playgrounds[0].code });
     expect(rows.game.settings.playgroundReveal).toEqual({ [base.playgrounds[0].id]: base.playgrounds[0].reveal });
     expect(json(rowsToBase(rows))).toEqual(base);
   });
