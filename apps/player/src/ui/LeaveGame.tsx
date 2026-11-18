@@ -7,17 +7,18 @@ import { useGame } from "./GameProvider";
 import { colors, space } from "./theme";
 
 /**
- * Teamcode in beeld en afmelden op deze telefoon, ook midden in het spel.
- * Met de teamcode kan het team later (of op een andere telefoon) verder.
+ * Hunt-code en teamnaam in beeld en afmelden op deze telefoon, ook midden in
+ * het spel. Daarmee kan het team later (of op een andere telefoon) verder.
  */
 export function LeaveGame({ showCode = true }: { showCode?: boolean }) {
   const { snapshot, t } = useGame();
   if (!snapshot) return null;
-  const code = snapshot.team.teamCode;
+  const code = snapshot.session.joinCode ?? snapshot.team.teamCode;
+  const name = snapshot.team.name;
 
   const confirm = () => {
     const unsent = snapshot.pending > 0 ? `\n\n${t("leaveUnsent", { count: snapshot.pending })}` : "";
-    Alert.alert(t("leave"), t("leaveConfirmCode", { code }) + unsent, [
+    Alert.alert(t("leave"), t("leaveConfirmCode", { code, name }) + unsent, [
       { text: t("no"), style: "cancel" },
       {
         text: t("yes"),
@@ -37,6 +38,7 @@ export function LeaveGame({ showCode = true }: { showCode?: boolean }) {
         <>
           <Body muted>{t("yourTeamCode")}</Body>
           <Text style={styles.code}>{code}</Text>
+          <Text style={styles.code}>{name}</Text>
         </>
       ) : null}
       <Button kind="secondary" label={t("leave")} onPress={confirm} />

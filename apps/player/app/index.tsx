@@ -18,7 +18,8 @@ export default function JoinScreen() {
   const [joinCode, setJoinCode] = useState('');
   const [teamName, setTeamName] = useState('');
   const [phone, setPhone] = useState('');
-  const [teamCode, setTeamCode] = useState('');
+  const [rejoinCode, setRejoinCode] = useState('');
+  const [rejoinName, setRejoinName] = useState('');
   const [busy, setBusy] = useState<'join' | 'rejoin' | null>(null);
   const [error, setError] = useState<MessageKey | null>(null);
   const [keyboard, setKeyboard] = useState(false);
@@ -107,20 +108,22 @@ export default function JoinScreen() {
 
           <View style={styles.divider} />
           <Title>{t('rejoinTitle')}</Title>
+          {/* Verder spelen met dezelfde hunt-code en de teamnaam waarmee het team zich aanmeldde. */}
           <Field
-            label={t('teamCode')}
-            value={teamCode}
-            onChangeText={(v) => setTeamCode(v.toUpperCase())}
+            label={t('joinCode')}
+            value={rejoinCode}
+            onChangeText={(v) => setRejoinCode(v.toUpperCase())}
             autoCapitalize="characters"
             autoCorrect={false}
-            maxLength={30}
+            maxLength={12}
           />
+          <Field label={t('teamName')} value={rejoinName} onChangeText={setRejoinName} maxLength={60} />
           <Button
             kind="secondary"
             label={t('rejoin')}
             busy={busy === 'rejoin'}
-            disabled={teamCode.trim().length < 4 || busy !== null}
-            onPress={() => run('rejoin', () => rejoinGame(teamCode.trim()))}
+            disabled={rejoinCode.trim().length < 4 || rejoinName.trim().length === 0 || busy !== null}
+            onPress={() => run('rejoin', () => rejoinGame(rejoinCode.trim(), rejoinName.trim()))}
           />
         </ScrollView>
       </KeyboardAvoidingView>
