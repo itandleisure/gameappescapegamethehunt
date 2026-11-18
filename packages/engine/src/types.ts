@@ -287,6 +287,7 @@ export interface MapSource {
  * eigen domein of kaartbestand, zie docs/ontwerp.md §2.1.
  */
 export const OPENFREEMAP_LIBERTY = 'https://tiles.openfreemap.org/styles/liberty';
+export const MAPTILER_TONER = 'https://api.maptiler.com/maps/toner-v2/style.json';
 export const DEFAULT_MAP_SOURCE: MapSource = {
   styleUrl: 'https://raw.githubusercontent.com/itandleisure/gameappescapegamethehunt/main/apps/admin/public/kaart/stijl.json',
   attribution: '© OpenStreetMap-bijdragers, OpenFreeMap',
@@ -299,6 +300,10 @@ export const MAP_STYLES: readonly { id: string; name: string; source: MapSource 
   { id: 'zwart-wit', name: 'Zwart-wit (standaard)', source: DEFAULT_MAP_SOURCE },
   { id: 'nacht', name: 'Nacht', source: { styleUrl: `${STYLE_BASE}/nacht.json`, attribution: DEFAULT_MAP_SOURCE.attribution! } },
   { id: 'schatkaart', name: 'Schatkaart', source: { styleUrl: `${STYLE_BASE}/schatkaart.json`, attribution: DEFAULT_MAP_SOURCE.attribution! } },
+  // Kant-en-klare stijl van MapTiler. Het adres staat hier zonder sleutel; die
+  // zet de app er onderweg bij (zie map-provider.ts). Zonder MapTiler valt hij
+  // terug op zwart-wit.
+  { id: 'toner', name: 'Toner (MapTiler)', source: { styleUrl: MAPTILER_TONER, attribution: '© MapTiler © OpenStreetMap-bijdragers' } },
   { id: 'kleur', name: 'Gewone kleurenkaart', source: { styleUrl: OPENFREEMAP_LIBERTY, attribution: DEFAULT_MAP_SOURCE.attribution! } },
 ];
 

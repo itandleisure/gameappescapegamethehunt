@@ -42,7 +42,6 @@ export const SCENES = [
   { id: 'teamfoto', url: '/?scene=teamphoto' },
   { id: 'teamcode', url: '/?scene=teamcode' },
   { id: 'teamcode-lang', url: '/?scene=teamcode&long=1' },
-  { id: 'centrale-start', url: '/?scene=central' },
   { id: 'kaart-testmodus', url: '/?scene=play' },
   { id: 'kaart-lang-offline', url: '/?scene=play&long=1' },
   { id: 'opdrachtenlijst', url: '/?scene=task', clicks: [tasksButton] },

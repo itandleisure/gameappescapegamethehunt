@@ -227,13 +227,6 @@ button.icon:hover { background: var(--bg); color: var(--danger); }
 .te-foot .te-status { flex: 1; min-width: 0; font-size: 14px; }
 .te-foot .te-status ul.errors { margin: 0; }
 .te-foot .te-status .notice { margin: 0; }
-
-/* Centrale start op de livepagina */
-.startcontrol { margin-bottom: 16px; }
-.startcontrol .steps { padding-left: 20px; display: grid; gap: 10px; }
-.startcontrol .steps > li.done > strong::after { content: ' ✓'; color: var(--ok); }
-.startcontrol .readylist { list-style: none; padding: 0; margin: 6px 0 0; columns: 2 220px; }
-.startcontrol .readylist .ok { color: var(--ok); font-weight: 700; }
 /* Handvat midden op een zijde van de speelveldgrens: slepen maakt een bocht. */
 .bend {
   width: 10px;

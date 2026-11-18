@@ -26,7 +26,6 @@ import {
 } from "../src/services/location";
 import { downloadPlayArea } from "../src/services/map-download";
 import { Banner, Body, Button, Screen, Title } from "../src/ui/components";
-import { Briefing } from "../src/ui/Briefing";
 import { LeaveGame } from "../src/ui/LeaveGame";
 import { takePhoto } from "../src/ui/camera";
 import { playSiren } from "../src/services/siren";
@@ -50,8 +49,6 @@ export default function PlayScreen() {
   const [download, setDownload] = useState<number | null>(null);
   const [starting, setStarting] = useState(false);
   const [teamPhoto, setTeamPhoto] = useState<string | null>(null);
-  /** Centrale start: het team leest de speluitleg. */
-  const [reading, setReading] = useState(false);
   // Kaartstijl die het team zelf koos (bewaard op deze telefoon).
   const [chosenStyle, setChosenStyle] = useState<string | null>(null);
   useEffect(() => {
@@ -67,17 +64,6 @@ export default function PlayScreen() {
   const state = snapshot?.state ?? null;
   const game = snapshot?.game;
   const started = state !== null;
-  const central = controller?.centralStart ?? false;
-  const ready = Boolean(snapshot?.team.readyAt);
-
-  // Centrale start: klaar met de uitleg, dan regelmatig kijken of de spelleider is gestart.
-  useEffect(() => {
-    if (!controller || started || !central || !ready) return;
-    void controller.checkStarted();
-    const timer = setInterval(() => void controller.checkStarted(), 4000);
-    return () => clearInterval(timer);
-  }, [controller, started, central, ready]);
-
   // Kaart van het speelveld op de achtergrond downloaden.
   useEffect(() => {
     if (!snapshot) return;
@@ -150,7 +136,7 @@ export default function PlayScreen() {
   if (!controller || !snapshot || !game) return <Redirect href="/" />;
   if (state?.ended) return <Redirect href="/end" />;
 
-  /** Locatie vragen en daarna verder (starten of klaarmelden). */
+  /** Locatie vragen en daarna starten. */
   const withLocation = async (next: () => Promise<void>) => {
     setStarting(true);
     try {
@@ -161,28 +147,6 @@ export default function PlayScreen() {
       setStarting(false);
     }
   };
-
-  if (!started && central && reading && !ready) {
-    return (
-      <SafeAreaView style={styles.safe}>
-        <Screen>
-          <Briefing
-            game={game}
-            lang={lang}
-            tasks={controller.briefingTasks()}
-            t={t}
-            busy={starting}
-            onDone={() =>
-              void withLocation(async () => {
-                await controller.markReady();
-                setReading(false);
-              })
-            }
-          />
-        </Screen>
-      </SafeAreaView>
-    );
-  }
 
   // Eerst de teamfoto, als eigen scherm vóór de teamcode.
   if (!started && snapshot.teamPhotoNeeded && !teamPhoto) {
@@ -233,44 +197,13 @@ export default function PlayScreen() {
             </>
           ) : null}
           <View style={styles.spacer} />
-          {!central ? (
-            <>
-              <Body muted>{t("startExplain")}</Body>
-              <Button
-                label={t("start")}
-                disabled={snapshot.teamPhotoNeeded}
-                busy={starting}
-                onPress={() => void withLocation(() => controller.start())}
-              />
-            </>
-          ) : ready ? (
-            <>
-              <Banner>{t("waitForStart")}</Banner>
-              {controller.teamChat ? (
-                <Button
-                  kind="secondary"
-                  label={snapshot.chatUnread > 0 ? `${t("chat")} (${snapshot.chatUnread})` : t("chat")}
-                  onPress={() => router.push("/chat")}
-                />
-              ) : null}
-            </>
-          ) : controller.briefingTasks().length > 0 ? (
-            <Button
-              label={t("briefingTitle")}
-              disabled={snapshot.teamPhotoNeeded}
-              onPress={() => setReading(true)}
-            />
-          ) : (
-            <>
-              <Body muted>{t("readyNoBriefing")}</Body>
-              <Button
-                label={t("readyButton")}
-                disabled={snapshot.teamPhotoNeeded}
-                busy={starting}
-                onPress={() => void withLocation(() => controller.markReady())}
-              />
-            </>
-          )}
+          <Body muted>{t("startExplain")}</Body>
+          <Button
+            label={t("start")}
+            disabled={snapshot.teamPhotoNeeded}
+            busy={starting}
+            onPress={() => void withLocation(() => controller.start())}
+          />
           <LeaveGame showCode={false} />
         </Screen>
       </SafeAreaView>
