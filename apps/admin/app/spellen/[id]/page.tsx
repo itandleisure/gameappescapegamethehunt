@@ -494,13 +494,11 @@ export default function GamePage() {
           ) : null}
           {CITY_TODOS.map((td) => {
             const href =
-              td.link === "overlay"
-                ? `/spellen/${id}/overlay`
-                : td.link === "kaart"
-                  ? `/spellen/${id}/kaart`
-                  : td.link === "opdrachten"
-                    ? "#opdrachten"
-                    : null;
+              td.link === "kaart"
+                ? `/spellen/${id}/kaart`
+                : td.link === "opdrachten"
+                  ? "#opdrachten"
+                  : null;
             return (
               <div key={td.key} className="check" style={{ margin: "6px 0" }}>
                 <input
