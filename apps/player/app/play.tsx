@@ -26,6 +26,7 @@ import {
 import { downloadPlayArea } from "../src/services/map-download";
 import { Banner, Body, Button, Screen, Title } from "../src/ui/components";
 import { Briefing } from "../src/ui/Briefing";
+import { LeaveGame } from "../src/ui/LeaveGame";
 import { takePhoto } from "../src/ui/camera";
 import { playSiren } from "../src/services/siren";
 import { useGame } from "../src/ui/GameProvider";
@@ -260,6 +261,7 @@ export default function PlayScreen() {
               />
             </>
           )}
+          <LeaveGame showCode={false} />
         </Screen>
       </SafeAreaView>
     );
