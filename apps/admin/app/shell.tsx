@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 const NAV = [
   { href: '/sessies', label: tKey('Hunts') },
   { href: '/spellen', label: tKey('Spellen') },
+  { href: '/templates', label: tKey('Templates') },
 ];
 
 /** Taalkeuze van de beheerapp; wordt per gebruiker onthouden. */

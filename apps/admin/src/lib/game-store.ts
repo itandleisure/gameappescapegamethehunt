@@ -136,6 +136,19 @@ export async function setBaseVersionNote(db: SupabaseClient, baseId: string, ver
   );
 }
 
+/**
+ * Verwijdert een templateversie. Kan alleen als er geen stad meer op die
+ * versie voortbouwt; dan geeft de database een foutmelding.
+ */
+export async function deleteBaseVersion(db: SupabaseClient, baseId: string, version: number): Promise<void> {
+  const r = await db.from('base_versions').delete().eq('game_id', baseId).eq('version', version).select('version');
+  if (r.error) {
+    if (r.error.code === '23503') throw new Error(tr('Er staan nog steden op versie {n}. Zet die eerst over naar een andere versie.', { n: version }));
+    throw new Error(r.error.message);
+  }
+  if (!r.data?.length) throw new Error(tr('Geen rechten om deze versie te verwijderen.'));
+}
+
 /** Koppelt een stad aan een versie van het basisspel (null: altijd de werkversie). */
 export async function setCityBaseVersion(db: SupabaseClient, cityId: string, version: number | null): Promise<void> {
   check(await db.from('games').update({ base_version: version }).eq('id', cityId).select('id').single());

@@ -1,0 +1,1522 @@
+{
+  "base": {
+    "id": "escape-game-the-hunt",
+    "name": {
+      "nl": "Escape Game The Hunt",
+      "en": "Escape Game The Hunt"
+    },
+    "languages": [
+      "nl",
+      "en"
+    ],
+    "defaultLanguage": "nl",
+    "gps": {
+      "maxAccuracy": 30
+    },
+    "playgrounds": [
+      {
+        "id": "extractiepunt",
+        "name": {
+          "nl": "Extractiepunt",
+          "en": "Extraction point"
+        },
+        "reveal": {
+          "image": "https://loquiz-live.s3.amazonaws.com/media/groups/NmYvfyEMl/playground~IMHxsnkMo~The_Hunt_playground_extractiepunt_Leeuwarden.png",
+          "width": 1440,
+          "height": 6500,
+          "pieces": [
+            {
+              "task": "puzzel-tangram",
+              "x": 40,
+              "y": 880,
+              "w": 440,
+              "h": 420
+            },
+            {
+              "task": "puzzel-morse",
+              "x": 480,
+              "y": 880,
+              "w": 460,
+              "h": 420
+            },
+            {
+              "task": "puzzel-blokjes",
+              "x": 940,
+              "y": 880,
+              "w": 460,
+              "h": 420
+            },
+            {
+              "task": "puzzel-stratenkaart",
+              "x": 40,
+              "y": 1400,
+              "w": 440,
+              "h": 390
+            },
+            {
+              "task": "puzzel-cryptex",
+              "x": 480,
+              "y": 1400,
+              "w": 460,
+              "h": 390
+            },
+            {
+              "task": "puzzel-kompas",
+              "x": 940,
+              "y": 1400,
+              "w": 460,
+              "h": 390
+            },
+            {
+              "task": "extractie-hint",
+              "x": 150,
+              "y": 2500,
+              "w": 1140,
+              "h": 350
+            }
+          ]
+        }
+      },
+      {
+        "id": "speluitleg",
+        "name": {
+          "nl": "Speluitleg",
+          "en": "How to play"
+        },
+        "body": {
+          "nl": "Zodra een puzzel is vrijgespeeld, kun je in de gameapp het antwoord invoeren of hints kopen.\n\nTijdlijn van het spel\n\n0 minuten: Jullie gaan op pad\n\nNa 10 minuten: Puzzel 1 wordt vrijgegeven + Hunters zien jullie locatie\n\nNa 20 minuten: Puzzel 2 wordt vrijgegeven + Hunters zien jullie locatie\n\nNa 30 minuten: Puzzel 3 wordt vrijgegeven + Hunters zien jullie locatie\n\nNa 40 minuten: Puzzel 4 wordt vrijgegeven + Hunters zien jullie locatie\n\nNa 50 minuten: Puzzel 5 wordt vrijgegeven + Hunters zien jullie locatie\n\nNa 60 minuten: Puzzel 6 wordt vrijgegeven + Hunters zien jullie locatie\n\nBij 75 minuten: Alle puzzels opgelost? Dan ontvangen jullie het exacte extractiepunt.\n\nBij 75 minuten: Niet alle puzzels opgelost? Dan verschijnen drie extractiepunten waarvan er één juist is.\n\nNa 90 minuten: Einde van het spel. We komen samen bij het meetingpoint welke je binnen de gameapp te zien krijgt."
+        }
+      }
+    ],
+    "sequences": [
+      {
+        "id": "intro",
+        "tasks": [
+          "uitleg-01",
+          "uitleg-02",
+          "uitleg-03",
+          "uitleg-04",
+          "uitleg-05",
+          "uitleg-06",
+          "uitleg-07",
+          "uitleg-08",
+          "uitleg-09",
+          "uitleg-10",
+          "uitleg-11",
+          "uitleg-12"
+        ]
+      }
+    ],
+    "endings": [
+      {
+        "id": "ontsnapt",
+        "title": {
+          "nl": "Gefeliciteerd!"
+        },
+        "body": {
+          "nl": "Jullie hebben het extractiepunt bereikt en zijn succesvol aan de Hunters ontsnapt.\nDeze locatie is tevens het verzamelpunt.\n\nWacht hier rustig totdat de overige teams en Hunters zijn gearriveerd.\n\nDe jacht zit erop. Goed gedaan!"
+        },
+        "bonus": 600
+      },
+      {
+        "id": "verkeerd-extractiepunt",
+        "title": {
+          "nl": "HELAAS!"
+        },
+        "body": {
+          "nl": "Dit was niet het juiste extractiepunt. Het juiste extractiepunt was locatie 3.\nDe ontsnapping is niet gelukt, maar de missie zit erop.\n\nKlik op 'OK' om het verzamelpunt te bekijken. Ga naar deze locatie en sluit je aan bij de andere teams"
+        },
+        "bonus": 0
+      },
+      {
+        "id": "tijd-op",
+        "title": {
+          "nl": "Tijd is op",
+          "en": "Time is up"
+        },
+        "body": {
+          "nl": "De Hunters hebben jullie.",
+          "en": "The Hunters got you."
+        },
+        "bonus": 0
+      }
+    ],
+    "tasks": [
+      {
+        "id": "uitleg-01",
+        "title": {
+          "nl": "🎬 The Hunt – Speluitleg"
+        },
+        "body": {
+          "nl": "Introductie\nWelkom bij The Hunt. Het spel staat op het punt te beginnen. Kom als team even bij elkaar want hier volgt de speluitleg.\n\nHet spel duurt 90 minuten.\n\nJullie doel is om alle zes de puzzels succesvol op te lossen en ongezien het extractiepunt te bereiken."
+        },
+        "answer": {
+          "type": "info"
+        },
+        "points": 0,
+        "tags": [],
+        "hints": []
+      },
+      {
+        "id": "uitleg-02",
+        "title": {
+          "nl": "Speelveld"
+        },
+        "body": {
+          "nl": "Je ziet een Google Maps-achtige omgeving. Zie dit als een extra laag over Google Maps heen waarop het speelveld zichtbaar is. We hebben een zwarte lijn om het speelveld heen gezet, zodat je ziet waar je mag lopen.\n\nHet is belangrijk om binnen het speelveld te blijven. Binnen het speelveld mogen jullie je vrij bewegen.\n\nJullie zijn zelf het ‘blauwe bolletje’ op de kaart zodat je weet waar je bent. Is dit niet zichtbaar? Zorg er dan voor dat de locatievoorzieningen van je telefoon aanstaat voor de Loquiz-app.\n\nLet op: Binnen het speelveld mogen jullie je vrij bewegen!\n\nBonuspunten en een hint over het extractiepunt\n\nIn het speelveld vinden jullie twee The Hunt-iconen. Op beide locaties wacht een vraag over de stad. Met elk goed antwoord verdienen jullie bonuspunten.\n\nBezoeken jullie beide locaties, dan ontvangen jullie ook een waardevolle hint over het extractiepunt."
+        },
+        "answer": {
+          "type": "info"
+        },
+        "points": 0,
+        "tags": [],
+        "hints": [],
+        "image": "https://loquiz-live.s3.amazonaws.com/resized/optimized/question~JwjcGcDok~speelveld_leeuwarden.jpeg"
+      },
+      {
+        "id": "uitleg-03",
+        "title": {
+          "nl": "Rugtas"
+        },
+        "body": {
+          "nl": "Elk team krijgt zo een rugtas van de spelleider. In deze rugtas zitten zes puzzels en een spelboekje. Deze puzzels mogen jullie oplossen wanneer het jullie uitkomt.\n\nHet antwoord op een puzzel voer je in via de gameapp.\n\nLet op: In het spelboek wat in je rugtas zit kan je lezen wat bij een aantal puzzels de bedoeling is!\n\nNaast de zes puzzels zitten er ook drie The Hunt-munten in de rugtas. Hierover later meer."
+        },
+        "answer": {
+          "type": "info"
+        },
+        "points": 0,
+        "tags": [],
+        "hints": [],
+        "image": "https://loquiz-live.s3.amazonaws.com/resized/optimized/question~aFiiBf-3H~rugtas_hunt.jpeg"
+      },
+      {
+        "id": "uitleg-04",
+        "title": {
+          "nl": "Gameapp"
+        },
+        "body": {
+          "nl": "Je zit nu in onze gameapp. De gameapp begeleid je door het spel heen.\n\nZo kun je hier antwoorden invoeren, hints kopen en jullie positie op het speelveld bekijken.\n\nElke 10 minuten wordt er een nieuwe puzzel vrijgespeeld in de gameapp. Dit betekent dat je vanaf dat moment het antwoord kunt invoeren of hints kunt kopen.\n\nPer puzzel kun je maximaal 3 hints kopen. Dit kost je echter wel minpunten (-25, -50 en -75 punten).\n\nJe kunt het antwoord onbeperkt invoeren, maar bij een fout antwoord moet je 20 seconden wachten voordat je een nieuwe poging kunt doen.\n\nPsst. Niet verder vertellen, maar de eerste puzzel die vrijgegeven wordt in de gameapp is de tangram puzzel."
+        },
+        "answer": {
+          "type": "info"
+        },
+        "points": 0,
+        "tags": [],
+        "hints": [],
+        "image": "https://loquiz-live.s3.amazonaws.com/resized/optimized/question~1NIiwOAA9~Vragen_en_Hints.jpeg"
+      },
+      {
+        "id": "uitleg-05",
+        "title": {
+          "nl": "Puzzels oplossen"
+        },
+        "body": {
+          "nl": "Wanneer je een puzzel succesvol oplost, ontvang je een deel van de GPS-code. Je vind dit terug in het tabblad EXTRACTIEPUNT.\n\nAls je alle zes de puzzels succesvol oplost, heb je de volledige GPS-code en weet je waar het extractiepunt zich bevindt."
+        },
+        "answer": {
+          "type": "info"
+        },
+        "points": 0,
+        "tags": [],
+        "hints": [],
+        "image": "https://loquiz-live.s3.amazonaws.com/media/groups/NmYvfyEMl/question~ofp8QTmuA~Extractiepunt.jpeg"
+      },
+      {
+        "id": "uitleg-06",
+        "title": {
+          "nl": "Extractiepunt"
+        },
+        "body": {
+          "nl": "Alle puzzels opgelost\n\nLukt het jullie om binnen 75 minuten al de 6 puzzels succesvol op te lossen, dan zal er in het speelveld één Finish vlag te zien zijn. Dit is het extractiepunt.\n\nNiet alle puzzels opgelost\n\nLukt het niet om alle zes de puzzels binnen 75 minuten op te lossen, dan verschijnen er na 75 minuten drie mogelijke extractiepunten op de kaart.\n\nHet is aan jullie om op basis van de verzamelde informatie het juiste extractiepunt te kiezen.\n\nEenmaal aangekomen zie je direct of je het juiste extractiepunt hebt gekozen."
+        },
+        "answer": {
+          "type": "info"
+        },
+        "points": 0,
+        "tags": [],
+        "hints": [],
+        "image": "https://loquiz-live.s3.amazonaws.com/media/groups/NmYvfyEMl/question~XYkA7UMyn~finish_vlag.png"
+      },
+      {
+        "id": "uitleg-07",
+        "title": {
+          "nl": "The Hunters"
+        },
+        "body": {
+          "nl": "Na deze uitleg veranderen de spelleiders in Hunters. Zij gaan actief op jullie jagen.\n\nJullie krijgen 10 minuten voorsprong voordat de Hunters van start gaan.\n\nVervolgens krijgen de Hunters elke 10 minuten gedurende 10 seconden jullie exacte locatie te zien. Op basis daarvan proberen zij jullie te vinden.\n\nHun doel is simpel: jullie achter slot en grendel krijgen!"
+        },
+        "answer": {
+          "type": "info"
+        },
+        "points": 0,
+        "tags": [],
+        "hints": [],
+        "image": "https://loquiz-live.s3.amazonaws.com/resized/optimized/question~H-jDDU8ip~The_Hunters_gaan_op_jacht.jpeg"
+      },
+      {
+        "id": "uitleg-08",
+        "title": {
+          "nl": "Als de Hunters in de buurt zijn"
+        },
+        "body": {
+          "nl": "Het kan zijn dat jullie de Hunters zien, of dat zij jullie zien. Op dat moment hebben jullie drie opties:\n\nOptie 1: Weg rennen\nBlijf als groep bij elkaar en let goed op de omgeving. We spelen dit spel in de openbare ruimte, dus houdt rekening met verkeer en andere mensen. Wanneer één persoon van de groep getikt is dienen jullie als groep te stoppen. De persoon met de rugtas mag niet getikt worden. Dit kan rustig de puzzels opbergen in de rugtas.\n\nOptie 2: Verstoppen\nHopelijk hebben de Hunters jullie niet gezien en weten jullie zo te ontsnappen.\n\nOptie 3: Overgeven\nBlijf staan en geef je over.\n\nDe keuze is aan jullie!"
+        },
+        "answer": {
+          "type": "info"
+        },
+        "points": 0,
+        "tags": [],
+        "hints": [],
+        "image": "https://loquiz-live.s3.amazonaws.com/resized/optimized/question~EW-qiuYaM~hunters_zijn_actief.jpeg"
+      },
+      {
+        "id": "uitleg-09",
+        "title": {
+          "nl": "Word je gepakt?"
+        },
+        "body": {
+          "nl": "Word je gepakt door de Hunters, dan is het spel niet voorbij. In de rugtas zitten zoals gezegd drie The Hunt-munten.\n\nWanneer je gepakt wordt, moet je één munt inleveren en dit kan van cruciaal belang zijn voor de einduitslag!\n\nEenmaal gepakt mogen de Hunters 10 minuten lang niet op jullie jagen!"
+        },
+        "answer": {
+          "type": "info"
+        },
+        "points": 0,
+        "tags": [],
+        "hints": [],
+        "image": "https://loquiz-live.s3.amazonaws.com/resized/optimized/question~FIdvHxtOB~rugtas_hunt.jpeg"
+      },
+      {
+        "id": "uitleg-10",
+        "title": {
+          "nl": "Tijdlijn van het spel"
+        },
+        "body": {
+          "nl": "• 0 minuten: Jullie gaan op pad\n• Na 10 minuten: Puzzel 1 wordt vrijgegeven + Hunters zien jullie locatie\n• Na 20 minuten: Puzzel 2 wordt vrijgegeven + Hunters zien jullie locatie\n• Na 30 minuten: Puzzel 3 wordt vrijgegeven + Hunters zien jullie locatie\n• Na 40 minuten: Puzzel 4 wordt vrijgegeven + Hunters zien jullie locatie\n• Na 50 minuten: Puzzel 5 wordt vrijgegeven + Hunters zien jullie locatie\n• Na 60 minuten: Puzzel 6 wordt vrijgegeven + Hunters zien jullie locatie\n\n• Bij 75 minuten: Alle puzzels opgelost? Dan ontvangen jullie het exacte extractiepunt.\n• Bij 75 minuten: Niet alle puzzels opgelost? Dan verschijnen drie extractiepunten waarvan er één juist is.\n\n• Na 90 minuten: Einde van het spel. We komen samen bij het meetingpoint welke je binnen de gameapp te zien krijgt."
+        },
+        "answer": {
+          "type": "info"
+        },
+        "points": 0,
+        "tags": [],
+        "hints": []
+      },
+      {
+        "id": "uitleg-11",
+        "title": {
+          "nl": "Belangrijke informatie"
+        },
+        "body": {
+          "nl": "- Wees voorzichtig en let goed op waar je loopt\n- Zet je telefoon niet op vliegtuigmodus\n- Let op elkaar en de omgeving\n- Binnen het speelveld mogen jullie je vrij bewegen\n- Het is niet toegestaan om gebouwen, winkels of kerken binnen te gaan\n- Zet wifi uit (bespaard ook batterij van de telefoon)\n- Blijf in de Loquiz-gameapp en houd je scherm actief\n\nChatten\nHet is mogelijk om binnen de Loquiz app te chatten (klik op de het tekstballonetje met de drie puntjes rechtsboven in het scherm).\n\nHier kan je informatie met andere teams delen (bijvoorbeeld waar de Hunters zijn) of informatie delen die niet juist is. De Hunters kunnen ook chatberichten sturen."
+        },
+        "answer": {
+          "type": "info"
+        },
+        "points": 0,
+        "tags": [],
+        "hints": [],
+        "image": "https://loquiz-live.s3.amazonaws.com/resized/optimized/question~VSoNJR6HN~chat.jpeg"
+      },
+      {
+        "id": "uitleg-12",
+        "title": {
+          "nl": "Start van het spel"
+        },
+        "body": {
+          "nl": "Het spel gaat nu echt beginnen.\n\nHaal je rugtas op bij de spelleider en ga op pad.\n\nJullie hebben 10 minuten voorsprong. Heel veel succes toegewenst"
+        },
+        "answer": {
+          "type": "info"
+        },
+        "points": 0,
+        "tags": [],
+        "hints": []
+      },
+      {
+        "id": "puzzel-tangram",
+        "title": {
+          "nl": "Tangram",
+          "en": "Tangram"
+        },
+        "body": {
+          "nl": "Tangram Puzzel - Geef Oplossing"
+        },
+        "answer": {
+          "type": "text",
+          "accepted": [
+            "hunting"
+          ]
+        },
+        "points": 200,
+        "tags": [
+          "puzzel",
+          "oplossing"
+        ],
+        "hints": [
+          {
+            "cost": 25,
+            "text": {
+              "nl": "Het rode vlakje met de letter N hoort rechtsbovenin"
+            },
+            "image": "https://loquiz-live.s3.amazonaws.com/media/groups/NmYvfyEMl/question~fsLTpXHTy~tangram_hint_1.jpeg"
+          },
+          {
+            "cost": 50,
+            "text": {
+              "nl": "Het vlakje met de letter U hoort in het midden"
+            },
+            "image": "https://loquiz-live.s3.amazonaws.com/media/groups/NmYvfyEMl/question~on_2C7oP5~tangram_hint_2.jpeg"
+          },
+          {
+            "cost": 75,
+            "text": {
+              "nl": "De 2 grote vlakken bedekken de helft van de puzzel"
+            },
+            "image": "https://loquiz-live.s3.amazonaws.com/media/groups/NmYvfyEMl/question~4cIlVPH9c~tangram_hint_3.jpeg"
+          }
+        ],
+        "retryUntilCorrect": true,
+        "correctComment": {
+          "nl": "Dit was inderdaad het juiste antwoord.\n\nJe vindt het vrijgekomen deel van de GPS-coördinaten terug op het tabblad EXTRACTIEPUNT."
+        },
+        "wrongComment": {
+          "nl": "Helaas is dit niet het juiste antwoord. Misschien moeten jullie een hint gebruiken om zo tot de oplossing te komen...\n\nVoor nu moet je in ieder geval 20 seconden wachten totdat je nogmaals een antwoord kan geven."
+        }
+      },
+      {
+        "id": "puzzel-morse",
+        "title": {
+          "nl": "Morsecode",
+          "en": "Morse code"
+        },
+        "body": {
+          "nl": "Morsecode Puzzel - Geef Oplossing"
+        },
+        "answer": {
+          "type": "number",
+          "value": 159
+        },
+        "points": 200,
+        "tags": [
+          "puzzel",
+          "oplossing"
+        ],
+        "hints": [
+          {
+            "cost": 25,
+            "text": {
+              "nl": "Bij vraag 7 - niet al het goede komt uit Italië ;-)"
+            }
+          },
+          {
+            "cost": 50,
+            "text": {
+              "nl": "Bij vraag 9 - Leeuwarden is best groot...."
+            }
+          },
+          {
+            "cost": 75,
+            "text": {
+              "nl": "Bij vraag 10 - Zaaien - hoe en wanneer doe je dat ..."
+            }
+          }
+        ],
+        "retryUntilCorrect": true,
+        "correctComment": {
+          "nl": "Dit was inderdaad het juiste antwoord.\n\nJe vindt het vrijgekomen deel van de GPS-coördinaten terug op het tabblad EXTRACTIEPUNT."
+        },
+        "wrongComment": {
+          "nl": "Helaas is dit niet het juiste antwoord. Misschien moeten jullie een hint gebruiken om zo tot de oplossing te komen...\n\nVoor nu moet je in ieder geval 20 seconden wachten totdat je nogmaals een antwoord kan geven."
+        }
+      },
+      {
+        "id": "puzzel-blokjes",
+        "title": {
+          "nl": "Blokjespuzzel",
+          "en": "Block puzzle"
+        },
+        "body": {
+          "nl": "Blokjespuzzel - Geef Oplossing"
+        },
+        "answer": {
+          "type": "number",
+          "value": 363.5,
+          "tolerance": 49.5
+        },
+        "points": 200,
+        "tags": [
+          "puzzel",
+          "oplossing"
+        ],
+        "hints": [
+          {
+            "cost": 25,
+            "text": {
+              "nl": "Getal 7 staat niet in de bovenste of onderste rij"
+            }
+          },
+          {
+            "cost": 50,
+            "text": {
+              "nl": "Getal 3 staat niet in de middelste rij"
+            }
+          },
+          {
+            "cost": 75,
+            "text": {
+              "nl": "Getal 6 staat niet in de middelste rij"
+            }
+          }
+        ],
+        "retryUntilCorrect": true,
+        "correctComment": {
+          "nl": "Dit was inderdaad het juiste antwoord.\n\nJe vindt het vrijgekomen deel van de GPS-coördinaten terug op het tabblad EXTRACTIEPUNT."
+        },
+        "wrongComment": {
+          "nl": "Helaas is dit niet het juiste antwoord. Misschien moeten jullie een hint gebruiken om zo tot de oplossing te komen...\n\nVoor nu moet je in ieder geval 20 seconden wachten totdat je nogmaals een antwoord kan geven."
+        }
+      },
+      {
+        "id": "puzzel-stratenkaart",
+        "title": {
+          "nl": "Stratenkaart",
+          "en": "Street map"
+        },
+        "body": {
+          "nl": "Stratenkaart - Geef Oplossing"
+        },
+        "answer": {
+          "type": "text",
+          "accepted": [
+            "ver*"
+          ]
+        },
+        "points": 200,
+        "tags": [
+          "puzzel",
+          "oplossing"
+        ],
+        "hints": [
+          {
+            "cost": 25,
+            "text": {
+              "nl": "De strepen zijn wegen"
+            }
+          },
+          {
+            "cost": 50,
+            "text": {
+              "nl": "Tussen Bergen en Sint Pancras zijn 2 wegen die je dient te gebruiken."
+            }
+          },
+          {
+            "cost": 75,
+            "text": {
+              "nl": "Er zijn 2 wegen richting Schagen die je dient te gebruiken."
+            }
+          }
+        ],
+        "retryUntilCorrect": true,
+        "correctComment": {
+          "nl": "Dit was inderdaad het juiste antwoord.\n\nJe vindt het vrijgekomen deel van de GPS-coördinaten terug op het tabblad EXTRACTIEPUNT."
+        },
+        "wrongComment": {
+          "nl": "Helaas is dit niet het juiste antwoord. Misschien moeten jullie een hint gebruiken om zo tot de oplossing te komen...\n\nVoor nu moet je in ieder geval 20 seconden wachten totdat je nogmaals een antwoord kan geven."
+        }
+      },
+      {
+        "id": "puzzel-cryptex",
+        "title": {
+          "nl": "Cryptex",
+          "en": "Cryptex"
+        },
+        "body": {
+          "nl": "Cryptex - Geef Oplossing"
+        },
+        "answer": {
+          "type": "number",
+          "value": 390
+        },
+        "points": 200,
+        "tags": [
+          "puzzel",
+          "oplossing"
+        ],
+        "hints": [
+          {
+            "cost": 25,
+            "text": {
+              "nl": "Speel het muziekdoosje af op verschillende snelheden zodat je een beter beeld krijgt van het liedje."
+            }
+          },
+          {
+            "cost": 50,
+            "text": {
+              "nl": "Dit is een slaapverwekkend liedje"
+            }
+          },
+          {
+            "cost": 75,
+            "text": {
+              "nl": "Je zingt dit liedje voor je kind(eren) wanneer ze naar bed gaan."
+            }
+          }
+        ],
+        "retryUntilCorrect": true,
+        "correctComment": {
+          "nl": "Dit was inderdaad het juiste antwoord.\n\nJe vindt het vrijgekomen deel van de GPS-coördinaten terug op het tabblad EXTRACTIEPUNT."
+        },
+        "wrongComment": {
+          "nl": "Helaas is dit niet het juiste antwoord. Misschien moeten jullie een hint gebruiken om zo tot de oplossing te komen...\n\nVoor nu moet je in ieder geval 20 seconden wachten totdat je nogmaals een antwoord kan geven."
+        }
+      },
+      {
+        "id": "puzzel-kompas",
+        "title": {
+          "nl": "Kompas",
+          "en": "Compass"
+        },
+        "body": {
+          "nl": "Kompas - Geef Oplossing"
+        },
+        "answer": {
+          "type": "number",
+          "value": 500
+        },
+        "points": 200,
+        "tags": [
+          "puzzel",
+          "oplossing"
+        ],
+        "hints": [
+          {
+            "cost": 25,
+            "text": {
+              "nl": "De 3 letters die grijs gemarkeerd zijn, zijn steeds het beginpunt van wat uiteindelijk drie cijfers moeten worden."
+            }
+          },
+          {
+            "cost": 50,
+            "text": {
+              "nl": "W = naar links\nN = naar boven\nO = naar rechts\nZ = naar beneden"
+            }
+          },
+          {
+            "cost": 75,
+            "text": {
+              "nl": "Dit is het eerste cijfer"
+            },
+            "image": "https://loquiz-live.s3.amazonaws.com/media/groups/NmYvfyEMl/question~qtNrCK0cc~hunted_hint_3_cijfer_5.png"
+          }
+        ],
+        "retryUntilCorrect": true,
+        "correctComment": {
+          "nl": "Dit was inderdaad het juiste antwoord.\n\nJe vindt het vrijgekomen deel van de GPS-coördinaten terug op het tabblad EXTRACTIEPUNT."
+        },
+        "wrongComment": {
+          "nl": "Helaas is dit niet het juiste antwoord. Misschien moeten jullie een hint gebruiken om zo tot de oplossing te komen...\n\nVoor nu moet je in ieder geval 20 seconden wachten totdat je nogmaals een antwoord kan geven."
+        }
+      },
+      {
+        "id": "fotomissie",
+        "title": {
+          "nl": "LEG HET BEWIJS VAST!"
+        },
+        "body": {
+          "nl": "Geen missie zonder bewijsmateriaal!\n\nJullie zijn inmiddels al een tijdje op de vlucht. Maar zonder bewijs zal niemand geloven dat jullie deze Hunt hebben overleefd.\n\nMaak een originele teamfoto waarop de The Hunt-tas duidelijk zichtbaar is.\n\n📸 Bewijs verzamelen: Maak de foto, stuur hem in en vervolg jullie vlucht!\n⚠️ Blijf alert! De Hunter neemt geen pauze voor een fotosessie...\n\nDisclaimer: Deze foto kan worden gebruikt voor onze website en social media, maar alleen met jullie toestemming. Wil je niet herkenbaar op de foto? Maak dan een creatieve foto zonder zichtbare gezicht(en)."
+        },
+        "answer": {
+          "type": "photo"
+        },
+        "points": 0,
+        "tags": [
+          "foto"
+        ],
+        "hints": [],
+        "correctComment": {
+          "nl": "BEWIJSMATERIAAL ONTVANGEN!\n\nGoed werk, team!\n\nJullie foto is succesvol verzonden naar het hoofdkwartier. Het bewijsmateriaal is veiliggesteld en jullie missie kan worden voortgezet.\n\n⚠️ Maar blijf niet te lang hangen! De Hunter heeft jullie mogelijk al in het vizier..."
+        },
+        "wrongComment": {
+          "nl": "⚠️ TRANSMISSIE MISLUKT!\n\nHet hoofdkwartier heeft geen bruikbaar bewijsmateriaal ontvangen!\n\nMaar er is een groter probleem...\n🚨 De Hunter heeft jullie mislukte transmissie onderschept en weet nu precies waar jullie zijn!\n\nMaak dat jullie wegkomen!"
+        }
+      },
+      {
+        "id": "lokaal-1",
+        "title": {
+          "nl": "Lokale vraag 1",
+          "en": "Local question 1"
+        },
+        "body": {
+          "nl": "[Stadsvraag 1: schrijf hier de vraag voor deze stad]",
+          "en": "[City question 1: write the question for this city here]"
+        },
+        "answer": {
+          "type": "choice",
+          "options": [
+            {
+              "nl": "Antwoord A (goed)",
+              "en": "Answer A (correct)"
+            },
+            {
+              "nl": "Antwoord B",
+              "en": "Answer B"
+            },
+            {
+              "nl": "Antwoord C",
+              "en": "Answer C"
+            }
+          ],
+          "correct": 0
+        },
+        "points": 50,
+        "tags": [
+          "track"
+        ],
+        "hints": [],
+        "trackLocations": {
+          "1": {
+            "lat": 53.20504746676249,
+            "lng": 5.790849779636234,
+            "radius": 10
+          },
+          "2": {
+            "lat": 53.20639493352497,
+            "lng": 5.792199559272469,
+            "radius": 10
+          },
+          "3": {
+            "lat": 53.20774240028746,
+            "lng": 5.793549338908703,
+            "radius": 10
+          },
+          "4": {
+            "lat": 53.20908986704995,
+            "lng": 5.794899118544938,
+            "radius": 10
+          },
+          "5": {
+            "lat": 53.21043733381243,
+            "lng": 5.796248898181172,
+            "radius": 10
+          }
+        },
+        "correctComment": {
+          "nl": "Goed gedaan! Dat is het juiste antwoord. Jullie hebben bonuspunten verdiend."
+        },
+        "wrongComment": {
+          "nl": "Dit is helaas niet het juiste antwoord. Jullie hebben geen bonuspunten verdiend."
+        },
+        "mapIcon": "logo"
+      },
+      {
+        "id": "lokaal-2",
+        "title": {
+          "nl": "Lokale vraag 2",
+          "en": "Local question 2"
+        },
+        "body": {
+          "nl": "[Stadsvraag 2: schrijf hier de vraag voor deze stad]",
+          "en": "[City question 2: write the question for this city here]"
+        },
+        "answer": {
+          "type": "choice",
+          "options": [
+            {
+              "nl": "Antwoord A (goed)",
+              "en": "Answer A (correct)"
+            },
+            {
+              "nl": "Antwoord B",
+              "en": "Answer B"
+            },
+            {
+              "nl": "Antwoord C",
+              "en": "Answer C"
+            }
+          ],
+          "correct": 0
+        },
+        "points": 50,
+        "tags": [
+          "track"
+        ],
+        "hints": [],
+        "trackLocations": {
+          "1": {
+            "lat": 53.20235253323751,
+            "lng": 5.790849779636234,
+            "radius": 10
+          },
+          "2": {
+            "lat": 53.20100506647503,
+            "lng": 5.792199559272469,
+            "radius": 10
+          },
+          "3": {
+            "lat": 53.19965759971254,
+            "lng": 5.793549338908703,
+            "radius": 10
+          },
+          "4": {
+            "lat": 53.19831013295005,
+            "lng": 5.794899118544938,
+            "radius": 10
+          },
+          "5": {
+            "lat": 53.19696266618757,
+            "lng": 5.796248898181172,
+            "radius": 10
+          }
+        },
+        "correctComment": {
+          "nl": "Goed gedaan! Dat is het juiste antwoord. Jullie hebben bonuspunten verdiend."
+        },
+        "wrongComment": {
+          "nl": "Dit is helaas niet het juiste antwoord. Jullie hebben geen bonuspunten verdiend."
+        },
+        "mapIcon": "logo"
+      },
+      {
+        "id": "extractie-hint",
+        "title": {
+          "nl": "Hint extractiepunt",
+          "en": "Extraction point hint"
+        },
+        "body": {
+          "nl": "[Hint naar het extractiepunt in deze stad]",
+          "en": "[Hint to the extraction point in this city]"
+        },
+        "answer": {
+          "type": "info"
+        },
+        "points": 0,
+        "tags": [
+          "bonus"
+        ],
+        "hints": []
+      },
+      {
+        "id": "extractie-finish",
+        "title": {
+          "nl": "Extractiepunt"
+        },
+        "body": {
+          "nl": "GEFELICITEERD!\n\nJullie hebben het extractiepunt gevonden en zijn binnen de tijd ontsnapt!\nDe locatie waar jullie nu staan, is tevens het verzamelpunt voor alle teams.\n\nHeb nog even geduld terwijl de overige teams proberen te ontsnappen.\n\nBedankt voor jullie geduld!"
+        },
+        "answer": {
+          "type": "info"
+        },
+        "points": 0,
+        "tags": [
+          "finish"
+        ],
+        "hints": [],
+        "location": {
+          "lat": 53.201895,
+          "lng": 5.798789,
+          "radius": 25
+        },
+        "mapIcon": "flag"
+      },
+      {
+        "id": "extractie-a",
+        "title": {
+          "nl": "Extractiepunt locatie 3"
+        },
+        "body": {
+          "nl": "Extractiepunt A (tekst)",
+          "en": "Extraction point A (text)"
+        },
+        "answer": {
+          "type": "info"
+        },
+        "points": 0,
+        "tags": [
+          "extractie"
+        ],
+        "hints": [],
+        "location": {
+          "lat": 53.201895,
+          "lng": 5.798789,
+          "radius": 25
+        },
+        "confirm": {
+          "nl": "Weten jullie zeker dat Locatie 3 het Extractiepunt is?"
+        },
+        "mapLabel": "3",
+        "mapIcon": "flag"
+      },
+      {
+        "id": "extractie-b",
+        "title": {
+          "nl": "Extractiepunt locatie 1"
+        },
+        "body": {
+          "nl": "Extractiepunt B (tekst)",
+          "en": "Extraction point B (text)"
+        },
+        "answer": {
+          "type": "info"
+        },
+        "points": 0,
+        "tags": [
+          "extractie"
+        ],
+        "hints": [],
+        "location": {
+          "lat": 53.19920844412504,
+          "lng": 5.795499020605487,
+          "radius": 25
+        },
+        "confirm": {
+          "nl": "Weten jullie zeker dat Locatie 1 het Extractiepunt is?"
+        },
+        "mapLabel": "1",
+        "mapIcon": "flag"
+      },
+      {
+        "id": "extractie-c",
+        "title": {
+          "nl": "Extractiepunt locatie 2"
+        },
+        "body": {
+          "nl": "Extractiepunt C (tekst)",
+          "en": "Extraction point C (text)"
+        },
+        "answer": {
+          "type": "info"
+        },
+        "points": 0,
+        "tags": [
+          "extractie"
+        ],
+        "hints": [],
+        "location": {
+          "lat": 53.20549662234998,
+          "lng": 5.779001713940398,
+          "radius": 25
+        },
+        "confirm": {
+          "nl": "Weten jullie zeker dat Locatie 2 het Extractiepunt is?"
+        },
+        "mapLabel": "2",
+        "mapIcon": "flag"
+      }
+    ],
+    "rules": [
+      {
+        "id": "introreeks",
+        "label": "Bij de start: 12 uitlegschermen na elkaar (niet als de uitleg al bij een centrale start is gedaan)",
+        "when": {
+          "kind": "and",
+          "conditions": [
+            {
+              "kind": "elapsed",
+              "minutes": 0
+            },
+            {
+              "kind": "not",
+              "condition": {
+                "kind": "completed",
+                "select": {
+                  "task": "uitleg-12"
+                }
+              }
+            }
+          ]
+        },
+        "then": [
+          {
+            "kind": "startSequence",
+            "sequence": "intro"
+          }
+        ]
+      },
+      {
+        "id": "na-uitleg",
+        "label": "Na de uitleg: speluitleg terug te lezen, trackvragen op de kaart, eerste puzzel",
+        "when": {
+          "kind": "completed",
+          "select": {
+            "task": "uitleg-12"
+          }
+        },
+        "then": [
+          {
+            "kind": "show",
+            "select": {
+              "tasks": [
+                "uitleg-01",
+                "uitleg-02",
+                "uitleg-03",
+                "uitleg-04",
+                "uitleg-05",
+                "uitleg-06",
+                "uitleg-07",
+                "uitleg-08",
+                "uitleg-09",
+                "uitleg-10",
+                "uitleg-11",
+                "uitleg-12"
+              ]
+            },
+            "on": {
+              "playground": "speluitleg"
+            }
+          },
+          {
+            "kind": "show",
+            "select": {
+              "tag": "track"
+            },
+            "on": "map"
+          },
+          {
+            "kind": "show",
+            "select": {
+              "task": "puzzel-tangram"
+            },
+            "on": "list"
+          }
+        ]
+      },
+      {
+        "id": "tijdlijn-10",
+        "label": "Na 10 minuten: bericht en nieuwe puzzel",
+        "when": {
+          "kind": "elapsed",
+          "minutes": 10
+        },
+        "then": [
+          {
+            "kind": "message",
+            "text": {
+              "nl": "Er zijn 10 minuten verstreken.\n\nDe Hunters hebben jullie locatie doorgekregen en zijn nu op jacht!\n\nDaarnaast is de knop \"VRAGEN & HINTS\" beschikbaar gekomen.\n\nVia deze knop kunnen jullie het antwoord op de Tangram-puzzel invoeren of één of meerdere hints kopen.\n\nSucces en blijf uit handen van de Hunters!"
+            }
+          },
+          {
+            "kind": "show",
+            "select": {
+              "task": "puzzel-morse"
+            },
+            "on": "list"
+          }
+        ]
+      },
+      {
+        "id": "tijdlijn-20",
+        "label": "Na 20 minuten: bericht en nieuwe puzzel",
+        "when": {
+          "kind": "elapsed",
+          "minutes": 20
+        },
+        "then": [
+          {
+            "kind": "message",
+            "text": {
+              "nl": "Er zijn 20 minuten verstreken.\n\nDe Hunters hebben jullie locatie doorgekregen en zijn nu op jacht!\n\nDaarnaast is de knop \"VRAGEN & HINTS\" beschikbaar gekomen. Via deze knop kunnen jullie het antwoord op de Morsecode-puzzel invoeren of één of meerdere hints kopen.\n\nSucces en blijf uit handen van de Hunters!"
+            }
+          },
+          {
+            "kind": "show",
+            "select": {
+              "task": "puzzel-blokjes"
+            },
+            "on": "list"
+          }
+        ]
+      },
+      {
+        "id": "tijdlijn-30",
+        "label": "Na 30 minuten: bericht en nieuwe puzzel",
+        "when": {
+          "kind": "elapsed",
+          "minutes": 30
+        },
+        "then": [
+          {
+            "kind": "message",
+            "text": {
+              "nl": "Er zijn 30 minuten verstreken.\n\nDe Hunters hebben jullie locatie doorgekregen en zijn nu op jacht!\n\nDaarnaast is de knop \"VRAGEN & HINTS\" beschikbaar gekomen. Via deze knop kunnen jullie het antwoord op de Blokjespuzzel invoeren of één of meerdere hints kopen.\n\nSucces en blijf uit handen van de Hunters!"
+            }
+          },
+          {
+            "kind": "show",
+            "select": {
+              "task": "puzzel-stratenkaart"
+            },
+            "on": "list"
+          }
+        ]
+      },
+      {
+        "id": "tijdlijn-40",
+        "label": "Na 40 minuten: bericht en nieuwe puzzel",
+        "when": {
+          "kind": "elapsed",
+          "minutes": 40
+        },
+        "then": [
+          {
+            "kind": "message",
+            "text": {
+              "nl": "Er zijn 40 minuten verstreken.\n\nDe Hunters hebben jullie locatie doorgekregen en zijn nu op jacht!\n\nDaarnaast is de knop \"VRAGEN & HINTS\" beschikbaar gekomen. Via deze knop kunnen jullie het antwoord op de Stratenkaartpuzzel invoeren of één of meerdere hints kopen.\n\nSucces en blijf uit handen van de Hunters!"
+            }
+          },
+          {
+            "kind": "show",
+            "select": {
+              "task": "puzzel-cryptex"
+            },
+            "on": "list"
+          }
+        ]
+      },
+      {
+        "id": "tijdlijn-50",
+        "label": "Na 50 minuten: bericht en nieuwe puzzel",
+        "when": {
+          "kind": "elapsed",
+          "minutes": 50
+        },
+        "then": [
+          {
+            "kind": "message",
+            "text": {
+              "nl": "Er zijn 50 minuten verstreken.\n\nDe Hunters hebben jullie locatie doorgekregen en zijn nu op jacht!\n\nDaarnaast is de knop \"VRAGEN & HINTS\" beschikbaar gekomen. Via deze knop kunnen jullie het antwoord op de Cryptex-puzzel invoeren of één of meerdere hints kopen.\n\nSucces en blijf uit handen van de Hunters!"
+            }
+          },
+          {
+            "kind": "show",
+            "select": {
+              "task": "puzzel-kompas"
+            },
+            "on": "list"
+          }
+        ]
+      },
+      {
+        "id": "fotomissie",
+        "label": "Na 35 minuten: fotomissie",
+        "when": {
+          "kind": "elapsed",
+          "minutes": 35
+        },
+        "then": [
+          {
+            "kind": "show",
+            "select": {
+              "task": "fotomissie"
+            },
+            "on": "list"
+          },
+          {
+            "kind": "open",
+            "task": "fotomissie"
+          }
+        ]
+      },
+      {
+        "id": "track-bonus",
+        "label": "Beide trackvragen gedaan: bonushint over het extractiepunt",
+        "when": {
+          "kind": "completed",
+          "select": {
+            "tag": "track"
+          }
+        },
+        "then": [
+          {
+            "kind": "show",
+            "select": {
+              "task": "extractie-hint"
+            },
+            "on": {
+              "playground": "extractiepunt"
+            }
+          }
+        ]
+      },
+      {
+        "id": "finale",
+        "label": "Alle 6 puzzels goed: bericht dat het extractiepunt binnenkort volgt",
+        "when": {
+          "kind": "correct",
+          "select": {
+            "tag": "oplossing"
+          }
+        },
+        "then": [
+          {
+            "kind": "message",
+            "text": {
+              "nl": "Super! Jullie hebben alle zes de puzzels succesvol opgelost.\n\nDe locatie van het extractiepunt wordt binnen 10 minuten vrijgegeven in de game-app.\n\nZorg dat jullie tot die tijd uit handen van de Hunters blijven"
+            }
+          }
+        ]
+      },
+      {
+        "id": "finale-alles-goed",
+        "label": "Na 75 minuten en alle puzzels goed: alleen het juiste extractiepunt (vlag)",
+        "when": {
+          "kind": "and",
+          "conditions": [
+            {
+              "kind": "correct",
+              "select": {
+                "tag": "oplossing"
+              }
+            },
+            {
+              "kind": "elapsed",
+              "minutes": 75
+            }
+          ]
+        },
+        "then": [
+          {
+            "kind": "message",
+            "text": {
+              "nl": "YES!!\n\nJullie hebben alle informatie over het extractiepunt vrijgespeeld.\nHet extractiepunt is gemarkeerd op de kaart met de finishvlag.\n\nDe eindfase van de missie is begonnen.\n\nBereiken jullie binnen de tijd het extractiepunt en weten jullie uit handen van de Hunters te blijven?\n\nDe klok tikt... Veel succes!"
+            }
+          },
+          {
+            "kind": "show",
+            "select": {
+              "task": "extractie-finish"
+            },
+            "on": "map"
+          }
+        ]
+      },
+      {
+        "id": "finale-niet-alles-goed",
+        "label": "Na 75 minuten en niet alle puzzels goed: puzzels dicht, drie extractiepunten",
+        "when": {
+          "kind": "and",
+          "conditions": [
+            {
+              "kind": "not",
+              "condition": {
+                "kind": "correct",
+                "select": {
+                  "tag": "oplossing"
+                }
+              }
+            },
+            {
+              "kind": "elapsed",
+              "minutes": 75
+            }
+          ]
+        },
+        "then": [
+          {
+            "kind": "deactivate",
+            "select": {
+              "tag": "puzzel"
+            }
+          },
+          {
+            "kind": "message",
+            "text": {
+              "nl": "Helaas is het niet gelukt om alle puzzels op te lossen.\n\nMaar de missie is nog niet voorbij...\n\nWe tonen zo drie mogelijke extractiepunten op de kaart.\n\nSlechts één daarvan is het echte extractiepunt.\n\nGa binnen de tijd naar één van de drie extractiepunten en kom erachter of jullie de juiste hebben gekozen.\n\nDe klok tikt... Veel succes!"
+            }
+          },
+          {
+            "kind": "show",
+            "select": {
+              "tag": "extractie"
+            },
+            "on": "map"
+          }
+        ]
+      },
+      {
+        "id": "finish-bereikt",
+        "label": "Juiste extractiepunt (vlag) bereikt: ontsnapt",
+        "when": {
+          "kind": "completed",
+          "select": {
+            "task": "extractie-finish"
+          }
+        },
+        "then": [
+          {
+            "kind": "end",
+            "ending": "ontsnapt"
+          }
+        ]
+      },
+      {
+        "id": "juist-extractiepunt",
+        "label": "Juist extractiepunt: +600 en einde",
+        "when": {
+          "kind": "completed",
+          "select": {
+            "task": "extractie-a"
+          }
+        },
+        "then": [
+          {
+            "kind": "end",
+            "ending": "ontsnapt"
+          }
+        ]
+      },
+      {
+        "id": "verkeerd-extractiepunt",
+        "label": "Verkeerd extractiepunt: einde",
+        "when": {
+          "kind": "completed",
+          "select": {
+            "tasks": [
+              "extractie-b",
+              "extractie-c"
+            ]
+          },
+          "match": "any"
+        },
+        "then": [
+          {
+            "kind": "end",
+            "ending": "verkeerd-extractiepunt"
+          }
+        ]
+      },
+      {
+        "id": "tijd-op",
+        "label": "Na 90 minuten: alles uit en einde",
+        "when": {
+          "kind": "elapsed",
+          "minutes": 90
+        },
+        "then": [
+          {
+            "kind": "deactivate",
+            "select": {
+              "all": true
+            }
+          },
+          {
+            "kind": "end",
+            "ending": "tijd-op"
+          }
+        ]
+      }
+    ],
+    "meetingPoint": {
+      "lat": 53.20196475026361,
+      "lng": 5.798876881599426,
+      "text": {
+        "nl": "BLIJF HIER WACHTEN A.U.B. TOTDAT DE ANDERE TEAMS EN HUNTERS GEARRIVEERD ZIJN."
+      }
+    },
+    "briefing": "intro",
+    "overridable": [
+      {
+        "target": {
+          "task": "lokaal-1",
+          "field": "trackLocations"
+        },
+        "layers": [
+          "city"
+        ],
+        "label": "Locaties per track"
+      },
+      {
+        "target": {
+          "task": "lokaal-1",
+          "field": "title"
+        },
+        "layers": [
+          "city",
+          "client"
+        ]
+      },
+      {
+        "target": {
+          "task": "lokaal-1",
+          "field": "body"
+        },
+        "layers": [
+          "city",
+          "client"
+        ],
+        "label": "Stadsvraag"
+      },
+      {
+        "target": {
+          "task": "lokaal-1",
+          "field": "answer"
+        },
+        "layers": [
+          "city",
+          "client"
+        ],
+        "label": "Antwoord"
+      },
+      {
+        "target": {
+          "task": "lokaal-1",
+          "field": "image"
+        },
+        "layers": [
+          "city",
+          "client"
+        ],
+        "label": "Foto bij de vraag"
+      },
+      {
+        "target": {
+          "task": "lokaal-2",
+          "field": "trackLocations"
+        },
+        "layers": [
+          "city"
+        ],
+        "label": "Locaties per track"
+      },
+      {
+        "target": {
+          "task": "lokaal-2",
+          "field": "title"
+        },
+        "layers": [
+          "city",
+          "client"
+        ]
+      },
+      {
+        "target": {
+          "task": "lokaal-2",
+          "field": "body"
+        },
+        "layers": [
+          "city",
+          "client"
+        ],
+        "label": "Stadsvraag"
+      },
+      {
+        "target": {
+          "task": "lokaal-2",
+          "field": "answer"
+        },
+        "layers": [
+          "city",
+          "client"
+        ],
+        "label": "Antwoord"
+      },
+      {
+        "target": {
+          "task": "lokaal-2",
+          "field": "image"
+        },
+        "layers": [
+          "city",
+          "client"
+        ],
+        "label": "Foto bij de vraag"
+      },
+      {
+        "target": {
+          "task": "extractie-a",
+          "field": "location"
+        },
+        "layers": [
+          "city"
+        ],
+        "label": "Extractiepunt"
+      },
+      {
+        "target": {
+          "task": "extractie-b",
+          "field": "location"
+        },
+        "layers": [
+          "city"
+        ],
+        "label": "Extractiepunt"
+      },
+      {
+        "target": {
+          "task": "extractie-c",
+          "field": "location"
+        },
+        "layers": [
+          "city"
+        ],
+        "label": "Extractiepunt"
+      },
+      {
+        "target": {
+          "task": "extractie-finish",
+          "field": "location"
+        },
+        "layers": [
+          "city"
+        ],
+        "label": "Extractiepunt"
+      },
+      {
+        "target": {
+          "task": "extractie-hint",
+          "field": "body"
+        },
+        "layers": [
+          "city"
+        ],
+        "label": "Hint extractiepunt"
+      },
+      {
+        "target": {
+          "task": "puzzel-morse",
+          "field": "hints"
+        },
+        "layers": [
+          "city",
+          "client"
+        ],
+        "label": "Hints morsecodepuzzel"
+      },
+      {
+        "target": {
+          "game": "meetingPoint"
+        },
+        "layers": [
+          "city"
+        ],
+        "label": "Verzamelpunt"
+      },
+      {
+        "target": {
+          "game": "mapOverlay"
+        },
+        "layers": [
+          "city"
+        ],
+        "label": "Kaart-overlay"
+      },
+      {
+        "target": {
+          "game": "map"
+        },
+        "layers": [
+          "city"
+        ],
+        "label": "Kaartstijl"
+      },
+      {
+        "target": {
+          "game": "boundary"
+        },
+        "layers": [
+          "city"
+        ],
+        "label": "Speelgebied"
+      }
+    ]
+  },
+  "variants": []
+}
