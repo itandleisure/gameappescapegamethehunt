@@ -2,7 +2,7 @@
  * Formuliergegevens voor één opdracht, en terug naar een engine-opdracht.
  * Puur (zonder database), zodat het te testen is.
  */
-import type { AnswerSpec, Hint, Task, TaskLocation, Text } from '@hunt/engine';
+import type { AnswerSpec, Hint, MapIcon, Task, TaskLocation, Text } from '@hunt/engine';
 
 export type AnswerType = AnswerSpec['type'];
 export type Texts = Record<string, string>;
@@ -25,7 +25,7 @@ export interface TaskForm {
   wrongPoints: string;
   tags: string;
   mapLabel: string;
-  mapIcon: '' | 'logo';
+  mapIcon: '' | MapIcon;
   retryUntilCorrect: boolean;
   hints: { cost: string; text: Texts; image: string }[];
   hasLocation: boolean;
@@ -161,7 +161,7 @@ export function formToTask(key: string, form: TaskForm): { task: Task; errors: s
     if (mapLabel.length > 3) errors.push('Het kaarticoon mag hooguit 3 tekens hebben.');
     task.mapLabel = mapLabel;
   }
-  if (form.mapIcon === 'logo') task.mapIcon = 'logo';
+  if (form.mapIcon) task.mapIcon = form.mapIcon;
   if (wrongPoints !== 0) task.wrongPoints = wrongPoints;
   if (form.hasConfirm) task.confirm = cleanText(form.confirm);
   if (form.retryUntilCorrect) task.retryUntilCorrect = true;

@@ -241,9 +241,11 @@ export default function PlayScreen() {
           ...(game.tasks.find((x) => x.id === m.id)?.mapIcon === "logo"
             ? { logoColor: trackColor(ctx.track) }
             : {}),
-          ...(game.tasks.find((x) => x.id === m.id)?.mapLabel
-            ? { badge: game.tasks.find((x) => x.id === m.id)!.mapLabel }
-            : {}),
+          ...(game.tasks.find((x) => x.id === m.id)?.mapIcon === "flag"
+            ? { flag: game.tasks.find((x) => x.id === m.id)!.mapLabel ?? "" }
+            : game.tasks.find((x) => x.id === m.id)?.mapLabel
+              ? { badge: game.tasks.find((x) => x.id === m.id)!.mapLabel }
+              : {}),
         }))}
         overlay={
           overlay && /^https?:/.test(overlay.image)

@@ -7,6 +7,7 @@
  * vertaalscherm alles naast elkaar zetten, en houdt de database een stad of
  * klant tegen die een tekst wil wijzigen die niet aanpasbaar is.
  */
+import { MAP_ICONS } from '@hunt/engine';
 import type {
   Action,
   AnswerSpec,
@@ -16,6 +17,7 @@ import type {
   GameField,
   LatLng,
   MapOverlay,
+  MapIcon,
   MapSource,
   PlayBoundary,
   MeetingPoint,
@@ -334,7 +336,7 @@ export function rowsToBase(rows: LayerRows): BaseGame {
       if (row.retry_until_correct) task.retryUntilCorrect = true;
       if (typeof row.settings?.image === 'string') task.image = row.settings.image;
       if (typeof row.settings?.mapLabel === 'string') task.mapLabel = row.settings.mapLabel;
-      if (row.settings?.mapIcon === 'logo') task.mapIcon = 'logo';
+      if ((MAP_ICONS as readonly unknown[]).includes(row.settings?.mapIcon)) task.mapIcon = row.settings!.mapIcon as MapIcon;
       const hintImages = row.settings?.hintImages;
       if (Array.isArray(hintImages)) {
         task.hints.forEach((h, i) => {

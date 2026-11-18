@@ -71,8 +71,12 @@ export interface Task {
   image?: string;
   /** Kort nummer of teken in het kaarticoon (bijvoorbeeld 1, 2, 3) in plaats van de titel. */
   mapLabel?: string;
-  /** Kaarticoon: 'logo' = het Escape Game The Hunt-logo in de kleur van de track (zoals bij de bonusvragen). */
-  mapIcon?: 'logo';
+  /**
+   * Kaarticoon: 'logo' = het Escape Game The Hunt-logo in de kleur van de track
+   * (zoals bij de bonusvragen); 'flag' = finishvlag, met mapLabel als nummer
+   * (zoals bij de extractiepunten).
+   */
+  mapIcon?: MapIcon;
   answer: AnswerSpec;
   /** Punten bij een goed (of afgerond) antwoord. */
   points: number;
@@ -207,6 +211,9 @@ export interface MapOverlay {
  * Grens van het speelveld: een gesloten lijn om het gebied waar teams mogen
  * spelen, zoals de rode lijn in Loquiz. Alleen ter oriëntatie op de kaart.
  */
+export const MAP_ICONS = ['logo', 'flag'] as const;
+export type MapIcon = (typeof MAP_ICONS)[number];
+
 export interface PlayBoundary {
   /** Hoekpunten in volgorde; de lijn sluit vanzelf terug naar het eerste punt. */
   points: LatLng[];

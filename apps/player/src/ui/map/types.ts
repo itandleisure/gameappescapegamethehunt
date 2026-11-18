@@ -9,6 +9,8 @@ export interface MapMarker {
   badge?: string;
   /** Logo-icoon in deze kleur (de kleur van de track van het team). */
   logoColor?: string;
+  /** Finishvlag met dit nummer (mag leeg zijn), zoals bij de extractiepunten. */
+  flag?: string;
 }
 
 export interface MapOverlayImage {

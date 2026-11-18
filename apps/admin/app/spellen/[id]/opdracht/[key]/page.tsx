@@ -373,9 +373,10 @@ export default function TaskPage() {
               </div>
               <div>
                 <label htmlFor="mapIcon">Kaarticoon</label>
-                <select id="mapIcon" value={form.mapIcon} onChange={(e) => set({ mapIcon: e.target.value as '' | 'logo' })}>
+                <select id="mapIcon" value={form.mapIcon} onChange={(e) => set({ mapIcon: e.target.value as '' | 'logo' | 'flag' })}>
                   <option value="">Standaard</option>
                   <option value="logo">Logo in trackkleur</option>
+                  <option value="flag">Finishvlag (met nummer)</option>
                 </select>
               </div>
             </>

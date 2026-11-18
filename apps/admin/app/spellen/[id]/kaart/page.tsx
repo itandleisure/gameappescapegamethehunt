@@ -149,10 +149,11 @@ export default function MapPage() {
       for (const pin of pins) {
         if (!pin.location) continue;
         const el = document.createElement('div');
-        el.className = `pin${pin.editable ? ' editable' : ''}${pin.logo ? ' logo' : ''}${pinKey(pin) === selected ? ' selected' : ''}`;
+        el.className = `pin${pin.editable ? ' editable' : ''}${pin.logo ? ' logo' : ''}${pin.flag ? ' flag' : ''}${pinKey(pin) === selected ? ' selected' : ''}`;
         el.title = `${pin.title} (${trackName(pin.track)})`;
         if (pin.editable) el.style.backgroundColor = trackColor(pin.track);
-        if (!pin.logo) el.textContent = pin.label;
+        if (pin.flag) el.textContent = `🏁${pin.label}`;
+        else if (!pin.logo) el.textContent = pin.label;
         const marker = new MarkerClass({ element: el, draggable: pin.editable })
           .setLngLat([pin.location.lng, pin.location.lat])
           .addTo(m);

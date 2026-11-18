@@ -68,7 +68,11 @@ export default function NativeMap({
       ) : null}
       {markers.map((m) => (
         <Marker key={m.id} id={m.id} lngLat={[m.lng, m.lat]} anchor="bottom">
-          {m.logoColor ? (
+          {m.flag !== undefined ? (
+            <View style={[styles.pin, styles.flag]}>
+              <Text style={[styles.pinText, styles.flagText]}>{`\u{1F3C1}${m.flag}`}</Text>
+            </View>
+          ) : m.logoColor ? (
             <View style={[styles.logo, { backgroundColor: m.logoColor }]}>
               <Image
                 source={require("../../../assets/logo-icoon.png")}
@@ -115,5 +119,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   badgeText: { fontSize: 16 },
+  flag: { backgroundColor: "#ffffff", borderRadius: 16 },
+  flagText: { color: "#111111", fontSize: 15 },
   pinText: { color: colors.accentText, fontWeight: "700", fontSize: 13 },
 });
