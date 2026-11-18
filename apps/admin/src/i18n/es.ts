@@ -352,6 +352,7 @@ export const es: Record<string, string> = {
   "Klantvariant {id} heeft geen stad ervoor.": "La variante de cliente {id} no tiene una ciudad por encima.",
   "Zwart-wit (standaard)": "Blanco y negro (predeterminado)",
   "Nacht": "Noche",
+  "Toner (MapTiler)": "Toner (MapTiler)",
   "Schatkaart": "Mapa del tesoro",
   "Gewone kleurenkaart": "Mapa normal en color",
   "zojuist": "ahora mismo",

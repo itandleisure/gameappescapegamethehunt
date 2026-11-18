@@ -45,7 +45,7 @@ export type Vars = Record<string, string | number>;
 export const tKey = <T extends string>(nl: T): T => nl;
 
 /** Namen van de kaartstijlen uit de engine, zodat ze ook vertaald worden. */
-export const MAP_STYLE_NAMES = [tKey('Zwart-wit (standaard)'), tKey('Nacht'), tKey('Schatkaart'), tKey('Gewone kleurenkaart')];
+export const MAP_STYLE_NAMES = [tKey('Zwart-wit (standaard)'), tKey('Nacht'), tKey('Schatkaart'), tKey('Toner (MapTiler)'), tKey('Gewone kleurenkaart')];
 
 let current: AdminLanguage = 'nl';
 
