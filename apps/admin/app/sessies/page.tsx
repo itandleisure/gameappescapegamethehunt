@@ -88,6 +88,8 @@ export default function SessionsPage() {
     const options: VersionOption[] = [];
     for (const row of v.data as unknown as { id: string; game_id: string; version: number; name: unknown; games?: GameRef }[]) {
       if (seen.has(row.game_id)) continue;
+      // Hunts spelen met een stad of klantspel; een template heeft templateversies.
+      if (row.games?.layer === 'base') continue;
       seen.add(row.game_id);
       options.push({ id: row.id, label: versionLabel(row) });
     }
