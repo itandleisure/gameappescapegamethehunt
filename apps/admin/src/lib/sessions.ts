@@ -11,6 +11,8 @@ export interface SessionInput {
   testMode: boolean;
   /** De spelleider start het spel voor alle teams tegelijk. */
   centralStart?: boolean;
+  /** Teams kunnen elkaar berichten sturen (de spelleiding leest mee). */
+  teamChat?: boolean;
   /** Eigen sessiecode; leeg = de database kiest er een van 5 tekens. */
   joinCode?: string;
 }

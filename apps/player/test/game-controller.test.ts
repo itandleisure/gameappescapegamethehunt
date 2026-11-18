@@ -275,3 +275,96 @@ describe('centrale start', () => {
     expect(state.tasks['uitleg-01']!.status).toBe('done');
   });
 });
+
+describe('teamchat', () => {
+  async function twoTeams() {
+    const s = setup();
+    s.backend.teamChat = true;
+    const vossen = await GameController.join(s.deps, 'LWD001', 'Vossen', 'nl', '06 12345678');
+    // Tweede team op een andere telefoon (eigen opslag), zelfde server.
+    const wolven = await GameController.join({ ...s.deps, store: new MemoryStore() }, 'LWD001', 'Wolven', 'nl', '06 12345678');
+    return { s, vossen, wolven };
+  }
+
+  it('stuurt berichten naar de andere teams, met naam en ongelezen-teller', async () => {
+    const { s, vossen, wolven } = await twoTeams();
+    expect(vossen.teamChat).toBe(true);
+    expect(await vossen.sendChat('  Wie heeft de sleutel?  ')).toBe(true);
+    expect(await vossen.sendChat('   ')).toBe(false);
+    await vossen.tick();
+    expect(s.backend.chat.map((m) => [m.name, m.body])).toEqual([['Vossen', 'Wie heeft de sleutel?']]);
+    expect(vossen.snapshot().chat).toHaveLength(1);
+    expect(vossen.snapshot().chatUnread).toBe(0); // eigen bericht telt niet
+
+    s.advance(1_000);
+    await wolven.refreshChat();
+    const snap = wolven.snapshot();
+    expect(snap.chat.map((m) => m.body)).toEqual(['Wie heeft de sleutel?']);
+    expect(snap.chatUnread).toBe(1);
+    await wolven.markChatRead();
+    expect(wolven.snapshot().chatUnread).toBe(0);
+
+    s.backend.postChat(null, null, 'Nog 10 minuten!');
+    await wolven.refreshChat();
+    expect(wolven.snapshot().chatUnread).toBe(1);
+    expect(wolven.snapshot().chat.at(-1)).toMatchObject({ teamId: null, body: 'Nog 10 minuten!' });
+  });
+
+  it('bewaart een bericht zonder bereik en verstuurt het één keer zodra het weer kan', async () => {
+    const { s, vossen } = await twoTeams();
+    s.backend.offline = true;
+    await vossen.sendChat('Hallo?');
+    expect(vossen.snapshot().chat).toMatchObject([{ body: 'Hallo?', pending: true }]);
+    expect(s.backend.chat).toHaveLength(0);
+
+    // Na een herstart van de app staat het bericht er nog.
+    const again = (await GameController.resume(s.deps))!;
+    expect(again.snapshot().chat).toMatchObject([{ body: 'Hallo?', pending: true }]);
+
+    s.backend.offline = false;
+    s.advance(120_000);
+    await again.tick();
+    expect(s.backend.chat.map((m) => m.body)).toEqual(['Hallo?']);
+    expect(again.snapshot().chat).toHaveLength(1);
+    expect(again.snapshot().chat[0]!.pending).toBeUndefined();
+  });
+
+  it('krijgt live een seintje bij een nieuw bericht', async () => {
+    const { s, wolven } = await twoTeams();
+    const stop = wolven.watchChat();
+    s.backend.postChat('team-1', 'Vossen', 'Hoi!');
+    await new Promise((r) => setTimeout(r, 0));
+    expect(wolven.snapshot().chat.map((m) => m.body)).toEqual(['Hoi!']);
+    // De spelleider haalt het bericht weg.
+    s.backend.chat = [];
+    s.backend.notifyChat(true);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(wolven.snapshot().chat).toEqual([]);
+    stop();
+  });
+
+  it('volgt de spelleider die de chat aan- of uitzet, en verwijderde berichten verdwijnen', async () => {
+    const s = setup();
+    const c = await GameController.join(s.deps, 'LWD001', 'Vossen', 'nl', '06 12345678');
+    expect(c.teamChat).toBe(false);
+    expect(await c.sendChat('Hallo')).toBe(false);
+
+    s.backend.teamChat = true;
+    s.backend.postChat('team-9', 'Wolven', 'iets ongepasts');
+    s.advance(31_000);
+    await c.tick(); // haalt de instelling op
+    await c.tick(); // en daarna de chat
+    expect(c.teamChat).toBe(true);
+    expect(c.snapshot().chat.map((m) => m.body)).toEqual(['iets ongepasts']);
+
+    s.backend.chat = [];
+    await c.refreshChat(true);
+    expect(c.snapshot().chat).toEqual([]);
+
+    s.backend.teamChat = false;
+    s.advance(31_000);
+    await c.tick();
+    expect(c.teamChat).toBe(false);
+    expect(c.snapshot().chatUnread).toBe(0);
+  });
+});

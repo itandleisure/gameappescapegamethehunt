@@ -54,6 +54,7 @@ const EMPTY: SessionInput = {
   trackCount: 5,
   testMode: false,
   centralStart: true,
+  teamChat: false,
   joinCode: '',
 };
 
@@ -117,6 +118,7 @@ export default function SessionsPage() {
         track_count: form.trackCount,
         test_mode: form.testMode,
         central_start: form.centralStart ?? false,
+        team_chat: form.teamChat ?? false,
         status: 'open',
         ...(form.joinCode?.trim() ? { join_code: form.joinCode.trim().toUpperCase() } : {}),
       });
@@ -215,6 +217,10 @@ export default function SessionsPage() {
               onChange={(e) => setForm({ ...form, centralStart: e.target.checked })}
             />
             {t('Centrale start: teams lezen eerst de speluitleg, daarna start de spelleider het spel voor iedereen tegelijk')}
+          </label>
+          <label className="check">
+            <input type="checkbox" checked={form.teamChat ?? false} onChange={(e) => setForm({ ...form, teamChat: e.target.checked })} />
+            {t('Teamchat: teams kunnen elkaar berichten sturen, de spelleiding leest mee (ook later aan of uit te zetten)')}
           </label>
           {errors.length > 0 ? (
             <ul className="errors">

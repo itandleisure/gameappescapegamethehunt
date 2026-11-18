@@ -37,11 +37,22 @@ export function GameProvider({ children, deviceLanguage }: { children: ReactNode
     const unsubscribe = controller.subscribe(setSnapshot);
     const clock = setInterval(() => setSnapshot(controller.snapshot()), 1_000);
     const sync = setInterval(() => void controller.tick(), 5_000);
+    // Teamchat: nieuwe berichten live binnenhalen zolang de app open is.
+    let stopChat = controller.watchChat();
+    let chatOn = controller.teamChat;
+    const chatWatch = controller.subscribe(() => {
+      if (controller.teamChat === chatOn) return;
+      chatOn = controller.teamChat; // de spelleider zette de chat aan of uit
+      stopChat();
+      stopChat = controller.watchChat();
+    });
     const appState = AppState.addEventListener('change', (state) => {
       if (state === 'active') void controller.tick();
     });
     return () => {
       unsubscribe();
+      chatWatch();
+      stopChat();
       clearInterval(clock);
       clearInterval(sync);
       appState.remove();

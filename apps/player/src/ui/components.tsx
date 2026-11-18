@@ -69,8 +69,11 @@ export function Button({
   kind = 'primary',
   disabled,
   busy,
+  accessibilityLabel,
 }: {
   label: string;
+  /** Voorleestekst als het label alleen een pictogram is. */
+  accessibilityLabel?: string;
   onPress: () => void;
   kind?: 'primary' | 'secondary' | 'danger';
   disabled?: boolean;
@@ -81,6 +84,7 @@ export function Button({
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled: off }}
+      accessibilityLabel={accessibilityLabel}
       onPress={off ? undefined : onPress}
       style={({ pressed }) => [
         styles.button,

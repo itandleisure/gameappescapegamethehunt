@@ -244,7 +244,16 @@ export default function PlayScreen() {
               />
             </>
           ) : ready ? (
-            <Banner>{t("waitForStart")}</Banner>
+            <>
+              <Banner>{t("waitForStart")}</Banner>
+              {controller.teamChat ? (
+                <Button
+                  kind="secondary"
+                  label={snapshot.chatUnread > 0 ? `${t("chat")} (${snapshot.chatUnread})` : t("chat")}
+                  onPress={() => router.push("/chat")}
+                />
+              ) : null}
+            </>
           ) : controller.briefingTasks().length > 0 ? (
             <Button
               label={t("briefingTitle")}
@@ -422,10 +431,26 @@ export default function PlayScreen() {
             ))}
           </ScrollView>
         ) : null}
-        <Button
-          label={listCount > 0 ? `${t("tasks")} (${listCount})` : t("tasks")}
-          onPress={() => router.push("/tasks")}
-        />
+        <View style={styles.bottomRow}>
+          <View style={styles.bottomMain}>
+            <Button
+              label={listCount > 0 ? `${t("tasks")} (${listCount})` : t("tasks")}
+              onPress={() => router.push("/tasks")}
+            />
+          </View>
+          {controller.teamChat ? (
+            <View style={styles.bottomSide}>
+              <Button
+                kind="secondary"
+                label={snapshot.chatUnread > 0 ? `💬 ${snapshot.chatUnread}` : "💬"}
+                accessibilityLabel={
+                  snapshot.chatUnread > 0 ? `${t("chat")} (${snapshot.chatUnread})` : t("chat")
+                }
+                onPress={() => router.push("/chat")}
+              />
+            </View>
+          ) : null}
+        </View>
       </SafeAreaView>
     </View>
   );
@@ -437,6 +462,9 @@ const styles = StyleSheet.create({
   test: { marginBottom: space.sm },
   skipRow: { flexDirection: "row", gap: space.sm },
   skipButton: { flex: 1 },
+  bottomRow: { flexDirection: "row", gap: space.sm },
+  bottomMain: { flex: 1 },
+  bottomSide: { minWidth: 72 },
   codeCard: {
     borderWidth: 2,
     borderColor: colors.accent,

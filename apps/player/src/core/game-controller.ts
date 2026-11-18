@@ -14,7 +14,7 @@ import {
 } from '@hunt/engine';
 import { ClockSync } from './clock.js';
 import { Retry } from './outbox.js';
-import type { Backend, KeyValueStore, LoadedGame, PendingPhoto, SessionInfo, TeamRecord } from './types.js';
+import type { Backend, ChatMessage, KeyValueStore, LoadedGame, PendingPhoto, SessionInfo, TeamRecord } from './types.js';
 
 export const STORAGE_KEY = 'hunt.game.v1';
 
@@ -33,7 +33,14 @@ export interface Snapshot {
   online: boolean;
   /** Deze telefoon meldde het team aan en moet nog een teamfoto maken. */
   teamPhotoNeeded: boolean;
+  /** Teamchat van de hunt (leeg als die uit staat), oudste eerst; eigen berichten zonder bereik staan erbij met `pending`. */
+  chat: ChatMessage[];
+  /** Berichten van andere teams of de spelleiding die het team nog niet gezien heeft. */
+  chatUnread: number;
 }
+
+/** Langste bericht in de teamchat. */
+export const CHAT_MAX_LENGTH = 500;
 
 /** Opdrachtsleutel van de teamfoto in de tabel photos (een echte sleutel begint nooit met _). */
 export const TEAM_PHOTO_KEY = '_teamfoto';
@@ -58,6 +65,12 @@ interface Saved {
   teamPhoto?: 'needed' | 'taken';
   /** Alleen in een testsessie: zoveel ms is de klok van het spel vooruitgezet. */
   testSkipMs?: number;
+  /** Teamchat zoals de server hem laatst gaf. */
+  chat?: ChatMessage[];
+  /** Eigen chatberichten die nog naar de server moeten. */
+  chatOut?: ChatMessage[];
+  /** Servertijd van het nieuwste chatbericht dat het team heeft gezien. */
+  chatSeenAt?: number;
 }
 
 type Listener = (snapshot: Snapshot) => void;
@@ -85,6 +98,9 @@ export class GameController {
   private readonly eventRetry = new Retry();
   private readonly photoRetry = new Retry();
   private readonly positionRetry = new Retry();
+  private readonly chatRetry = new Retry();
+  private lastChatAt = 0;
+  private lastChatFullAt = 0;
   private readonly listeners = new Set<Listener>();
   private readonly newId: () => string;
   private online = true;
@@ -226,6 +242,8 @@ export class GameController {
       pending: this.data.unsent.length + this.data.photos.length,
       online: this.online,
       teamPhotoNeeded: this.data.teamPhoto === 'needed',
+      chat: this.chatMessages(),
+      chatUnread: this.chatUnread(),
     };
   }
 
@@ -356,6 +374,74 @@ export class GameController {
   }
 
   // ---------------------------------------------------------------------------
+  // Teamchat
+  // ---------------------------------------------------------------------------
+
+  /** Staat de teamchat aan in deze hunt? */
+  get teamChat(): boolean {
+    return this.data.loaded.session.teamChat === true;
+  }
+
+  private chatMessages(): ChatMessage[] {
+    if (!this.teamChat && !(this.data.chat?.length)) return [];
+    return [...(this.data.chat ?? []), ...(this.data.chatOut ?? [])];
+  }
+
+  private chatUnread(): number {
+    if (!this.teamChat) return 0;
+    const seen = this.data.chatSeenAt ?? 0;
+    return (this.data.chat ?? []).filter((m) => m.teamId !== this.data.team.id && m.createdAt > seen).length;
+  }
+
+  /** Het team heeft de chat bekeken. */
+  async markChatRead(): Promise<void> {
+    const latest = (this.data.chat ?? []).reduce((max, m) => Math.max(max, m.createdAt), 0);
+    if (latest <= (this.data.chatSeenAt ?? 0)) return;
+    this.data.chatSeenAt = latest;
+    await this.save();
+    this.emit();
+  }
+
+  /**
+   * Stuurt een bericht naar de andere teams. Zonder bereik blijft het in de
+   * wachtrij staan. Geeft false bij een leeg bericht of als de chat uit staat.
+   */
+  async sendChat(text: string): Promise<boolean> {
+    const body = text.trim().slice(0, CHAT_MAX_LENGTH);
+    if (!body || !this.teamChat) return false;
+    const message: ChatMessage = { id: this.newId(), teamId: this.data.team.id, name: this.data.team.name, body, createdAt: this.now(), pending: true };
+    this.data.chatOut = [...(this.data.chatOut ?? []), message];
+    this.chatRetry.succeeded(); // meteen proberen, ook na eerdere mislukte pogingen
+    await this.commit();
+    return true;
+  }
+
+  /**
+   * Live meldingen van nieuwe berichten, zolang de app open is. Geeft een
+   * functie terug om te stoppen.
+   */
+  watchChat(): () => void {
+    if (!this.teamChat || !this.deps.backend.watchChat) return () => undefined;
+    return this.deps.backend.watchChat(this.data.team.sessionId, (deleted) => void this.refreshChat(deleted).catch(() => undefined));
+  }
+
+  /** Haalt de chat op: alleen nieuwe berichten, of met `full` alles opnieuw (dan verdwijnen ook verwijderde berichten). */
+  async refreshChat(full = false): Promise<void> {
+    if (!this.teamChat) return;
+    const known = this.data.chat ?? [];
+    const latest = known.reduce((max, m) => Math.max(max, m.createdAt), 0);
+    // Vijf seconden overlap: een bericht dat net later binnenkwam maar een iets eerdere tijd kreeg, valt zo niet weg.
+    const fetched = await this.deps.backend.loadChat(this.data.team.sessionId, full || latest === 0 ? undefined : latest - 5_000);
+    const merged = full ? fetched : [...known, ...fetched.filter((m) => !known.some((k) => k.id === m.id))];
+    // Een verwijderd bericht kan ook een nog niet bevestigd eigen bericht zijn: dat blijft in de wachtrij tot het verstuurd is.
+    const ids = new Set(merged.map((m) => m.id));
+    this.data.chat = merged.sort((a, b) => a.createdAt - b.createdAt);
+    this.data.chatOut = (this.data.chatOut ?? []).filter((m) => !ids.has(m.id));
+    await this.save();
+    this.emit();
+  }
+
+  // ---------------------------------------------------------------------------
   // Synchroniseren
   // ---------------------------------------------------------------------------
 
@@ -384,6 +470,7 @@ export class GameController {
       await this.flushEvents(device);
       await this.flushPositions();
       await this.flushPhotos(device);
+      await this.syncChat(device);
       if (device - this.lastPullAt >= 30_000) {
         this.lastPullAt = device;
         await this.pull().catch(() => undefined);
@@ -436,6 +523,29 @@ export class GameController {
     }
   }
 
+  /**
+   * Eigen berichten versturen en de chat bijwerken: elke 15 seconden de nieuwe
+   * berichten (de live verbinding is meestal sneller), elke minuut alles.
+   */
+  private async syncChat(device: number) {
+    if (!this.teamChat || !this.chatRetry.ready(device)) return;
+    const out = this.data.chatOut ?? [];
+    const due = out.length > 0 || device - this.lastChatAt >= 15_000;
+    if (!due) return;
+    try {
+      for (const message of out) {
+        await this.deps.backend.sendChat(this.data.team.sessionId, this.data.team.id, { id: message.id, body: message.body });
+      }
+      const full = device - this.lastChatFullAt >= 60_000;
+      await this.refreshChat(full);
+      this.lastChatAt = device;
+      if (full) this.lastChatFullAt = device;
+      this.chatRetry.succeeded();
+    } catch {
+      this.chatRetry.failed(device);
+    }
+  }
+
   /** Haalt gebeurtenissen van de server op en voegt ze samen met de lokale. */
   private async pull() {
     const [remote, team] = await Promise.all([
@@ -445,6 +555,13 @@ export class GameController {
     const known = new Set(this.data.events.map((e) => e.id));
     const added = remote.filter((e) => !known.has(e.id));
     this.data.team = team;
+    // De spelleider kan de teamchat tijdens het spel aan- of uitzetten.
+    const teamChat = await this.deps.backend.loadTeamChat(team.sessionId).catch(() => this.teamChat);
+    if (teamChat !== this.teamChat) {
+      this.data.loaded = { ...this.data.loaded, session: { ...this.data.loaded.session, teamChat } };
+      this.lastChatAt = 0;
+      this.lastChatFullAt = 0;
+    }
     if (added.length > 0) this.data.events = [...this.data.events, ...added];
     await this.save();
     this.emit();

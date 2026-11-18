@@ -1,5 +1,5 @@
 import type { GameEvent, GamePackage, GpsFix } from '@hunt/engine';
-import type { Backend, PendingPhoto, TeamRecord } from '../src/core/types.js';
+import type { Backend, ChatMessage, PendingPhoto, TeamRecord } from '../src/core/types.js';
 
 /** Nep-server voor tests: houdt alles in het geheugen en kan "offline" gaan. */
 export class FakeBackend implements Backend {
@@ -84,7 +84,7 @@ export class FakeBackend implements Backend {
   async loadGame() {
     this.guard();
     return {
-      session: { id: 'sessie-1', name: 'Test', timezone: 'Europe/Amsterdam', status: 'open' as const, testMode: this.testMode, centralStart: this.centralStart },
+      session: { id: 'sessie-1', name: 'Test', timezone: 'Europe/Amsterdam', status: 'open' as const, testMode: this.testMode, centralStart: this.centralStart, teamChat: this.teamChat },
       game: this.game,
     };
   }
@@ -116,5 +116,45 @@ export class FakeBackend implements Backend {
   async serverTime() {
     this.guard();
     return this.serverNow;
+  }
+
+  teamChat = false;
+  chat: ChatMessage[] = [];
+  /** Aantal pogingen om een chatbericht te sturen (ook dubbele). */
+  chatSends = 0;
+  private chatWatchers = new Set<(deleted: boolean) => void>();
+
+  async loadChat(_sessionId: string, since?: number) {
+    this.guard();
+    return this.chat.filter((m) => since === undefined || m.createdAt > since).map((m) => ({ ...m }));
+  }
+
+  async sendChat(_sessionId: string, teamId: string, message: { id: string; body: string }) {
+    this.guard();
+    this.chatSends += 1;
+    if (!this.teamChat) throw new Error('42501');
+    if (this.chat.some((m) => m.id === message.id)) return;
+    this.chat.push({ id: message.id, teamId, name: this.teams.get(teamId)?.name ?? null, body: message.body, createdAt: this.serverNow });
+    this.notifyChat();
+  }
+
+  watchChat(_sessionId: string, onChange: (deleted: boolean) => void) {
+    this.chatWatchers.add(onChange);
+    return () => void this.chatWatchers.delete(onChange);
+  }
+
+  /** Bericht van een ander team of de spelleiding (teamId null). */
+  postChat(teamId: string | null, name: string | null, body: string) {
+    this.chat.push({ id: `chat-${this.chat.length + 1}`, teamId, name, body, createdAt: this.serverNow });
+    this.notifyChat();
+  }
+
+  notifyChat(deleted = false) {
+    for (const watch of this.chatWatchers) watch(deleted);
+  }
+
+  async loadTeamChat() {
+    this.guard();
+    return this.teamChat;
   }
 }
