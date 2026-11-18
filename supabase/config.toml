@@ -4,3 +4,7 @@ project_id = "the-hunt"
 # Resultaten via de geheime link: geen inlog nodig, de token is de sleutel.
 [functions.results-export]
 verify_jwt = false
+
+# Fotoboek via de geheime link: geen inlog nodig, de token is de sleutel.
+[functions.photobook]
+verify_jwt = false

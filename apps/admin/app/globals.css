@@ -261,3 +261,29 @@ button.icon:hover { background: var(--bg); color: var(--danger); }
 select.langpick { width: auto; padding: 4px 8px; font-size: 13px; margin: 0; }
 .langcorner { display: flex; justify-content: flex-end; margin-bottom: 8px; }
 .version-note { margin-top: 12px; padding: 12px 14px; border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; background: var(--bg); }
+/* Fotoboek */
+a.button { display: inline-block; font-weight: 600; padding: 9px 16px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-text); text-decoration: none; }
+a.button.secondary { background: transparent; color: var(--text); border-color: var(--line); }
+.photobook figure { cursor: grab; }
+.photobook figure.dragging { opacity: 0.4; }
+.photobook.unused figure { cursor: default; opacity: 0.85; }
+.photobook .pb-thumb { position: relative; }
+.photobook .pb-number { position: absolute; top: 8px; left: 8px; min-width: 26px; height: 26px; padding: 0 6px; border-radius: 13px; background: var(--accent); color: var(--accent-text); font: 700 13px/26px system-ui, sans-serif; text-align: center; }
+.photobook .pb-own { position: absolute; top: 8px; right: 8px; background: var(--surface); }
+.photobook figcaption input { padding: 6px 8px; font-size: 13px; }
+.pb-tools { display: flex; gap: 6px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+.pb-tools button.secondary { padding: 4px 10px; }
+.pb-tools .check { margin: 0; font-size: 13px; }
+/* Fotoboek voor de klant (openbare pagina) */
+.book-hero { background: #1c1b19; color: #f2efe9; border-radius: var(--radius); padding: 32px; display: grid; grid-template-columns: auto 1fr; gap: 28px; align-items: center; }
+.book-hero img.logo { width: 110px; height: auto; }
+.book-hero h1 { font-size: 30px; margin: 0 0 6px; color: #fff; }
+.book-hero .bar { width: 56px; height: 4px; background: #c2410c; margin: 12px 0; }
+.book-hero p { margin: 6px 0; color: #d9d4cc; white-space: pre-line; }
+@media (max-width: 600px) { .book-hero { grid-template-columns: 1fr; padding: 24px; } }
+.book-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.book-photos figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.book-photos figure.large { grid-column: 1 / -1; }
+.book-photos img { display: block; width: 100%; height: auto; }
+.book-photos figure.large img { max-height: 80vh; object-fit: contain; background: #1c1b19; }
+.book-photos figcaption { padding: 8px 12px; font-size: 14px; }
