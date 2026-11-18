@@ -5,14 +5,13 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import type { LayerRows } from "@/lib/game-model";
 import {
-  createBaseVersion,
   loadBaseVersions,
   loadChain,
   publish,
-  setBaseVersionNote,
   setCityBaseVersion,
   type BaseVersion,
 } from "@/lib/game-store";
+import { TemplateVersions } from "@/editor/TemplateVersions";
 import { CITY_TODOS, todoState, type TodoKey } from "@/lib/city-rollout";
 import {
   baseName,
@@ -86,11 +85,8 @@ export default function GamePage() {
   const [busy, setBusy] = useState(false);
   const [newKey, setNewKey] = useState("");
   const [baseVersions, setBaseVersions] = useState<BaseVersion[]>([]);
-  const [versionNote, setVersionNote] = useState("");
   /** Naam per taal terwijl die wordt aangepast; null als het formulier dicht is. */
   const [nameDraft, setNameDraft] = useState<NameByLang | null>(null);
-  /** Omschrijving van een versie terwijl die wordt aangepast. */
-  const [noteDraft, setNoteDraft] = useState<{ version: number; text: string } | null>(null);
 
   const load = useCallback(async () => {
     const db = supabase();
@@ -181,25 +177,6 @@ export default function GamePage() {
     ` · ${new Date(v.created_at).toLocaleDateString(locale)}` +
     (v.note ? ` · ${v.note}` : "");
 
-  const doCreateVersion = async (e: FormEvent) => {
-    e.preventDefault();
-    setBusy(true);
-    setErrors([]);
-    setNotice(null);
-    try {
-      const n = await createBaseVersion(supabase(), id, versionNote);
-      setVersionNote("");
-      setNotice(
-        t("Versie {n} vastgezet. Steden blijven op hun huidige versie tot je ze zelf overzet.", { n }),
-      );
-      await load();
-    } catch (err) {
-      setErrors([err instanceof Error ? err.message : String(err)]);
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const doChooseVersion = async (value: string) => {
     setBusy(true);
     setErrors([]);
@@ -214,24 +191,6 @@ export default function GamePage() {
           " " +
           t("Publiceer de stad (en de klantvarianten eronder) opnieuw om dit in nieuwe hunts te gebruiken."),
       );
-      await load();
-    } catch (err) {
-      setErrors([err instanceof Error ? err.message : String(err)]);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const doSaveNote = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!noteDraft) return;
-    setBusy(true);
-    setErrors([]);
-    setNotice(null);
-    try {
-      await setBaseVersionNote(supabase(), id, noteDraft.version, noteDraft.text);
-      setNoteDraft(null);
-      setNotice(t("Omschrijving van versie {n} opgeslagen.", { n: noteDraft.version }));
       await load();
     } catch (err) {
       setErrors([err instanceof Error ? err.message : String(err)]);
@@ -579,132 +538,25 @@ export default function GamePage() {
       ) : null}
 
       {isBase && !legacy ? (
-        <section className="card" id="versies" style={{ marginTop: 16 }}>
-          <h2 style={{ marginTop: 0 }}>{t("Versies van het basisspel")}</h2>
-          <p className="muted">
-            {t("Wat je hier aanpast, is de werkversie. Zet een nieuwe versie vast als de wijzigingen klaar zijn. Daarna kies je per stad wanneer die overgaat.")}
-          </p>
-          {baseVersions.length > 0 ? (
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>{t("Versie")}</th>
-                    <th>{t("Vastgezet")}</th>
-                    <th>{t("Omschrijving (alleen voor ons team)")}</th>
-                    <th>{t("Steden")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    ...baseVersions.map((v) => ({
-                      key: String(v.version),
-                      name: t("Versie {n}", { n: v.version }),
-                      when: new Date(v.created_at).toLocaleDateString(locale),
-                      note: v.note,
-                      version: v.version as number | null,
-                    })),
-                    { key: "werk", name: t("Werkversie"), when: "–", note: null, version: null },
-                  ].map((row) => {
-                    const used = children.filter(
-                      (c) => c.layer === "city" && c.base_version === row.version,
-                    );
-                    // De werkversie alleen tonen als er een stad op staat.
-                    if (row.version === null && used.length === 0) return null;
-                    return (
-                      <tr key={row.key}>
-                        <td>
-                          <strong>{row.name}</strong>
-                        </td>
-                        <td className="muted">{row.when}</td>
-                        <td>
-                          {row.version === null ? (
-                            <span className="muted">–</span>
-                          ) : noteDraft?.version === row.version ? (
-                            <form onSubmit={doSaveNote}>
-                              <textarea
-                                aria-label={t("Omschrijving (alleen voor ons team)")}
-                                value={noteDraft.text}
-                                maxLength={2000}
-                                rows={4}
-                                autoFocus
-                                onChange={(e) => setNoteDraft({ ...noteDraft, text: e.target.value })}
-                              />
-                              <div className="actions">
-                                <button type="submit" disabled={busy}>
-                                  {busy ? t("Bezig…") : t("Opslaan")}
-                                </button>
-                                <button type="button" className="secondary" onClick={() => setNoteDraft(null)} disabled={busy}>
-                                  {t("Annuleren")}
-                                </button>
-                              </div>
-                            </form>
-                          ) : (
-                            <>
-                              {row.note ? <div style={{ whiteSpace: "pre-wrap" }}>{row.note}</div> : null}
-                              <button
-                                type="button"
-                                className="link small"
-                                onClick={() => setNoteDraft({ version: row.version!, text: row.note ?? "" })}
-                              >
-                                {row.note ? t("Aanpassen") : t("Omschrijving toevoegen")}
-                              </button>
-                            </>
-                          )}
-                        </td>
-                        <td>
-                          <strong>
-                            {used.length === 1
-                              ? t("1 stad")
-                              : t("{n} steden", { n: used.length })}
-                          </strong>
-                          {used.length > 0 ? (
-                            <div className="muted">
-                              {used.map((c, i) => (
-                                <span key={c.id}>
-                                  {i > 0 ? ", " : ""}
-                                  <Link href={`/spellen/${c.id}`}>{c.slug}</Link>
-                                </span>
-                              ))}
-                            </div>
-                          ) : null}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="muted">{t("Nog geen versies vastgezet.")}</p>
-          )}
-          <form className="row" onSubmit={doCreateVersion}>
-            <div>
-              <label htmlFor="version-note">{t("Wat is er nieuw? (optioneel)")}</label>
-              <input
-                id="version-note"
-                value={versionNote}
-                maxLength={2000}
-                onChange={(e) => setVersionNote(e.target.value)}
-                placeholder={t("Bijvoorbeeld: nieuwe puzzel bij het extractiepunt")}
-              />
-            </div>
-            <div style={{ flex: "0 0 auto" }}>
-              <button type="submit" disabled={busy}>
-                {busy
-                  ? t("Bezig…")
-                  : t("Versie {n} vastzetten", {
-                      n: (baseVersions[0]?.version ?? 0) + 1,
-                    })}
-              </button>
-            </div>
-          </form>
-        </section>
+        <TemplateVersions
+          baseId={id}
+          versions={baseVersions}
+          cities={children}
+          onChanged={async (message) => {
+            setErrors([]);
+            setNotice(message);
+            await load();
+          }}
+          onError={(message) => {
+            setNotice(null);
+            setErrors([message]);
+          }}
+        />
       ) : null}
 
       {self.game.layer === "city" ? (
         <section className="card" style={{ marginTop: 16 }}>
-          <label htmlFor="base-version">{t("Versie van het basisspel")}</label>
+          <label htmlFor="base-version">{t("Templateversie")}</label>
           <select
             id="base-version"
             value={cityVersion === null ? "" : String(cityVersion)}

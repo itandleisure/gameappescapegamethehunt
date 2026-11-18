@@ -85,10 +85,11 @@ function NewCity() {
     void loadBaseVersions(supabase(), baseId)
       .then((list) => {
         setVersions(list);
-        setVersion(list[0] ? String(list[0].version) : '');
+        const wanted = list.find((v) => String(v.version) === params.get('versie')) ?? list[0];
+        setVersion(wanted ? String(wanted.version) : '');
       })
       .catch((err) => setErrors([err instanceof Error ? err.message : String(err)]));
-  }, [baseId]);
+  }, [baseId, params]);
 
   // De lijst met steden pas laden op deze pagina.
   useEffect(() => {
@@ -183,11 +184,11 @@ function NewCity() {
               </p>
             ) : (
               <>
-                <label htmlFor="version">{t('Versie van het basisspel')}</label>
+                <label htmlFor="version">{t('Templateversie')}</label>
                 <select id="version" value={version} onChange={(e) => setVersion(e.target.value)} disabled={busy}>
                   {versions.map((v, i) => (
                     <option key={v.version} value={String(v.version)}>
-                      {t('Versie {n}', { n: v.version })} · {new Date(v.created_at).toLocaleDateString(locale)}
+                      {t('Template versie {n}', { n: v.version })} · {new Date(v.created_at).toLocaleDateString(locale)}
                       {i === 0 ? ` (${t('nieuwste')})` : ''}
                     </option>
                   ))}
