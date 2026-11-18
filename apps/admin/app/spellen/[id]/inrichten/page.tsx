@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { rectAround } from '@/lib/boundary';
 import { CITY_TODOS, todoState, type TodoKey } from '@/lib/city-rollout';
-import { FINISH_TASKS, LOCAL_QUESTIONS, MORSE_TASK, finishPoint, gatherAt, iconPins, pinKey, puzzleChoice, puzzles, startPoint } from '@/lib/city-setup';
+import { FINISH_TASKS, LOCAL_QUESTIONS, MORSE_TASK, finishPoint, gatherAt, iconPins, pinKey, puzzleChoice, puzzles, startPoint, type PuzzleVersion } from '@/lib/city-setup';
 import type { LayerRows } from '@/lib/game-model';
 import { displayName } from '@/lib/game-name';
 import { composeChain, loadChain } from '@/lib/game-store';
@@ -57,7 +57,7 @@ export default function SetupPage() {
   });
   const [morseOwn, setMorseOwn] = useState(false);
   const [morseHints, setMorseHints] = useState<string[]>([]);
-  const [chosen, setChosen] = useState<Record<string, boolean>>({});
+  const [chosen, setChosen] = useState<Record<string, PuzzleVersion>>({});
 
   useEffect(() => {
     const n = Number(new URLSearchParams(window.location.search).get('stap'));
@@ -441,14 +441,44 @@ export default function SetupPage() {
       save = savePuzzles;
       body = (
         <>
-          <p>{t('Welke puzzels gaan de teams in deze stad oplossen? Standaard staan ze allemaal aan.')}</p>
-          {puzzles(game).map((p) => (
-            <label key={p.key} className="check">
-              <input type="checkbox" checked={chosen[p.key] !== false} onChange={(e) => setChosen({ ...chosen, [p.key]: e.target.checked })} />
-              {tx(p.title)}
-            </label>
-          ))}
-          <p className="muted small">{t('Let op: een puzzel uitzetten wordt nu alleen bij de stad bewaard; het spel zelf gebruikt nog alle puzzels.')}</p>
+          <p>{t('Er zijn altijd zes puzzels. Kies per puzzel de Nederlandse versie of de internationale versie (meertalig, voor de nieuwe tassen in het buitenland).')}</p>
+          <table className="puzzle-choice">
+            <thead>
+              <tr>
+                <th>{t('Puzzel')}</th>
+                <th>{t('Nederlands')}</th>
+                <th>{t('Internationaal')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {puzzles(game).map((p, i) => (
+                <tr key={p.key}>
+                  <td>
+                    {i + 1}. {tx(p.title)}
+                  </td>
+                  {(['nl', 'int'] as const).map((v) => (
+                    <td key={v}>
+                      <input
+                        type="radio"
+                        name={`puzzel-${p.key}`}
+                        checked={(chosen[p.key] ?? 'nl') === v}
+                        onChange={() => setChosen({ ...chosen, [p.key]: v })}
+                        aria-label={`${tx(p.title)}: ${v === 'nl' ? t('Nederlands') : t('Internationaal')}`}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="actions">
+            <button className="link small" onClick={() => setChosen(Object.fromEntries(puzzles(game).map((p) => [p.key, 'nl'])))}>
+              {t('Alles Nederlands')}
+            </button>
+          </div>
+          {Object.values(chosen).includes('int') ? (
+            <p className="muted small">{t('De internationale puzzels staan nog niet in het template. Tot ze er zijn, spelen teams in deze stad de Nederlandse versie; je keuze blijft bewaard.')}</p>
+          ) : null}
         </>
       );
       break;

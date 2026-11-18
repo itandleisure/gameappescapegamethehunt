@@ -733,8 +733,6 @@ export const es: Record<string, string> = {
   "De hints van de morsecodepuzzel kunnen naar plekken in de stad verwijzen. Gebruik je de algemene morsecode, of schrijf je eigen hints voor deze stad?": "Las pistas del puzle de código Morse pueden referirse a lugares de la ciudad. ¿Usas el código Morse general o escribes tus propias pistas para esta ciudad?",
   "Algemene morsecode (zoals in het template)": "Código Morse general (como en la plantilla)",
   "Eigen hints voor deze stad": "Pistas propias para esta ciudad",
-  "Welke puzzels gaan de teams in deze stad oplossen? Standaard staan ze allemaal aan.": "¿Qué puzles resolverán los equipos en esta ciudad? Por defecto están todos activados.",
-  "Let op: een puzzel uitzetten wordt nu alleen bij de stad bewaard; het spel zelf gebruikt nog alle puzzels.": "Atención: desactivar un puzle de momento solo se guarda en la ciudad; el juego sigue usando todos los puzles.",
   "Loop een proefronde met de testmodus van de app. Klopt alles, publiceer de stad dan op het overzicht.": "Haz una ronda de prueba con el modo de prueba de la app. Si todo está bien, publica la ciudad en la vista general.",
   "Naar het overzicht om te publiceren": "Ir a la vista general para publicar",
   "Stad inrichten": "Configurar ciudad",
@@ -807,4 +805,9 @@ export const es: Record<string, string> = {
   "Naslagtekst ({lang})": "Texto de consulta ({lang})",
   "Teksten in": "Textos en",
   "Vaste tekst bovenaan dit tabblad, zoals de tijdlijn van het spel. Mag leeg blijven.": "Texto fijo arriba en esta pestaña, como la cronología del juego. Puede quedar vacío.",
+  "Er zijn altijd zes puzzels. Kies per puzzel de Nederlandse versie of de internationale versie (meertalig, voor de nieuwe tassen in het buitenland).": "Siempre hay seis puzles. Elige para cada puzle la versión neerlandesa o la internacional (multilingüe, para las nuevas mochilas en el extranjero).",
+  "Puzzel": "Puzle",
+  "Internationaal": "Internacional",
+  "Alles Nederlands": "Todo en neerlandés",
+  "De internationale puzzels staan nog niet in het template. Tot ze er zijn, spelen teams in deze stad de Nederlandse versie; je keuze blijft bewaard.": "Los puzles internacionales aún no están en la plantilla. Hasta entonces, los equipos de esta ciudad juegan la versión neerlandesa; tu elección se guarda.",
 };

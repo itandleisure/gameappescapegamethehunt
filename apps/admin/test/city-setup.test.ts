@@ -36,8 +36,10 @@ describe('stappenplan stad inrichten', () => {
     expect(finishPoint(game)).not.toBeNull();
     const keys = puzzles(game).map((p) => p.key);
     expect(keys.length).toBeGreaterThan(0);
-    const choice = puzzleChoice({ puzzles: { [keys[0]!]: false } }, game);
-    expect(choice[keys[0]!]).toBe(false);
-    expect(Object.values(choice).filter(Boolean)).toHaveLength(keys.length - 1);
+    expect(keys).toHaveLength(6);
+    const choice = puzzleChoice({ puzzles: { [keys[0]!]: 'int', [keys[1]!]: false } }, game);
+    expect(choice[keys[0]!]).toBe('int');
+    expect(choice[keys[1]!]).toBe('nl');
+    expect(Object.values(choice).filter((v) => v === 'nl')).toHaveLength(keys.length - 1);
   });
 });

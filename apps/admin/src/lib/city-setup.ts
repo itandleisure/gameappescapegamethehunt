@@ -52,8 +52,15 @@ export function puzzles(game: GamePackage): { key: string; title: GamePackage['t
   return game.tasks.filter((t) => t.tags.includes('puzzel')).map((t) => ({ key: t.id, title: t.title }));
 }
 
-/** Welke puzzels de stad gebruikt (settings.puzzles); standaard allemaal. */
-export function puzzleChoice(settings: Record<string, unknown> | null | undefined, game: GamePackage): Record<string, boolean> {
+/** Welke versie van een puzzel een stad gebruikt: de bestaande Nederlandse of een internationale (meertalige). */
+export type PuzzleVersion = 'nl' | 'int';
+
+/**
+ * Per puzzelplek de gekozen versie (settings.puzzles); standaard de
+ * Nederlandse. Er zijn altijd zes plekken, zodat tijdlijn en codevakjes kloppen.
+ * Een oude opslag met true/false telt als Nederlands.
+ */
+export function puzzleChoice(settings: Record<string, unknown> | null | undefined, game: GamePackage): Record<string, PuzzleVersion> {
   const saved = (settings?.puzzles ?? {}) as Record<string, unknown>;
-  return Object.fromEntries(puzzles(game).map((p) => [p.key, saved[p.key] !== false]));
+  return Object.fromEntries(puzzles(game).map((p) => [p.key, saved[p.key] === 'int' ? 'int' : 'nl']));
 }

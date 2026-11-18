@@ -733,8 +733,6 @@ export const en: Record<string, string> = {
   "De hints van de morsecodepuzzel kunnen naar plekken in de stad verwijzen. Gebruik je de algemene morsecode, of schrijf je eigen hints voor deze stad?": "The hints of the Morse code puzzle can refer to places in the city. Do you use the general Morse code, or write your own hints for this city?",
   "Algemene morsecode (zoals in het template)": "General Morse code (as in the template)",
   "Eigen hints voor deze stad": "Own hints for this city",
-  "Welke puzzels gaan de teams in deze stad oplossen? Standaard staan ze allemaal aan.": "Which puzzles will the teams solve in this city? By default they are all on.",
-  "Let op: een puzzel uitzetten wordt nu alleen bij de stad bewaard; het spel zelf gebruikt nog alle puzzels.": "Note: turning a puzzle off is only stored with the city for now; the game itself still uses all puzzles.",
   "Loop een proefronde met de testmodus van de app. Klopt alles, publiceer de stad dan op het overzicht.": "Walk a test round with the app's test mode. If everything is right, publish the city on the overview.",
   "Naar het overzicht om te publiceren": "To the overview to publish",
   "Stad inrichten": "Set up city",
@@ -807,4 +805,9 @@ export const en: Record<string, string> = {
   "Naslagtekst ({lang})": "Reference text ({lang})",
   "Teksten in": "Texts in",
   "Vaste tekst bovenaan dit tabblad, zoals de tijdlijn van het spel. Mag leeg blijven.": "Fixed text at the top of this tab, such as the game timeline. May be left empty.",
+  "Er zijn altijd zes puzzels. Kies per puzzel de Nederlandse versie of de internationale versie (meertalig, voor de nieuwe tassen in het buitenland).": "There are always six puzzles. For each puzzle, choose the Dutch version or the international version (multilingual, for the new bags abroad).",
+  "Puzzel": "Puzzle",
+  "Internationaal": "International",
+  "Alles Nederlands": "All Dutch",
+  "De internationale puzzels staan nog niet in het template. Tot ze er zijn, spelen teams in deze stad de Nederlandse versie; je keuze blijft bewaard.": "The international puzzles are not in the template yet. Until they are, teams in this city play the Dutch version; your choice is kept.",
 };
