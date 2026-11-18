@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { isAnswerable, listGroups } from "../src/core/view";
 import { Body, Button, Title } from "../src/ui/components";
+import { LeaveGame } from "../src/ui/LeaveGame";
 import { RevealImage } from "../src/ui/RevealImage";
 import { useGame } from "../src/ui/GameProvider";
 import { colors, radius, space } from "../src/ui/theme";
@@ -71,6 +72,7 @@ export default function TasksScreen() {
           label={t("map")}
           onPress={() => router.back()}
         />
+        <LeaveGame />
       </ScrollView>
     </SafeAreaView>
   );
