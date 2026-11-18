@@ -87,6 +87,8 @@ export const en: Record<string, string> = {
   "Rechthoek om alle locaties": "Rectangle around all locations",
   "Speelveldgrens wissen?": "Clear play area boundary?",
   "Wissen": "Clear",
+  "Buiten het speelveld": "Outside the play area",
+  "Dekking": "Opacity",
   "Kleur": "Colour",
   "Opdrachten": "Tasks",
   "Opdrachten zonder locatie plaats je door hierboven één track of de vaste locaties te kiezen.": "To place tasks without a location, choose one track or the fixed locations above.",

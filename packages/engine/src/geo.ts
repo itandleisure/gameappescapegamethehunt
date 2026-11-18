@@ -138,3 +138,26 @@ export function boundaryGeoJson(boundary: { points: (LatLng & { curve?: LatLng }
     features: [{ type: 'Feature' as const, properties: {}, geometry: { type: 'LineString' as const, coordinates: coords } }],
   };
 }
+
+/** Rand van de wereld voor de laag buiten het speelveld (Web Mercator stopt rond 85°). */
+const WORLD_RING = [[-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85]];
+
+/**
+ * Alles buiten de speelveldgrens als vlak in GeoJSON: de hele wereld met het
+ * speelveld als gat erin. Leeg zonder minstens 3 punten. Het gat draait de
+ * andere kant op dan de buitenrand, zodat MapLibre het als gat herkent.
+ */
+export function boundaryMaskGeoJson(boundary: { points: (LatLng & { curve?: LatLng })[] } | null | undefined) {
+  const pts = boundary?.points ?? [];
+  if (pts.length < 3) return { type: 'FeatureCollection' as const, features: [] };
+  const hole = boundaryPath(boundary).map((p) => [p.lng, p.lat]);
+  hole.push(hole[0]!);
+  // Schoenveterformule: positief = tegen de klok in, net als de buitenrand.
+  let area = 0;
+  for (let i = 0; i < hole.length - 1; i++) area += hole[i]![0]! * hole[i + 1]![1]! - hole[i + 1]![0]! * hole[i]![1]!;
+  if (area > 0) hole.reverse();
+  return {
+    type: 'FeatureCollection' as const,
+    features: [{ type: 'Feature' as const, properties: {}, geometry: { type: 'Polygon' as const, coordinates: [WORLD_RING, hole] } }],
+  };
+}

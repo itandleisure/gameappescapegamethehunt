@@ -84,3 +84,37 @@ describe('speelveldgrens met bochten', () => {
     expect(coords.at(-1)).toEqual(coords[0]);
   });
 });
+
+describe('laag buiten het speelveld', () => {
+  const ringArea = (r: number[][]) => {
+    let a = 0;
+    for (let i = 0; i < r.length - 1; i++) a += r[i]![0]! * r[i + 1]![1]! - r[i + 1]![0]! * r[i]![1]!;
+    return a;
+  };
+
+  it('maakt de wereld met het speelveld als gat, ongeacht de tekenrichting', async () => {
+    const { boundaryMaskGeoJson } = await import('../src/geo.js');
+    const square = [{ lat: 0, lng: 0 }, { lat: 0, lng: 1 }, { lat: 1, lng: 1 }, { lat: 1, lng: 0 }];
+    for (const points of [square, [...square].reverse()]) {
+      const geo = boundaryMaskGeoJson({ points });
+      const [outer, hole] = geo.features[0]!.geometry.coordinates;
+      expect(ringArea(outer!)).toBeGreaterThan(0);
+      expect(ringArea(hole!)).toBeLessThan(0);
+      expect(hole!.at(-1)).toEqual(hole![0]);
+      expect(hole).toHaveLength(5);
+    }
+  });
+
+  it('is leeg zonder gesloten grens', async () => {
+    const { boundaryMaskGeoJson } = await import('../src/geo.js');
+    expect(boundaryMaskGeoJson(null).features).toHaveLength(0);
+    expect(boundaryMaskGeoJson({ points: [{ lat: 0, lng: 0 }, { lat: 1, lng: 1 }] }).features).toHaveLength(0);
+  });
+
+  it('vult kleur en dekking aan met standaardwaarden', async () => {
+    const { outsideShade, DEFAULT_OUTSIDE_COLOR, DEFAULT_OUTSIDE_OPACITY } = await import('../src/types.js');
+    expect(outsideShade(null)).toEqual({ color: DEFAULT_OUTSIDE_COLOR, opacity: DEFAULT_OUTSIDE_OPACITY });
+    expect(outsideShade({ outsideColor: '#000000', outsideOpacity: 0 })).toEqual({ color: '#000000', opacity: 0 });
+    expect(outsideShade({ outsideOpacity: 3 }).opacity).toBe(1);
+  });
+});

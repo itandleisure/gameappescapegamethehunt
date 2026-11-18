@@ -3,6 +3,7 @@ import { StyleSheet } from 'react-native';
 import { WebView as RNWebView, type WebViewProps } from 'react-native-webview';
 import { colors } from '../theme';
 import { LOGO_ICON_DATA_URI } from './logo-data';
+import { boundaryMaskGeoJson } from '@hunt/engine';
 import type { GameMapProps } from './types';
 
 /**
@@ -57,6 +58,15 @@ function apply(d) {
     map.addSource('overlay', { type: 'image', url: o.url, coordinates: [[o.nw.lng, o.nw.lat], [o.se.lng, o.nw.lat], [o.se.lng, o.se.lat], [o.nw.lng, o.se.lat]] });
     map.addLayer({ id: 'overlay', type: 'raster', source: 'overlay', paint: { 'raster-opacity': 0.85 } });
   }
+  if (d.mask) {
+    // Laag buiten het speelveld, onder de grenslijn.
+    const o = d.boundary.outside;
+    if (map.getSource('outside')) map.getSource('outside').setData(d.mask);
+    else map.addSource('outside', { type: 'geojson', data: d.mask });
+    if (!map.getLayer('outside')) map.addLayer({ id: 'outside', type: 'fill', source: 'outside', paint: {} }, map.getLayer('boundary') ? 'boundary' : undefined);
+    map.setPaintProperty('outside', 'fill-color', o.color);
+    map.setPaintProperty('outside', 'fill-opacity', o.opacity);
+  } else if (map.getLayer('outside')) map.setPaintProperty('outside', 'fill-opacity', 0);
   if (d.boundary) {
     const b = { type: 'FeatureCollection', features: [] };
     const c = d.boundary.points.map((p) => [p.lng, p.lat]);
@@ -74,7 +84,8 @@ function apply(d) {
 
 export default function WebMap({ styleUrl, bounds, markers, overlay, boundary, position }: GameMapProps) {
   const ref = useRef<WebViewHandle>(null);
-  const payload = JSON.stringify({ bounds, markers, overlay, boundary, position, style: styleUrl });
+  const mask = boundary && boundary.outside.opacity > 0 ? boundaryMaskGeoJson(boundary) : null;
+  const payload = JSON.stringify({ bounds, markers, overlay, boundary, mask, position, style: styleUrl });
   // De pagina zelf blijft op de eerste stijl; wisselen gaat via window.hunt.
   const [firstStyle] = useState(styleUrl);
 

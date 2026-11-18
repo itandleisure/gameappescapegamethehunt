@@ -96,4 +96,4 @@ export function rectAround(locations: LatLng[], marginMeters = 75): LatLng[] {
   ].map(rounded);
 }
 
-export { boundaryGeoJson } from '@hunt/engine';
+export { boundaryGeoJson, boundaryMaskGeoJson } from '@hunt/engine';
