@@ -168,6 +168,8 @@ td.wrong, li.wrong { color: var(--danger); }
 .te-tabs button.active { color: var(--text); border-bottom-color: var(--text); font-weight: 600; }
 .te-tabs .count { font-size: 11px; font-weight: 700; background: var(--line); color: var(--text); border-radius: 999px; padding: 0 6px; line-height: 17px; }
 .te-body { display: grid; gap: 16px; }
+.te-translate { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: -4px 0 16px; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 10px; }
+.te-translate button { padding-top: 6px; padding-bottom: 6px; }
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 24px; margin: 0; }
 .panel-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
 .panel-head h3 { margin: 0; font-size: 17px; flex: 1; }
