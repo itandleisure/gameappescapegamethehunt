@@ -25,6 +25,26 @@ jobs:
         env:
           NEXT_TELEMETRY_DISABLED: '1'
 
+  screens:
+    name: Schermcontrole speler-app
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @hunt/player exec playwright install --with-deps chromium
+      # Alle schermen op 7 schermmaten, met grote, kleine en rare foto's.
+      - run: pnpm --filter @hunt/player screens
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: schermafbeeldingen
+          path: apps/player/screens/
+
   database:
     name: Database en toegangsregels
     runs-on: ubuntu-latest

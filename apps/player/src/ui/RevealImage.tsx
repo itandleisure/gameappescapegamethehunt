@@ -1,6 +1,7 @@
 import type { PlaygroundReveal, RevealPiece } from "@hunt/engine";
-import { Image, StyleSheet, Text, View } from "react-native";
-import { colors, radius } from "./theme";
+import { Image, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { fitImage } from "../core/photo";
+import { CONTENT_MAX_WIDTH, colors, radius, space } from "./theme";
 
 /**
  * Foto van een playground met afgedekte vakken, zoals de GPS-code van het
@@ -13,9 +14,15 @@ export function RevealImage({
   reveal: PlaygroundReveal;
   hidden: RevealPiece[];
 }) {
+  const screen = useWindowDimensions();
   const pct = (n: number, of: number) => `${(n / of) * 100}%` as const;
+  // Altijd in de eigen verhouding (de vakken rekenen in pixels van de foto), maar nooit hoger dan het scherm.
+  const box = fitImage(
+    { width: Math.max(reveal.width, 1000), height: (Math.max(reveal.width, 1000) * reveal.height) / reveal.width },
+    { width: Math.min(screen.width, CONTENT_MAX_WIDTH) - 2 * space.md, maxHeight: screen.height * 0.6 },
+  );
   return (
-    <View style={[styles.frame, { aspectRatio: reveal.width / reveal.height }]}>
+    <View style={[styles.frame, box]}>
       <Image
         source={{ uri: reveal.image }}
         style={StyleSheet.absoluteFill}
@@ -43,7 +50,7 @@ export function RevealImage({
 
 const styles = StyleSheet.create({
   frame: {
-    width: "100%",
+    alignSelf: "center",
     borderRadius: radius.md,
     overflow: "hidden",
     backgroundColor: colors.surface,
@@ -57,5 +64,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  mark: { color: colors.accent, fontSize: 28, fontWeight: "800" },
+  mark: { color: colors.accent, fontSize: 24, fontWeight: "800" },
 });

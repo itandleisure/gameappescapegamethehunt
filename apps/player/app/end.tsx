@@ -12,7 +12,7 @@ import { Banner, Body, Button, Title } from '../src/ui/components';
 import { useGame } from '../src/ui/GameProvider';
 import { LeaveGame } from '../src/ui/LeaveGame';
 import GameMap from '../src/ui/map/GameMap';
-import { colors, radius, space } from '../src/ui/theme';
+import { colors, radius, space, contentColumn } from '../src/ui/theme';
 
 /** Binnen deze afstand van het verzamelpunt telt het team als aangekomen. */
 const ARRIVED_METERS = 40;
@@ -128,7 +128,7 @@ export default function EndScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
-  content: { padding: space.md, paddingBottom: space.xl },
+  content: { padding: space.md, paddingBottom: space.xl, ...contentColumn },
   kicker: { color: colors.accent, fontWeight: '700', textTransform: 'uppercase', marginBottom: space.sm },
   meeting: { marginTop: space.lg, gap: space.sm },
   map: { height: 280, borderRadius: radius.md, overflow: 'hidden', borderWidth: 1, borderColor: colors.border },

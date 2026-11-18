@@ -1,15 +1,30 @@
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
+import { photoResize } from '../core/photo';
 
-/** Foto maken met de camera, verkleind tot 2048 px breed (scheelt data en uploadtijd). Null bij annuleren of geen toestemming. */
-export async function takePhoto(): Promise<string | null> {
+export interface Photo {
+  uri: string;
+  width: number;
+  height: number;
+}
+
+/**
+ * Foto maken met de camera, verkleind tot maximaal 2048 px aan de langste
+ * zijde (staand, liggend of panorama) en als JPEG opgeslagen: een paar
+ * honderd KB in plaats van 5 tot 15 MB, wat data en uploadtijd scheelt.
+ * Kleinere foto's worden niet vergroot. Null bij annuleren of geen toestemming.
+ */
+export async function takePhoto(): Promise<Photo | null> {
   const permission = await ImagePicker.requestCameraPermissionsAsync();
   if (!permission.granted) return null;
   const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 });
-  if (result.canceled || !result.assets[0]) return null;
-  const resized = await ImageManipulator.manipulateAsync(result.assets[0].uri, [{ resize: { width: 2048 } }], {
-    compress: 0.85,
+  const asset = result.canceled ? undefined : result.assets[0];
+  if (!asset) return null;
+  const resize = photoResize(asset.width, asset.height);
+  // Ook zonder verkleinen opnieuw opslaan: dan is het altijd een JPEG (geen HEIC van de iPhone) en staat hij rechtop.
+  const saved = await ImageManipulator.manipulateAsync(asset.uri, resize ? [{ resize }] : [], {
+    compress: 0.8,
     format: ImageManipulator.SaveFormat.JPEG,
   });
-  return resized.uri;
+  return { uri: saved.uri, width: saved.width, height: saved.height };
 }

@@ -1,20 +1,43 @@
 // Metro-configuratie. De gedeelde engine importeert met .js-extensies (zoals
 // TypeScript voor Node voorschrijft); Metro zoekt dan ook het .ts-bestand.
+const path = require('path');
 const { getDefaultConfig } = require('expo/metro-config');
 
 const config = getDefaultConfig(__dirname);
 const defaultResolve = config.resolver.resolveRequest;
 
+// Schermvoorbeeld (SCREEN_PREVIEW=1, zie scripts/screens.mjs): server, GPS,
+// kaart en camera vervangen door nepversies uit preview/. Nooit in de echte app.
+const PREVIEW = process.env.SCREEN_PREVIEW === '1';
+const SRC = path.join(__dirname, 'src') + path.sep;
+const REPLACED = /^(services[\\/](game|location|map-download|siren)|ui[\\/]camera|ui[\\/]map[\\/]GameMap)\.tsx?$/;
+
+// Pakketten die in een browser zonder scherm niet werken.
+const PREVIEW_MODULES = {
+  '@react-native-async-storage/async-storage': 'async-storage.ts',
+  'expo-keep-awake': 'keep-awake.ts',
+};
+
+function preview(result) {
+  if (!PREVIEW || result.type !== 'sourceFile' || !result.filePath.startsWith(SRC)) return result;
+  const rel = result.filePath.slice(SRC.length);
+  if (!REPLACED.test(rel)) return result;
+  return { ...result, filePath: path.join(__dirname, 'preview', rel) };
+}
+
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   const resolve = defaultResolve ?? context.resolveRequest;
+  if (PREVIEW && PREVIEW_MODULES[moduleName]) {
+    return { type: 'sourceFile', filePath: path.join(__dirname, 'preview', PREVIEW_MODULES[moduleName]) };
+  }
   if (moduleName.startsWith('.') && moduleName.endsWith('.js')) {
     try {
-      return resolve(context, moduleName.slice(0, -3), platform);
+      return preview(resolve(context, moduleName.slice(0, -3), platform));
     } catch {
       // geen .ts-bestand: gewoon het .js-bestand
     }
   }
-  return resolve(context, moduleName, platform);
+  return preview(resolve(context, moduleName, platform));
 };
 
 module.exports = config;
