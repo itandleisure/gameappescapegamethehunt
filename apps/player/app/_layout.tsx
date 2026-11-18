@@ -5,6 +5,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { APP_LANGUAGES, pickLanguage } from '../src/core/i18n';
+import { prepareMapProvider } from '../src/services/map-provider';
 import { GameProvider } from '../src/ui/GameProvider';
 import { colors } from '../src/ui/theme';
 
@@ -13,6 +14,9 @@ const deviceLanguage = pickLanguage(
   APP_LANGUAGES,
   'en',
 );
+
+// Kaartdienst kiezen voordat er een kaart getekend of gedownload wordt.
+void prepareMapProvider();
 
 export default function RootLayout() {
   return (

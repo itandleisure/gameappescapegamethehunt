@@ -53,6 +53,8 @@ npx expo start --dev-client
 
 De app draait ook in Expo Go (de test-app uit de App Store en Play Store), met twee beperkingen: de kaart is een webkaart (zelfde stijl en markeringen) en GPS werkt alleen met het scherm aan. Testversies komen via EAS Update op het kanaal `preview`.
 
+**Kaarttegels.** Met de EAS-omgevingsvariabele `EXPO_PUBLIC_MAPTILER_KEY` (op expo.dev bij het project, Environment variables, voor preview en production) komen de kaarten van MapTiler; zonder sleutel, of als MapTiler bij het opstarten niet reageert, van OpenFreeMap. De kaartstijlen zijn voor beide gelijk. De sleutel gaat mee bij een nieuwe build en bij een EAS Update.
+
 Voor een testversie zonder computer: `--profile preview` geeft een APK die je via een link installeert.
 
 ## Expo-project

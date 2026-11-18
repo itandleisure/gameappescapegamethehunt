@@ -3,7 +3,8 @@ import { StyleSheet } from 'react-native';
 import { WebView as RNWebView, type WebViewProps } from 'react-native-webview';
 import { colors } from '../theme';
 import { LOGO_ICON_DATA_URI } from './logo-data';
-import { boundaryMaskGeoJson } from '@hunt/engine';
+import { boundaryMaskGeoJson, type UrlRewrite } from '@hunt/engine';
+import { prepareMapProvider } from '../../services/map-provider';
 import type { GameMapProps } from './types';
 
 /**
@@ -18,7 +19,7 @@ const WebView = RNWebView as unknown as ComponentType<WebViewProps & { ref?: Ref
 // ES-modules, waardoor een gewone <script>-tag niets laadt en de kaart leeg bleef.
 const MAPLIBRE = 'https://unpkg.com/maplibre-gl@5.6.0/dist';
 
-function html(styleUrl: string, accent: string, dark: string) {
+function html(styleUrl: string, accent: string, dark: string, rewrites: UrlRewrite[]) {
   return `<!doctype html><html><head>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <link rel="stylesheet" href="${MAPLIBRE}/maplibre-gl.css">
@@ -38,7 +39,10 @@ html,body,#map{margin:0;height:100%;background:${dark}}
 #err{position:absolute;top:40%;left:16px;right:16px;text-align:center;color:#fff;font:14px -apple-system,sans-serif}
 </style></head><body><div id="map"></div><script>
 if (!window.maplibregl) { showError('kon niet laden (geen internet?)'); window.hunt = () => {}; throw new Error('maplibre ontbreekt'); }
-const map = new maplibregl.Map({ container: 'map', style: ${JSON.stringify(styleUrl)}, attributionControl: { compact: true } });
+// Kaartdienst: adressen omzetten naar MapTiler (zie map-provider.ts in de engine).
+const rewrites = ${JSON.stringify(rewrites)}.map((r) => [new RegExp(r.find), r.replace]);
+const transformRequest = (url) => ({ url: rewrites.reduce((u, [find, replace]) => u.replace(find, replace), url) });
+const map = new maplibregl.Map({ container: 'map', style: ${JSON.stringify(styleUrl)}, attributionControl: { compact: true }, transformRequest });
 map.on('error', (e) => showError((e && e.error && e.error.message) || 'onbekende fout'));
 let markers = [], me = null, fitted = false;
 let current = ${JSON.stringify(styleUrl)}, last = null;
@@ -93,6 +97,17 @@ export default function WebMap({ styleUrl, bounds, markers, overlay, boundary, p
     ref.current?.injectJavaScript(`window.hunt && window.hunt(${payload}); true;`);
   }, [payload]);
 
+  // Eerst de kaartdienst kiezen; de pagina neemt de omzettingen één keer mee.
+  const [rewrites, setRewrites] = useState<UrlRewrite[] | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void prepareMapProvider().then((r) => alive && setRewrites(r));
+    return () => {
+      alive = false;
+    };
+  }, []);
+  if (!rewrites) return null;
+
   return (
     <WebView
       ref={ref}
@@ -100,7 +115,7 @@ export default function WebMap({ styleUrl, bounds, markers, overlay, boundary, p
       originWhitelist={['*']}
       // Met een https-basisadres: zonder dat heeft de pagina geen eigen herkomst
       // en kan MapLibre op iOS zijn achtergrondtaak (web worker) niet starten.
-      source={{ html: html(firstStyle, colors.accent, colors.background), baseUrl: 'https://kaart.escapegamethehunt.app/' }}
+      source={{ html: html(firstStyle, colors.accent, colors.background, rewrites), baseUrl: 'https://kaart.escapegamethehunt.app/' }}
       onLoadEnd={() => ref.current?.injectJavaScript(`window.hunt && window.hunt(${payload}); true;`)}
       scrollEnabled={false}
       onError={(e) => console.warn('webkaart', e.nativeEvent.description)}
