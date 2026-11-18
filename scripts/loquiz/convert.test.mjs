@@ -16,9 +16,10 @@ test('number:range wordt getal met marge', () => {
   assert.deepEqual(answer, { type: 'number', value: 363.5, tolerance: 49.5 });
 });
 
-test('jokerteken geeft een waarschuwing', () => {
-  const { warnings } = convertAnswer({ answerType: 'text', answers: [{ text: 'ver*', correct: true }] });
-  assert.equal(warnings.length, 1);
+test('jokerteken blijft staan', () => {
+  const { answer, warnings } = convertAnswer({ answerType: 'text', answers: [{ text: 'ver*', correct: true }] });
+  assert.deepEqual(answer, { type: 'text', accepted: ['ver*'] });
+  assert.equal(warnings.length, 0);
 });
 
 test('eerste afbeelding uit media of tekst', () => {
