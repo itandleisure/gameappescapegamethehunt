@@ -150,3 +150,31 @@ export function newTranslationRows(
   }
   return out;
 }
+
+/** Hoe ver een opdracht in een taal vertaald is. */
+export type LanguageState = 'done' | 'partial' | 'none';
+
+/**
+ * Per taal: zijn alle teksten met een brontekst ook in die taal ingevuld?
+ * Een opdracht zonder brontekst telt als klaar.
+ */
+export function taskLanguageStates(
+  rows: readonly TranslationRow[],
+  task: string,
+  source: string,
+  languages: readonly string[],
+): Record<string, LanguageState> {
+  const byField = new Map<string, Map<string, string>>();
+  for (const r of rows) {
+    if (r.entity !== 'task' || r.entity_id !== task) continue;
+    if (!byField.has(r.field)) byField.set(r.field, new Map());
+    byField.get(r.field)!.set(r.lang, r.text);
+  }
+  const fields = [...byField.values()].filter((langs) => !isBlank(langs.get(source)));
+  const out: Record<string, LanguageState> = {};
+  for (const lang of languages) {
+    const filled = fields.filter((langs) => !isBlank(langs.get(lang))).length;
+    out[lang] = filled === fields.length ? 'done' : filled === 0 ? 'none' : 'partial';
+  }
+  return out;
+}

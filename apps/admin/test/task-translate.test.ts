@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { theHuntBase } from '../../../packages/engine/test/fixtures/the-hunt.js';
 import type { TranslationRow } from '../src/lib/game-model.js';
 import { taskToForm, type TaskForm } from '../src/lib/task-form.js';
-import { applyTranslations, missingPerTask, newTranslationRows, sourceLanguage, translationJob } from '../src/lib/task-translate.js';
+import { applyTranslations, missingPerTask, newTranslationRows, sourceLanguage, taskLanguageStates, translationJob } from '../src/lib/task-translate.js';
 
 const form = (patch: Partial<TaskForm> = {}): TaskForm => ({
   ...taskToForm(theHuntBase.tasks[0]!),
@@ -76,5 +76,22 @@ describe('vertalen vanuit het Nederlands', () => {
     expect(Object.fromEntries(todo)).toEqual({ a: { 'hint.0': 'Omhoog' }, b: { body: 'Tekst' } });
     const fresh = newTranslationRows(rows, 'a', { en: { 'hint.0': 'Look up' }, de: { 'hint.0': 'Nach oben', title: 'Turm!' } });
     expect(fresh).toEqual([row('a', 'hint.0', 'de', 'Nach oben')]);
+  });
+});
+
+describe('vertaalstatus per opdracht', () => {
+  it('geeft per taal klaar, deels of niets', () => {
+    const row = (entity_id: string, field: string, lang: string, text: string): TranslationRow => ({ entity: 'task', entity_id, field, lang, text });
+    const rows = [
+      row('a', 'title', 'nl', 'Toren'),
+      row('a', 'title', 'en', 'Tower'),
+      row('a', 'title', 'de', 'Turm'),
+      row('a', 'hint.0', 'nl', 'Omhoog'),
+      row('a', 'hint.0', 'en', 'Up'),
+      row('a', 'body', 'en', 'Alleen Engels'),
+      row('b', 'title', 'nl', 'Ander'),
+    ];
+    expect(taskLanguageStates(rows, 'a', 'nl', ['nl', 'en', 'de', 'es'])).toEqual({ nl: 'done', en: 'done', de: 'partial', es: 'none' });
+    expect(taskLanguageStates(rows, 'leeg', 'nl', ['en'])).toEqual({ en: 'done' });
   });
 });
