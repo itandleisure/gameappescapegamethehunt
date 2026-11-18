@@ -11,6 +11,7 @@ import {
   setCityBaseVersion,
   type BaseVersion,
 } from "@/lib/game-store";
+import { GameNav } from "@/editor/GameNav";
 import { TemplateVersions } from "@/editor/TemplateVersions";
 import { CITY_TODOS, todoState, type TodoKey } from "@/lib/city-rollout";
 import {
@@ -439,89 +440,32 @@ export default function GamePage() {
         </form>
       ) : null}
 
-      <div className="actions">
-        <button
-          onClick={() => void doPublish()}
-          disabled={busy || Boolean(legacy)}
-        >
-          {busy ? t("Bezig…") : t("Publiceren")}
-        </button>
-        {!legacy && self.game.layer !== "client" ? (
-          <Link
-            href={`/spellen/${id}/kaart`}
-            className="filebutton"
-            style={{
-              background: "transparent",
-              color: "var(--text)",
-              border: "1px solid var(--line)",
-            }}
+      <GameNav
+        id={id}
+        layer={self.game.layer}
+        legacy={Boolean(legacy)}
+        active="overzicht"
+        before={
+          <button
+            onClick={() => void doPublish()}
+            disabled={busy || Boolean(legacy)}
           >
-            {t('Kaart')}
-          </Link>
-        ) : null}
-        {!legacy ? (
-          <Link
-            href={`/spellen/${id}/overlay`}
-            className="filebutton"
-            style={{
-              background: "transparent",
-              color: "var(--text)",
-              border: "1px solid var(--line)",
-            }}
-          >
-            {t('Kaartstijl en overlay')}
-          </Link>
-        ) : null}
-        {isBase && !legacy ? (
-          <Link
-            href={`/spellen/nieuw?basis=${id}`}
-            className="filebutton"
-            style={{
-              background: "transparent",
-              color: "var(--text)",
-              border: "1px solid var(--line)",
-            }}
-          >
-            {t("Nieuwe stad uitrollen")}
-          </Link>
-        ) : null}
-        {isBase && !legacy ? (
-          <Link
-            href={`/spellen/${id}/tabbladen`}
-            className="filebutton"
-            style={{
-              background: "transparent",
-              color: "var(--text)",
-              border: "1px solid var(--line)",
-            }}
-          >
-            {t('Tabbladen')}
-          </Link>
-        ) : null}
-        {isBase && !legacy ? (
-          <Link
-            href={`/spellen/${id}/regels`}
-            className="filebutton"
-            style={{
-              background: "transparent",
-              color: "var(--text)",
-              border: "1px solid var(--line)",
-            }}
-          >
-            {t('Regels')}
-          </Link>
-        ) : null}
-        {versions[0] ? (
-          <span className="muted">
-            {t("Laatste versie: v{n} van {date}", {
-              n: versions[0].version,
-              date: new Date(versions[0].published_at).toLocaleString(locale),
-            })}
-          </span>
-        ) : (
-          <span className="muted">{t('Nog niet gepubliceerd.')}</span>
-        )}
-      </div>
+            {busy ? t("Bezig…") : t("Publiceren")}
+          </button>
+        }
+        after={
+          versions[0] ? (
+            <span className="muted">
+              {t("Laatste versie: v{n} van {date}", {
+                n: versions[0].version,
+                date: new Date(versions[0].published_at).toLocaleString(locale),
+              })}
+            </span>
+          ) : (
+            <span className="muted">{t('Nog niet gepubliceerd.')}</span>
+          )
+        }
+      />
       {notice ? <p className="notice">{notice}</p> : null}
       {errors.length > 0 ? (
         <ul className="errors">

@@ -23,6 +23,7 @@ import {
   withTimes,
 } from "@/lib/rules";
 import { supabase } from "@/lib/supabase";
+import { GameNav } from '@/editor/GameNav';
 
 interface Draft {
   id: string;
@@ -304,6 +305,7 @@ export default function RulesPage() {
         <Link href={`/spellen/${id}`}>{rows.game.slug}</Link> › {t("Regels")}
       </p>
       <h1>{t('Regels')}</h1>
+      <GameNav id={id} layer={rows.game.layer} active="regels" />
       <p className="muted">
         {t('Een regel is “als dit gebeurt, dan dat”. Elke regel vuurt één keer, op het eerste moment dat de voorwaarde waar wordt. Volgorde telt bij regels die op hetzelfde moment vuren.')}
       </p>

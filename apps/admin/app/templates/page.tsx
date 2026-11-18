@@ -268,6 +268,16 @@ export default function TemplatesPage() {
                                   <Link href={`/spellen/nieuw?basis=${tp.id}&versie=${v.version}`} className="filebutton">
                                     {t('Nieuwe stad uitrollen')}
                                   </Link>
+                                  {v.version === tp.versions[0]!.version ? (
+                                    // Bewerken gaat altijd over de werkversie, waaruit de volgende templateversie komt.
+                                    <Link
+                                      href={`/spellen/${tp.id}#versies`}
+                                      className="filebutton"
+                                      style={{ background: 'transparent', color: 'var(--text)', border: '1px solid var(--line)' }}
+                                    >
+                                      {t('Template bewerken')}
+                                    </Link>
+                                  ) : null}
                                   {removing?.id === tp.id && removing.version === v.version ? (
                                     <>
                                       <button type="button" className="danger" onClick={() => removeVersion(tp.id, v.version)} disabled={busy}>
@@ -333,7 +343,9 @@ export default function TemplatesPage() {
                       <button type="button" onClick={() => setCreating({ id: tp.id, note: '' })} disabled={busy}>
                         {t('Maak nieuwe templateversie (v{n})', { n: (tp.versions[0]?.version ?? 0) + 1 })}
                       </button>
-                      <Link href={`/spellen/${tp.id}#versies`}>{t('Template bewerken')}</Link>
+                      {tp.versions.length === 0 ? (
+                        <Link href={`/spellen/${tp.id}#versies`}>{t('Template bewerken')}</Link>
+                      ) : null}
                     </div>
                   )}
                 </section>

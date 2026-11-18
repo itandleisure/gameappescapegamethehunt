@@ -15,6 +15,7 @@ import { gameFieldEditable, imageCorners } from '@/lib/map-settings';
 import { loadMaplibre } from '@/lib/maplibre';
 import { supabase } from '@/lib/supabase';
 import { tx } from '@/lib/text';
+import { GameNav } from '@/editor/GameNav';
 
 type Changes = Record<string, TaskLocation>; // sleutel: `${taskKey}|${track ?? ''}`
 
@@ -339,6 +340,7 @@ export default function MapPage() {
         <Link href="/spellen">{t('Spellen')}</Link> › <Link href={`/spellen/${id}`}>{self.game.slug}</Link> › {t('Kaart')}
       </p>
       <h1>{t('Locaties op de kaart')}</h1>
+      <GameNav id={id} layer={self.game.layer} active="kaart" />
       <p className="muted">
         {t('Sleep een pin naar de juiste plek. Elke track heeft een eigen kleur; oranje is een vaste locatie voor alle tracks. Grijze pinnen mogen hier niet worden aangepast.')}{' '}
         {self.game.layer === 'client' ? t('Een klantvariant past geen locaties aan.') : ''}
