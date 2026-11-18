@@ -1,6 +1,21 @@
 'use client';
-import { DEFAULT_BOUNDARY_COLOR, DEFAULT_MAP_SOURCE, outsideShade, type GamePackage, type LatLng, type PlayBoundary, type TaskLocation } from '@hunt/engine';
-import type { GeoJSONSource, Map as MlMap, MapMouseEvent, Marker } from 'maplibre-gl';
+import {
+  circlesGeoJson,
+  DEFAULT_BOUNDARY_COLOR,
+  DEFAULT_MAP_SOURCE,
+  DEFAULT_MEETING_RADIUS,
+  MAP_STYLES,
+  outsideShade,
+  type GamePackage,
+  type LatLng,
+  type Layer,
+  type MapOverlay,
+  type MapSource,
+  type PlayBoundary,
+  type TaskLocation,
+  type Text,
+} from '@hunt/engine';
+import type { GeoJSONSource, ImageSource, Map as MlMap, MapMouseEvent, Marker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -8,14 +23,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { bendSegment, boundaryGeoJson, boundaryMaskGeoJson, insertPoint, movePoint, rectAround, removePoint, segmentHandle, straightenSegment } from '@/lib/boundary';
 import type { LayerRows } from '@/lib/game-model';
 import { composeChain, loadChain } from '@/lib/game-store';
-import { t as tr } from '@/lib/i18n';
+import { t as tr, tKey } from '@/lib/i18n';
 import { useT } from '@/lib/language';
 import { allPins, circle, pinsFor, trackColor, trackCount, type Pin, type TrackChoice } from '@/lib/map-edit';
-import { gameFieldEditable, imageCorners } from '@/lib/map-settings';
+import { gameFieldEditable, imageCorners, ownGameField, type MapGameField } from '@/lib/map-settings';
 import { loadMaplibre } from '@/lib/maplibre';
 import { supabase } from '@/lib/supabase';
 import { tx } from '@/lib/text';
 import { GameNav } from '@/editor/GameNav';
+
+/** Spelvelden die deze pagina naast de pinnen en de grens bewaart. */
+type SettingField = Exclude<MapGameField, 'boundary'>;
 
 type Changes = Record<string, TaskLocation>; // sleutel: `${taskKey}|${track ?? ''}`
 
@@ -44,10 +62,22 @@ export default function MapPage() {
   const [boundary, setBoundary] = useState<PlayBoundary | null>(null);
   const [boundaryDirty, setBoundaryDirty] = useState(false);
   const [drawing, setDrawing] = useState(false);
-  /** Overlay en speelveldgrens onder de pinnen tonen. */
+  /** Speelveldgrens (en een eventuele oude overlay) onder de pinnen tonen. */
   const [showOverlay, setShowOverlay] = useState(true);
   const drawingRef = useRef(false);
   const vertexMarkers = useRef<Marker[]>([]);
+  /** Kaartstijl, verzamelpunt en een eventuele oude overlay. */
+  const [mapSource, setMapSource] = useState<MapSource | null>(null);
+  const [overlay, setOverlay] = useState<MapOverlay | null>(null);
+  const [meeting, setMeeting] = useState<LatLng | null>(null);
+  const [meetingText, setMeetingText] = useState<Text>({});
+  const [meetingRadius, setMeetingRadius] = useState(DEFAULT_MEETING_RADIUS);
+  const [fieldsDirty, setFieldsDirty] = useState<Set<SettingField>>(new Set());
+  /** Welke lagen (stad, klant) een veld mogen aanpassen; alleen in het basisspel in te stellen. */
+  const [allowed, setAllowed] = useState<Record<MapGameField, Layer[]>>({ map: [], mapOverlay: [], meetingPoint: [], boundary: [] });
+  const [allowedDirty, setAllowedDirty] = useState(false);
+  const shownStyle = useRef<string | null>(null);
+  const meetingMarker = useRef<Marker | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -58,6 +88,19 @@ export default function MapPage() {
       setChanges({});
       setBoundary(g.boundary ?? null);
       setBoundaryDirty(false);
+      setMapSource(g.map ?? null);
+      setOverlay(g.mapOverlay ?? null);
+      setMeeting(g.meetingPoint ? { lat: g.meetingPoint.lat, lng: g.meetingPoint.lng } : null);
+      setMeetingText(g.meetingPoint?.text ?? {});
+      setMeetingRadius(g.meetingPoint?.radius ?? DEFAULT_MEETING_RADIUS);
+      setFieldsDirty(new Set());
+      const fields: MapGameField[] = ['map', 'mapOverlay', 'meetingPoint', 'boundary'];
+      setAllowed(
+        Object.fromEntries(
+          fields.map((f) => [f, c[0]!.overridable.find((o) => o.task_id === null && o.field === f)?.layers.filter((l) => l !== 'base') ?? []]),
+        ) as Record<MapGameField, Layer[]>,
+      );
+      setAllowedDirty(false);
     } catch (err) {
       setErrors([err instanceof Error ? err.message : String(err)]);
     }
@@ -95,39 +138,21 @@ export default function MapPage() {
     void loadMaplibre().then(({ Map }) => {
       if (cancelled || !container.current) return;
       const located = game.tasks.flatMap((tk) => [tk.location, ...Object.values(tk.trackLocations ?? {})]).filter(Boolean) as TaskLocation[];
-      const first = located[0] ?? { lat: 52.37, lng: 4.89 };
+      const first = located[0] ?? game.meetingPoint ?? { lat: 52.37, lng: 4.89 };
       const m = new Map({
         container: container.current,
         style: game.map?.styleUrl ?? DEFAULT_MAP_SOURCE.styleUrl,
         center: [first.lng, first.lat],
         zoom: 14,
       });
+      shownStyle.current = game.map?.styleUrl ?? DEFAULT_MAP_SOURCE.styleUrl;
       m.on('load', () => {
         if (located.length > 1) {
           const lats = located.map((l) => l.lat);
           const lngs = located.map((l) => l.lng);
           m.fitBounds([[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]], { padding: 60, maxZoom: 17 });
         }
-        // Overlay onder alles, zodat de pinnen erboven te slepen blijven.
-        const overlay = game.mapOverlay;
-        if (overlay && /^https?:/.test(overlay.image)) {
-          m.addSource('overlay', { type: 'image', url: overlay.image, coordinates: imageCorners(overlay.bounds) });
-          m.addLayer({ id: 'overlay', type: 'raster', source: 'overlay', paint: { 'raster-opacity': 0.85 } });
-        }
-        // Grijze (of gekleurde) laag over alles buiten het speelveld.
-        m.addSource('outside', { type: 'geojson', data: boundaryMaskGeoJson(null) });
-        m.addLayer({ id: 'outside', type: 'fill', source: 'outside', paint: { 'fill-color': outsideShade(null).color, 'fill-opacity': 0 } });
-        m.addSource('radius', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-        m.addLayer({ id: 'radius-fill', type: 'fill', source: 'radius', paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.15 } });
-        m.addLayer({ id: 'radius-line', type: 'line', source: 'radius', paint: { 'line-color': ['get', 'color'], 'line-width': 1.5 } });
-        m.addSource('boundary', { type: 'geojson', data: boundaryGeoJson(null) });
-        m.addLayer({
-          id: 'boundary',
-          type: 'line',
-          source: 'boundary',
-          layout: { 'line-join': 'round' },
-          paint: { 'line-color': DEFAULT_BOUNDARY_COLOR, 'line-width': 3 },
-        });
+        addLayers(m);
         // Klikken op de kaart voegt een punt aan de grens toe, alleen in tekenmodus.
         m.on('click', (e: MapMouseEvent) => {
           if (!drawingRef.current) return;
@@ -145,6 +170,96 @@ export default function MapPage() {
       cancelled = true;
     };
   }, [game]);
+
+  // Andere kaartstijl gekozen: stijl wisselen, daarna de eigen lagen er weer op.
+  useEffect(() => {
+    const m = map.current;
+    const url = mapSource?.styleUrl ?? DEFAULT_MAP_SOURCE.styleUrl;
+    if (!m || !ready || shownStyle.current === url) return;
+    shownStyle.current = url;
+    m.setStyle(url, { diff: false });
+    m.once('style.load', () => {
+      addLayers(m);
+      setReady((n) => n + 1);
+    });
+  }, [mapSource, ready]);
+
+  // Oude overlay-afbeelding tonen, of weghalen.
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready) return;
+    const url = overlay && /^https?:/.test(overlay.image) ? overlay.image : null;
+    const source = m.getSource('overlay') as ImageSource | undefined;
+    if (!url) {
+      if (m.getLayer('overlay')) m.removeLayer('overlay');
+      if (source) m.removeSource('overlay');
+      return;
+    }
+    if (source) return;
+    // Onder alles, zodat de pinnen erboven te slepen blijven.
+    const below = m.getLayer('outside') ? 'outside' : undefined;
+    m.addSource('overlay', { type: 'image', url, coordinates: imageCorners(overlay!.bounds) });
+    m.addLayer({ id: 'overlay', type: 'raster', source: 'overlay', paint: { 'raster-opacity': 0.85 } }, below);
+    m.setLayoutProperty('overlay', 'visibility', showOverlay ? 'visible' : 'none');
+  }, [overlay, ready, showOverlay]);
+
+  // Cirkel om het verzamelpunt: daarbinnen is een team er.
+  const drawMeetingCircle = useCallback(
+    (at: LatLng | null) => {
+      const data = circlesGeoJson(at ? [{ ...at, radius: meetingRadius, color: '#ea580c' }] : []);
+      (map.current?.getSource('meeting-radius') as GeoJSONSource | undefined)?.setData(data as never);
+    },
+    [meetingRadius],
+  );
+  useEffect(() => {
+    if (ready) drawMeetingCircle(meeting);
+  }, [drawMeetingCircle, meeting, ready]);
+
+  // Verzamelpunt als versleepbare markering.
+  const canMeeting = chain ? gameFieldEditable(chain, 'meetingPoint') : false;
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready) return;
+    void loadMaplibre().then(({ Marker: MarkerClass }) => {
+      meetingMarker.current?.remove();
+      meetingMarker.current = null;
+      if (!meeting) return;
+      const el = document.createElement('div');
+      el.className = `pin meeting${canMeeting ? ' editable' : ''}`;
+      el.title = t('Verzamelpunt');
+      const marker = new MarkerClass({ element: el, draggable: canMeeting }).setLngLat([meeting.lng, meeting.lat]).addTo(m);
+      marker.on('drag', () => drawMeetingCircle(marker.getLngLat()));
+      marker.on('dragend', () => {
+        const { lat, lng } = marker.getLngLat();
+        setMeeting({ lat: round(lat), lng: round(lng) });
+        touchField('meetingPoint');
+      });
+      meetingMarker.current = marker;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [meeting, ready, canMeeting, drawMeetingCircle, t]);
+
+  function addLayers(m: MlMap) {
+        // Grijze (of gekleurde) laag over alles buiten het speelveld.
+        m.addSource('outside', { type: 'geojson', data: boundaryMaskGeoJson(null) });
+        m.addLayer({ id: 'outside', type: 'fill', source: 'outside', paint: { 'fill-color': outsideShade(null).color, 'fill-opacity': 0 } });
+        m.addSource('radius', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+        m.addLayer({ id: 'radius-fill', type: 'fill', source: 'radius', paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.15 } });
+        m.addLayer({ id: 'radius-line', type: 'line', source: 'radius', paint: { 'line-color': ['get', 'color'], 'line-width': 1.5 } });
+        m.addSource('boundary', { type: 'geojson', data: boundaryGeoJson(null) });
+        m.addLayer({
+          id: 'boundary',
+          type: 'line',
+          source: 'boundary',
+          layout: { 'line-join': 'round' },
+          paint: { 'line-color': DEFAULT_BOUNDARY_COLOR, 'line-width': 3 },
+        });
+        m.addSource('meeting-radius', { type: 'geojson', data: circlesGeoJson([]) as never });
+        m.addLayer({ id: 'meeting-radius-fill', type: 'fill', source: 'meeting-radius', paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.15 } });
+        m.addLayer({ id: 'meeting-radius-line', type: 'line', source: 'meeting-radius', paint: { 'line-color': ['get', 'color'], 'line-width': 2 } });
+  }
+
+  const touchField = (field: SettingField) => setFieldsDirty((d) => new Set(d).add(field));
 
   // Pinnen en cirkels tekenen.
   useEffect(() => {
@@ -267,8 +382,15 @@ export default function MapPage() {
   const self = chain[chain.length - 1]!;
   const tracks = trackCount(game);
   const current = pins.find((p) => pinKey(p) === selected) ?? null;
-  const dirty = Object.keys(changes).length + (boundaryDirty ? 1 : 0);
+  const isBase = self.game.layer === 'base';
+  const dirty = Object.keys(changes).length + (boundaryDirty ? 1 : 0) + fieldsDirty.size + (allowedDirty ? 1 : 0);
   const canBoundary = gameFieldEditable(chain, 'boundary');
+  const canStyle = gameFieldEditable(chain, 'map');
+  const canOverlay = gameFieldEditable(chain, 'mapOverlay');
+  const mapCenter = () => {
+    const c = map.current?.getCenter();
+    return c ? { lat: round(c.lat), lng: round(c.lng) } : null;
+  };
   const allLocations = (): LatLng[] =>
     game.tasks.flatMap((tk) => [tk.location, ...Object.values(tk.trackLocations ?? {})]).filter((l): l is TaskLocation => !!l);
   const editBoundary = (points: LatLng[]) => {
@@ -294,23 +416,43 @@ export default function MapPage() {
     setNotice(null);
     const db = supabase();
     const idByKey = new Map(chain[0]!.tasks.map((tk) => [tk.key, tk.id]));
+    const must = (r: { error: { message: string } | null }) => {
+      if (r.error) throw new Error(r.error.message);
+    };
     try {
-      if (boundaryDirty) {
-        if (boundary && boundary.points.length < 3) throw new Error(t('De speelveldgrens heeft minstens 3 punten nodig, of wis hem helemaal.'));
-        const value = boundary && boundary.points.length ? boundary : null;
-        if (self.game.layer === 'base') {
+      if (boundaryDirty && boundary && boundary.points.length < 3) throw new Error(t('De speelveldgrens heeft minstens 3 punten nodig, of wis hem helemaal.'));
+      // Velden van het spel zelf: in het basisspel in de instellingen, in een variant als aanpassing.
+      const values: Partial<Record<MapGameField, unknown>> = {};
+      if (boundaryDirty) values.boundary = boundary && boundary.points.length ? boundary : null;
+      if (fieldsDirty.has('map')) values.map = mapSource;
+      if (fieldsDirty.has('mapOverlay')) values.mapOverlay = overlay;
+      if (fieldsDirty.has('meetingPoint')) {
+        values.meetingPoint = meeting ? { ...meeting, radius: meetingRadius, ...(isBase ? {} : { text: cleanText(meetingText) }) } : null;
+      }
+      if (isBase) {
+        if (Object.keys(values).length) {
           const settings: Record<string, unknown> = { ...self.game.settings };
-          if (value) settings.boundary = value;
-          else delete settings.boundary;
-          const r = await db.from('games').update({ settings }).eq('id', id);
-          if (r.error) throw new Error(r.error.message);
-        } else {
-          const d = await db.from('overrides').delete().eq('game_id', id).is('task_id', null).eq('field', 'boundary');
-          if (d.error) throw new Error(d.error.message);
-          if (value) {
-            const r = await db.from('overrides').insert({ game_id: id, task_id: null, field: 'boundary', value });
-            if (r.error) throw new Error(r.error.message);
+          for (const [field, value] of Object.entries(values)) {
+            if (value) settings[field] = value;
+            else delete settings[field];
           }
+          must(await db.from('games').update({ settings }).eq('id', id));
+        }
+        if (fieldsDirty.has('meetingPoint')) {
+          must(await db.from('translations').delete().eq('game_id', id).eq('entity', 'game').eq('entity_id', '').eq('field', 'meetingPoint'));
+          const rows = meeting ? textRows(meetingText) : [];
+          if (rows.length) must(await db.from('translations').insert(rows.map((r) => ({ ...r, game_id: id }))));
+        }
+        if (allowedDirty) {
+          for (const [field, layers] of Object.entries(allowed)) {
+            must(await db.from('overridable_fields').delete().eq('game_id', id).is('task_id', null).eq('field', field));
+            if (layers.length) must(await db.from('overridable_fields').insert({ game_id: id, task_id: null, field, layers }));
+          }
+        }
+      } else {
+        for (const [field, value] of Object.entries(values)) {
+          must(await db.from('overrides').delete().eq('game_id', id).is('task_id', null).eq('field', field));
+          if (value) must(await db.from('overrides').insert({ game_id: id, task_id: null, field, value }));
         }
       }
       for (const [k, loc] of Object.entries(changes)) {
@@ -326,6 +468,22 @@ export default function MapPage() {
       }
       setNotice(t('Opgeslagen. Publiceer het spel om het in de app te gebruiken.'));
       setDrawing(false);
+      await load();
+    } catch (err) {
+      setErrors([err instanceof Error ? err.message : String(err)]);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const reset = async (field: MapGameField) => {
+    // Een variant valt terug op de waarde uit de laag erboven.
+    setBusy(true);
+    setErrors([]);
+    try {
+      const r = await supabase().from('overrides').delete().eq('game_id', id).is('task_id', null).eq('field', field);
+      if (r.error) throw new Error(r.error.message);
+      setNotice(t('Teruggezet naar de waarde van de laag erboven.'));
       await load();
     } catch (err) {
       setErrors([err instanceof Error ? err.message : String(err)]);
@@ -362,9 +520,36 @@ export default function MapPage() {
             ))}
           </select>
         </div>
+        {canStyle ? (
+          <div style={{ flex: '0 1 220px' }}>
+            <label htmlFor="style">{t('Kaartstijl')}</label>
+            <select
+              id="style"
+              value={MAP_STYLES.find((s) => s.source.styleUrl === (mapSource?.styleUrl ?? DEFAULT_MAP_SOURCE.styleUrl))?.id ?? 'eigen'}
+              onChange={(e) => {
+                const style = MAP_STYLES.find((s) => s.id === e.target.value);
+                if (!style) return;
+                setMapSource(style.id === MAP_STYLES[0]!.id ? null : style.source);
+                touchField('map');
+              }}
+            >
+              {MAP_STYLES.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {t(s.name)}
+                </option>
+              ))}
+              {mapSource && !MAP_STYLES.some((s) => s.source.styleUrl === mapSource.styleUrl) ? <option value="eigen">{t('Eigen stijl')}</option> : null}
+            </select>
+            {!isBase && ownGameField(chain, 'map') ? (
+              <button className="link" onClick={() => void reset('map')} disabled={busy}>
+                {t('Terug naar kaartstijl van de laag erboven')}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
         <label className="check" style={{ flex: '0 1 auto', margin: 0 }}>
           <input type="checkbox" checked={showOverlay} onChange={(e) => setShowOverlay(e.target.checked)} />
-          {t('Overlay en speelveldgrens tonen')}
+          {t('Speelveldgrens tonen')}
         </label>
         <div className="actions" style={{ flex: '1 1 auto', justifyContent: 'flex-end' }}>
           <button onClick={() => void save()} disabled={busy || dirty === 0}>
@@ -496,6 +681,100 @@ export default function MapPage() {
           ) : (
             <p className="muted small">{t('Niet aan te passen in deze laag.')}</p>
           )}
+          <h2>{t('Verzamelpunt')}</h2>
+          <p className="muted small">{t('Waar teams aan het begin en einde samenkomen. Sleep het oranje icoon om het te verplaatsen.')}</p>
+          {!canMeeting ? (
+            <p className="muted small">{t('Het verzamelpunt is in deze laag niet aan te passen.')}</p>
+          ) : (
+            <>
+              {meeting ? (
+                <p>
+                  {meeting.lat.toFixed(6)}, {meeting.lng.toFixed(6)}
+                </p>
+              ) : (
+                <p className="muted">{t('Nog geen verzamelpunt.')}</p>
+              )}
+              <div className="actions">
+                <button
+                  className="secondary"
+                  onClick={() => {
+                    const c = mapCenter();
+                    if (!c) return;
+                    setMeeting(c);
+                    touchField('meetingPoint');
+                  }}
+                >
+                  {meeting ? t('Naar midden van de kaart') : t('Plaatsen in het midden van de kaart')}
+                </button>
+                {meeting ? (
+                  <button
+                    className="link"
+                    onClick={() => {
+                      setMeeting(null);
+                      touchField('meetingPoint');
+                    }}
+                  >
+                    {t('Weghalen')}
+                  </button>
+                ) : null}
+              </div>
+              {meeting ? (
+                <div>
+                  <label htmlFor="mp-radius">{t('Straal van de cirkel (meter)')}</label>
+                  <input
+                    id="mp-radius"
+                    type="number"
+                    min={1}
+                    max={1000}
+                    value={meetingRadius}
+                    onChange={(e) => {
+                      const r = Math.round(Number(e.target.value));
+                      if (!(r > 0 && r <= 1000)) return;
+                      setMeetingRadius(r);
+                      touchField('meetingPoint');
+                    }}
+                  />
+                  <p className="muted small">{t('Binnen deze cirkel is een team bij het verzamelpunt.')}</p>
+                </div>
+              ) : null}
+              {meeting
+                ? game.languages.map((lang) => (
+                    <div key={lang}>
+                      <label htmlFor={`mp-${lang}`}>{t('Omschrijving ({lang})', { lang: lang.toUpperCase() })}</label>
+                      <input
+                        id={`mp-${lang}`}
+                        value={meetingText[lang] ?? ''}
+                        placeholder={lang === 'nl' ? 'Bij de ingang van de Oldehove' : ''}
+                        onChange={(e) => {
+                          setMeetingText({ ...meetingText, [lang]: e.target.value });
+                          touchField('meetingPoint');
+                        }}
+                      />
+                    </div>
+                  ))
+                : null}
+              {!isBase && ownGameField(chain, 'meetingPoint') ? (
+                <button className="link" onClick={() => void reset('meetingPoint')} disabled={busy}>
+                  {t('Terug naar verzamelpunt van de laag erboven')}
+                </button>
+              ) : null}
+            </>
+          )}
+          {overlay && canOverlay ? (
+            <>
+              <h2>{t('Oude overlay')}</h2>
+              <p className="muted small">{t('Dit spel heeft nog een kaartafbeelding van vroeger. Teken het speelveld liever op de kaart; deze afbeelding kun je weghalen.')}</p>
+              <button
+                className="link"
+                onClick={() => {
+                  setOverlay(null);
+                  touchField('mapOverlay');
+                }}
+              >
+                {t('Weghalen')}
+              </button>
+            </>
+          ) : null}
           <h2>{t('Opdrachten')}</h2>
           {view === 'all' ? (
             <p className="muted">{t('Opdrachten zonder locatie plaats je door hierboven één track of de vaste locaties te kiezen.')}</p>
@@ -515,6 +794,48 @@ export default function MapPage() {
                 </li>
               ))}
           </ul>
+          {isBase ? (
+            <>
+              <h2>{t('Aanpassen in varianten')}</h2>
+              <p className="muted small">{t('Mag een stad of klant hier een eigen versie van maken?')}</p>
+              <table>
+                <thead>
+                  <tr>
+                    <th />
+                    <th>{t('Stad')}</th>
+                    <th>{t('Klant')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(
+                    [
+                      ['map', tKey('Kaartstijl')],
+                      ['meetingPoint', tKey('Verzamelpunt')],
+                      ['boundary', tKey('Speelveldgrens (rode lijn)')],
+                    ] as const
+                  ).map(([field, label]) => (
+                    <tr key={field}>
+                      <td>{t(label)}</td>
+                      {(['city', 'client'] as const).map((layer) => (
+                        <td key={layer}>
+                          <input
+                            type="checkbox"
+                            aria-label={`${t(label)} ${layer === 'city' ? t('stad') : t('klant')}`}
+                            checked={allowed[field].includes(layer)}
+                            onChange={(e) => {
+                              const next = e.target.checked ? [...allowed[field], layer] : allowed[field].filter((l) => l !== layer);
+                              setAllowed({ ...allowed, [field]: next });
+                              setAllowedDirty(true);
+                            }}
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          ) : null}
         </aside>
       </div>
     </>
@@ -523,4 +844,16 @@ export default function MapPage() {
 
 function round(n: number) {
   return Math.round(n * 1e6) / 1e6;
+}
+
+function cleanText(text: Text): Text {
+  return Object.fromEntries(
+    Object.entries(text)
+      .filter((e): e is [string, string] => typeof e[1] === 'string' && e[1].trim() !== '')
+      .map(([k, v]) => [k, v.trim()]),
+  ) as Text;
+}
+
+function textRows(text: Text) {
+  return Object.entries(cleanText(text)).map(([lang, tk]) => ({ entity: 'game' as const, entity_id: '', field: 'meetingPoint', lang, text: tk }));
 }
