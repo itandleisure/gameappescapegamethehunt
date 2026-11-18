@@ -445,16 +445,17 @@ export default function GamePage() {
         layer={self.game.layer}
         legacy={Boolean(legacy)}
         active="overzicht"
+        // Een template legt zijn versies vast met de templateversies hieronder;
+        // publiceren (een versie waar hunts mee spelen) hoort bij een stad of klant.
         before={
-          <button
-            onClick={() => void doPublish()}
-            disabled={busy || Boolean(legacy)}
-          >
-            {busy ? t("Bezig…") : t("Publiceren")}
-          </button>
+          isBase ? null : (
+            <button onClick={() => void doPublish()} disabled={busy}>
+              {busy ? t("Bezig…") : t("Publiceren")}
+            </button>
+          )
         }
         after={
-          versions[0] ? (
+          isBase ? null : versions[0] ? (
             <span className="muted">
               {t("Laatste versie: v{n} van {date}", {
                 n: versions[0].version,
