@@ -96,3 +96,44 @@ export function parseRule(id: string, label: string, whenText: string, thenText:
   if (label.trim()) rule.label = label.trim();
   return { rule };
 }
+
+/** Een tijd in een voorwaarde: minuten na de start, of seconden na een opdracht. */
+export type TimeSetting = { kind: 'elapsed'; minutes: number } | { kind: 'afterCompleted'; task: string; seconds: number };
+
+/** Alle tijden in een voorwaarde, in vaste volgorde (diepte eerst). */
+export function timeSettings(c: Condition): TimeSetting[] {
+  switch (c.kind) {
+    case 'elapsed':
+      return [{ kind: 'elapsed', minutes: c.minutes }];
+    case 'afterCompleted':
+      return [{ kind: 'afterCompleted', task: c.task, seconds: c.seconds }];
+    case 'and':
+    case 'or':
+      return c.conditions.flatMap(timeSettings);
+    case 'not':
+      return timeSettings(c.condition);
+    default:
+      return [];
+  }
+}
+
+/** Dezelfde voorwaarde met nieuwe tijden (in de volgorde van timeSettings). */
+export function withTimes(c: Condition, values: number[]): Condition {
+  let i = 0;
+  const walk = (x: Condition): Condition => {
+    switch (x.kind) {
+      case 'elapsed':
+        return { ...x, minutes: values[i++] ?? x.minutes };
+      case 'afterCompleted':
+        return { ...x, seconds: values[i++] ?? x.seconds };
+      case 'and':
+      case 'or':
+        return { ...x, conditions: x.conditions.map(walk) };
+      case 'not':
+        return { ...x, condition: walk(x.condition) };
+      default:
+        return x;
+    }
+  };
+  return walk(c);
+}

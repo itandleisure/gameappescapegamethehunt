@@ -10,7 +10,7 @@ import {
   type TranslationRow,
 } from "@/lib/game-model";
 import { loadChain } from "@/lib/game-store";
-import { describeRule, parseRule } from "@/lib/rules";
+import { describeRule, parseRule, timeSettings, withTimes } from "@/lib/rules";
 import { supabase } from "@/lib/supabase";
 
 interface Draft {
@@ -30,6 +30,8 @@ export default function RulesPage() {
   const [errors, setErrors] = useState<string[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  /** Gewijzigde tijden per regel, als tekst uit de invoervelden. */
+  const [times, setTimes] = useState<Record<string, string[]>>({});
 
   const load = useCallback(async () => {
     try {
@@ -86,6 +88,26 @@ export default function RulesPage() {
       setBusy(false);
     }
   };
+
+  const timed = base.rules.filter((r) => timeSettings(r.when).length > 0);
+  const saveTimes = () =>
+    run(async () => {
+      const changed = Object.entries(times);
+      const updated = base.rules.map((r) => {
+        const values = times[r.id];
+        if (!values) return r;
+        const numbers = values.map((v) => Number(v.replace(",", ".")));
+        if (numbers.some((n) => !Number.isFinite(n) || n < 0))
+          throw new Error(`Regel ${r.label ?? r.id}: vul tijden in als getal van 0 of meer.`);
+        return { ...r, when: withTimes(r.when, numbers) };
+      });
+      composeGame({ ...base, rules: updated }, [], { id: "proef", version: 0 });
+      for (const [key] of changed) {
+        const rule = updated.find((r) => r.id === key)!;
+        must(await db.from("rules").update({ condition: rule.when }).eq("game_id", id).eq("key", key));
+      }
+      setTimes({});
+    }, "Tijden opgeslagen. Publiceer het spel om ze in de app te gebruiken.");
 
   const saveDraft = () =>
     run(async () => {
@@ -260,6 +282,48 @@ export default function RulesPage() {
             <li key={i}>{e}</li>
           ))}
         </ul>
+      ) : null}
+
+      {timed.length > 0 ? (
+        <section className="card" style={{ marginBottom: 16 }}>
+          <h2 style={{ marginTop: 0 }}>Tijden</h2>
+          <p className="muted">
+            Regels die op tijd gaan. Pas de minuten of seconden aan en sla op. In een testsessie kun je in de app de tijd
+            vooruitzetten, zodat je niet hoeft te wachten.
+          </p>
+          <table>
+            <tbody>
+              {timed.map((r) => {
+                const settings = timeSettings(r.when);
+                const values = times[r.id] ?? settings.map((s) => String(s.kind === "elapsed" ? s.minutes : s.seconds));
+                return (
+                  <tr key={r.id}>
+                    <td>{r.label ?? r.id}</td>
+                    <td>
+                      {settings.map((s, i) => (
+                        <label key={i} style={{ display: "inline-flex", gap: 6, alignItems: "center", marginRight: 12 }}>
+                          <input
+                            style={{ width: 80 }}
+                            inputMode="decimal"
+                            value={values[i]}
+                            aria-label={s.kind === "elapsed" ? "minuten na de start" : `seconden na ${s.task}`}
+                            onChange={(e) => setTimes({ ...times, [r.id]: values.map((v, j) => (j === i ? e.target.value : v)) })}
+                          />
+                          {s.kind === "elapsed" ? "min na de start" : `sec na ${s.task}`}
+                        </label>
+                      ))}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div className="actions">
+            <button onClick={() => void saveTimes()} disabled={busy || Object.keys(times).length === 0}>
+              {Object.keys(times).length ? "Tijden opslaan" : "Opgeslagen"}
+            </button>
+          </div>
+        </section>
       ) : null}
 
       {draft?.isNew ? (

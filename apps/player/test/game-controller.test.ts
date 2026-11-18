@@ -100,6 +100,23 @@ describe('GameController', () => {
     expect(second.snapshot().teamPhotoNeeded).toBe(false);
   });
 
+  it('zet in een testsessie de klok vooruit, zodat regels op tijd meteen gebeuren', async () => {
+    const c = await GameController.join(s.deps, 'LWD001', 'Haastig', 'nl', '0612345678');
+    await c.start();
+    const second = game.rules.find((r) => r.id === 'tijdlijn-10')!;
+    const shown = (second.then.find((a) => a.kind === 'show') as { select: { task: string } }).select.task;
+    expect(c.snapshot().state!.tasks[shown]!.status).toBe('hidden');
+    expect(await c.skipTime(10)).toBe(true);
+    expect(c.snapshot().state!.tasks[shown]!.status).toBe('visible');
+  });
+
+  it('zet buiten een testsessie de klok niet vooruit', async () => {
+    s.backend.testMode = false;
+    const c = await GameController.join(s.deps, 'LWD001', 'Eerlijk', 'nl', '0612345678');
+    await c.start();
+    expect(await c.skipTime(10)).toBe(false);
+  });
+
   it('opent in een testsessie een opdracht zonder GPS, en anders niet', async () => {
     const c = await GameController.join(s.deps, 'LWD001', 'Testers', 'nl', '06 12345678');
     await c.start();

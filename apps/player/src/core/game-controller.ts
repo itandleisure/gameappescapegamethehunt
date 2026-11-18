@@ -55,6 +55,8 @@ interface Saved {
   clockOffset: number;
   /** 'needed' na aanmelden op deze telefoon, 'taken' zodra de teamfoto er is. */
   teamPhoto?: 'needed' | 'taken';
+  /** Alleen in een testsessie: zoveel ms is de klok van het spel vooruitgezet. */
+  testSkipMs?: number;
 }
 
 type Listener = (snapshot: Snapshot) => void;
@@ -168,7 +170,7 @@ export class GameController {
   }
 
   snapshot(): Snapshot {
-    const now = this.clock.now();
+    const now = this.now();
     const ctx = this.context;
     return {
       team: this.data.team,
@@ -198,7 +200,7 @@ export class GameController {
   async onLocation(fix: GpsFix): Promise<string[]> {
     const ctx = this.context;
     if (!ctx) return [];
-    const serverFix = { ...fix, at: this.clock.toServer(fix.at) };
+    const serverFix = { ...fix, at: this.clock.toServer(fix.at) + (this.data.testSkipMs ?? 0) };
     this.uploader.add(serverFix);
 
     const state = computeState(this.game, ctx, this.data.events, serverFix.at);
@@ -220,7 +222,7 @@ export class GameController {
   async simulateArrival(task: string): Promise<boolean> {
     const ctx = this.context;
     if (!ctx || !this.data.loaded.session.testMode) return false;
-    const state = computeState(this.game, ctx, this.data.events, this.clock.now());
+    const state = computeState(this.game, ctx, this.data.events, this.now());
     const target = reachableTargets(this.game, ctx, state).find((x) => x.task === task);
     if (!target) return false;
     const { lat, lng } = target.location;
@@ -233,7 +235,7 @@ export class GameController {
   testTargets(): string[] {
     const ctx = this.context;
     if (!ctx || !this.data.loaded.session.testMode) return [];
-    const state = computeState(this.game, ctx, this.data.events, this.clock.now());
+    const state = computeState(this.game, ctx, this.data.events, this.now());
     return reachableTargets(this.game, ctx, state).map((x) => x.task);
   }
 
@@ -254,7 +256,7 @@ export class GameController {
   async decline(task: string): Promise<number> {
     const seconds = this.game.gps.declineSeconds ?? 20;
     this.record({ type: 'declined', task });
-    this.snoozed.set(task, this.clock.now() + seconds * 1000);
+    this.snoozed.set(task, this.now() + seconds * 1000);
     this.gate.reset(task);
     await this.commit();
     return seconds;
@@ -280,14 +282,30 @@ export class GameController {
    */
   async submitPhoto(task: string, uri: string): Promise<void> {
     const photoId = this.newId();
-    this.data.photos.push({ photoId, task, uri, takenAt: this.clock.now() });
+    this.data.photos.push({ photoId, task, uri, takenAt: this.now() });
     this.record({ type: 'answered', task, answer: { type: 'photo', photoId } });
     await this.commit();
   }
 
+  /** Servertijd, in een testsessie plus de tijd die vooruitgezet is. */
+  private now(): number {
+    return this.clock.now() + (this.data.testSkipMs ?? 0);
+  }
+
+  /**
+   * Alleen in een testsessie: zet de klok van het spel vooruit, zodat
+   * opdrachten en regels die op tijd gaan meteen te testen zijn.
+   */
+  async skipTime(minutes: number): Promise<boolean> {
+    if (!this.data.loaded.session.testMode || !(minutes > 0)) return false;
+    this.data.testSkipMs = (this.data.testSkipMs ?? 0) + minutes * 60_000;
+    await this.commit();
+    return true;
+  }
+
   /** De teamfoto bij het aanmelden; gaat net als andere foto's mee met de wachtrij. */
   async submitTeamPhoto(uri: string): Promise<void> {
-    this.data.photos.push({ photoId: this.newId(), task: TEAM_PHOTO_KEY, uri, takenAt: this.clock.now() });
+    this.data.photos.push({ photoId: this.newId(), task: TEAM_PHOTO_KEY, uri, takenAt: this.now() });
     this.data.teamPhoto = 'taken';
     await this.commit();
   }
@@ -347,7 +365,7 @@ export class GameController {
   }
 
   private async flushPositions() {
-    const now = this.clock.now();
+    const now = this.now();
     if (!this.uploader.shouldFlush(now) || !this.positionRetry.ready(now)) return;
     const batch = this.uploader.takeBatch(now);
     if (batch.length === 0) return;
@@ -392,7 +410,7 @@ export class GameController {
   // ---------------------------------------------------------------------------
 
   private record(event: DistributiveOmit<GameEvent, 'id' | 'at'>) {
-    const full = { ...event, id: this.newId(), at: this.clock.now() } as GameEvent;
+    const full = { ...event, id: this.newId(), at: this.now() } as GameEvent;
     this.data.events.push(full);
     this.data.unsent.push(full.id);
   }
