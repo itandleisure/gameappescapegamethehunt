@@ -4,18 +4,14 @@ import type { GeoJSONSource, ImageSource, Map as MlMap, Marker } from 'maplibre-
 import 'maplibre-gl/dist/maplibre-gl.css';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { LayerRows } from '@/lib/game-model';
 import { composeChain, loadChain } from '@/lib/game-store';
 import { t as tr, tKey } from '@/lib/i18n';
 import { useT } from '@/lib/language';
 import {
-  centerBounds,
   gameFieldEditable,
   imageCorners,
-  initialBounds,
-  moveCorner,
-  overlayPath,
   ownGameField,
   type MapGameField,
 } from '@/lib/map-settings';
@@ -34,7 +30,6 @@ export default function OverlayPage() {
   const [meeting, setMeeting] = useState<LatLng | null>(null);
   const [meetingText, setMeetingText] = useState<Text>({});
   const [meetingRadius, setMeetingRadius] = useState(DEFAULT_MEETING_RADIUS);
-  const [opacity, setOpacity] = useState(0.7);
   const [mapSource, setMapSource] = useState<MapSource | null>(null);
   /** Welke lagen (stad, klant) een veld mogen aanpassen; alleen in het basisspel in te stellen. */
   const [allowed, setAllowed] = useState<Record<MapGameField, Layer[]>>({ map: [], mapOverlay: [], meetingPoint: [], boundary: [] });
@@ -136,14 +131,10 @@ export default function OverlayPage() {
       if (m.getLayer('overlay')) m.removeLayer('overlay');
       if (source) m.removeSource('overlay');
       m.addSource('overlay', { type: 'image', url, coordinates });
-      m.addLayer({ id: 'overlay', type: 'raster', source: 'overlay', paint: { 'raster-opacity': opacity } });
+      m.addLayer({ id: 'overlay', type: 'raster', source: 'overlay', paint: { 'raster-opacity': 0.85 } });
     }
-  }, [overlay, ready, opacity]);
+  }, [overlay, ready]);
 
-  useEffect(() => {
-    const m = map.current;
-    if (m?.getLayer('overlay')) m.setPaintProperty('overlay', 'raster-opacity', opacity);
-  }, [opacity]);
 
   // Cirkel om het verzamelpunt: daarbinnen is een team er.
   const drawMeetingCircle = useCallback(
@@ -163,28 +154,13 @@ export default function OverlayPage() {
   );
   useEffect(() => drawMeetingCircle(meeting), [drawMeetingCircle, meeting]);
 
-  // Hoekpunten en verzamelpunt als versleepbare markeringen.
+  // Verzamelpunt als versleepbare markering.
   useEffect(() => {
     const m = map.current;
     if (!m || !ready) return;
     void loadMaplibre().then(({ Marker: MarkerClass }) => {
       for (const marker of markers.current) marker.remove();
       markers.current = [];
-      if (overlay) {
-        for (const corner of ['nw', 'se'] as const) {
-          const at = corner === 'nw' ? overlay.bounds[0] : overlay.bounds[1];
-          const el = document.createElement('div');
-          el.className = 'corner';
-          el.title = corner === 'nw' ? t('Linksboven') : t('Rechtsonder');
-          const marker = new MarkerClass({ element: el, draggable: canOverlay }).setLngLat([at.lng, at.lat]).addTo(m);
-          marker.on('dragend', () => {
-            const { lat, lng } = marker.getLngLat();
-            setOverlay((o) => (o ? { ...o, bounds: moveCorner(o.bounds, corner, { lat, lng }) } : o));
-            touch('mapOverlay');
-          });
-          markers.current.push(marker);
-        }
-      }
       if (meeting) {
         const el = document.createElement('div');
         el.className = `pin meeting${canMeeting ? ' editable' : ''}`;
@@ -199,7 +175,7 @@ export default function OverlayPage() {
         markers.current.push(marker);
       }
     });
-  }, [overlay, meeting, ready, canOverlay, canMeeting, drawMeetingCircle, t]);
+  }, [meeting, ready, canMeeting, drawMeetingCircle, t]);
 
   if (!chain || !game) return errors.length ? <ul className="errors">{errors.map((e, i) => <li key={i}>{e}</li>)}</ul> : <p className="muted">{t('Laden…')}</p>;
 
@@ -208,38 +184,6 @@ export default function OverlayPage() {
   const center = () => {
     const c = map.current?.getCenter();
     return c ? { lat: round(c.lat), lng: round(c.lng) } : null;
-  };
-
-  const upload = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    setBusy(true);
-    setErrors([]);
-    setNotice(null);
-    try {
-      const path = overlayPath(id, file.type);
-      const size = await imageSize(file);
-      const db = supabase();
-      const up = await db.storage.from('media').upload(path, file, { contentType: file.type, upsert: false });
-      if (up.error) throw new Error(up.error.message);
-      const url = db.storage.from('media').getPublicUrl(path).data.publicUrl;
-      const m = map.current;
-      const mid = center() ?? { lat: 52.37, lng: 4.89 };
-      // Eerste plaatsing: 60% van de zichtbare breedte, daarna uitlijnen met de hoeken.
-      let widthMeters = 500;
-      if (m) {
-        const b = m.getBounds();
-        widthMeters = 0.6 * 111_320 * Math.cos((mid.lat * Math.PI) / 180) * (b.getEast() - b.getWest());
-      }
-      setOverlay((o) => ({ image: url, bounds: o?.bounds ?? initialBounds(mid, size.width, size.height, widthMeters) }));
-      touch('mapOverlay');
-      setNotice(t('Afbeelding geüpload. Sleep de blauwe hoeken tot de overlay op de kaart past en sla daarna op.'));
-    } catch (err) {
-      setErrors([err instanceof Error ? err.message : String(err)]);
-    } finally {
-      setBusy(false);
-    }
   };
 
   const save = async () => {
@@ -310,12 +254,12 @@ export default function OverlayPage() {
   return (
     <>
       <p className="muted">
-        <Link href="/spellen">{t('Spellen')}</Link> › <Link href={`/spellen/${id}`}>{self.game.slug}</Link> › {t('Kaartstijl, overlay en verzamelpunt')}
+        <Link href="/spellen">{t('Spellen')}</Link> › <Link href={`/spellen/${id}`}>{self.game.slug}</Link> › {t('Kaartstijl en verzamelpunt')}
       </p>
-      <h1>{t('Kaartstijl, overlay en verzamelpunt')}</h1>
+      <h1>{t('Kaartstijl en verzamelpunt')}</h1>
       <GameNav id={id} layer={self.game.layer} active="overlay" />
       <p className="muted">
-        {t('Een overlay is een eigen kaartafbeelding (bijvoorbeeld een getekende spelkaart) die over de gewone kaart ligt. Het verzamelpunt is waar teams aan het begin en einde samenkomen.')}
+        {t('Het verzamelpunt is waar teams aan het begin en einde samenkomen. Het speelveld teken je op de pagina Kaart.')}
       </p>
       <div className="actions">
         <button onClick={() => void save()} disabled={busy || (dirty.size === 0 && !allowedDirty)}>
@@ -365,53 +309,21 @@ export default function OverlayPage() {
             </>
           )}
 
-          <h2>{t('Overlay')}</h2>
-          {!canOverlay ? (
-            <p className="muted">{t('De overlay is in deze laag niet aan te passen.')}</p>
-          ) : (
+          {overlay && canOverlay ? (
             <>
-              <label className="filebutton">
-                {overlay ? t('Andere afbeelding') : t('Afbeelding uploaden')}
-                <input type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={(e) => void upload(e)} disabled={busy} />
-              </label>
-              {overlay ? (
-                <>
-                  <label htmlFor="opacity">{t('Doorzichtigheid tijdens uitlijnen')}</label>
-                  <input id="opacity" type="range" min={0.2} max={1} step={0.05} value={opacity} onChange={(e) => setOpacity(Number(e.target.value))} />
-                  <p className="muted">{t('Sleep de blauwe hoeken (linksboven en rechtsonder) tot straten en gebouwen samenvallen.')}</p>
-                  <div className="actions">
-                    <button
-                      className="secondary"
-                      onClick={() => {
-                        const c = center();
-                        if (!c) return;
-                        setOverlay({ ...overlay, bounds: centerBounds(overlay.bounds, c) });
-                        touch('mapOverlay');
-                      }}
-                    >
-                      {t('Naar midden van de kaart')}
-                    </button>
-                    <button
-                      className="link"
-                      onClick={() => {
-                        setOverlay(null);
-                        touch('mapOverlay');
-                      }}
-                    >
-                      {t('Weghalen')}
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <p className="muted">{t('Nog geen overlay.')}</p>
-              )}
-              {!isBase && ownGameField(chain, 'mapOverlay') ? (
-                <button className="link" onClick={() => void reset('mapOverlay')} disabled={busy}>
-                  {t('Terug naar overlay van de laag erboven')}
-                </button>
-              ) : null}
+              <h2>{t('Oude overlay')}</h2>
+              <p className="muted">{t('Dit spel heeft nog een kaartafbeelding van vroeger. Teken het speelveld liever op de kaart; deze afbeelding kun je weghalen.')}</p>
+              <button
+                className="link"
+                onClick={() => {
+                  setOverlay(null);
+                  touch('mapOverlay');
+                }}
+              >
+                {t('Weghalen')}
+              </button>
             </>
-          )}
+          ) : null}
 
           <h2>{t('Verzamelpunt')}</h2>
           {!canMeeting ? (
@@ -507,7 +419,6 @@ export default function OverlayPage() {
                   {(
                     [
                       ['map', tKey('Kaartstijl')],
-                      ['mapOverlay', tKey('Overlay')],
                       ['meetingPoint', tKey('Verzamelpunt')],
                       ['boundary', tKey('Speelveldgrens (rode lijn)')],
                     ] as const
@@ -552,15 +463,3 @@ function textRows(text: Text) {
   return Object.entries(cleanText(text)).map(([lang, tk]) => ({ entity: 'game' as const, entity_id: '', field: 'meetingPoint', lang, text: tk }));
 }
 
-function imageSize(file: File): Promise<{ width: number; height: number }> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      resolve({ width: img.naturalWidth, height: img.naturalHeight });
-      URL.revokeObjectURL(url);
-    };
-    img.onerror = () => reject(new Error(tr('Deze afbeelding kan niet worden gelezen.')));
-    img.src = url;
-  });
-}

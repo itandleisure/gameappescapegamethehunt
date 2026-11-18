@@ -45,7 +45,7 @@ export function GameNav({
   const items: { key: GameNavItem; href: string; label: string; show: boolean }[] = [
     { key: 'overzicht', href: `/spellen/${id}`, label: t('Overzicht'), show: active !== 'overzicht' },
     { key: 'kaart', href: `/spellen/${id}/kaart`, label: t('Kaart'), show: !legacy && layer !== 'client' },
-    { key: 'overlay', href: `/spellen/${id}/overlay`, label: t('Kaartstijl en overlay'), show: !legacy },
+    { key: 'overlay', href: `/spellen/${id}/overlay`, label: t('Kaartstijl en verzamelpunt'), show: !legacy },
     { key: 'nieuw', href: `/spellen/nieuw?basis=${id}`, label: t('Nieuwe stad uitrollen'), show: isBase && !legacy },
     { key: 'tabbladen', href: `/spellen/${id}/tabbladen`, label: t('Tabbladen'), show: isBase && !legacy },
     { key: 'regels', href: `/spellen/${id}/regels`, label: t('Regels'), show: isBase && !legacy },

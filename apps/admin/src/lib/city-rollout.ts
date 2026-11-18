@@ -164,7 +164,8 @@ export function centredMeetingPoint(version: LayerRows, center: LatLng): Overrid
 export type TodoKey = 'overlay' | 'pins' | 'questions' | 'test';
 
 export const CITY_TODOS: { key: TodoKey; label: string; link: 'overlay' | 'kaart' | 'opdrachten' | null }[] = [
-  { key: 'overlay', label: tKey('Overlay (kaarttekening) van de stad laten maken en plaatsen'), link: 'overlay' },
+  // De sleutel blijft 'overlay', zodat al afgevinkte steden afgevinkt blijven.
+  { key: 'overlay', label: tKey('Speelveldgrens van de stad tekenen'), link: 'kaart' },
   { key: 'pins', label: tKey('Iconen vanuit het centrum naar de juiste plek slepen, ook start- en verzamelpunt'), link: 'kaart' },
   { key: 'questions', label: tKey('Stadsvragen schrijven'), link: 'opdrachten' },
   { key: 'test', label: tKey('Proefronde lopen en de stad publiceren'), link: null },
