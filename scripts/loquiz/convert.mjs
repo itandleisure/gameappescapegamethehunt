@@ -127,6 +127,21 @@ export const MAPPINGS = {
     confirms: { 'extractie-a': 'CvEC1gbXR', 'extractie-b': 'JQzxwvxUY', 'extractie-c': 'NZYTCZcyA' },
     endings: { ontsnapt: 'zTqSbP0Dl', 'verkeerd-extractiepunt': 'o8agHiaP0' },
     // Berichten in regels (tijdlijn en finale)
+    // Extractiepunt-tabblad: één foto met de hele GPS-code; elk stukje (getal + puzzelnaam)
+    // wordt zichtbaar zodra de bijbehorende opdracht goed is. Vakken in pixels van de foto.
+    reveal: {
+      playground: 'extractiepunt',
+      loquizPlayground: 'EXTRACTIEPUNT',
+      pieces: [
+        { task: 'puzzel-tangram', x: 40, y: 880, w: 440, h: 420 },
+        { task: 'puzzel-morse', x: 480, y: 880, w: 460, h: 420 },
+        { task: 'puzzel-blokjes', x: 940, y: 880, w: 460, h: 420 },
+        { task: 'puzzel-stratenkaart', x: 40, y: 1400, w: 440, h: 390 },
+        { task: 'puzzel-cryptex', x: 480, y: 1400, w: 460, h: 390 },
+        { task: 'puzzel-kompas', x: 940, y: 1400, w: 460, h: 390 },
+        { task: 'extractie-hint', x: 150, y: 2500, w: 1140, h: 350 },
+      ],
+    },
     ruleMessages: {
       'tijdlijn-10': 'hyAlsLGG1', 'tijdlijn-20': 'LV5VSDqCn', 'tijdlijn-30': 'ievChZ_yC',
       'tijdlijn-40': 'O1GlSFWsk', 'tijdlijn-50': 'JI_3NSOWr', finale: 'CXmfGDdwI',
@@ -256,6 +271,17 @@ export function convertGame(loquiz, skeleton, mapping) {
     if (!msg) throw new Error(`Regel ${ruleId} met bericht staat niet in het skelet`);
     msg.text = nl(htmlToText(lq(lqId).text));
     report.filled.push(`regel ${ruleId}`);
+  }
+
+  // Playground met stukjes die vrijkomen
+  if (mapping.reveal) {
+    const { playground, loquizPlayground, pieces } = mapping.reveal;
+    const ours = base.playgrounds.find((p) => p.id === playground);
+    const src = (loquiz.playgrounds ?? []).find((p) => p.name === loquizPlayground);
+    if (!ours || !src) throw new Error(`Playground ${playground} / ${loquizPlayground} niet gevonden`);
+    for (const piece of pieces) need(piece.task);
+    ours.reveal = { image: src.imageUrl, width: src.width, height: src.height, pieces };
+    report.filled.push(`playground ${playground}`);
   }
 
   // Startlocatie: welkomsttekst van het spel
