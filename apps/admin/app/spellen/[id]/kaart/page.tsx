@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { LayerRows } from '@/lib/game-model';
 import { composeChain, loadChain } from '@/lib/game-store';
 import { circle, pinsFor, trackCount, type Pin, type TrackChoice } from '@/lib/map-edit';
+import { loadMaplibre } from '@/lib/maplibre';
 import { supabase } from '@/lib/supabase';
 import { tx } from '@/lib/text';
 
@@ -57,7 +58,7 @@ export default function MapPage() {
   useEffect(() => {
     if (!game || !container.current || map.current) return;
     let cancelled = false;
-    void import('maplibre-gl').then(({ Map }) => {
+    void loadMaplibre().then(({ Map }) => {
       if (cancelled || !container.current) return;
       const located = game.tasks.flatMap((t) => [t.location, ...Object.values(t.trackLocations ?? {})]).filter(Boolean) as TaskLocation[];
       const first = located[0] ?? { lat: 52.37, lng: 4.89 };
@@ -89,7 +90,7 @@ export default function MapPage() {
   useEffect(() => {
     const m = map.current;
     if (!m || !ready) return;
-    void import('maplibre-gl').then(({ Marker: MarkerClass }) => {
+    void loadMaplibre().then(({ Marker: MarkerClass }) => {
       for (const marker of markers.current) marker.remove();
       markers.current = [];
       for (const pin of pins) {
