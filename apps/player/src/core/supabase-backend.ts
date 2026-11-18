@@ -5,7 +5,7 @@ import type { Backend, ChatMessage, LoadedGame, PendingPhoto, SessionInfo, TeamR
 /** Fout met een tekstsleutel uit i18n, zodat het scherm een nette melding toont. */
 export class BackendError extends Error {
   constructor(
-    readonly key: 'errorUnknownSession' | 'errorLocked' | 'errorUnknownTeam' | 'errorLanguage' | 'errorPhone' | 'errorNetwork' | 'errorGeneric',
+    readonly key: 'errorUnknownSession' | 'errorLocked' | 'errorUnknownTeam' | 'errorTeamNameTaken' | 'errorLanguage' | 'errorPhone' | 'errorNetwork' | 'errorGeneric',
     cause?: unknown,
   ) {
     super(key);
@@ -93,6 +93,7 @@ export function fromEventRow(row: EventRow): GameEvent {
 function translate(error: { code?: string; message?: string } | null, fallback: BackendError['key'] = 'errorGeneric') {
   if (!error) return new BackendError(fallback);
   if (error.code === 'P0003') return new BackendError('errorLocked', error);
+  if (error.code === '23505') return new BackendError('errorTeamNameTaken', error);
   if (error.code === 'P0002') return new BackendError(fallback === 'errorUnknownTeam' ? 'errorUnknownTeam' : 'errorUnknownSession', error);
   if (error.code === '22023' && error.message?.includes('telefoon')) return new BackendError('errorPhone', error);
   if (error.code === '22023') return new BackendError('errorLanguage', error);
@@ -131,8 +132,8 @@ export class SupabaseBackend implements Backend {
     return toTeam(data as TeamRow);
   }
 
-  async rejoinTeam(teamCode: string) {
-    const { data, error } = await this.client.rpc('rejoin_team', { p_team_code: teamCode });
+  async rejoinTeam(joinCode: string, teamName: string) {
+    const { data, error } = await this.client.rpc('rejoin_team_by_name', { p_join_code: joinCode, p_team_name: teamName });
     if (error) throw translate(error, 'errorUnknownTeam');
     return toTeam(data as TeamRow);
   }
@@ -152,7 +153,7 @@ export class SupabaseBackend implements Backend {
   async loadGame(team: TeamRecord): Promise<LoadedGame> {
     const { data, error } = await this.client
       .from('sessions')
-      .select('id, name, timezone, status, test_mode, team_chat, game_versions(package)')
+      .select('id, name, timezone, status, test_mode, team_chat, join_code, game_versions(package)')
       .eq('id', team.sessionId)
       .single();
     if (error || !data) throw translate(error);
@@ -163,11 +164,12 @@ export class SupabaseBackend implements Backend {
       status: SessionInfo['status'];
       test_mode: boolean;
       team_chat?: boolean;
+      join_code?: string;
       game_versions: { package: GamePackage } | null;
     };
     if (!row.game_versions) throw new BackendError('errorGeneric');
     return {
-      session: { id: row.id, name: row.name, timezone: row.timezone, status: row.status, testMode: row.test_mode, teamChat: row.team_chat ?? false },
+      session: { id: row.id, name: row.name, timezone: row.timezone, status: row.status, testMode: row.test_mode, teamChat: row.team_chat ?? false, joinCode: row.join_code },
       game: row.game_versions.package,
     };
   }

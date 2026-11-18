@@ -196,9 +196,18 @@ export default function PlayScreen() {
           <Title>{tx(game.name, lang, game.defaultLanguage)}</Title>
           <View style={styles.codeCard}>
             <Text style={styles.codeLabel}>{t("yourTeamCode")}</Text>
-            {/* Woordcode ("RODE-VOS") met spaties, zodat een lange code netjes over twee regels loopt. */}
-            <Text style={styles.teamCode}>{snapshot.team.teamCode.replace(/-/g, " ")}</Text>
-            <Body>{t("teamCodeExplain")}</Body>
+            {/* Verder spelen gaat met de hunt-code en de teamnaam; oudere opgeslagen spellen kennen alleen de teamcode. */}
+            {snapshot.session.joinCode ? (
+              <>
+                <Body muted>{t("joinCode")}</Body>
+                <Text style={styles.teamCode}>{snapshot.session.joinCode}</Text>
+                <Body muted>{t("teamName")}</Body>
+                <Text style={styles.teamCode}>{snapshot.team.name}</Text>
+                <Body>{t("teamCodeExplain")}</Body>
+              </>
+            ) : (
+              <Text style={styles.teamCode}>{snapshot.team.teamCode}</Text>
+            )}
           </View>
           <View style={styles.spacer} />
           <Body>{t("locationNeeded")}</Body>
@@ -427,10 +436,9 @@ const styles = StyleSheet.create({
   codeLabel: { color: colors.accent, fontWeight: "700", fontSize: 15 },
   teamCode: {
     color: colors.accent,
-    fontSize: 32,
-    lineHeight: 38,
+    fontSize: 28,
+    lineHeight: 34,
     fontWeight: "800",
-    letterSpacing: 1,
     marginVertical: space.sm,
   },
   top: {
