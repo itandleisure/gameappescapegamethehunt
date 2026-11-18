@@ -69,6 +69,8 @@ export interface Task {
   body: Text;
   /** Ondersteunende foto bij de tekst: absolute https-URL (PNG, JPG of WebP). */
   image?: string;
+  /** Kort nummer of teken in het kaarticoon (bijvoorbeeld 1, 2, 3) in plaats van de titel. */
+  mapLabel?: string;
   answer: AnswerSpec;
   /** Punten bij een goed (of afgerond) antwoord. */
   points: number;
@@ -159,6 +161,33 @@ export interface Ending {
 export interface Playground {
   id: string;
   name: Text;
+  /** Naslagtekst die altijd op dit tabblad staat, zoals de speluitleg met de tijdlijn van het spel. */
+  body?: Text;
+  /** Een foto die stukje voor stukje zichtbaar wordt (zoals de GPS-code van het extractiepunt). */
+  reveal?: PlaygroundReveal;
+}
+
+/**
+ * Een foto met afgedekte vakken. Elk vak hoort bij één opdracht en wordt
+ * zichtbaar zodra die opdracht goed beantwoord is. De rest van de foto is
+ * altijd zichtbaar.
+ */
+export interface PlaygroundReveal {
+  /** Absolute https-URL van de foto. */
+  image: string;
+  /** Afmetingen van de foto in pixels; de vakken rekenen hierin. */
+  width: number;
+  height: number;
+  pieces: RevealPiece[];
+}
+
+export interface RevealPiece {
+  /** De opdracht die dit vak vrijgeeft. */
+  task: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 }
 
 export interface MeetingPoint extends LatLng {
@@ -200,6 +229,12 @@ export const DEFAULT_MAP_SOURCE: MapSource = {
 export interface GpsSettings {
   /** Metingen met een grotere onzekerheid (meters) tellen niet mee. */
   maxAccuracy: number;
+  /**
+   * Seconden na "Nee" op een bevestigingsvraag (zoals "Is dit het juiste
+   * extractiepunt?") om de cirkel uit te lopen. Daarna komt de vraag terug als
+   * het team er nog staat. Standaard 20.
+   */
+  declineSeconds?: number;
 }
 
 export interface GamePackage {

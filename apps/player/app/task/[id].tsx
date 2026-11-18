@@ -1,67 +1,128 @@
-import { canUseHint, t as tx, type AnswerValue, type TeamState, type Text as GameText } from '@hunt/engine';
-import * as ImageManipulator from 'expo-image-manipulator';
-import * as ImagePicker from 'expo-image-picker';
-import { Redirect, router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { answerFeedback, isAnswerable } from '../../src/core/view';
-import { Banner, Body, Button, Chip, Field, Title } from '../../src/ui/components';
-import { useGame } from '../../src/ui/GameProvider';
-import { colors, radius, space } from '../../src/ui/theme';
+import {
+  canUseHint,
+  t as tx,
+  type AnswerValue,
+  type TeamState,
+  type Text as GameText,
+} from "@hunt/engine";
+import * as ImageManipulator from "expo-image-manipulator";
+import * as ImagePicker from "expo-image-picker";
+import { Redirect, router, useLocalSearchParams } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { answerFeedback, isAnswerable } from "../../src/core/view";
+import {
+  Banner,
+  Body,
+  Button,
+  Chip,
+  Field,
+  Title,
+} from "../../src/ui/components";
+import { useGame } from "../../src/ui/GameProvider";
+import { colors, radius, space } from "../../src/ui/theme";
 
-type Feedback = 'correct' | 'wrong' | 'tryAgain' | 'rejected' | null;
+type Feedback = "correct" | "wrong" | "tryAgain" | "rejected" | null;
 
 /** Eén opdracht: bevestigen, beantwoorden, hints en foto's. */
 export default function TaskScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { controller, snapshot, t, lang } = useGame();
-  const [text, setText] = useState('');
+  const [text, setText] = useState("");
   const [choice, setChoice] = useState<number[]>([]);
   const [photo, setPhoto] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
+  /** Afteltimer na "Nee" op de bevestigingsvraag: seconden om de cirkel uit te lopen. */
+  const [leaveLeft, setLeaveLeft] = useState<number | null>(null);
+  const [askHint, setAskHint] = useState(false);
 
   const state = snapshot?.state;
   const game = snapshot?.game;
   const task = game?.tasks.find((x) => x.id === id);
-  const close = () => (router.canGoBack() ? router.back() : router.replace('/play'));
+  const close = () =>
+    router.canGoBack() ? router.back() : router.replace("/play");
 
   // Info-schermen (zoals de speluitleg) gaan na OK zonder melding door.
-  const silentDone = feedback === 'correct' && task?.answer.type === 'info' && !task.correctComment;
+  const silentDone =
+    feedback === "correct" &&
+    task?.answer.type === "info" &&
+    !task.correctComment;
   useEffect(() => {
     if (silentDone) close();
   }, [silentDone]);
 
-  if (!controller || !snapshot || !state || !game || !task) return <Redirect href="/play" />;
+  useEffect(() => {
+    if (leaveLeft === null) return;
+    if (leaveLeft <= 0) {
+      close();
+      return;
+    }
+    const timer = setTimeout(() => setLeaveLeft(leaveLeft - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [leaveLeft]);
+
+  if (!controller || !snapshot || !state || !game || !task)
+    return <Redirect href="/play" />;
   if (silentDone) return null;
+
+  const tr0 = (value: GameText | undefined) =>
+    tx(value, lang, game.defaultLanguage);
+  if (leaveLeft !== null) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.content}>
+          <Title>{tr0(task.title)}</Title>
+          <Text style={styles.countdown}>{leaveLeft}</Text>
+          <Body>{t("leaveArea", { seconds: leaveLeft })}</Body>
+        </View>
+      </SafeAreaView>
+    );
+  }
   const ctx = controller.context!;
   const ts = state.tasks[task.id]!;
-  const tr = (value: GameText | undefined) => tx(value, lang, game.defaultLanguage);
+  const tr = (value: GameText | undefined) =>
+    tx(value, lang, game.defaultLanguage);
 
   const submit = async (answer: AnswerValue) => {
     setBusy(true);
     try {
       const before: TeamState = controller.snapshot().state!;
       await controller.answer(task.id, answer);
-      const result = answerFeedback(before, controller.snapshot().state!, task.id);
+      const result = answerFeedback(
+        before,
+        controller.snapshot().state!,
+        task.id,
+      );
       setFeedback(result);
-      if (result === 'tryAgain') setText('');
+      if (result === "tryAgain") setText("");
     } finally {
       setBusy(false);
     }
   };
 
   // Na het antwoord: melding met de toelichting uit het spel.
-  if (feedback === 'correct' || feedback === 'wrong') {
-    const comment = feedback === 'correct' ? task.correctComment : task.wrongComment;
+  if (feedback === "correct" || feedback === "wrong") {
+    const comment =
+      feedback === "correct" ? task.correctComment : task.wrongComment;
     return (
       <SafeAreaView style={styles.safe}>
         <ScrollView contentContainerStyle={styles.content}>
-          <Title>{feedback === 'correct' ? t('correct') : t('wrong')}</Title>
-          {task.answer.type === 'photo' ? <Body muted>{t('photoSaved')}</Body> : null}
+          <Title>{feedback === "correct" ? t("correct") : t("wrong")}</Title>
+          {task.answer.type === "photo" ? (
+            <Body muted>{t("photoSaved")}</Body>
+          ) : null}
           {comment ? <Body>{tr(comment)}</Body> : null}
-          <Button label={t('ok')} onPress={close} />
+          <Button label={t("ok")} onPress={close} />
         </ScrollView>
       </SafeAreaView>
     );
@@ -74,25 +135,27 @@ export default function TaskScreen() {
           <Title>{tr(task.title)}</Title>
           {task.image ? <TaskImage uri={task.image} /> : null}
           <Body muted>{tr(task.body)}</Body>
-          <Button kind="secondary" label={t('close')} onPress={close} />
+          <Button kind="secondary" label={t("close")} onPress={close} />
         </View>
       </SafeAreaView>
     );
   }
 
-  if (ts.status === 'confirming') {
+  if (ts.status === "confirming") {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.content}>
           <Title>{tr(task.title)}</Title>
           <Body>{tr(task.confirm)}</Body>
-          <Button label={t('yes')} onPress={() => void controller.confirm(task.id)} />
+          <Button
+            label={t("yes")}
+            onPress={() => void controller.confirm(task.id)}
+          />
           <Button
             kind="secondary"
-            label={t('no')}
+            label={t("no")}
             onPress={async () => {
-              await controller.decline(task.id);
-              close();
+              setLeaveLeft(await controller.decline(task.id));
             }}
           />
         </View>
@@ -107,59 +170,88 @@ export default function TaskScreen() {
   const takePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) return;
-    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 });
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["images"],
+      quality: 0.8,
+    });
     if (result.canceled || !result.assets[0]) return;
     // Verkleinen scheelt data en uploadtijd; ruim genoeg voor het fotoboek.
-    const resized = await ImageManipulator.manipulateAsync(result.assets[0].uri, [{ resize: { width: 2048 } }], {
-      compress: 0.85,
-      format: ImageManipulator.SaveFormat.JPEG,
-    });
+    const resized = await ImageManipulator.manipulateAsync(
+      result.assets[0].uri,
+      [{ resize: { width: 2048 } }],
+      {
+        compress: 0.85,
+        format: ImageManipulator.SaveFormat.JPEG,
+      },
+    );
     setPhoto(resized.uri);
   };
 
   return (
     <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.safe}>
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={styles.safe}
+      >
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
           <Title>{tr(task.title)}</Title>
           {task.image ? <TaskImage uri={task.image} /> : null}
           <Body>{tr(task.body)}</Body>
           <View style={styles.spacer} />
 
-          {feedback === 'tryAgain' ? <Banner tone="danger">{`${t('wrong')} ${t('tryAgain')}`}</Banner> : null}
-          {feedback === 'rejected' ? <Banner tone="danger">{t('errorGeneric')}</Banner> : null}
+          {feedback === "tryAgain" ? (
+            <Banner tone="danger">{`${t("wrong")} ${t("tryAgain")}`}</Banner>
+          ) : null}
+          {feedback === "rejected" ? (
+            <Banner tone="danger">{t("errorGeneric")}</Banner>
+          ) : null}
 
           {task.hints.slice(0, ts.hintsUsed).map((hint, i) => (
             <View key={i} style={styles.hint}>
-              <Text style={styles.hintLabel}>{`${t('hint')} ${i + 1}`}</Text>
+              <Text style={styles.hintLabel}>{`${t("hint")} ${i + 1}`}</Text>
               <Body>{tr(hint.text)}</Body>
               {hint.image ? <TaskImage uri={hint.image} /> : null}
             </View>
           ))}
 
-          {answer.type === 'info' ? <Button label={t('ok')} busy={busy} onPress={() => void submit({ type: 'info' })} /> : null}
+          {answer.type === "info" ? (
+            <Button
+              label={t("ok")}
+              busy={busy}
+              onPress={() => void submit({ type: "info" })}
+            />
+          ) : null}
 
-          {answer.type === 'text' || answer.type === 'number' ? (
+          {answer.type === "text" || answer.type === "number" ? (
             <>
               <Field
-                label={t('answerPlaceholder')}
+                label={t("answerPlaceholder")}
                 value={text}
                 onChangeText={setText}
-                keyboardType={answer.type === 'number' ? 'numeric' : 'default'}
+                keyboardType={answer.type === "number" ? "numeric" : "default"}
                 autoCorrect={false}
                 autoCapitalize="none"
                 returnKeyType="send"
               />
               <Button
-                label={t('submit')}
+                label={t("submit")}
                 busy={busy}
-                disabled={text.trim() === ''}
-                onPress={() => void submit(answer.type === 'number' ? { type: 'number', value: text } : { type: 'text', text })}
+                disabled={text.trim() === ""}
+                onPress={() =>
+                  void submit(
+                    answer.type === "number"
+                      ? { type: "number", value: text }
+                      : { type: "text", text },
+                  )
+                }
               />
             </>
           ) : null}
 
-          {answer.type === 'choice' || answer.type === 'multi' ? (
+          {answer.type === "choice" || answer.type === "multi" ? (
             <>
               <View style={styles.options}>
                 {answer.options.map((option, i) => (
@@ -169,40 +261,54 @@ export default function TaskScreen() {
                     selected={choice.includes(i)}
                     onPress={() =>
                       setChoice((current) =>
-                        answer.type === 'choice' ? [i] : current.includes(i) ? current.filter((x) => x !== i) : [...current, i],
+                        answer.type === "choice"
+                          ? [i]
+                          : current.includes(i)
+                            ? current.filter((x) => x !== i)
+                            : [...current, i],
                       )
                     }
                   />
                 ))}
               </View>
               <Button
-                label={t('submit')}
+                label={t("submit")}
                 busy={busy}
                 disabled={choice.length === 0}
                 onPress={() =>
-                  void submit(answer.type === 'choice' ? { type: 'choice', option: choice[0]! } : { type: 'multi', options: choice })
+                  void submit(
+                    answer.type === "choice"
+                      ? { type: "choice", option: choice[0]! }
+                      : { type: "multi", options: choice },
+                  )
                 }
               />
             </>
           ) : null}
 
-          {answer.type === 'photo' ? (
+          {answer.type === "photo" ? (
             <>
-              {photo ? <Image source={{ uri: photo }} style={styles.photo} resizeMode="cover" /> : null}
+              {photo ? (
+                <Image
+                  source={{ uri: photo }}
+                  style={styles.photo}
+                  resizeMode="cover"
+                />
+              ) : null}
               <Button
-                kind={photo ? 'secondary' : 'primary'}
-                label={photo ? t('retakePhoto') : t('takePhoto')}
+                kind={photo ? "secondary" : "primary"}
+                label={photo ? t("retakePhoto") : t("takePhoto")}
                 onPress={() => void takePhoto()}
               />
               {photo ? (
                 <Button
-                  label={t('sendPhoto')}
+                  label={t("sendPhoto")}
                   busy={busy}
                   onPress={async () => {
                     setBusy(true);
                     try {
                       await controller.submitPhoto(task.id, photo);
-                      setFeedback('correct');
+                      setFeedback("correct");
                     } finally {
                       setBusy(false);
                     }
@@ -215,13 +321,36 @@ export default function TaskScreen() {
           {task.hints.length > 0 ? (
             <Button
               kind="secondary"
-              label={hintsAllowed && nextHint ? t('hintCost', { cost: nextHint.cost }) : t('noMoreHints')}
+              label={
+                hintsAllowed && nextHint
+                  ? t("hintCost", { cost: nextHint.cost })
+                  : t("noMoreHints")
+              }
               disabled={!hintsAllowed || !nextHint}
-              onPress={() => void controller.useHint(task.id)}
+              onPress={() => setAskHint(true)}
             />
           ) : null}
+          {askHint && hintsAllowed && nextHint ? (
+            <View style={styles.hint}>
+              <Body>{t("buyHint", { cost: nextHint.cost })}</Body>
+              <Button
+                label={t("yes")}
+                onPress={() => {
+                  setAskHint(false);
+                  void controller.useHint(task.id);
+                }}
+              />
+              <Button
+                kind="secondary"
+                label={t("no")}
+                onPress={() => setAskHint(false)}
+              />
+            </View>
+          ) : null}
 
-          {ts.status === 'visible' ? <Button kind="secondary" label={t('close')} onPress={close} /> : null}
+          {ts.status === "visible" ? (
+            <Button kind="secondary" label={t("close")} onPress={close} />
+          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -239,7 +368,8 @@ function TaskImage({ uri }: { uri: string }) {
       accessibilityIgnoresInvertColors
       onLoad={(e) => {
         const { width, height } = e.nativeEvent.source;
-        if (width > 0 && height > 0) setRatio(Math.max(0.6, Math.min(2.5, width / height)));
+        if (width > 0 && height > 0)
+          setRatio(Math.max(0.6, Math.min(2.5, width / height)));
       }}
     />
   );
@@ -249,9 +379,35 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   content: { padding: space.md, paddingBottom: space.xl },
   spacer: { height: space.md },
-  hint: { backgroundColor: colors.surface, borderRadius: radius.sm, padding: space.md, marginBottom: space.sm },
-  hintLabel: { color: colors.accent, fontWeight: '700', marginBottom: space.xs },
-  options: { flexDirection: 'row', flexWrap: 'wrap' },
-  photo: { width: '100%', aspectRatio: 4 / 3, borderRadius: radius.md, marginBottom: space.sm },
-  taskImage: { width: '100%', borderRadius: radius.md, marginBottom: space.md, backgroundColor: colors.surface },
+  countdown: {
+    color: colors.accent,
+    fontSize: 72,
+    fontWeight: "800",
+    textAlign: "center",
+    marginVertical: space.lg,
+  },
+  hint: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.sm,
+    padding: space.md,
+    marginBottom: space.sm,
+  },
+  hintLabel: {
+    color: colors.accent,
+    fontWeight: "700",
+    marginBottom: space.xs,
+  },
+  options: { flexDirection: "row", flexWrap: "wrap" },
+  photo: {
+    width: "100%",
+    aspectRatio: 4 / 3,
+    borderRadius: radius.md,
+    marginBottom: space.sm,
+  },
+  taskImage: {
+    width: "100%",
+    borderRadius: radius.md,
+    marginBottom: space.md,
+    backgroundColor: colors.surface,
+  },
 });

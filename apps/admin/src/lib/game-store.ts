@@ -177,7 +177,7 @@ export async function copyExternalImages(db: SupabaseClient, baseId: string): Pr
       if (!res.ok) throw new Error(String(res.status));
       const blob = await res.blob();
       const type = blob.type.split(';')[0] ?? '';
-      const path = mediaPath(gameId, `opdracht-${key}`, type);
+      const path = mediaPath(gameId, key.startsWith('playground-') ? key : `opdracht-${key}`, type);
       const up = await db.storage.from('media').upload(path, blob, { contentType: type });
       if (up.error) throw new Error(up.error.message);
       copied++;
@@ -206,6 +206,17 @@ export async function copyExternalImages(db: SupabaseClient, baseId: string): Pr
     }
     if (changed) check(await db.from('tasks').update({ settings }).eq('id', t.id));
   }
+  // De foto van een playground die stukje voor stukje zichtbaar wordt (zoals het extractiepunt).
+  const game = check<{ settings: Record<string, unknown> | null }>((await db.from('games').select('settings').eq('id', baseId).single()) as never);
+  const reveals = { ...((game.settings?.playgroundReveal ?? {}) as Record<string, { image?: unknown }>) };
+  let revealChanged = false;
+  for (const [key, reveal] of Object.entries(reveals)) {
+    if (typeof reveal.image !== 'string' || isOwnMedia(reveal.image, publicBase)) continue;
+    const next = await copy(reveal.image, baseId, `playground-${key}`);
+    if (next) [reveals[key], revealChanged] = [{ ...reveal, image: next }, true];
+  }
+  if (revealChanged) check(await db.from('games').update({ settings: { ...game.settings, playgroundReveal: reveals } }).eq('id', baseId));
+
   for (const o of overrides) {
     if (typeof o.value !== 'string' || isOwnMedia(o.value, publicBase)) continue;
     const key = keyById.get(o.task_id) ?? o.task_id;

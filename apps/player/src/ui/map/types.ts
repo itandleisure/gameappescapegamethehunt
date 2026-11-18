@@ -5,6 +5,8 @@ export interface MapMarker {
   lat: number;
   lng: number;
   label: string;
+  /** Rond icoon met dit nummer in plaats van een label met de titel. */
+  badge?: string;
 }
 
 export interface MapOverlayImage {

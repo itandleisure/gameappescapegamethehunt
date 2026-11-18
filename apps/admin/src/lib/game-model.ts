@@ -18,6 +18,8 @@ import type {
   MapOverlay,
   MapSource,
   MeetingPoint,
+  Playground,
+  PlaygroundReveal,
   OverridableField,
   Override,
   Rule,
@@ -118,6 +120,8 @@ interface BaseSettings {
   sequences: Sequence[];
   endings: { id: string; bonus: number }[];
   playgrounds: string[];
+  /** Foto die stukje voor stukje zichtbaar wordt, per playground. */
+  playgroundReveal?: Record<string, PlaygroundReveal>;
   gps: BaseGame['gps'];
   meetingPoint?: LatLng;
   mapOverlay?: MapOverlay;
@@ -255,7 +259,10 @@ export function baseToRows(base: BaseGame, game: Omit<GameRow, 'languages' | 'de
     pushText(translations, 'ending', e.id, 'title', e.title);
     pushText(translations, 'ending', e.id, 'body', e.body);
   }
-  for (const p of base.playgrounds) pushText(translations, 'playground', p.id, 'name', p.name);
+  for (const p of base.playgrounds) {
+    pushText(translations, 'playground', p.id, 'name', p.name);
+    if (p.body) pushText(translations, 'playground', p.id, 'body', p.body);
+  }
 
   const settings: BaseSettings = {
     sequences: base.sequences,
@@ -270,6 +277,8 @@ export function baseToRows(base: BaseGame, game: Omit<GameRow, 'languages' | 'de
   }
   if (base.mapOverlay) settings.mapOverlay = base.mapOverlay;
   if (base.map) settings.map = base.map;
+  const reveal = Object.fromEntries(base.playgrounds.filter((p) => p.reveal).map((p) => [p.id, p.reveal!]));
+  if (Object.keys(reveal).length) settings.playgroundReveal = reveal;
 
   return {
     game: {
@@ -321,6 +330,7 @@ export function rowsToBase(rows: LayerRows): BaseGame {
       if (row.has_confirm) task.confirm = texts.get('task', row.key, 'confirm') ?? {};
       if (row.retry_until_correct) task.retryUntilCorrect = true;
       if (typeof row.settings?.image === 'string') task.image = row.settings.image;
+      if (typeof row.settings?.mapLabel === 'string') task.mapLabel = row.settings.mapLabel;
       const hintImages = row.settings?.hintImages;
       if (Array.isArray(hintImages)) {
         task.hints.forEach((h, i) => {
@@ -365,7 +375,14 @@ export function rowsToBase(rows: LayerRows): BaseGame {
     rules,
     sequences: settings.sequences ?? [],
     endings,
-    playgrounds: playgroundKeys.map((key) => ({ id: key, name: texts.get('playground', key, 'name') ?? {} })),
+    playgrounds: playgroundKeys.map((key) => {
+      const p: Playground = { id: key, name: texts.get('playground', key, 'name') ?? {} };
+      const body = texts.get('playground', key, 'body');
+      if (body && Object.keys(body).length) p.body = body;
+      const reveal = settings.playgroundReveal?.[key];
+      if (reveal) p.reveal = reveal;
+      return p;
+    }),
     overridable: rows.overridable.map((o): OverridableField => {
       const target: FieldRef = o.task_id
         ? { task: keyById.get(o.task_id) ?? o.task_id, field: o.field as TaskField }
@@ -495,9 +512,10 @@ export type { MeetingPoint };
 
 /** Overige opdrachtvelden in tasks.settings: foto bij de tekst en afbeeldingen bij hints. */
 export function taskSettings(task: Task, settings: Record<string, unknown> = {}): Record<string, unknown> {
-  const { image: _i, hintImages: _h, ...rest } = settings;
+  const { image: _i, hintImages: _h, mapLabel: _m, ...rest } = settings;
   const out: Record<string, unknown> = { ...rest };
   if (task.image) out.image = task.image;
+  if (task.mapLabel) out.mapLabel = task.mapLabel;
   if (task.hints.some((h) => h.image)) out.hintImages = task.hints.map((h) => h.image ?? null);
   return out;
 }

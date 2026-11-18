@@ -218,8 +218,20 @@ export function validateGame(game: GamePackage): string[] {
     for (const tag of conditionTags(rule.when)) if (!tags.has(tag)) issues.push(`regel ${rule.id}: geen opdrachten met tag ${tag}`);
     for (const action of rule.then) issues.push(...checkAction(rule.id, action, { taskIds, tags, sequences, endings, playgrounds }));
   }
+  for (const p of game.playgrounds) {
+    const r = p.reveal;
+    if (!r) continue;
+    if (!/^https:\/\/\S+$/.test(r.image)) issues.push(`playground ${p.id}: foto moet een https-adres zijn`);
+    if (!(r.width > 0 && r.height > 0)) issues.push(`playground ${p.id}: afmetingen van de foto ontbreken`);
+    r.pieces.forEach((piece, i) => {
+      if (!taskIds.has(piece.task)) issues.push(`playground ${p.id}: vak ${i + 1} hoort bij onbekende opdracht ${piece.task}`);
+      const inside = piece.x >= 0 && piece.y >= 0 && piece.w > 0 && piece.h > 0 && piece.x + piece.w <= r.width && piece.y + piece.h <= r.height;
+      if (!inside) issues.push(`playground ${p.id}: vak ${i + 1} valt buiten de foto`);
+    });
+  }
   for (const t of game.tasks) {
     if (t.image !== undefined && !/^https:\/\/\S+$/.test(t.image)) issues.push(`opdracht ${t.id}: foto moet een https-adres zijn`);
+    if (t.mapLabel !== undefined && (t.mapLabel.trim() === '' || t.mapLabel.length > 3)) issues.push(`opdracht ${t.id}: kaarticoon mag 1 tot 3 tekens hebben`);
     t.hints.forEach((h, i) => {
       if (h.image !== undefined && !/^https:\/\/\S+$/.test(h.image)) issues.push(`opdracht ${t.id}: afbeelding bij hint ${i + 1} moet een https-adres zijn`);
     });

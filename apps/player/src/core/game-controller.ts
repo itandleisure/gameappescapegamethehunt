@@ -78,6 +78,8 @@ export class GameController {
   private currentTick: Promise<void> | null = null;
   private nextTick: Promise<void> | null = null;
   private lastPullAt = 0;
+  /** Na "Nee" op een bevestigingsvraag: tot wanneer (servertijd) die locatie niet opnieuw vraagt. */
+  private readonly snoozed = new Map<string, number>();
 
   private constructor(
     private readonly deps: ControllerDeps,
@@ -193,7 +195,8 @@ export class GameController {
 
     const state = computeState(this.game, ctx, this.data.events, serverFix.at);
     if (state.ended) return [];
-    const reached = this.gate.feed(serverFix, reachableTargets(this.game, ctx, state));
+    const targets = reachableTargets(this.game, ctx, state).filter((x) => !((this.snoozed.get(x.task) ?? 0) > serverFix.at));
+    const reached = this.gate.feed(serverFix, targets);
     for (const task of reached) {
       this.record({ type: 'locationReached', task, lat: fix.lat, lng: fix.lng, accuracy: fix.accuracy });
     }
@@ -235,11 +238,18 @@ export class GameController {
     await this.commit();
   }
 
-  async decline(task: string): Promise<void> {
+  /**
+   * "Nee" op een bevestigingsvraag. Het team krijgt `declineSeconds` (standaard
+   * 20) om de cirkel uit te lopen; staat het er daarna nog, dan komt de vraag
+   * terug. Geeft het aantal seconden terug, voor de afteltimer.
+   */
+  async decline(task: string): Promise<number> {
+    const seconds = this.game.gps.declineSeconds ?? 20;
     this.record({ type: 'declined', task });
-    // Weer "binnen de cirkel komen" moet de vraag opnieuw kunnen stellen.
+    this.snoozed.set(task, this.clock.now() + seconds * 1000);
     this.gate.reset(task);
     await this.commit();
+    return seconds;
   }
 
   async answer(task: string, answer: AnswerValue): Promise<void> {

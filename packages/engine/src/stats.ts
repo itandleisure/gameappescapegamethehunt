@@ -1,5 +1,5 @@
 import { distanceMeters, type GpsFix } from './geo.js';
-import type { GamePackage, TeamState } from './types.js';
+import type { GamePackage, RevealPiece, TeamState } from './types.js';
 
 export interface DistanceOptions {
   /** Metingen met grotere onzekerheid tellen niet mee. Standaard 30 m. */
@@ -98,4 +98,14 @@ export function rank<T extends { score: number; durationMs: number }>(teams: rea
     const same = prev && prev.score === t.score && prev.durationMs === t.durationMs;
     return { ...t, rank: same ? 0 : i + 1 };
   }).map((t, i, all) => ({ ...t, rank: t.rank || all[i - 1]!.rank }));
+}
+
+/**
+ * Welke vakken van de foto op een playground nog afgedekt zijn: de vakken
+ * waarvan de opdracht nog niet goed beantwoord is.
+ */
+export function hiddenPieces(game: GamePackage, state: TeamState, playground: string): RevealPiece[] {
+  const reveal = game.playgrounds.find((p) => p.id === playground)?.reveal;
+  if (!reveal) return [];
+  return reveal.pieces.filter((piece) => state.tasks[piece.task]?.correct !== true);
 }
