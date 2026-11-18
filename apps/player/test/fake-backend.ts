@@ -33,6 +33,7 @@ export class FakeBackend implements Backend {
     this.phones.push(phone);
     this.guard();
     if (joinCode !== 'LWD001') throw new Error('P0002');
+    if ([...this.teams.values()].some((t) => t.name.toLowerCase() === teamName.toLowerCase())) throw new Error('23505');
     this.order += 1;
     const team: TeamRecord = {
       id: `team-${this.order}`,
@@ -40,8 +41,7 @@ export class FakeBackend implements Backend {
       name: teamName,
       language,
       track: ((this.order - 1) % 5) + 1,
-      // Langste soort woordcode, zodat de schermcontrole die ook test.
-      teamCode: this.order === 1 ? 'GLIMMENDE-SCHILDPAD' : `GLIMMENDE-SCHILDPAD-${this.order}`,
+      teamCode: `CODE${this.order}`,
       startedAt: null,
       endedAt: null,
     };
@@ -49,9 +49,11 @@ export class FakeBackend implements Backend {
     return { ...team };
   }
 
-  async rejoinTeam(teamCode: string) {
+  async rejoinTeam(joinCode: string, teamName: string) {
     this.guard();
-    const team = [...this.teams.values()].find((t) => t.teamCode === teamCode);
+    const team = joinCode.trim().toUpperCase() === 'LWD001'
+      ? [...this.teams.values()].find((t) => t.name.toLowerCase() === teamName.trim().toLowerCase())
+      : undefined;
     if (!team) throw new Error('P0002');
     return { ...team };
   }
@@ -71,7 +73,7 @@ export class FakeBackend implements Backend {
   async loadGame() {
     this.guard();
     return {
-      session: { id: 'sessie-1', name: 'Test', timezone: 'Europe/Amsterdam', status: 'open' as const, testMode: this.testMode, teamChat: this.teamChat },
+      session: { id: 'sessie-1', name: 'Test', timezone: 'Europe/Amsterdam', status: 'open' as const, testMode: this.testMode, teamChat: this.teamChat, joinCode: 'LWD001' },
       game: this.game,
     };
   }

@@ -20,6 +20,8 @@ export interface SessionInfo {
   timezone: string;
   status: 'draft' | 'open' | 'closed';
   testMode: boolean;
+  /** Hunt-code van de spelleiding; met deze code en de teamnaam speelt een team verder. */
+  joinCode?: string;
   /** Teams in deze hunt kunnen met elkaar chatten. */
   teamChat?: boolean;
 }
@@ -60,7 +62,8 @@ export interface Backend {
   /** Zorgt voor een (anonieme) login op dit toestel. */
   ensureSignedIn(): Promise<void>;
   joinSession(joinCode: string, teamName: string, language: string, phone: string): Promise<TeamRecord>;
-  rejoinTeam(teamCode: string): Promise<TeamRecord>;
+  /** Verder spelen met de hunt-code en de teamnaam. */
+  rejoinTeam(joinCode: string, teamName: string): Promise<TeamRecord>;
   startTeam(teamId: string): Promise<TeamRecord>;
   /** Meldt dat het team de speluitleg heeft gelezen (centrale start). */
   loadTeam(teamId: string): Promise<TeamRecord>;
