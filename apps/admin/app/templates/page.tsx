@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useAuth } from '@/lib/auth';
 import { parseGameFile } from '@/lib/game-import';
 import {
@@ -123,6 +123,53 @@ export default function TemplatesPage() {
     void load().catch((err) => setErrors([err instanceof Error ? err.message : String(err)]));
   }, [load]);
 
+  const importFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !org) return;
+    setBusy(true);
+    setErrors([]);
+    setNotice(null);
+    try {
+      const parsed = parseGameFile(await file.text());
+      if (!parsed.ok) {
+        setErrors(parsed.errors);
+        return;
+      }
+      const taken = await supabase().from('games').select('slug').eq('org_id', org.id);
+      if ((taken.data ?? []).some((g: { slug: string }) => g.slug === parsed.slug || parsed.bundle.variants.some((v) => v.id === g.slug))) {
+        setErrors([t('Er bestaat al een spel met de naam {name} of een van de varianten. Pas het id in het bestand aan.', { name: parsed.slug })]);
+        return;
+      }
+      const baseId = await importBundle(supabase(), org.id, parsed.bundle);
+      const n = parsed.bundle.variants.length;
+      const photos = await copyExternalImages(supabase(), baseId);
+      setNotice(
+        (n === 0
+          ? t('{name} geïmporteerd.', { name: parsed.slug })
+          : n === 1
+            ? t('{name} geïmporteerd, met 1 variant.', { name: parsed.slug })
+            : t('{name} geïmporteerd, met {n} varianten.', { name: parsed.slug, n })) +
+          (photos.copied
+            ? ' ' +
+              (photos.copied === 1
+                ? t('1 foto naar de eigen opslag gekopieerd.')
+                : t("{n} foto's naar de eigen opslag gekopieerd.", { n: photos.copied }))
+            : '') +
+          ' ' +
+          t('Je kunt er nu steden mee uitrollen.'),
+      );
+      if (photos.failed.length) {
+        setErrors([t("Deze foto's konden niet worden gekopieerd en wijzen nog naar de oude site:"), ...photos.failed]);
+      }
+      await load();
+    } catch (err) {
+      setErrors([err instanceof Error ? err.message : String(err)]);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const loadBuiltIn = async () => {
     if (!org) return;
     setBusy(true);
@@ -159,6 +206,12 @@ export default function TemplatesPage() {
       <p className="muted">
         {t('Een template is het basisspel waarmee je een nieuwe stad uitrolt. Elke template heeft vaste versies (v1, v2, ...); een stad bouwt voort op één versie.')}
       </p>
+      <div className="actions">
+        <label className={`filebutton${busy ? ' disabled' : ''}`}>
+          <input type="file" accept="application/json,.json" onChange={importFile} disabled={busy} />
+          {busy ? t('Bezig…') : t('Template importeren (JSON)')}
+        </label>
+      </div>
       {notice ? <p className="notice">{notice}</p> : null}
       {errors.length > 0 ? (
         <ul className="errors">

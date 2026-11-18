@@ -27,7 +27,7 @@ import { missingPerTask, newTranslationRows, sourceLanguage } from "@/lib/task-t
 import { translateTexts } from "@/lib/translate-client";
 
 const LAYER_LABEL = {
-  base: tKey("Basisspel"),
+  base: tKey("Template"),
   city: tKey("Stad"),
   client: tKey("Klant"),
 } as const;
@@ -369,7 +369,7 @@ export default function GamePage() {
   return (
     <>
       <p className="muted">
-        <Link href="/spellen">{t('Spellen')}</Link>
+        {isBase ? <Link href="/templates">{t('Templates')}</Link> : <Link href="/spellen">{t('Spellen')}</Link>}
         {chain.slice(0, -1).map((c) => (
           <span key={c.game.id}>
             {" "}
