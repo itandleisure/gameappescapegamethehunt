@@ -2,7 +2,7 @@ import { composeGame } from '@hunt/engine';
 import { describe, expect, it } from 'vitest';
 import { leeuwarden, parteon, theHuntBase } from '../../../packages/engine/test/fixtures/the-hunt.js';
 import { baseToRows, variantToRows } from '../src/lib/game-model.js';
-import { circle, pinsFor, trackCount } from '../src/lib/map-edit.js';
+import { allPins, circle, pinsFor, trackCount, trackColor } from '../src/lib/map-edit.js';
 
 const base = baseToRows(theHuntBase, { id: 'base', slug: 'the-hunt' });
 const meta = (slug: string, parent: string) => ({ id: slug, slug, parent_id: parent, languages: ['nl', 'en'], default_language: 'nl' });
@@ -29,5 +29,14 @@ describe('kaarteditor', () => {
     expect(c[0]).toEqual(c[c.length - 1]);
     const [lng] = c[0]!;
     expect(Math.abs(lng - 5.79) * 111_320 * Math.cos((53.2 * Math.PI) / 180)).toBeCloseTo(100, 0);
+  });
+
+  it('toont alle tracks tegelijk, elk met een eigen kleur', () => {
+    const pins = allPins([base], game, (k) => k);
+    const tracks = new Set(pins.map((p) => p.track));
+    expect(tracks.has(null)).toBe(true);
+    expect(tracks.size).toBeGreaterThan(2);
+    expect(pins.every((p) => p.location)).toBe(true);
+    expect(new Set([null, 1, 2, 3, 4, 5].map(trackColor)).size).toBe(6);
   });
 });

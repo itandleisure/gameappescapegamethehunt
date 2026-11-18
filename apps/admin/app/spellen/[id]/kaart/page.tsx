@@ -7,7 +7,7 @@ import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { LayerRows } from '@/lib/game-model';
 import { composeChain, loadChain } from '@/lib/game-store';
-import { circle, pinsFor, trackCount, type Pin, type TrackChoice } from '@/lib/map-edit';
+import { allPins, circle, pinsFor, trackColor, trackCount, type Pin, type TrackChoice } from '@/lib/map-edit';
 import { loadMaplibre } from '@/lib/maplibre';
 import { supabase } from '@/lib/supabase';
 import { tx } from '@/lib/text';
@@ -15,12 +15,16 @@ import { tx } from '@/lib/text';
 type Changes = Record<string, TaskLocation>; // sleutel: `${taskKey}|${track ?? ''}`
 
 const changeKey = (task: string, track: TrackChoice) => `${task}|${track ?? ''}`;
+const pinKey = (p: Pin) => changeKey(p.key, p.track);
+/** Welke pinnen de kaart toont: alle tracks tegelijk, de vaste locaties of één track. */
+type View = TrackChoice | 'all';
+const trackName = (t: TrackChoice) => (t === null ? 'alle tracks' : `track ${t}`);
 
 export default function MapPage() {
   const { id } = useParams<{ id: string }>();
   const [chain, setChain] = useState<LayerRows[] | null>(null);
   const [game, setGame] = useState<GamePackage | null>(null);
-  const [track, setTrack] = useState<TrackChoice>(null);
+  const [view, setView] = useState<View>('all');
   const [changes, setChanges] = useState<Changes>({});
   const [selected, setSelected] = useState<string | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
@@ -48,11 +52,24 @@ export default function MapPage() {
 
   const pins: Pin[] = useMemo(() => {
     if (!chain || !game) return [];
-    return pinsFor(chain, game, track, (key) => tx(game.tasks.find((t) => t.id === key)?.title) || key).map((p) => {
-      const changed = changes[changeKey(p.key, track)];
+    const title = (key: string) => tx(game.tasks.find((t) => t.id === key)?.title) || key;
+    // In "alle tracks" ook pinnen die net een (nieuwe) locatie kregen.
+    const list = view === 'all' ? allPins(chain, game, title) : pinsFor(chain, game, view, title);
+    const keys = new Set(list.map(pinKey));
+    const extra =
+      view === 'all'
+        ? Object.keys(changes)
+            .filter((k) => !keys.has(k))
+            .flatMap((k) => {
+              const [task, t] = k.split('|');
+              return pinsFor(chain, game, t === '' ? null : Number(t), title).filter((p) => p.key === task);
+            })
+        : [];
+    return [...list, ...extra].map((p) => {
+      const changed = changes[pinKey(p)];
       return changed ? { ...p, location: changed, own: true } : p;
     });
-  }, [chain, game, track, changes]);
+  }, [chain, game, view, changes]);
 
   // Kaart één keer aanmaken.
   useEffect(() => {
@@ -75,8 +92,8 @@ export default function MapPage() {
           m.fitBounds([[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]], { padding: 60, maxZoom: 17 });
         }
         m.addSource('radius', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-        m.addLayer({ id: 'radius-fill', type: 'fill', source: 'radius', paint: { 'fill-color': '#f97316', 'fill-opacity': 0.15 } });
-        m.addLayer({ id: 'radius-line', type: 'line', source: 'radius', paint: { 'line-color': '#c2410c', 'line-width': 1.5 } });
+        m.addLayer({ id: 'radius-fill', type: 'fill', source: 'radius', paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.15 } });
+        m.addLayer({ id: 'radius-line', type: 'line', source: 'radius', paint: { 'line-color': ['get', 'color'], 'line-width': 1.5 } });
         setReady((n) => n + 1);
       });
       map.current = m;
@@ -96,20 +113,21 @@ export default function MapPage() {
       for (const pin of pins) {
         if (!pin.location) continue;
         const el = document.createElement('div');
-        el.className = `pin${pin.editable ? ' editable' : ''}${pin.key === selected ? ' selected' : ''}`;
-        el.title = pin.title;
-        el.textContent = pin.title.slice(0, 2).toUpperCase();
+        el.className = `pin${pin.editable ? ' editable' : ''}${pin.logo ? ' logo' : ''}${pinKey(pin) === selected ? ' selected' : ''}`;
+        el.title = `${pin.title} (${trackName(pin.track)})`;
+        if (pin.editable) el.style.backgroundColor = trackColor(pin.track);
+        if (!pin.logo) el.textContent = pin.label;
         const marker = new MarkerClass({ element: el, draggable: pin.editable })
           .setLngLat([pin.location.lng, pin.location.lat])
           .addTo(m);
-        el.addEventListener('click', () => setSelected(pin.key));
+        el.addEventListener('click', () => setSelected(pinKey(pin)));
         marker.on('dragend', () => {
           const { lat, lng } = marker.getLngLat();
           setChanges((c) => ({
             ...c,
-            [changeKey(pin.key, track)]: { lat: round(lat), lng: round(lng), radius: pin.location!.radius },
+            [pinKey(pin)]: { lat: round(lat), lng: round(lng), radius: pin.location!.radius },
           }));
-          setSelected(pin.key);
+          setSelected(pinKey(pin));
         });
         markers.current.push(marker);
       }
@@ -120,30 +138,30 @@ export default function MapPage() {
           .filter((p) => p.location)
           .map((p) => ({
             type: 'Feature',
-            properties: {},
+            properties: { color: p.editable ? trackColor(p.track) : '#9ca3af' },
             geometry: { type: 'Polygon', coordinates: [circle(p.location!.lat, p.location!.lng, p.location!.radius)] },
           })),
       });
     });
-  }, [pins, ready, selected, track]);
+  }, [pins, ready, selected]);
 
   if (!chain || !game) return errors.length ? <ul className="errors">{errors.map((e, i) => <li key={i}>{e}</li>)}</ul> : <p className="muted">Laden…</p>;
 
   const self = chain[chain.length - 1]!;
   const tracks = trackCount(game);
-  const current = pins.find((p) => p.key === selected) ?? null;
+  const current = pins.find((p) => pinKey(p) === selected) ?? null;
   const dirty = Object.keys(changes).length;
 
   const place = (pin: Pin) => {
     const c = map.current?.getCenter();
     if (!c) return;
-    setChanges({ ...changes, [changeKey(pin.key, track)]: { lat: round(c.lat), lng: round(c.lng), radius: pin.location?.radius ?? 25 } });
-    setSelected(pin.key);
+    setChanges({ ...changes, [pinKey(pin)]: { lat: round(c.lat), lng: round(c.lng), radius: pin.location?.radius ?? 25 } });
+    setSelected(pinKey(pin));
   };
 
   const setRadius = (pin: Pin, radius: number) => {
     if (!pin.location || !(radius > 0)) return;
-    setChanges({ ...changes, [changeKey(pin.key, track)]: { ...pin.location, radius: Math.round(radius) } });
+    setChanges({ ...changes, [pinKey(pin)]: { ...pin.location, radius: Math.round(radius) } });
   };
 
   const save = async () => {
@@ -180,13 +198,18 @@ export default function MapPage() {
       </p>
       <h1>Locaties op de kaart</h1>
       <p className="muted">
-        Sleep een oranje pin naar de juiste plek. Grijze pinnen komen uit een laag erboven of mogen hier niet worden
-        aangepast. {self.game.layer === 'client' ? 'Een klantvariant past geen locaties aan.' : ''}
+        Sleep een pin naar de juiste plek. Elke track heeft een eigen kleur; oranje is een vaste locatie voor alle
+        tracks. Grijze pinnen mogen hier niet worden aangepast. {self.game.layer === 'client' ? 'Een klantvariant past geen locaties aan.' : ''}
       </p>
       <div className="row" style={{ alignItems: 'center' }}>
         <div style={{ flex: '0 1 260px' }}>
           <label htmlFor="track">Toon</label>
-          <select id="track" value={track ?? ''} onChange={(e) => setTrack(e.target.value === '' ? null : Number(e.target.value))}>
+          <select
+            id="track"
+            value={view === 'all' ? 'all' : (view ?? '')}
+            onChange={(e) => setView(e.target.value === 'all' ? 'all' : e.target.value === '' ? null : Number(e.target.value))}
+          >
+            <option value="all">Alles op één kaart</option>
             <option value="">Vaste locaties (alle tracks)</option>
             {Array.from({ length: tracks }, (_, i) => (
               <option key={i + 1} value={i + 1}>
@@ -216,7 +239,9 @@ export default function MapPage() {
           {current ? (
             <>
               <h2 style={{ marginTop: 0 }}>{current.title}</h2>
-              <p className="muted">{current.key}</p>
+              <p className="muted">
+                <span className="dot" style={{ background: trackColor(current.track) }} /> {current.key} · {trackName(current.track)}
+              </p>
               {current.location ? (
                 <>
                   <p>
@@ -233,7 +258,7 @@ export default function MapPage() {
                   />
                 </>
               ) : (
-                <p className="muted">Nog geen locatie{track ? ` voor track ${track}` : ''}.</p>
+                <p className="muted">Nog geen locatie voor {trackName(current.track)}.</p>
               )}
               {current.editable ? (
                 <div className="actions">
@@ -249,16 +274,21 @@ export default function MapPage() {
             <p className="muted">Klik op een pin of kies een opdracht hieronder.</p>
           )}
           <h2>Opdrachten</h2>
+          {view === 'all' ? (
+            <p className="muted">Opdrachten zonder locatie plaats je door hierboven één track of de vaste locaties te kiezen.</p>
+          ) : null}
           <ul className="pinlist">
             {pins
               .filter((p) => p.editable || p.location)
               .map((p) => (
-                <li key={p.key}>
-                  <button className="link" onClick={() => setSelected(p.key)}>
+                <li key={pinKey(p)}>
+                  <span className="dot" style={{ background: trackColor(p.track) }} />{' '}
+                  <button className="link" onClick={() => setSelected(pinKey(p))}>
                     {p.title}
                   </button>{' '}
+                  {view === 'all' && p.track !== null ? <span className="muted">T{p.track}</span> : null}
                   {p.location ? '' : <span className="muted">(geen locatie)</span>}
-                  {changes[changeKey(p.key, track)] ? <span className="badge test">gewijzigd</span> : null}
+                  {changes[pinKey(p)] ? <span className="badge test">gewijzigd</span> : null}
                 </li>
               ))}
           </ul>

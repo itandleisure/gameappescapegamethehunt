@@ -71,6 +71,8 @@ export interface Task {
   image?: string;
   /** Kort nummer of teken in het kaarticoon (bijvoorbeeld 1, 2, 3) in plaats van de titel. */
   mapLabel?: string;
+  /** Kaarticoon: 'logo' = het Escape Game The Hunt-logo in de kleur van de track (zoals bij de bonusvragen). */
+  mapIcon?: 'logo';
   answer: AnswerSpec;
   /** Punten bij een goed (of afgerond) antwoord. */
   points: number;
@@ -235,6 +237,12 @@ export const MAP_STYLES: readonly { id: string; name: string; source: MapSource 
   { id: 'schatkaart', name: 'Schatkaart', source: { styleUrl: `${STYLE_BASE}/schatkaart.json`, attribution: DEFAULT_MAP_SOURCE.attribution! } },
   { id: 'kleur', name: 'Gewone kleurenkaart', source: { styleUrl: OPENFREEMAP_LIBERTY, attribution: DEFAULT_MAP_SOURCE.attribution! } },
 ];
+
+/** Kleur per track (index 0 = vaste locatie, voor alle tracks), goed te onderscheiden op een grijze kaart. */
+export const TRACK_COLORS = ['#ea580c', '#2563eb', '#16a34a', '#db2777', '#ca8a04', '#7c3aed', '#0891b2', '#dc2626', '#4b5563', '#65a30d'] as const;
+export function trackColor(track: number | null): string {
+  return TRACK_COLORS[(track ?? 0) % TRACK_COLORS.length]!;
+}
 
 export interface GpsSettings {
   /** Metingen met een grotere onzekerheid (meters) tellen niet mee. */

@@ -6,7 +6,7 @@ import {
   Marker,
   NativeUserLocation,
 } from "@maplibre/maplibre-react-native";
-import { StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 import { colors, radius, space } from "../theme";
 import type { GameMapProps } from "./types";
 
@@ -55,14 +55,24 @@ export default function NativeMap({
       ) : null}
       {markers.map((m) => (
         <Marker key={m.id} id={m.id} lngLat={[m.lng, m.lat]} anchor="bottom">
-          <View style={[styles.pin, m.badge ? styles.badge : null]}>
-            <Text
-              style={[styles.pinText, m.badge ? styles.badgeText : null]}
-              numberOfLines={1}
-            >
-              {m.badge ?? m.label}
-            </Text>
-          </View>
+          {m.logoColor ? (
+            <View style={[styles.logo, { backgroundColor: m.logoColor }]}>
+              <Image
+                source={require("../../../assets/logo-icoon.png")}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
+            </View>
+          ) : (
+            <View style={[styles.pin, m.badge ? styles.badge : null]}>
+              <Text
+                style={[styles.pinText, m.badge ? styles.badgeText : null]}
+                numberOfLines={1}
+              >
+                {m.badge ?? m.label}
+              </Text>
+            </View>
+          )}
         </Marker>
       ))}
       <NativeUserLocation mode="heading" />
@@ -80,6 +90,8 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.background,
   },
+  logo: { width: 36, height: 36, borderRadius: 18, borderWidth: 2, borderColor: colors.background, alignItems: 'center', justifyContent: 'center' },
+  logoImage: { width: 28, height: 28 },
   badge: {
     width: 32,
     height: 32,

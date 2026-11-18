@@ -2,6 +2,7 @@ import { useEffect, useRef, type ComponentType, type Ref, useState } from 'react
 import { StyleSheet } from 'react-native';
 import { WebView as RNWebView, type WebViewProps } from 'react-native-webview';
 import { colors } from '../theme';
+import { LOGO_ICON_DATA_URI } from './logo-data';
 import type { GameMapProps } from './types';
 
 /**
@@ -30,6 +31,7 @@ window.onerror = function (m) { showError(String(m)); };
 html,body,#map{margin:0;height:100%;background:${dark}}
 .pin{background:${accent};color:${dark};font:700 13px -apple-system,sans-serif;padding:4px 8px;border-radius:12px;border:2px solid ${dark};max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .badge{width:30px;height:30px;padding:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px}
+.logo{width:34px;height:34px;padding:0;border-radius:50%;background-image:url(${LOGO_ICON_DATA_URI});background-size:78%;background-position:center;background-repeat:no-repeat}
 .me{width:16px;height:16px;border-radius:50%;background:#2f81f7;border:3px solid #fff;box-shadow:0 0 0 2px rgba(47,129,247,.4)}
 #err{position:absolute;top:40%;left:16px;right:16px;text-align:center;color:#fff;font:14px -apple-system,sans-serif}
 </style></head><body><div id="map"></div><script>
@@ -47,7 +49,7 @@ window.hunt = (data) => {
 function apply(d) {
   if (d.bounds && !fitted) { map.fitBounds([[d.bounds[0], d.bounds[1]], [d.bounds[2], d.bounds[3]]], { padding: { top: 140, bottom: 120, left: 40, right: 40 }, animate: false }); fitted = true; }
   markers.forEach((m) => m.remove());
-  markers = d.markers.map((m) => { const el = document.createElement('div'); el.className = m.badge ? 'pin badge' : 'pin'; el.textContent = m.badge || m.label;
+  markers = d.markers.map((m) => { const el = document.createElement('div'); if (m.logoColor) { el.className = 'pin logo'; el.style.backgroundColor = m.logoColor; } else { el.className = m.badge ? 'pin badge' : 'pin'; el.textContent = m.badge || m.label; }
     return new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat([m.lng, m.lat]).addTo(map); });
   if (d.overlay && !map.getSource('overlay')) {
     const o = d.overlay;
