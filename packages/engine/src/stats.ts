@@ -1,5 +1,5 @@
 import { distanceMeters, type GpsFix } from './geo.js';
-import type { GamePackage, RevealPiece, TeamState } from './types.js';
+import type { GamePackage, RevealPiece, TeamState, Text } from './types.js';
 
 export interface DistanceOptions {
   /** Metingen met grotere onzekerheid tellen niet mee. Standaard 30 m. */
@@ -108,4 +108,31 @@ export function hiddenPieces(game: GamePackage, state: TeamState, playground: st
   const reveal = game.playgrounds.find((p) => p.id === playground)?.reveal;
   if (!reveal) return [];
   return reveal.pieces.filter((piece) => state.tasks[piece.task]?.correct !== true);
+}
+
+/** Wat een team op een tabblad met codevakjes ziet. */
+export interface CodeView {
+  /** Per vakje het stukje code, of null zolang de opdracht nog niet goed is. */
+  boxes: (string | null)[];
+  /** Het hintveld: null als er geen is, `open: false` zolang de hint nog dicht is. */
+  hint: { open: false } | { open: true; text: Text } | null;
+}
+
+/**
+ * De codevakjes en het hintveld van een tabblad voor één team. Een vakje gaat
+ * open als zijn opdracht goed is; het hintveld zodra de hintopdracht zichtbaar
+ * wordt (of al gedaan is).
+ */
+export function codeView(game: GamePackage, state: TeamState, playground: string): CodeView | null {
+  const code = game.playgrounds.find((p) => p.id === playground)?.code;
+  if (!code) return null;
+  const boxes = code.boxes.map((box) => (state.tasks[box.task]?.correct === true ? box.value : null));
+  let hint: CodeView['hint'] = null;
+  if (code.hint) {
+    const task = game.tasks.find((t) => t.id === code.hint);
+    const ts = state.tasks[code.hint];
+    const open = !!task && !!ts && (ts.correct === true || (ts.status !== 'hidden' && ts.status !== 'deactivated'));
+    hint = open ? { open: true, text: task!.body } : { open: false };
+  }
+  return { boxes, hint };
 }

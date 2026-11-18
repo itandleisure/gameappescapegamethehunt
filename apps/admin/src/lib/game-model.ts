@@ -22,6 +22,7 @@ import type {
   PlayBoundary,
   MeetingPoint,
   Playground,
+  PlaygroundCode,
   PlaygroundReveal,
   OverridableField,
   Override,
@@ -127,6 +128,8 @@ interface BaseSettings {
   playgrounds: string[];
   /** Foto die stukje voor stukje zichtbaar wordt, per playground. */
   playgroundReveal?: Record<string, PlaygroundReveal>;
+  /** Vakjes met de GPS-code en het hintveld, per playground. */
+  playgroundCode?: Record<string, PlaygroundCode>;
   gps: BaseGame['gps'];
   meetingPoint?: LatLng;
   mapOverlay?: MapOverlay;
@@ -136,7 +139,7 @@ interface BaseSettings {
 }
 
 const TASK_TEXT_FIELDS = ['title', 'body', 'confirm', 'correctComment', 'wrongComment'] as const;
-const GAME_VALUE_FIELDS: GameField[] = ['meetingPoint', 'mapOverlay', 'map', 'boundary'];
+const GAME_VALUE_FIELDS: GameField[] = ['meetingPoint', 'mapOverlay', 'map', 'boundary', 'playgroundCodes'];
 
 // ---------------------------------------------------------------------------
 // Teksten
@@ -288,6 +291,8 @@ export function baseToRows(base: BaseGame, game: Omit<GameRow, 'languages' | 'de
   if (base.briefing) settings.briefing = base.briefing;
   const reveal = Object.fromEntries(base.playgrounds.filter((p) => p.reveal).map((p) => [p.id, p.reveal!]));
   if (Object.keys(reveal).length) settings.playgroundReveal = reveal;
+  const code = Object.fromEntries(base.playgrounds.filter((p) => p.code).map((p) => [p.id, p.code!]));
+  if (Object.keys(code).length) settings.playgroundCode = code;
 
   return {
     game: {
@@ -391,6 +396,8 @@ export function rowsToBase(rows: LayerRows): BaseGame {
       if (body && Object.keys(body).length) p.body = body;
       const reveal = settings.playgroundReveal?.[key];
       if (reveal) p.reveal = reveal;
+      const code = settings.playgroundCode?.[key];
+      if (code) p.code = code;
       return p;
     }),
     overridable: rows.overridable.map((o): OverridableField => {

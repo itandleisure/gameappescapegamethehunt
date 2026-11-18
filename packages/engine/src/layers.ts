@@ -22,7 +22,10 @@ export type TaskField =
   | 'correctComment'
   | 'wrongComment';
 
-export type GameField = 'name' | 'meetingPoint' | 'mapOverlay' | 'map' | 'boundary';
+export type GameField = 'name' | 'meetingPoint' | 'mapOverlay' | 'map' | 'boundary' | 'playgroundCodes';
+
+/** Waarde van spelveld `playgroundCodes`: per tabblad de stukjes code, in de volgorde van de vakjes. */
+export type PlaygroundCodes = Record<string, string[]>;
 
 export type FieldRef = { task: string; field: TaskField } | { game: GameField };
 
@@ -115,7 +118,8 @@ export function composeGame(
         applyTaskOverride(task, override.target.field, value);
       } else {
         const field = override.target.game;
-        (pkg as unknown as Record<string, unknown>)[field] = value;
+        if (field === 'playgroundCodes') applyPlaygroundCodes(pkg, value as PlaygroundCodes);
+        else (pkg as unknown as Record<string, unknown>)[field] = value;
       }
     }
   }
@@ -124,6 +128,19 @@ export function composeGame(
   issues.push(...validateGame(pkg));
   if (issues.length) throw new CompositionError(issues);
   return pkg;
+}
+
+/** Zet de stukjes code van een stad in de vakjes van de tabbladen. Lege stukjes laten het basisspel staan. */
+function applyPlaygroundCodes(pkg: GamePackage, codes: PlaygroundCodes): void {
+  if (!codes || typeof codes !== 'object') return;
+  for (const p of pkg.playgrounds) {
+    const values = codes[p.id];
+    if (!p.code || !Array.isArray(values)) continue;
+    p.code.boxes = p.code.boxes.map((box, i) => {
+      const v = values[i];
+      return typeof v === 'string' && v.trim() !== '' ? { ...box, value: v.trim() } : box;
+    });
+  }
 }
 
 function applyTaskOverride(task: Task, field: TaskField, value: unknown): void {
@@ -228,6 +245,15 @@ export function validateGame(game: GamePackage): string[] {
       const inside = piece.x >= 0 && piece.y >= 0 && piece.w > 0 && piece.h > 0 && piece.x + piece.w <= r.width && piece.y + piece.h <= r.height;
       if (!inside) issues.push(`playground ${p.id}: vak ${i + 1} valt buiten de foto`);
     });
+  }
+  for (const p of game.playgrounds) {
+    const c = p.code;
+    if (!c) continue;
+    c.boxes.forEach((box, i) => {
+      if (!taskIds.has(box.task)) issues.push(`playground ${p.id}: vakje ${i + 1} hoort bij onbekende opdracht ${box.task}`);
+      if (typeof box.value !== 'string') issues.push(`playground ${p.id}: vakje ${i + 1} heeft geen code`);
+    });
+    if (c.hint !== undefined && !taskIds.has(c.hint)) issues.push(`playground ${p.id}: hintveld hoort bij onbekende opdracht ${c.hint}`);
   }
   if (game.briefing !== undefined && !sequences.has(game.briefing)) issues.push(`speluitleg: onbekende reeks ${game.briefing}`);
   if (game.boundary) {

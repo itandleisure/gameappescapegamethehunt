@@ -1,4 +1,4 @@
-import type { PlaygroundReveal, RevealPiece } from "@hunt/engine";
+import type { PlaygroundCode, PlaygroundReveal, RevealPiece } from "@hunt/engine";
 
 /** Een punt op de foto in pixels van de foto zelf, uit een muispositie op de (verkleinde) weergave. */
 export function toImagePoint(
@@ -54,4 +54,33 @@ export function playgroundKey(name: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+/** Standaard aantal vakjes voor de GPS-code. */
+export const CODE_BOXES = 6;
+
+/**
+ * Een eerste opzet voor de codevakjes van een tabblad. Heeft het tabblad nog de
+ * oude foto met afgedekte vakken, dan nemen we de opdrachten daarvan over (de
+ * eerste zes worden vakjes, het zevende vak wordt het hintveld). Anders de
+ * puzzels met tag `oplossing` en de opdracht `extractie-hint` als die bestaat.
+ */
+export function initialCode(
+  reveal: Pick<PlaygroundReveal, "pieces"> | undefined,
+  tasks: { id: string; tags: string[] }[],
+): PlaygroundCode {
+  const fromPhoto = (reveal?.pieces ?? []).map((p) => p.task);
+  const puzzles = fromPhoto.length
+    ? fromPhoto.slice(0, CODE_BOXES)
+    : tasks.filter((t) => t.tags.includes("oplossing")).slice(0, CODE_BOXES).map((t) => t.id);
+  while (puzzles.length < CODE_BOXES && tasks.length) puzzles.push(tasks[0]!.id);
+  const hint = fromPhoto[CODE_BOXES] ?? tasks.find((t) => t.id === "extractie-hint")?.id;
+  const code: PlaygroundCode = { boxes: puzzles.map((task) => ({ task, value: "" })) };
+  if (hint) code.hint = hint;
+  return code;
+}
+
+/** De stukjes code van een stad, aangevuld tot het aantal vakjes; leeg betekent: die van het basisspel. */
+export function cityCodeValues(code: PlaygroundCode, own: string[] | undefined): string[] {
+  return code.boxes.map((_, i) => own?.[i] ?? "");
 }

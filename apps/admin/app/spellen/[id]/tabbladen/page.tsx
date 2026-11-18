@@ -3,6 +3,8 @@ import {
   composeGame,
   type BaseGame,
   type Playground,
+  type PlaygroundCode,
+  type PlaygroundCodes,
   type PlaygroundReveal,
   type Text,
 } from "@hunt/engine";
@@ -22,6 +24,8 @@ import { t as tr } from "@/lib/i18n";
 import { useT } from "@/lib/language";
 import { mediaPath } from "@/lib/map-settings";
 import {
+  cityCodeValues,
+  initialCode,
   newPiece,
   playgroundKey,
   rectBetween,
@@ -156,6 +160,25 @@ export default function TabbladenPage() {
       );
       if (Object.keys(reveal).length) settings.playgroundReveal = reveal;
       else delete settings.playgroundReveal;
+      const code = Object.fromEntries(
+        cleaned.filter((p) => p.code).map((p) => [p.id, p.code!]),
+      );
+      if (Object.keys(code).length) settings.playgroundCode = code;
+      else delete settings.playgroundCode;
+      // Elke stad vult haar eigen GPS-code in de vakjes in.
+      const codesOpen = chain[0]!.overridable.some(
+        (o) => o.task_id === null && o.field === "playgroundCodes",
+      );
+      if (Object.keys(code).length && !codesOpen)
+        must(
+          await db.from("overridable_fields").insert({
+            game_id: id,
+            task_id: null,
+            field: "playgroundCodes",
+            layers: ["city"],
+            label: "GPS-code extractiepunt",
+          }),
+        );
       if (briefing) settings.briefing = briefing;
       else delete settings.briefing;
       must(await db.from("games").update({ settings }).eq("id", id));
@@ -179,13 +202,16 @@ export default function TabbladenPage() {
         {t('Tabbladen staan in de app onder Opdrachten, zoals Speluitleg en Extractiepunt. Een tabblad kan een naslagtekst hebben (per taal) en een foto met afgedekte vakken: elk vak wordt zichtbaar zodra de opdracht die erbij hoort goed is. Gelezen uitleg verdwijnt uit de lijst; de naslagtekst blijft hier staan.')}
       </p>
       {!isBase ? (
-        <p className="notice">
-          {t("Tabbladen stel je in bij het basisspel:")}{" "}
-          <Link href={`/spellen/${chain[0]!.game.id}/tabbladen`}>
-            {chain[0]!.game.slug}
-          </Link>
-          .
-        </p>
+        <>
+          <p className="notice">
+            {t("Tabbladen stel je in bij het basisspel:")}{" "}
+            <Link href={`/spellen/${chain[0]!.game.id}/tabbladen`}>
+              {chain[0]!.game.slug}
+            </Link>
+            .
+          </p>
+          <CityCodes gameId={id} chain={chain} base={base} onSaved={load} />
+        </>
       ) : (
         <>
           <div className="actions">
@@ -387,7 +413,14 @@ function PlaygroundCard({
         </div>
       ))}
 
+      <CodeEditor base={base} playground={p} onChange={onChange} />
+
       <h3>{t('Foto met afgedekte vakken')}</h3>
+      {p.code ? (
+        <p className="muted">
+          {t('Dit tabblad heeft codevakjes. Een foto is dan niet meer nodig; staat er nog een, dan toont de app allebei.')}
+        </p>
+      ) : null}
       <div className="actions" style={{ marginTop: 0 }}>
         <label className={`filebutton${busy ? " disabled" : ""}`}>
           {busy ? t("Bezig…") : reveal ? t("Andere foto") : t("Foto uploaden")}
@@ -565,6 +598,12 @@ function cleanPlayground(p: Playground): Playground {
   const out: Playground = { id: p.id, name: cleanText(p.name) };
   if (Object.keys(body).length) out.body = body;
   if (p.reveal) out.reveal = p.reveal;
+  if (p.code) {
+    out.code = {
+      boxes: p.code.boxes.map((b) => ({ task: b.task, value: b.value.trim() })),
+    };
+    if (p.code.hint) out.code.hint = p.code.hint;
+  }
   return out;
 }
 
@@ -590,4 +629,341 @@ function imageSize(file: File): Promise<{ width: number; height: number }> {
       reject(new Error(tr("Deze afbeelding kan niet worden gelezen.")));
     img.src = url;
   });
+}
+
+/** Titel van een opdracht voor in een keuzelijst van de beheeromgeving. */
+function taskOption(base: BaseGame, id: string): string {
+  const tk = base.tasks.find((x) => x.id === id);
+  return tk ? `${tk.title[base.defaultLanguage] || tk.id} (${tk.id})` : id;
+}
+
+/**
+ * Zes vakjes voor de GPS-code en een hintveld. In de app staat alleen het
+ * stukje code (of een vraagteken), geen puzzelnaam: zo werkt dezelfde opzet in
+ * elk land, ook met andere of anders genoemde puzzels.
+ */
+function CodeEditor({
+  base,
+  playground: p,
+  onChange,
+}: {
+  base: BaseGame;
+  playground: Playground;
+  onChange: (change: (p: Playground) => Playground) => void;
+}) {
+  const t = useT();
+  const code = p.code;
+  const setCode = (c: PlaygroundCode | undefined) =>
+    onChange((pg) => {
+      const { code: _c, ...rest } = pg;
+      return c ? { ...rest, code: c } : rest;
+    });
+  const setBox = (i: number, change: Partial<PlaygroundCode["boxes"][number]>) =>
+    code &&
+    setCode({
+      ...code,
+      boxes: code.boxes.map((b, j) => (j === i ? { ...b, ...change } : b)),
+    });
+
+  return (
+    <>
+      <h3>{t("GPS-code in vakjes")}</h3>
+      <p className="muted">
+        {t("Elk vakje gaat in de app open zodra de gekozen opdracht goed is en toont dan zijn stukje code. Puzzelnamen staan er niet bij. Elke stad vult haar eigen code in; wat je hier invult, geldt voor steden die niets invullen.")}
+      </p>
+      {!code ? (
+        <div className="actions" style={{ marginTop: 0 }}>
+          <button
+            className="secondary"
+            onClick={() => setCode(initialCode(p.reveal, base.tasks))}
+          >
+            {p.reveal
+              ? t("Omzetten naar codevakjes")
+              : t("Codevakjes toevoegen")}
+          </button>
+        </div>
+      ) : (
+        <div
+          style={{
+            display: "flex",
+            gap: 20,
+            flexWrap: "wrap",
+            alignItems: "flex-start",
+          }}
+        >
+          <div style={{ flex: "1 1 360px" }}>
+            {code.boxes.map((box, i) => (
+              <div key={i} className="row" style={{ marginBottom: 8 }}>
+                <div style={{ flex: "0 0 auto", paddingTop: 28 }}>
+                  {i + 1}
+                </div>
+                <div>
+                  <label htmlFor={`${p.id}-code-task-${i}`}>
+                    {t("Opdracht")}
+                  </label>
+                  <select
+                    id={`${p.id}-code-task-${i}`}
+                    value={box.task}
+                    onChange={(e) => setBox(i, { task: e.target.value })}
+                  >
+                    {base.tasks.map((tk) => (
+                      <option key={tk.id} value={tk.id}>
+                        {taskOption(base, tk.id)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ flex: "0 0 120px" }}>
+                  <label htmlFor={`${p.id}-code-value-${i}`}>
+                    {t("Code")}
+                  </label>
+                  <input
+                    id={`${p.id}-code-value-${i}`}
+                    value={box.value}
+                    placeholder="53."
+                    onChange={(e) => setBox(i, { value: e.target.value })}
+                  />
+                </div>
+                <div style={{ flex: "0 0 auto", paddingTop: 28 }}>
+                  <button
+                    className="link"
+                    onClick={() =>
+                      setCode({
+                        ...code,
+                        boxes: code.boxes.filter((_, j) => j !== i),
+                      })
+                    }
+                  >
+                    {t("Weghalen")}
+                  </button>
+                </div>
+              </div>
+            ))}
+            <div className="actions" style={{ marginTop: 0 }}>
+              <button
+                className="secondary"
+                onClick={() =>
+                  setCode({
+                    ...code,
+                    boxes: [
+                      ...code.boxes,
+                      { task: base.tasks[0]?.id ?? "", value: "" },
+                    ],
+                  })
+                }
+              >
+                {t("Vakje toevoegen")}
+              </button>
+              <button className="link" onClick={() => setCode(undefined)}>
+                {t("Codevakjes weghalen")}
+              </button>
+            </div>
+            <label htmlFor={`${p.id}-code-hint`}>{t("Hintveld")}</label>
+            <select
+              id={`${p.id}-code-hint`}
+              value={code.hint ?? ""}
+              onChange={(e) => {
+                const { hint: _h, ...rest } = code;
+                setCode(e.target.value ? { ...rest, hint: e.target.value } : rest);
+              }}
+            >
+              <option value="">{t("Geen hintveld")}</option>
+              {base.tasks.map((tk) => (
+                <option key={tk.id} value={tk.id}>
+                  {taskOption(base, tk.id)}
+                </option>
+              ))}
+            </select>
+            <p className="muted">
+              {t("Het hintveld toont de tekst van deze opdracht zodra die in het spel verschijnt. Een stad past die tekst aan bij de opdracht zelf.")}
+            </p>
+          </div>
+          <CodePreview values={code.boxes.map((b) => b.value)} hint={!!code.hint} />
+        </div>
+      )}
+    </>
+  );
+}
+
+/** Zo ziet het tabblad er in de app uit als alles open is. */
+function CodePreview({ values, hint }: { values: string[]; hint: boolean }) {
+  const t = useT();
+  const cell = {
+    background: "#1b1f23",
+    border: "1px solid #f5a524",
+    borderRadius: 6,
+    color: "#f4f5f6",
+    font: "800 22px sans-serif",
+    minHeight: 56,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  } as const;
+  return (
+    <div style={{ flex: "0 0 280px" }}>
+      <p className="muted" style={{ marginTop: 0 }}>
+        {t("Voorbeeld in de app, alles open")}
+      </p>
+      <div
+        style={{
+          background: "#101214",
+          padding: 12,
+          borderRadius: 12,
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: 8,
+        }}
+      >
+        {values.map((v, i) => (
+          <div key={i} style={cell}>
+            {v || "?"}
+          </div>
+        ))}
+        {hint ? (
+          <div
+            style={{
+              ...cell,
+              gridColumn: "1 / -1",
+              font: "400 14px sans-serif",
+              padding: 8,
+            }}
+          >
+            {t("Hinttekst")}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Een stad vult hier haar eigen GPS-code in de vakjes van het basisspel in.
+ * Een leeg vakje neemt de code van het basisspel over.
+ */
+function CityCodes({
+  gameId,
+  chain,
+  base,
+  onSaved,
+}: {
+  gameId: string;
+  chain: LayerRows[];
+  base: BaseGame;
+  onSaved: () => Promise<void>;
+}) {
+  const t = useT();
+  const self = chain[chain.length - 1]!;
+  const withCode = base.playgrounds.filter((p) => p.code);
+  const stored = (self.overrides.find(
+    (o) => o.task_id === null && o.field === "playgroundCodes",
+  )?.value ?? {}) as PlaygroundCodes;
+  const [values, setValues] = useState<PlaygroundCodes>(() =>
+    Object.fromEntries(withCode.map((p) => [p.id, cityCodeValues(p.code!, stored[p.id])])),
+  );
+  const [dirty, setDirty] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  if (!withCode.length) return null;
+
+  const allowed = chain[0]!.overridable.some(
+    (o) =>
+      o.task_id === null &&
+      o.field === "playgroundCodes" &&
+      o.layers.includes(self.game.layer),
+  );
+  if (!allowed)
+    return (
+      <p className="muted">
+        {self.game.layer === "city"
+          ? t("De GPS-code in de vakjes kun je pas per stad invullen als het basisspel is opgeslagen met codevakjes en deze stad die versie gebruikt.")
+          : t("De GPS-code in de vakjes vult de stad in.")}
+      </p>
+    );
+
+  const save = async () => {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const db = supabase();
+      const clean = Object.fromEntries(
+        Object.entries(values).map(([k, v]) => [k, v.map((x) => x.trim())]),
+      );
+      const any = Object.values(clean).some((v) => v.some((x) => x));
+      const del = await db
+        .from("overrides")
+        .delete()
+        .eq("game_id", gameId)
+        .is("task_id", null)
+        .eq("field", "playgroundCodes");
+      if (del.error) throw new Error(del.error.message);
+      if (any) {
+        const ins = await db.from("overrides").insert({
+          game_id: gameId,
+          task_id: null,
+          field: "playgroundCodes",
+          value: clean,
+        });
+        if (ins.error) throw new Error(ins.error.message);
+      }
+      setDirty(false);
+      setMessage(t("Opgeslagen. Publiceer het spel om het in de app te zien."));
+      await onSaved();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      {withCode.map((p) => {
+        const hint = p.code!.hint;
+        return (
+          <section key={p.id} className="card" style={{ marginTop: 16 }}>
+            <h2 style={{ marginTop: 0 }}>
+              {t("GPS-code: {name}", { name: p.name[base.defaultLanguage] || p.id })}
+            </h2>
+            <p className="muted">
+              {t("Vul de GPS-code van het extractiepunt in deze stad in, één stukje per vakje. Een leeg vakje neemt de code van het basisspel over.")}
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(p.code!.boxes.length, 3)}, minmax(0, 140px))`, gap: 8 }}>
+              {p.code!.boxes.map((box, i) => (
+                <div key={i}>
+                  <label htmlFor={`${p.id}-city-code-${i}`}>
+                    {t("Vakje {n}", { n: i + 1 })}
+                  </label>
+                  <input
+                    id={`${p.id}-city-code-${i}`}
+                    value={values[p.id]?.[i] ?? ""}
+                    placeholder={box.value}
+                    onChange={(e) => {
+                      const next = [...(values[p.id] ?? [])];
+                      next[i] = e.target.value;
+                      setValues({ ...values, [p.id]: next });
+                      setDirty(true);
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+            {hint ? (
+              <p className="muted">
+                {t("De hinttekst pas je aan bij de opdracht:")}{" "}
+                <Link href={`/spellen/${gameId}/opdracht/${hint}`}>
+                  {taskOption(base, hint)}
+                </Link>
+              </p>
+            ) : null}
+          </section>
+        );
+      })}
+      <div className="actions">
+        <button onClick={() => void save()} disabled={busy || !dirty}>
+          {busy ? t("Bezig…") : dirty ? t("Opslaan") : t("Opgeslagen")}
+        </button>
+      </div>
+      {message ? <p className="notice">{message}</p> : null}
+    </>
+  );
 }
