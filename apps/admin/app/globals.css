@@ -89,3 +89,54 @@ header.top .brand .logo { height: 32px; width: auto; }
   .only-light { display: none; }
 }
 button.danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+
+/* Sessie live en resultaten */
+.small { font-size: 12px; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; }
+nav.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin: 16px 0; overflow-x: auto; }
+nav.tabs button { background: none; border: none; border-bottom: 3px solid transparent; border-radius: 0; color: var(--muted); padding: 8px 14px; white-space: nowrap; }
+nav.tabs button.active { color: var(--text); border-bottom-color: var(--accent); }
+.mapgrid .map.livemap { height: calc(100vh - 260px); min-height: 480px; }
+.teamlist { list-style: none; padding: 0; margin: 0; max-height: 50vh; overflow: auto; }
+.teamlist li { display: grid; grid-template-columns: 14px 1fr auto; gap: 2px 8px; align-items: center; padding: 6px 4px; border-radius: 6px; }
+.teamlist li.active { background: var(--bg); }
+.teamlist li .link:first-of-type { text-align: left; color: var(--text); font-weight: 600; text-decoration: none; }
+.teamlist li > .muted { grid-column: 2; }
+.teamlist li > .link.small { grid-column: 3; grid-row: 1 / span 2; }
+.warn { color: var(--danger); }
+.teammarker { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+.teammarker .dot { width: 18px; height: 18px; border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.5); }
+.teammarker .name { background: #fff; color: #1c1b19; font: 600 12px/1 system-ui, sans-serif; padding: 4px 6px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,.35); white-space: nowrap; }
+.teammarker.stale { opacity: 0.55; filter: grayscale(1); }
+.taskmarker { min-width: 20px; height: 20px; padding: 0 4px; border-radius: 10px; background: #1c1b19; color: #fff; font: 700 11px/20px system-ui, sans-serif; text-align: center; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35); }
+input.search { max-width: 320px; margin-bottom: 12px; }
+table.standings tr.clickable { cursor: pointer; }
+table.standings tr.clickable:hover td { background: var(--bg); }
+table.standings tfoot td { font-weight: 700; border-top: 2px solid var(--line); }
+table.standings tr.details > td { background: var(--bg); padding: 12px; }
+table.inner { font-size: 14px; }
+td.correct, li.correct { color: var(--ok); }
+td.wrong, li.wrong { color: var(--danger); }
+.answers { display: grid; gap: 12px; }
+.answercard { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px; }
+@media (max-width: 800px) { .answercard { grid-template-columns: 1fr; } }
+.answercard h3 { margin: 4px 0 8px; font-size: 16px; }
+.answercard .qhead { display: flex; justify-content: space-between; }
+.answercard .points { border: 1px solid var(--accent); color: var(--accent); border-radius: 6px; padding: 0 8px; font-weight: 700; }
+.answercard .body { white-space: pre-line; max-height: 4.5em; overflow: hidden; color: var(--muted); }
+.answercard .body.open { max-height: none; }
+.answercard .options { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.answercard .option { border: 1px solid var(--line); border-radius: 999px; padding: 1px 10px; font-size: 13px; }
+.answercard .option.correct { border-color: var(--ok); color: var(--ok); }
+.answercard .given { border-left: 1px solid var(--line); padding-left: 16px; }
+@media (max-width: 800px) { .answercard .given { border-left: none; padding-left: 0; } }
+.answercard .given ul { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 6px; }
+.answercard .given li { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.photowall { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.photowall figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.photowall img, .photowall .placeholder { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.photowall .placeholder { display: grid; place-items: center; }
+.photowall figcaption { padding: 8px 10px; }
+.buttonlink { display: inline-block; font-weight: 600; padding: 9px 16px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-text); text-decoration: none; }
+.teammarker { z-index: 2; }
