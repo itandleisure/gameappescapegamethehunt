@@ -13,7 +13,7 @@ import {
 } from "@/lib/game-store";
 import { GameNav } from "@/editor/GameNav";
 import { TemplateVersions } from "@/editor/TemplateVersions";
-import { CITY_TODOS, todoState, type TodoKey } from "@/lib/city-rollout";
+import { CITY_TODOS, setupHref, todoState, type TodoKey } from "@/lib/city-rollout";
 import {
   baseName,
   cleanName,
@@ -479,7 +479,7 @@ export default function GamePage() {
       {self.game.layer === "city" && todo ? (
         <section className="card" style={{ marginTop: 16 }}>
           <h2 style={{ marginTop: 0 }}>
-            {t("Nog te doen voor deze stad")}{" "}
+            {t("Stappenplan voor deze stad")}{" "}
             <span className="muted" style={{ fontWeight: 400, fontSize: 14 }}>
               {t("{done} van {n} klaar", {
                 done: CITY_TODOS.filter((td) => todo[td.key]).length,
@@ -489,45 +489,47 @@ export default function GamePage() {
           </h2>
           {justCreated ? (
             <p className="notice">
-              {t("De stad is aangemaakt. Alle iconen staan nu in het centrum van de stad; sleep ze op de kaart naar de juiste plek.")}
+              {t("De stad is aangemaakt. Loop het stappenplan door om de stad in te richten.")}
             </p>
           ) : null}
-          {CITY_TODOS.map((td) => {
-            const href =
-              td.link === "kaart"
-                ? `/spellen/${id}/kaart`
-                : td.link === "opdrachten"
-                  ? "#opdrachten"
-                  : null;
-            return (
-              <div key={td.key} className="check" style={{ margin: "6px 0" }}>
-                <input
-                  type="checkbox"
-                  id={`todo-${td.key}`}
-                  checked={Boolean(todo[td.key])}
-                  disabled={busy}
-                  onChange={(e) => void toggleTodo(td.key, e.target.checked)}
-                />
-                <label
-                  htmlFor={`todo-${td.key}`}
-                  style={{
-                    margin: 0,
-                    fontWeight: 400,
-                    fontSize: 15,
-                    textDecoration: todo[td.key] ? "line-through" : undefined,
-                    color: todo[td.key] ? "var(--muted)" : undefined,
-                  }}
-                >
-                  {t(td.label)}
-                </label>
-                {href ? (
-                  <Link href={href} className="muted" style={{ marginLeft: 8, fontSize: 13 }}>
-                    {t("openen")}
-                  </Link>
-                ) : null}
-              </div>
-            );
-          })}
+          {(() => {
+            const next = CITY_TODOS.find((td) => !todo[td.key]);
+            return next ? (
+              <p>
+                <Link href={setupHref(id, next.key)} className="button">
+                  {CITY_TODOS.some((td) => todo[td.key])
+                    ? t("Verder met het stappenplan")
+                    : t("Start het stappenplan")}
+                </Link>
+              </p>
+            ) : null;
+          })()}
+          {CITY_TODOS.map((td, i) => (
+            <div key={td.key} className="check" style={{ margin: "6px 0" }}>
+              <input
+                type="checkbox"
+                id={`todo-${td.key}`}
+                checked={Boolean(todo[td.key])}
+                disabled={busy}
+                onChange={(e) => void toggleTodo(td.key, e.target.checked)}
+              />
+              <label
+                htmlFor={`todo-${td.key}`}
+                style={{
+                  margin: 0,
+                  fontWeight: 400,
+                  fontSize: 15,
+                  textDecoration: todo[td.key] ? "line-through" : undefined,
+                  color: todo[td.key] ? "var(--muted)" : undefined,
+                }}
+              >
+                {i + 1}. {t(td.label)}
+              </label>
+              <Link href={setupHref(id, td.key)} className="muted" style={{ marginLeft: 8, fontSize: 13 }}>
+                {t("openen")}
+              </Link>
+            </div>
+          ))}
         </section>
       ) : null}
 

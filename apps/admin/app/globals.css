@@ -355,6 +355,15 @@ a.button.secondary { background: transparent; color: var(--text); border-color: 
 .teamchat .chatform { display: flex; gap: 8px; margin-top: 12px; }
 .teamchat .chatform input { flex: 1 1 auto; }
 
+/* Stappenplan "Stad inrichten". */
+.setup-steps { list-style: none; padding: 0; margin: 0 0 16px; display: flex; flex-wrap: wrap; gap: 6px; }
+.setup-steps li button { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--text); text-decoration: none; font-size: 14px; }
+.setup-steps li.current button { border: 2px solid var(--accent); color: var(--accent); font-weight: 600; }
+.setup-steps li.done button { color: var(--muted); }
+.setup-steps .nr { display: inline-block; min-width: 20px; height: 20px; line-height: 20px; border-radius: 50%; background: var(--line); color: var(--text); font-size: 12px; text-align: center; }
+.setup-steps li.done .nr { background: #16a34a; color: #fff; }
+.pin.start { background: #16a34a; cursor: grab; }
+.setup input[type='radio'] { width: auto; margin: 0 8px 0 0; flex: 0 0 auto; }
 /* Spelverloop: tijdlijn van de regels */
 .flow-timeline { list-style: none; padding: 0; margin: 0 0 8px; position: relative; }
 .flow-timeline::before { content: ''; position: absolute; left: 39px; top: 8px; bottom: 8px; width: 2px; background: var(--line); }
