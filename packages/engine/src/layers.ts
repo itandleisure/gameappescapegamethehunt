@@ -22,7 +22,7 @@ export type TaskField =
   | 'correctComment'
   | 'wrongComment';
 
-export type GameField = 'name' | 'meetingPoint' | 'mapOverlay' | 'map';
+export type GameField = 'name' | 'meetingPoint' | 'mapOverlay' | 'map' | 'boundary';
 
 export type FieldRef = { task: string; field: TaskField } | { game: GameField };
 
@@ -228,6 +228,12 @@ export function validateGame(game: GamePackage): string[] {
       const inside = piece.x >= 0 && piece.y >= 0 && piece.w > 0 && piece.h > 0 && piece.x + piece.w <= r.width && piece.y + piece.h <= r.height;
       if (!inside) issues.push(`playground ${p.id}: vak ${i + 1} valt buiten de foto`);
     });
+  }
+  if (game.boundary) {
+    const b = game.boundary;
+    if (!Array.isArray(b.points) || b.points.length < 3) issues.push('speelveldgrens: minstens 3 punten nodig');
+    else if (b.points.some((p) => !(Math.abs(p.lat) <= 90 && Math.abs(p.lng) <= 180))) issues.push('speelveldgrens: ongeldig punt');
+    if (b.color !== undefined && !/^#[0-9a-f]{6}$/i.test(b.color)) issues.push('speelveldgrens: kleur moet #rrggbb zijn');
   }
   for (const t of game.tasks) {
     if (t.image !== undefined && !/^https:\/\/\S+$/.test(t.image)) issues.push(`opdracht ${t.id}: foto moet een https-adres zijn`);

@@ -1,13 +1,15 @@
 'use client';
-import { DEFAULT_MAP_SOURCE, type GamePackage, type TaskLocation } from '@hunt/engine';
-import type { Map as MlMap, Marker } from 'maplibre-gl';
+import { DEFAULT_BOUNDARY_COLOR, DEFAULT_MAP_SOURCE, type GamePackage, type LatLng, type PlayBoundary, type TaskLocation } from '@hunt/engine';
+import type { GeoJSONSource, Map as MlMap, MapMouseEvent, Marker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { boundaryGeoJson, insertPoint, movePoint, rectAround, removePoint } from '@/lib/boundary';
 import type { LayerRows } from '@/lib/game-model';
 import { composeChain, loadChain } from '@/lib/game-store';
 import { allPins, circle, pinsFor, trackColor, trackCount, type Pin, type TrackChoice } from '@/lib/map-edit';
+import { gameFieldEditable } from '@/lib/map-settings';
 import { loadMaplibre } from '@/lib/maplibre';
 import { supabase } from '@/lib/supabase';
 import { tx } from '@/lib/text';
@@ -34,13 +36,22 @@ export default function MapPage() {
   const map = useRef<MlMap | null>(null);
   const markers = useRef<Marker[]>([]);
   const [ready, setReady] = useState(0);
+  /** Speelveldgrens zoals hij nu op het scherm staat, en of hij gewijzigd is. */
+  const [boundary, setBoundary] = useState<PlayBoundary | null>(null);
+  const [boundaryDirty, setBoundaryDirty] = useState(false);
+  const [drawing, setDrawing] = useState(false);
+  const drawingRef = useRef(false);
+  const vertexMarkers = useRef<Marker[]>([]);
 
   const load = useCallback(async () => {
     try {
       const c = await loadChain(supabase(), id);
       setChain(c);
-      setGame(composeChain(c));
+      const g = composeChain(c);
+      setGame(g);
       setChanges({});
+      setBoundary(g.boundary ?? null);
+      setBoundaryDirty(false);
     } catch (err) {
       setErrors([err instanceof Error ? err.message : String(err)]);
     }
@@ -94,6 +105,23 @@ export default function MapPage() {
         m.addSource('radius', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
         m.addLayer({ id: 'radius-fill', type: 'fill', source: 'radius', paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.15 } });
         m.addLayer({ id: 'radius-line', type: 'line', source: 'radius', paint: { 'line-color': ['get', 'color'], 'line-width': 1.5 } });
+        m.addSource('boundary', { type: 'geojson', data: boundaryGeoJson(null) });
+        m.addLayer({
+          id: 'boundary',
+          type: 'line',
+          source: 'boundary',
+          layout: { 'line-join': 'round' },
+          paint: { 'line-color': DEFAULT_BOUNDARY_COLOR, 'line-width': 3 },
+        });
+        // Klikken op de kaart voegt een punt aan de grens toe, alleen in tekenmodus.
+        m.on('click', (e: MapMouseEvent) => {
+          if (!drawingRef.current) return;
+          // Klikken op een pin of hoekpunt telt niet.
+          if ((e.originalEvent.target as HTMLElement | null)?.tagName !== 'CANVAS') return;
+          const point = { lat: e.lngLat.lat, lng: e.lngLat.lng };
+          setBoundary((b) => ({ ...(b ?? {}), points: insertPoint(b?.points ?? [], point) }));
+          setBoundaryDirty(true);
+        });
         setReady((n) => n + 1);
       });
       map.current = m;
@@ -145,12 +173,53 @@ export default function MapPage() {
     });
   }, [pins, ready, selected]);
 
+  // Grens tekenen, met versleepbare hoekpunten in tekenmodus.
+  useEffect(() => {
+    drawingRef.current = drawing;
+    const m = map.current;
+    if (!m || !ready) return;
+    (m.getSource('boundary') as GeoJSONSource | undefined)?.setData(boundaryGeoJson(boundary) as never);
+    if (m.getLayer('boundary')) m.setPaintProperty('boundary', 'line-color', boundary?.color ?? DEFAULT_BOUNDARY_COLOR);
+    m.getCanvas().style.cursor = drawing ? 'crosshair' : '';
+    void loadMaplibre().then(({ Marker: MarkerClass }) => {
+      for (const v of vertexMarkers.current) v.remove();
+      vertexMarkers.current = [];
+      if (!drawing || !boundary) return;
+      boundary.points.forEach((pt, i) => {
+        const el = document.createElement('div');
+        el.className = 'vertex';
+        el.title = 'Sleep om te verplaatsen, rechtsklik om weg te halen';
+        el.addEventListener('contextmenu', (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          setBoundary((b) => (b ? { ...b, points: removePoint(b.points, i) } : b));
+          setBoundaryDirty(true);
+        });
+        el.addEventListener('click', (ev) => ev.stopPropagation());
+        const marker = new MarkerClass({ element: el, draggable: true }).setLngLat([pt.lng, pt.lat]).addTo(m);
+        marker.on('dragend', () => {
+          const { lat, lng } = marker.getLngLat();
+          setBoundary((b) => (b ? { ...b, points: movePoint(b.points, i, { lat, lng }) } : b));
+          setBoundaryDirty(true);
+        });
+        vertexMarkers.current.push(marker);
+      });
+    });
+  }, [boundary, drawing, ready]);
+
   if (!chain || !game) return errors.length ? <ul className="errors">{errors.map((e, i) => <li key={i}>{e}</li>)}</ul> : <p className="muted">Laden…</p>;
 
   const self = chain[chain.length - 1]!;
   const tracks = trackCount(game);
   const current = pins.find((p) => pinKey(p) === selected) ?? null;
-  const dirty = Object.keys(changes).length;
+  const dirty = Object.keys(changes).length + (boundaryDirty ? 1 : 0);
+  const canBoundary = gameFieldEditable(chain, 'boundary');
+  const allLocations = (): LatLng[] =>
+    game.tasks.flatMap((t) => [t.location, ...Object.values(t.trackLocations ?? {})]).filter((l): l is TaskLocation => !!l);
+  const editBoundary = (points: LatLng[]) => {
+    setBoundary(points.length ? { ...(boundary ?? {}), points } : null);
+    setBoundaryDirty(true);
+  };
 
   const place = (pin: Pin) => {
     const c = map.current?.getCenter();
@@ -171,6 +240,24 @@ export default function MapPage() {
     const db = supabase();
     const idByKey = new Map(chain[0]!.tasks.map((t) => [t.key, t.id]));
     try {
+      if (boundaryDirty) {
+        if (boundary && boundary.points.length < 3) throw new Error('De speelveldgrens heeft minstens 3 punten nodig, of wis hem helemaal.');
+        const value = boundary && boundary.points.length ? boundary : null;
+        if (self.game.layer === 'base') {
+          const settings: Record<string, unknown> = { ...self.game.settings };
+          if (value) settings.boundary = value;
+          else delete settings.boundary;
+          const r = await db.from('games').update({ settings }).eq('id', id);
+          if (r.error) throw new Error(r.error.message);
+        } else {
+          const d = await db.from('overrides').delete().eq('game_id', id).is('task_id', null).eq('field', 'boundary');
+          if (d.error) throw new Error(d.error.message);
+          if (value) {
+            const r = await db.from('overrides').insert({ game_id: id, task_id: null, field: 'boundary', value });
+            if (r.error) throw new Error(r.error.message);
+          }
+        }
+      }
       for (const [k, loc] of Object.entries(changes)) {
         const [taskKey, trackText] = k.split('|');
         const taskId = idByKey.get(taskKey!)!;
@@ -182,7 +269,8 @@ export default function MapPage() {
         const ins = await db.from('task_locations').insert({ game_id: id, task_id: taskId, track: t, ...loc });
         if (ins.error) throw new Error(ins.error.message);
       }
-      setNotice(`${dirty} locatie${dirty === 1 ? '' : 's'} opgeslagen. Publiceer het spel om ze te gebruiken.`);
+      setNotice('Opgeslagen. Publiceer het spel om het in de app te gebruiken.');
+      setDrawing(false);
       await load();
     } catch (err) {
       setErrors([err instanceof Error ? err.message : String(err)]);
@@ -272,6 +360,49 @@ export default function MapPage() {
             </>
           ) : (
             <p className="muted">Klik op een pin of kies een opdracht hieronder.</p>
+          )}
+          <h2>Speelveldgrens</h2>
+          <p className="muted small">
+            De rode lijn om het gebied waar teams spelen. {boundary ? `${boundary.points.length} punten.` : 'Nog geen grens.'}
+          </p>
+          {canBoundary ? (
+            <>
+              {drawing ? (
+                <p className="muted small">
+                  Klik op de kaart om een punt toe te voegen. Sleep een punt om het te verplaatsen; rechtsklik om het weg te halen.
+                </p>
+              ) : null}
+              <div className="actions">
+                <button className={drawing ? '' : 'secondary'} onClick={() => setDrawing(!drawing)}>
+                  {drawing ? 'Klaar met tekenen' : boundary ? 'Grens bewerken' : 'Grens tekenen'}
+                </button>
+                {!boundary ? (
+                  <button className="secondary" onClick={() => { editBoundary(rectAround(allLocations())); setDrawing(true); }}>
+                    Rechthoek om alle locaties
+                  </button>
+                ) : null}
+                {boundary ? (
+                  <button className="link" onClick={() => { if (window.confirm('Speelveldgrens wissen?')) editBoundary([]); }}>
+                    Wissen
+                  </button>
+                ) : null}
+              </div>
+              {boundary ? (
+                <label className="check">
+                  Kleur{' '}
+                  <input
+                    type="color"
+                    value={boundary.color ?? DEFAULT_BOUNDARY_COLOR}
+                    onChange={(e) => {
+                      setBoundary({ ...boundary, color: e.target.value });
+                      setBoundaryDirty(true);
+                    }}
+                  />
+                </label>
+              ) : null}
+            </>
+          ) : (
+            <p className="muted small">Niet aan te passen in deze laag.</p>
           )}
           <h2>Opdrachten</h2>
           {view === 'all' ? (

@@ -2,7 +2,7 @@ import { composeGame } from '@hunt/engine';
 import { describe, expect, it } from 'vitest';
 import { leeuwarden, parteon, theHuntBase } from '../../../packages/engine/test/fixtures/the-hunt.js';
 import { parseGameFile } from '../src/lib/game-import.js';
-import { formatInZone, validateSession, zonedToUtc } from '../src/lib/sessions.js';
+import { formatInZone, toJoinCode, validateSession, zonedToUtc } from '../src/lib/sessions.js';
 
 describe('spelpakket importeren', () => {
   it('accepteert een samengesteld spel', () => {
@@ -46,6 +46,9 @@ describe('sessies', () => {
     expect(validateSession({ ...ok, name: ' ', trackCount: 0, gameVersionId: '' })).toHaveLength(3);
     expect(validateSession({ ...ok, joinCode: 'HUNT1' })).toEqual([]);
     expect(validateSession({ ...ok, joinCode: 'HUNT 1' })).toHaveLength(1);
+    expect(toJoinCode('Van Dijk B.V.')).toBe('VANDIJKBV');
+    expect(toJoinCode('Café Ünïe')).toBe('CAFEUNIE');
+    expect(toJoinCode('Parteon Woningcorporatie')).toBe('PARTEONWONIN');
   });
 
   it('rekent lokale tijd om naar UTC, ook in de zomertijd', () => {

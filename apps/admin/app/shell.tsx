@@ -6,7 +6,7 @@ import { AuthProvider, useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 
 const NAV = [
-  { href: '/sessies', label: 'Sessies' },
+  { href: '/sessies', label: 'Hunts' },
   { href: '/spellen', label: 'Spellen' },
 ];
 

@@ -17,6 +17,8 @@ export function playAreaBounds(game: GamePackage, marginMeters = 300): Bounds | 
     for (const loc of Object.values(task.trackLocations ?? {})) points.push(loc);
   }
   if (game.meetingPoint) points.push(game.meetingPoint);
+  // De hele speelveldgrens moet op de kaart (en in de download) passen.
+  for (const p of game.boundary?.points ?? []) points.push(p);
   if (points.length === 0) return undefined;
 
   let west = Infinity, south = Infinity, east = -Infinity, north = -Infinity;

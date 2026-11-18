@@ -15,6 +15,14 @@ describe('spelmodel in de database', () => {
     expect(JSON.stringify(baseRows.tasks)).not.toContain('"nl"');
   });
 
+  it('bewaart de speelveldgrens in de spelinstellingen', () => {
+    const base = json(theHuntBase);
+    base.boundary = { points: [{ lat: 53.2, lng: 5.79 }, { lat: 53.21, lng: 5.8 }, { lat: 53.2, lng: 5.81 }], color: '#ff0000' };
+    const rows = baseToRows(base, { id: 'base', slug: 'the-hunt' });
+    expect((rows.game.settings as { boundary?: unknown }).boundary).toEqual(base.boundary);
+    expect(rowsToBase(rows).boundary).toEqual(base.boundary);
+  });
+
   it('bewaart de foto bij een opdracht in de instellingen van de opdracht', () => {
     const base = json(theHuntBase);
     base.tasks[0].image = 'https://example.org/foto.jpg';

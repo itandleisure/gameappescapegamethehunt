@@ -10,7 +10,17 @@ import {
   type TranslationRow,
 } from "@/lib/game-model";
 import { loadChain } from "@/lib/game-store";
-import { describeRule, parseRule, timeSettings, withTimes } from "@/lib/rules";
+import {
+  describeRule,
+  formatDuration,
+  parseRule,
+  relabel,
+  settingSeconds,
+  settingValue,
+  splitDuration,
+  timeSettings,
+  withTimes,
+} from "@/lib/rules";
 import { supabase } from "@/lib/supabase";
 
 interface Draft {
@@ -23,6 +33,18 @@ interface Draft {
 
 const pretty = (v: unknown) => JSON.stringify(v, null, 2);
 
+type Hms = { h: string; m: string; s: string };
+const toHms = (seconds: number): Hms => {
+  const d = splitDuration(seconds);
+  return { h: String(d.h), m: String(d.m), s: String(d.s) };
+};
+/** Totaal in seconden, of null als een veld geen geldig getal is. */
+const hmsSeconds = (v: Hms): number | null => {
+  const parts = [v.h, v.m, v.s].map((x) => (x.trim() === "" ? 0 : Number(x.replace(",", "."))));
+  if (parts.some((n) => !Number.isFinite(n) || n < 0)) return null;
+  return Math.round(parts[0]! * 3600 + parts[1]! * 60 + parts[2]!);
+};
+
 export default function RulesPage() {
   const { id } = useParams<{ id: string }>();
   const [rows, setRows] = useState<LayerRows | null>(null);
@@ -30,8 +52,8 @@ export default function RulesPage() {
   const [errors, setErrors] = useState<string[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  /** Gewijzigde tijden per regel, als tekst uit de invoervelden. */
-  const [times, setTimes] = useState<Record<string, string[]>>({});
+  /** Gewijzigde tijden per regel: uren, minuten en seconden als tekst uit de invoervelden. */
+  const [times, setTimes] = useState<Record<string, Hms[]>>({});
 
   const load = useCallback(async () => {
     try {
@@ -96,15 +118,25 @@ export default function RulesPage() {
       const updated = base.rules.map((r) => {
         const values = times[r.id];
         if (!values) return r;
-        const numbers = values.map((v) => Number(v.replace(",", ".")));
-        if (numbers.some((n) => !Number.isFinite(n) || n < 0))
-          throw new Error(`Regel ${r.label ?? r.id}: vul tijden in als getal van 0 of meer.`);
-        return { ...r, when: withTimes(r.when, numbers) };
+        const seconds = values.map(hmsSeconds);
+        if (seconds.some((n) => n === null))
+          throw new Error(`Regel ${r.label ?? r.id}: vul uren, minuten en seconden in als getal van 0 of meer.`);
+        const settings = timeSettings(r.when);
+        const secs = seconds as number[];
+        const when = withTimes(r.when, settings.map((st, i) => settingValue(st, secs[i]!)));
+        // De omschrijving ("Na 10 minuten: …") loopt mee met de nieuwe tijd.
+        return r.label ? { ...r, when, label: relabel(r.label, settings, secs) } : { ...r, when };
       });
       composeGame({ ...base, rules: updated }, [], { id: "proef", version: 0 });
       for (const [key] of changed) {
         const rule = updated.find((r) => r.id === key)!;
-        must(await db.from("rules").update({ condition: rule.when }).eq("game_id", id).eq("key", key));
+        must(
+          await db
+            .from("rules")
+            .update({ condition: rule.when, label: rule.label ?? null })
+            .eq("game_id", id)
+            .eq("key", key),
+        );
       }
       setTimes({});
     }, "Tijden opgeslagen. Publiceer het spel om ze in de app te gebruiken.");
@@ -288,29 +320,43 @@ export default function RulesPage() {
         <section className="card" style={{ marginBottom: 16 }}>
           <h2 style={{ marginTop: 0 }}>Tijden</h2>
           <p className="muted">
-            Regels die op tijd gaan. Pas de minuten of seconden aan en sla op. In een testsessie kun je in de app de tijd
+            Regels die op tijd gaan. Vul uren, minuten en seconden in en sla op; de omschrijving loopt mee. In een testhunt kun je in de app de tijd
             vooruitzetten, zodat je niet hoeft te wachten.
           </p>
           <table>
             <tbody>
               {timed.map((r) => {
                 const settings = timeSettings(r.when);
-                const values = times[r.id] ?? settings.map((s) => String(s.kind === "elapsed" ? s.minutes : s.seconds));
+                const values = times[r.id] ?? settings.map((s) => toHms(settingSeconds(s)));
+                const preview = r.label ? relabel(r.label, settings, values.map((v) => hmsSeconds(v) ?? 0)) : r.id;
                 return (
                   <tr key={r.id}>
-                    <td>{r.label ?? r.id}</td>
+                    <td>{preview}</td>
                     <td>
                       {settings.map((s, i) => (
-                        <label key={i} style={{ display: "inline-flex", gap: 6, alignItems: "center", marginRight: 12 }}>
-                          <input
-                            style={{ width: 80 }}
-                            inputMode="decimal"
-                            value={values[i]}
-                            aria-label={s.kind === "elapsed" ? "minuten na de start" : `seconden na ${s.task}`}
-                            onChange={(e) => setTimes({ ...times, [r.id]: values.map((v, j) => (j === i ? e.target.value : v)) })}
-                          />
-                          {s.kind === "elapsed" ? "min na de start" : `sec na ${s.task}`}
-                        </label>
+                        <div key={i} style={{ display: "inline-flex", gap: 4, alignItems: "center", marginRight: 12 }}>
+                          {(["h", "m", "s"] as const).map((unit) => (
+                            <label key={unit} style={{ display: "inline-flex", gap: 2, alignItems: "center", margin: 0 }}>
+                              <input
+                                style={{ width: 56 }}
+                                inputMode="numeric"
+                                value={values[i]![unit]}
+                                aria-label={`${unit === "h" ? "uren" : unit === "m" ? "minuten" : "seconden"} ${s.kind === "elapsed" ? "na de start" : `na ${s.task}`}`}
+                                onChange={(e) =>
+                                  setTimes({
+                                    ...times,
+                                    [r.id]: values.map((v, j) => (j === i ? { ...v, [unit]: e.target.value } : v)),
+                                  })
+                                }
+                              />
+                              {unit === "h" ? "u" : unit === "m" ? "min" : "sec"}
+                            </label>
+                          ))}
+                          <span className="muted small">
+                            {s.kind === "elapsed" ? "na de start" : `na ${s.task}`}
+                            {hmsSeconds(values[i]!) !== null ? ` (${formatDuration(hmsSeconds(values[i]!)!)})` : ""}
+                          </span>
+                        </div>
                       ))}
                     </td>
                   </tr>

@@ -73,7 +73,7 @@ export default function SessionLivePage() {
   return (
     <>
       <p className="muted">
-        <Link href="/sessies">Sessies</Link> › {session.name}
+        <Link href="/sessies">Hunts</Link> › {session.name}
       </p>
       <div className="row" style={{ alignItems: 'center' }}>
         <h1 style={{ margin: 0, flex: '1 1 auto' }}>{session.name}</h1>

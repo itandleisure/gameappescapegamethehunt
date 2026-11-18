@@ -204,6 +204,19 @@ export interface MapOverlay {
 }
 
 /**
+ * Grens van het speelveld: een gesloten lijn om het gebied waar teams mogen
+ * spelen, zoals de rode lijn in Loquiz. Alleen ter oriëntatie op de kaart.
+ */
+export interface PlayBoundary {
+  /** Hoekpunten in volgorde; de lijn sluit vanzelf terug naar het eerste punt. */
+  points: LatLng[];
+  /** Lijnkleur als #rrggbb. Standaard rood. */
+  color?: string;
+}
+
+export const DEFAULT_BOUNDARY_COLOR = '#dc2626';
+
+/**
  * Kaartbron, instelbaar zodat we kunnen wisselen (OpenFreeMap, eigen
  * kaartbestand op Cloudflare R2, enzovoort) zonder de app te wijzigen.
  * Ontbreekt hij in het spel, dan gebruikt de app de standaardbron uit de configuratie.
@@ -270,6 +283,7 @@ export interface GamePackage {
   meetingPoint?: MeetingPoint;
   mapOverlay?: MapOverlay;
   map?: MapSource;
+  boundary?: PlayBoundary;
   gps: GpsSettings;
 }
 

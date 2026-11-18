@@ -138,7 +138,7 @@ export default function TaskPage() {
     try {
       if (isVariant) await saveVariant(task);
       else await saveBase(task);
-      setNotice('Opgeslagen. Publiceer het spel om het in nieuwe sessies te gebruiken.');
+      setNotice('Opgeslagen. Publiceer het spel om het in nieuwe hunts te gebruiken.');
       await load();
     } catch (err) {
       setErrors([err instanceof Error ? err.message : String(err)]);

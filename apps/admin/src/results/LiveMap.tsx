@@ -1,8 +1,9 @@
 'use client';
-import { DEFAULT_MAP_SOURCE } from '@hunt/engine';
+import { DEFAULT_BOUNDARY_COLOR, DEFAULT_MAP_SOURCE } from '@hunt/engine';
 import type { GeoJSONSource, Map as MlMap, Marker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { boundaryGeoJson } from '@/lib/boundary';
 import { ago, boundsOf, buildTrails, isStale, taskPoints, trailsGeoJson, type MapTeam } from '@/lib/live-map';
 import { imageCorners } from '@/lib/map-settings';
 import { loadMaplibre } from '@/lib/maplibre';
@@ -69,6 +70,16 @@ export function LiveMap({ data, colors }: { data: SessionLive; colors: Map<strin
         if (overlay && /^https?:/.test(overlay.image)) {
           m.addSource('overlay', { type: 'image', url: overlay.image, coordinates: imageCorners(overlay.bounds) });
           m.addLayer({ id: 'overlay', type: 'raster', source: 'overlay', paint: { 'raster-opacity': 0.85 } });
+        }
+        if (game.boundary) {
+          m.addSource('boundary', { type: 'geojson', data: boundaryGeoJson(game.boundary) as never });
+          m.addLayer({
+            id: 'boundary',
+            type: 'line',
+            source: 'boundary',
+            layout: { 'line-join': 'round' },
+            paint: { 'line-color': game.boundary.color ?? DEFAULT_BOUNDARY_COLOR, 'line-width': 3 },
+          });
         }
         m.addSource('trails', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
         m.addLayer({
@@ -212,7 +223,7 @@ export function LiveMap({ data, colors }: { data: SessionLive; colors: Map<strin
         </label>
 
         <h2>Teams</h2>
-        {mapTeams.length === 0 ? <p className="muted">Nog geen teams in deze sessie.</p> : null}
+        {mapTeams.length === 0 ? <p className="muted">Nog geen teams in deze hunt.</p> : null}
         <ul className="teamlist">
           {mapTeams.map((t) => {
             const trail = fullTrails.get(t.id);

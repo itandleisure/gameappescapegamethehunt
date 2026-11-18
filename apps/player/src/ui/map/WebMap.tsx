@@ -56,6 +56,13 @@ function apply(d) {
     map.addSource('overlay', { type: 'image', url: o.url, coordinates: [[o.nw.lng, o.nw.lat], [o.se.lng, o.nw.lat], [o.se.lng, o.se.lat], [o.nw.lng, o.se.lat]] });
     map.addLayer({ id: 'overlay', type: 'raster', source: 'overlay', paint: { 'raster-opacity': 0.85 } });
   }
+  if (d.boundary) {
+    const b = { type: 'FeatureCollection', features: [] };
+    const c = d.boundary.points.map((p) => [p.lng, p.lat]);
+    if (c.length >= 3) { c.push(c[0]); b.features.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: c } }); }
+    if (map.getSource('boundary')) map.getSource('boundary').setData(b);
+    else { map.addSource('boundary', { type: 'geojson', data: b }); map.addLayer({ id: 'boundary', type: 'line', source: 'boundary', layout: { 'line-join': 'round' }, paint: { 'line-color': d.boundary.color, 'line-width': 3 } }); }
+  }
   if (d.position) {
     if (!me) { const el = document.createElement('div'); el.className = 'me'; me = new maplibregl.Marker({ element: el }).setLngLat([d.position.lng, d.position.lat]).addTo(map); }
     else me.setLngLat([d.position.lng, d.position.lat]);
@@ -64,9 +71,9 @@ function apply(d) {
 </script></body></html>`;
 }
 
-export default function WebMap({ styleUrl, bounds, markers, overlay, position }: GameMapProps) {
+export default function WebMap({ styleUrl, bounds, markers, overlay, boundary, position }: GameMapProps) {
   const ref = useRef<WebViewHandle>(null);
-  const payload = JSON.stringify({ bounds, markers, overlay, position, style: styleUrl });
+  const payload = JSON.stringify({ bounds, markers, overlay, boundary, position, style: styleUrl });
   // De pagina zelf blijft op de eerste stijl; wisselen gaat via window.hunt.
   const [firstStyle] = useState(styleUrl);
 
