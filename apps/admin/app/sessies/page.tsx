@@ -15,6 +15,19 @@ import {
 import { supabase } from '@/lib/supabase';
 import { OpenToggle } from '@/results/OpenToggle';
 import { tx } from '@/lib/text';
+import { displayName } from '@/lib/game-name';
+
+type GameRef = { layer: 'base' | 'city' | 'client'; slug: string; settings: Record<string, unknown> } | null;
+
+/**
+ * Spel van een versie zoals de beheerder het kent: de naam in de app, en bij
+ * een stad of klant de huidige naam van die variant erachter.
+ */
+function versionLabel(v: { version: number; name: unknown; games?: GameRef }): string {
+  const name = tx(v.name);
+  const variant = v.games && v.games.layer !== 'base' ? displayName(v.games) : '';
+  return `${name}${variant && variant !== name ? ` · ${variant}` : ''} (v${v.version})`;
+}
 
 interface SessionRow {
   id: string;
@@ -25,7 +38,7 @@ interface SessionRow {
   track_count: number;
   starts_at: string | null;
   timezone: string;
-  game_versions: { version: number; name: unknown } | null;
+  game_versions: { version: number; name: unknown; games?: GameRef } | null;
 }
 
 interface VersionOption {
@@ -60,10 +73,10 @@ export default function SessionsPage() {
     const [s, v] = await Promise.all([
       db
         .from('sessions')
-        .select('id, name, join_code, status, test_mode, track_count, starts_at, timezone, game_versions(version, name:package->name)')
+        .select('id, name, join_code, status, test_mode, track_count, starts_at, timezone, game_versions(version, name:package->name, games(layer, slug, settings))')
         .eq('org_id', org.id)
         .order('created_at', { ascending: false }),
-      db.from('game_versions').select('id, game_id, version, name:package->name').order('version', { ascending: false }),
+      db.from('game_versions').select('id, game_id, version, name:package->name, games(layer, slug, settings)').order('version', { ascending: false }),
     ]);
     if (s.error || v.error) {
       setErrors([(s.error ?? v.error)!.message]);
@@ -73,10 +86,10 @@ export default function SessionsPage() {
     // Per spel alleen de nieuwste versie aanbieden.
     const seen = new Set<string>();
     const options: VersionOption[] = [];
-    for (const row of v.data as { id: string; game_id: string; version: number; name: unknown }[]) {
+    for (const row of v.data as unknown as { id: string; game_id: string; version: number; name: unknown; games?: GameRef }[]) {
       if (seen.has(row.game_id)) continue;
       seen.add(row.game_id);
-      options.push({ id: row.id, label: `${tx(row.name)} (v${row.version})` });
+      options.push({ id: row.id, label: versionLabel(row) });
     }
     setVersions(options);
     setForm((f) => (f.gameVersionId || !options[0] ? f : { ...f, gameVersionId: options[0].id }));
@@ -254,7 +267,7 @@ export default function SessionsPage() {
                       <strong>{s.name}</strong>
                     </Link>
                     <div className="muted">
-                      {s.game_versions ? `${tx(s.game_versions.name)} v${s.game_versions.version}` : ''} · {t('{n} tracks', { n: s.track_count })}
+                      {s.game_versions ? versionLabel(s.game_versions) : ''} · {t('{n} tracks', { n: s.track_count })}
                     </div>
                   </td>
                   <td className="code">{s.join_code}</td>

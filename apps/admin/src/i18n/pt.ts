@@ -569,4 +569,10 @@ export const pt: Record<string, string> = {
   "Nieuwe link gemaakt. De oude link werkt niet meer.": "Nova ligação criada. A ligação antiga já não funciona.",
   "Nieuwe link maken (de oude werkt dan niet meer)": "Criar nova ligação (a antiga deixa de funcionar)",
   "Na het maken van de PDF kun je het fotoboek met de klant delen.": "Depois de criar o PDF pode partilhar o álbum com o cliente.",
+  "Naam aanpassen": "Alterar nome",
+  "De naam in {lang} is verplicht.": "O nome em {lang} é obrigatório.",
+  "Naam opgeslagen. Publiceer het spel opnieuw, en ook de steden en klantvarianten eronder, om de nieuwe naam in nieuwe hunts te zien. Hunts die al bestaan, houden hun oude naam.": "Nome guardado. Publica o jogo novamente, e também as cidades e variantes de cliente abaixo dele, para ver o novo nome nas novas hunts. As hunts existentes mantêm o nome antigo.",
+  "Naam opgeslagen.": "Nome guardado.",
+  "Dit is de naam die spelers in de app zien.": "Este é o nome que os jogadores veem na app.",
+  "Dit is de naam in de beheeromgeving, bijvoorbeeld bij het kiezen van een spel voor een nieuwe hunt. Spelers zien de naam van het basisspel.": "Este é o nome no ambiente de gestão, por exemplo ao escolher um jogo para uma nova hunt. Os jogadores veem o nome do jogo base.",
 };

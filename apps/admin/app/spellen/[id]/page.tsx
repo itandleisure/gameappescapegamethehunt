@@ -12,6 +12,13 @@ import {
   setCityBaseVersion,
   type BaseVersion,
 } from "@/lib/game-store";
+import {
+  baseName,
+  cleanName,
+  displayName,
+  variantName,
+  type NameByLang,
+} from "@/lib/game-name";
 import { tKey } from "@/lib/i18n";
 import { useLanguage } from "@/lib/language";
 import { supabase } from "@/lib/supabase";
@@ -41,6 +48,7 @@ interface Child {
   slug: string;
   layer: "city" | "client";
   base_version: number | null;
+  settings: Record<string, unknown>;
 }
 
 function nl(
@@ -72,6 +80,8 @@ export default function GamePage() {
   const [newKey, setNewKey] = useState("");
   const [baseVersions, setBaseVersions] = useState<BaseVersion[]>([]);
   const [versionNote, setVersionNote] = useState("");
+  /** Naam per taal terwijl die wordt aangepast; null als het formulier dicht is. */
+  const [nameDraft, setNameDraft] = useState<NameByLang | null>(null);
 
   const load = useCallback(async () => {
     const db = supabase();
@@ -85,7 +95,7 @@ export default function GamePage() {
           .order("version", { ascending: false }),
         db
           .from("games")
-          .select("id, slug, layer, base_version")
+          .select("id, slug, layer, base_version, settings")
           .eq("parent_id", id)
           .order("slug"),
       ]);
@@ -120,9 +130,7 @@ export default function GamePage() {
     isBase &&
     base.tasks.length === 0 &&
     (self.game.settings as { imported?: boolean }).imported;
-  const title = isBase
-    ? nl(base, "game", "", "name") || self.game.slug
-    : self.game.slug;
+  const title = displayName(self.game, self.translations);
 
   // Wat deze laag aanpast, per opdrachtsleutel.
   const changed = new Set<string>();
@@ -205,6 +213,74 @@ export default function GamePage() {
     }
   };
 
+  const openName = () => {
+    setErrors([]);
+    setNotice(null);
+    setNameDraft(isBase ? baseName(self) : variantName(self.game));
+  };
+
+  const doSaveName = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!nameDraft) return;
+    const name = cleanName(nameDraft, self.game.languages);
+    const main = self.game.default_language;
+    if (!name[main]) {
+      setErrors([t("De naam in {lang} is verplicht.", { lang: main.toUpperCase() })]);
+      return;
+    }
+    setBusy(true);
+    setErrors([]);
+    setNotice(null);
+    try {
+      const db = supabase();
+      const must = (r: { error: { message: string } | null }) => {
+        if (r.error) throw new Error(r.error.message);
+      };
+      if (isBase) {
+        // De naam in de app staat per taal in translations.
+        must(
+          await db
+            .from("translations")
+            .delete()
+            .eq("game_id", id)
+            .eq("entity", "game")
+            .eq("entity_id", "")
+            .eq("field", "name"),
+        );
+        must(
+          await db.from("translations").insert(
+            Object.entries(name).map(([lang, text]) => ({
+              game_id: id,
+              entity: "game",
+              entity_id: "",
+              field: "name",
+              lang,
+              text,
+            })),
+          ),
+        );
+      } else {
+        must(
+          await db
+            .from("games")
+            .update({ settings: { ...self.game.settings, name } })
+            .eq("id", id),
+        );
+      }
+      setNameDraft(null);
+      setNotice(
+        isBase
+          ? t("Naam opgeslagen. Publiceer het spel opnieuw, en ook de steden en klantvarianten eronder, om de nieuwe naam in nieuwe hunts te zien. Hunts die al bestaan, houden hun oude naam.")
+          : t("Naam opgeslagen."),
+      );
+      await load();
+    } catch (err) {
+      setErrors([err instanceof Error ? err.message : String(err)]);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const doDelete = async () => {
     setBusy(true);
     setErrors([]);
@@ -246,7 +322,7 @@ export default function GamePage() {
         {chain.slice(0, -1).map((c) => (
           <span key={c.game.id}>
             {" "}
-            › <Link href={`/spellen/${c.game.id}`}>{c.game.slug}</Link>
+            › <Link href={`/spellen/${c.game.id}`}>{displayName(c.game, c.translations)}</Link>
           </span>
         ))}
       </p>
@@ -254,7 +330,53 @@ export default function GamePage() {
       <p className="muted">
         {t(LAYER_LABEL[self.game.layer])} · {self.game.slug} · {t("talen")}{" "}
         {self.game.languages.join(", ").toUpperCase()}
+        {nameDraft ? null : (
+          <>
+            {" · "}
+            <button type="button" className="link small" onClick={openName}>
+              {t("Naam aanpassen")}
+            </button>
+          </>
+        )}
       </p>
+      {nameDraft ? (
+        <form className="card" onSubmit={doSaveName} style={{ marginBottom: 16 }}>
+          <p className="muted" style={{ marginTop: 0 }}>
+            {isBase
+              ? t("Dit is de naam die spelers in de app zien.")
+              : t("Dit is de naam in de beheeromgeving, bijvoorbeeld bij het kiezen van een spel voor een nieuwe hunt. Spelers zien de naam van het basisspel.")}
+          </p>
+          <div className="row">
+            {self.game.languages.map((lang) => (
+              <div key={lang}>
+                <label htmlFor={`name-${lang}`}>
+                  {t("Naam")} ({lang.toUpperCase()})
+                </label>
+                <input
+                  id={`name-${lang}`}
+                  value={nameDraft[lang] ?? ""}
+                  maxLength={120}
+                  required={lang === self.game.default_language}
+                  onChange={(e) => setNameDraft({ ...nameDraft, [lang]: e.target.value })}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="actions">
+            <button type="submit" disabled={busy}>
+              {busy ? t("Bezig…") : t("Opslaan")}
+            </button>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => setNameDraft(null)}
+              disabled={busy}
+            >
+              {t("Annuleren")}
+            </button>
+          </div>
+        </form>
+      ) : null}
 
       <div className="actions">
         <button
@@ -471,9 +593,9 @@ export default function GamePage() {
           <ul>
             {children.map((c) => (
               <li key={c.id}>
-                <Link href={`/spellen/${c.id}`}>{c.slug}</Link>{" "}
+                <Link href={`/spellen/${c.id}`}>{displayName(c)}</Link>{" "}
                 <span className="muted">
-                  ({t(LAYER_LABEL[c.layer])}
+                  ({c.slug} · {t(LAYER_LABEL[c.layer])}
                   {c.layer === "city"
                     ? ` · ${c.base_version === null ? t("werkversie") : t("versie {n}", { n: c.base_version })}`
                     : ""}
@@ -567,7 +689,7 @@ export default function GamePage() {
         </p>
         {confirmDelete ? (
           <div className="actions">
-            <span>{t("Weet je zeker dat je {name} wilt verwijderen?", { name: self.game.slug })}</span>
+            <span>{t("Weet je zeker dat je {name} wilt verwijderen?", { name: title })}</span>
             <button
               className="danger"
               onClick={() => void doDelete()}
