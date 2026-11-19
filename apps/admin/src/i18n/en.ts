@@ -1100,4 +1100,9 @@ export const en: Record<string, string> = {
   "Aantal": "Count",
   "Toestel": "Device",
   "Techniek": "Technical",
+  "Gepubliceerd als versie {n}. {count} lopende tickets zijn bijgewerkt: de spelers krijgen binnen een halve minuut de melding “Spel bijgewerkt” en spelen verder met hun voortgang.": "Published as version {n}. {count} running tickets were updated: players get the message “Game updated” within half a minute and carry on with their progress.",
+  "De open tickets van dit spel krijgen meteen de nieuwe versie. Opgeloste opdrachten, punten en tijd blijven bewaard.": "Open tickets of this game get the new version right away. Solved tasks, points and time are kept.",
+  "Ook lopende spelers bijwerken ({sessions} open tickets, {teams} teams spelen nu)": "Also update live players ({sessions} open tickets, {teams} teams playing now)",
+  "{count} lopende tickets zijn live bijgewerkt.": "{count} running tickets were updated live.",
+  "Ook lopende spelers bijwerken: open tickets van deze steden krijgen meteen de nieuwe versie, met behoud van hun voortgang": "Also update live players: open tickets of these cities get the new version right away, keeping their progress",
 };

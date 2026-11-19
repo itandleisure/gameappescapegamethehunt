@@ -83,6 +83,8 @@ export const sl: Messages = {
   errorLocked: 'Nove ekipe se tej igri ne morejo več pridružiti. Že igrate? Spodaj vpišite kodo igre in ime ekipe.',
   chat: 'Klepet',
   chatTitle: 'Klepet z drugimi ekipami',
+  gameUpdatedTitle: 'Igra je posodobljena',
+  gameUpdatedBody: 'Vodja igre je posodobil igro. Vaš napredek, točke in čas ostanejo shranjeni. Kar igrajte naprej.',
   chatEmpty: 'Še ni sporočil. Pozdravite druge ekipe!',
   chatPlaceholder: 'Napišite sporočilo',
   chatSend: 'Pošlji',

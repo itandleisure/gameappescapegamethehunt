@@ -83,6 +83,8 @@ export const mt: Messages = {
   errorLocked: 'Timijiet ġodda ma jistgħux jingħaqdu aktar ma’ din il-logħba. Diġà qed tilagħbu? Daħħlu l-kodiċi tal-logħba u l-isem tat-tim hawn taħt.',
   chat: 'Chat',
   chatTitle: 'Chat mat-timijiet l-oħra',
+  gameUpdatedTitle: 'Il-logħba ġiet aġġornata',
+  gameUpdatedBody: 'Il-game master aġġorna l-logħba. Il-progress, il-punti u l-ħin tagħkom jibqgħu salvati. Kompli ilgħab.',
   chatEmpty: 'Għad m’hemmx messaġġi. Sellmu lit-timijiet l-oħra!',
   chatPlaceholder: 'Ikteb messaġġ',
   chatSend: 'Ibgħat',

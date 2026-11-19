@@ -32,7 +32,11 @@ jobs:
         run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
       - name: Migraties toepassen
         # Zonder --remote kiest CLI 3.x de lokale database.
-        run: supabase db push --remote --password "$SUPABASE_DB_PASSWORD"
+        # --include-all: ook een migratie met een eerder tijdstempel dan de
+        # laatste live migratie meenemen (gebeurt als pull requests in een
+        # andere volgorde gemerged worden dan ze gemaakt zijn). Zonder deze
+        # optie weigert db push en blijft alles daarna hangen.
+        run: supabase db push --remote --include-all --password "$SUPABASE_DB_PASSWORD"
       - name: Serverfuncties bijwerken
         run: |
           supabase functions deploy results-export --use-api

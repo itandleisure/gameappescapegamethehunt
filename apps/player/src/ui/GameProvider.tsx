@@ -3,6 +3,7 @@ import { AppState } from 'react-native';
 import type { GameController, Snapshot } from '../core/game-controller';
 import { msg, type MessageKey } from '../core/i18n';
 import { currentGame, onGameChange, resumeGame } from '../services/game';
+import { notify } from './confirm';
 
 interface GameContextValue {
   /** Nog bezig met laden van een eerder spel. */
@@ -58,6 +59,16 @@ export function GameProvider({ children, deviceLanguage }: { children: ReactNode
       appState.remove();
     };
   }, [controller]);
+
+  // Spel live bijgewerkt door de spelleiding: één keer melden, op elk scherm.
+  const gameUpdated = snapshot?.gameUpdated === true;
+  const updateLang = snapshot?.team.language ?? deviceLanguage;
+  useEffect(() => {
+    if (!gameUpdated || !controller) return;
+    // Meteen als gezien markeren, zodat de melding niet nog eens opent zolang hij in beeld staat.
+    void controller.dismissGameUpdate();
+    notify(msg(updateLang, 'gameUpdatedTitle'), msg(updateLang, 'gameUpdatedBody'), msg(updateLang, 'ok'));
+  }, [gameUpdated, controller, updateLang]);
 
   const lang = snapshot?.team.language ?? deviceLanguage;
   const value = useMemo<GameContextValue>(

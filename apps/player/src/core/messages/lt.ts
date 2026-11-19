@@ -83,6 +83,8 @@ export const lt: Messages = {
   errorLocked: 'Naujos komandos nebegali prisijungti prie šio žaidimo. Jau žaidžiate? Žemiau įveskite žaidimo kodą ir komandos pavadinimą.',
   chat: 'Pokalbis',
   chatTitle: 'Pokalbis su kitomis komandomis',
+  gameUpdatedTitle: 'Žaidimas atnaujintas',
+  gameUpdatedBody: 'Žaidimo vedėjas atnaujino žaidimą. Jūsų pažanga, taškai ir laikas išsaugoti. Tiesiog žaiskite toliau.',
   chatEmpty: 'Žinučių dar nėra. Pasisveikinkite su kitomis komandomis!',
   chatPlaceholder: 'Rašykite žinutę',
   chatSend: 'Siųsti',

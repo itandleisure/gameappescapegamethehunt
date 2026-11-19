@@ -195,20 +195,22 @@ export async function setCitiesBaseVersion(
   cityIds: string[],
   version: number,
   republish: boolean,
-): Promise<{ id: string; error: string | null }[]> {
-  const results: { id: string; error: string | null }[] = [];
+  updateLive = false,
+): Promise<{ id: string; error: string | null; updated?: number }[]> {
+  const results: { id: string; error: string | null; updated?: number }[] = [];
   // Na elkaar: publiceren stelt het hele spel samen en is niet licht.
   for (const id of cityIds) {
     try {
       await setCityBaseVersion(db, id, version);
+      let updated = 0;
       if (republish) {
-        await publish(db, id);
+        updated += (await publishLive(db, id, updateLive)).updated;
         const clients = check<{ id: string }[]>(
           (await db.from('games').select('id').eq('parent_id', id).eq('layer', 'client')) as never,
         );
-        for (const c of clients) await publish(db, c.id);
+        for (const c of clients) updated += (await publishLive(db, c.id, updateLive)).updated;
       }
-      results.push({ id, error: null });
+      results.push({ id, error: null, updated });
     } catch (err) {
       results.push({ id, error: err instanceof Error ? err.message : String(err) });
     }
@@ -227,10 +229,52 @@ export function composeChain(chain: LayerRows[], version = 0): GamePackage {
 }
 
 export async function publish(db: SupabaseClient, gameId: string): Promise<number> {
+  return (await publishVersion(db, gameId)).version;
+}
+
+/** Publiceert het spel; geeft het id en nummer van de nieuwe versie. */
+export async function publishVersion(db: SupabaseClient, gameId: string): Promise<{ id: string; version: number }> {
   const chain = await loadChain(db, gameId);
   const pkg = await withPlayfieldImage(db, gameId, await withChosenPuzzles(db, chain, composeChain(chain)), loadMaplibre);
-  const row = check<{ version: number }>(await db.rpc('publish_game_version', { p_game: gameId, p_package: pkg }));
-  return row.version;
+  const row = check<{ id: string; version: number }>(await db.rpc('publish_game_version', { p_game: gameId, p_package: pkg }));
+  return { id: row.id, version: row.version };
+}
+
+// ---------------------------------------------------------------------------
+// Lopende hunts live bijwerken
+// ---------------------------------------------------------------------------
+
+/** Open tickets van een spel die een nieuwe publicatie live kan bijwerken, en de teams die nu spelen. */
+export interface LiveSessions {
+  sessions: number;
+  teams: number;
+}
+
+/** Hoeveel open tickets en spelende teams er nu zijn; null als dat niet op te vragen is. */
+export async function liveSessionsSummary(db: SupabaseClient, gameId: string): Promise<LiveSessions | null> {
+  const r = await db.rpc('live_sessions_summary', { p_game: gameId });
+  if (r.error || !r.data) return null;
+  const d = r.data as { sessions?: number; teams?: number };
+  return { sessions: Number(d.sessions ?? 0), teams: Number(d.teams ?? 0) };
+}
+
+/**
+ * Zet de open tickets van het spel over op deze (net gepubliceerde) versie.
+ * De apps van de teams laden die binnen een halve minuut en melden "Spel
+ * bijgewerkt"; de voortgang blijft. Geeft het aantal bijgewerkte tickets.
+ */
+export async function updateLiveSessions(db: SupabaseClient, versionId: string): Promise<number> {
+  return Number(check<number>((await db.rpc('update_live_sessions', { p_version: versionId })) as never));
+}
+
+/** Publiceert en zet, als dat gevraagd is, ook de open tickets over. */
+export async function publishLive(
+  db: SupabaseClient,
+  gameId: string,
+  updateLive: boolean,
+): Promise<{ version: number; updated: number }> {
+  const v = await publishVersion(db, gameId);
+  return { version: v.version, updated: updateLive ? await updateLiveSessions(db, v.id) : 0 };
 }
 
 /**

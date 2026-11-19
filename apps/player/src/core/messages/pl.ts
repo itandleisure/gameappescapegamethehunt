@@ -83,6 +83,8 @@ export const pl: Messages = {
   errorLocked: 'Nowe drużyny nie mogą już dołączyć do tej gry. Już gracie? Wpiszcie poniżej kod gry i nazwę drużyny.',
   chat: 'Czat',
   chatTitle: 'Czat z innymi drużynami',
+  gameUpdatedTitle: 'Gra zaktualizowana',
+  gameUpdatedBody: 'Prowadzący zaktualizował grę. Wasze postępy, punkty i czas zostają zachowane. Grajcie dalej.',
   chatEmpty: 'Brak wiadomości. Przywitajcie się z innymi drużynami!',
   chatPlaceholder: 'Napisz wiadomość',
   chatSend: 'Wyślij',

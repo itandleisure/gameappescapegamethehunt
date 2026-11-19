@@ -83,6 +83,8 @@ export const fi: Messages = {
   errorLocked: 'Uudet joukkueet eivät voi enää liittyä tähän peliin. Pelaatteko jo? Kirjoittakaa pelikoodi ja joukkueen nimi alle.',
   chat: 'Chat',
   chatTitle: 'Chat muiden joukkueiden kanssa',
+  gameUpdatedTitle: 'Peli päivitetty',
+  gameUpdatedBody: 'Pelinjohtaja on päivittänyt pelin. Edistymisenne, pisteenne ja aikanne säilyvät. Jatkakaa vain pelaamista.',
   chatEmpty: 'Ei vielä viestejä. Sanokaa hei muille joukkueille!',
   chatPlaceholder: 'Kirjoita viesti',
   chatSend: 'Lähetä',

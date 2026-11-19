@@ -36,6 +36,8 @@ export interface Snapshot {
   chat: ChatMessage[];
   /** Berichten van andere teams of de spelleiding die het team nog niet gezien heeft. */
   chatUnread: number;
+  /** De spelleiding heeft het spel live bijgewerkt en het team heeft de melding nog niet gezien. */
+  gameUpdated: boolean;
 }
 
 /** Langste bericht in de teamchat. */
@@ -70,6 +72,8 @@ interface Saved {
   chatOut?: ChatMessage[];
   /** Servertijd van het nieuwste chatbericht dat het team heeft gezien. */
   chatSeenAt?: number;
+  /** Het spel is live bijgewerkt; de melding "Spel bijgewerkt" moet nog getoond worden. */
+  gameUpdated?: boolean;
 }
 
 type Listener = (snapshot: Snapshot) => void;
@@ -204,6 +208,7 @@ export class GameController {
       teamPhotoNeeded: this.data.teamPhoto === 'needed',
       chat: this.chatMessages(),
       chatUnread: this.chatUnread(),
+      gameUpdated: this.data.gameUpdated === true,
     };
   }
 
@@ -523,6 +528,33 @@ export class GameController {
       this.lastChatFullAt = 0;
     }
     if (added.length > 0) this.data.events = [...this.data.events, ...added];
+    await this.checkGameVersion(team.sessionId);
+    await this.save();
+    this.emit();
+  }
+
+  /**
+   * Heeft de beheerder het spel live bijgewerkt (de hunt speelt nu een andere
+   * versie), dan de nieuwe versie laden. De voortgang blijft: de engine rekent
+   * de gebeurtenissen van het team opnieuw door met de nieuwe versie.
+   */
+  private async checkGameVersion(sessionId: string) {
+    if (!this.deps.backend.loadSessionVersion) return;
+    const current = await this.deps.backend.loadSessionVersion(sessionId).catch(() => null);
+    if (!current || current === this.data.loaded.versionId) return;
+    const loaded = await this.deps.backend.loadGame(this.data.team).catch(() => null);
+    if (!loaded) return;
+    // Een spel van vóór deze toevoeging kent zijn versie nog niet: alleen
+    // vastleggen, en alleen melden als het spel echt een andere versie is.
+    const known = this.data.loaded.versionId !== undefined || loaded.game.version !== this.game.version;
+    this.data.loaded = { ...loaded, versionId: loaded.versionId ?? current };
+    if (known) this.data.gameUpdated = true;
+  }
+
+  /** Het team heeft de melding "Spel bijgewerkt" gezien. */
+  async dismissGameUpdate(): Promise<void> {
+    if (!this.data.gameUpdated) return;
+    this.data.gameUpdated = false;
     await this.save();
     this.emit();
   }

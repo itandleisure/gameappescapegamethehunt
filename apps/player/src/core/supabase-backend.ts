@@ -163,7 +163,7 @@ export class SupabaseBackend implements Backend {
   async loadGame(team: TeamRecord): Promise<LoadedGame> {
     const { data, error } = await this.client
       .from('sessions')
-      .select('id, name, timezone, status, test_mode, team_chat, join_code, game_versions(package)')
+      .select('id, name, timezone, status, test_mode, team_chat, join_code, game_version_id, game_versions(package)')
       .eq('id', team.sessionId)
       .single();
     if (error || !data) throw translate(error);
@@ -175,12 +175,14 @@ export class SupabaseBackend implements Backend {
       test_mode: boolean;
       team_chat?: boolean;
       join_code?: string;
+      game_version_id: string;
       game_versions: { package: GamePackage } | null;
     };
     if (!row.game_versions) throw new BackendError('errorGeneric');
     return {
       session: { id: row.id, name: row.name, timezone: row.timezone, status: row.status, testMode: row.test_mode, teamChat: row.team_chat ?? false, joinCode: row.join_code },
       game: row.game_versions.package,
+      versionId: row.game_version_id,
     };
   }
 
@@ -272,5 +274,11 @@ export class SupabaseBackend implements Backend {
     const { data, error } = await this.client.from('sessions').select('team_chat').eq('id', sessionId).single();
     if (error) throw translate(error, 'errorNetwork');
     return Boolean((data as { team_chat?: boolean }).team_chat);
+  }
+
+  async loadSessionVersion(sessionId: string) {
+    const { data, error } = await this.client.from('sessions').select('game_version_id').eq('id', sessionId).single();
+    if (error) throw translate(error, 'errorNetwork');
+    return (data as { game_version_id: string }).game_version_id;
   }
 }

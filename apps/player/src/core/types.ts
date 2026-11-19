@@ -45,6 +45,8 @@ export interface ChatMessage {
 export interface LoadedGame {
   session: SessionInfo;
   game: GamePackage;
+  /** Id van de gespeelde versie (game_versions.id); ontbreekt bij spellen van vóór deze toevoeging. */
+  versionId?: string;
 }
 
 /** Een foto die nog naar de server moet. */
@@ -93,6 +95,11 @@ export interface Backend {
   watchChat?(sessionId: string, onChange: (deleted: boolean) => void): () => void;
   /** Staat de teamchat (nog) aan? De spelleider kan hem tijdens het spel aan- of uitzetten. */
   loadTeamChat(sessionId: string): Promise<boolean>;
+  /**
+   * Welke versie van het spel de hunt nu speelt (game_versions.id). Verandert
+   * als de beheerder het spel live bijwerkt. Optioneel.
+   */
+  loadSessionVersion?(sessionId: string): Promise<string>;
 }
 
 /** Sleutel-waardeopslag op de telefoon (AsyncStorage heeft dezelfde vorm). */

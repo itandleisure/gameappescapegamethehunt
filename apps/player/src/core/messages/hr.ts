@@ -83,6 +83,8 @@ export const hr: Messages = {
   errorLocked: 'Novi timovi se više ne mogu pridružiti ovoj igri. Već igrate? Upišite ispod kôd igre i naziv tima.',
   chat: 'Chat',
   chatTitle: 'Chat s drugim timovima',
+  gameUpdatedTitle: 'Igra je ažurirana',
+  gameUpdatedBody: 'Voditelj igre je ažurirao igru. Vaš napredak, bodovi i vrijeme ostaju sačuvani. Samo nastavite igrati.',
   chatEmpty: 'Još nema poruka. Pozdravite druge timove!',
   chatPlaceholder: 'Napišite poruku',
   chatSend: 'Pošalji',

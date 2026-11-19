@@ -363,6 +363,12 @@ export interface GamePackage {
   id: string;
   /** Versienummer van de gepubliceerde versie. */
   version: number;
+  /**
+   * Moment van publiceren (ms, servertijd; door de database gezet). Wordt een
+   * lopend spel live bijgewerkt naar deze versie, dan tellen aankomsten op een
+   * locatie van vóór dit moment gewoon mee, ook als die locatie verplaatst is.
+   */
+  publishedAt?: number;
   name: Text;
   languages: Lang[];
   defaultLanguage: Lang;

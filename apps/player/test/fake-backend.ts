@@ -12,8 +12,11 @@ export class FakeBackend implements Backend {
   photos: { teamId: string; photo: PendingPhoto; path: string }[] = [];
   private order = 0;
 
+  /** Versie die de hunt speelt; `liveUpdate` zet hem op een nieuwe versie. */
+  versionId = 'versie-1';
+
   constructor(
-    private readonly game: GamePackage,
+    private game: GamePackage,
     start: number,
   ) {
     this.serverNow = start;
@@ -75,7 +78,19 @@ export class FakeBackend implements Backend {
     return {
       session: { id: 'sessie-1', name: 'Test', timezone: 'Europe/Amsterdam', status: 'open' as const, testMode: this.testMode, teamChat: this.teamChat, joinCode: 'LWD001' },
       game: this.game,
+      versionId: this.versionId,
     };
+  }
+
+  /** Zoals de beheerder die het spel live bijwerkt. */
+  liveUpdate(game: GamePackage, versionId: string) {
+    this.game = game;
+    this.versionId = versionId;
+  }
+
+  async loadSessionVersion() {
+    this.guard();
+    return this.versionId;
   }
 
   async loadEvents(teamId: string) {

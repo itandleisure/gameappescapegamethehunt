@@ -52,6 +52,7 @@ export function TemplateVersions({ baseId, versions, cities, onChanged, onError 
   /** Steden die op de geopende versie gezet worden. */
   const [moving, setMoving] = useState<Set<string>>(new Set());
   const [republish, setRepublish] = useState(true);
+  const [updateLive, setUpdateLive] = useState(false);
   const [busy, setBusy] = useState(false);
   const next = (versions[0]?.version ?? 0) + 1;
   const byNumber = (n: number | null) => versions.find((v) => v.version === n);
@@ -118,13 +119,17 @@ export function TemplateVersions({ baseId, versions, cities, onChanged, onError 
   const moveCities = (v: BaseVersion) => {
     const ids = [...moving];
     void run(async () => {
-      const results = await setCitiesBaseVersion(supabase(), ids, v.version, republish);
+      const results = await setCitiesBaseVersion(supabase(), ids, v.version, republish, republish && updateLive);
       setMoving(new Set());
+      setUpdateLive(false);
       const failed = results.filter((r) => r.error);
       const ok = results.length - failed.length;
-      const done = republish
-        ? t('{n} steden overgezet naar {version} en opnieuw gepubliceerd.', { n: ok, version: versionLabel(v) })
-        : t('{n} steden overgezet naar {version}. Publiceer ze opnieuw om dit in nieuwe tickets te gebruiken.', { n: ok, version: versionLabel(v) });
+      const updated = results.reduce((n, r) => n + (r.updated ?? 0), 0);
+      const done =
+        (republish
+          ? t('{n} steden overgezet naar {version} en opnieuw gepubliceerd.', { n: ok, version: versionLabel(v) })
+          : t('{n} steden overgezet naar {version}. Publiceer ze opnieuw om dit in nieuwe tickets te gebruiken.', { n: ok, version: versionLabel(v) })) +
+        (updated > 0 ? ' ' + t('{count} lopende tickets zijn live bijgewerkt.', { count: updated }) : '');
       if (failed.length) {
         const names = failed.map((f) => {
           const c = cities.find((x) => x.id === f.id);
@@ -370,6 +375,12 @@ export function TemplateVersions({ baseId, versions, cities, onChanged, onError 
                           <input type="checkbox" checked={republish} disabled={busy} onChange={(e) => setRepublish(e.target.checked)} />
                           {t('Meteen opnieuw publiceren (ook de klantvarianten eronder), zodat nieuwe tickets deze versie krijgen')}
                         </label>
+                        {republish ? (
+                          <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center', fontWeight: 'normal' }}>
+                            <input type="checkbox" checked={updateLive} disabled={busy} onChange={(e) => setUpdateLive(e.target.checked)} />
+                            {t('Ook lopende spelers bijwerken: open tickets van deze steden krijgen meteen de nieuwe versie, met behoud van hun voortgang')}
+                          </label>
+                        ) : null}
                         <div className="actions">
                           <button type="button" disabled={busy || moving.size === 0} onClick={() => moveCities(v)}>
                             {busy

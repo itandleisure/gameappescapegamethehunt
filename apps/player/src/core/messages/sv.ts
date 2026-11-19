@@ -83,6 +83,8 @@ export const sv: Messages = {
   errorLocked: 'Nya lag kan inte längre gå med i det här spelet. Spelar ni redan? Ange spelkoden och ert lagnamn nedan.',
   chat: 'Chatt',
   chatTitle: 'Chatta med de andra lagen',
+  gameUpdatedTitle: 'Spelet har uppdaterats',
+  gameUpdatedBody: 'Spelledaren har uppdaterat spelet. Era framsteg, poäng och tid finns kvar. Fortsätt bara spela.',
   chatEmpty: 'Inga meddelanden än. Säg hej till de andra lagen!',
   chatPlaceholder: 'Skriv ett meddelande',
   chatSend: 'Skicka',

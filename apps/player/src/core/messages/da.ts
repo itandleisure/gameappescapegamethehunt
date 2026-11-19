@@ -83,6 +83,8 @@ export const da: Messages = {
   errorLocked: 'Nye hold kan ikke længere deltage i dette spil. Spiller I allerede? Indtast spilkoden og jeres holdnavn herunder.',
   chat: 'Chat',
   chatTitle: 'Chat med de andre hold',
+  gameUpdatedTitle: 'Spillet er opdateret',
+  gameUpdatedBody: 'Spillederen har opdateret spillet. Jeres fremskridt, point og tid er gemt. Bare spil videre.',
   chatEmpty: 'Ingen beskeder endnu. Sig hej til de andre hold!',
   chatPlaceholder: 'Skriv en besked',
   chatSend: 'Send',

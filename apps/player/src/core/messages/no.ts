@@ -83,6 +83,8 @@ export const no: Messages = {
   errorLocked: 'Nye lag kan ikke lenger bli med i dette spillet. Spiller dere allerede? Skriv inn spillkoden og lagnavnet nedenfor.',
   chat: 'Chat',
   chatTitle: 'Chat med de andre lagene',
+  gameUpdatedTitle: 'Spillet er oppdatert',
+  gameUpdatedBody: 'Spillederen har oppdatert spillet. Fremgangen, poengene og tiden deres er tatt vare på. Bare spill videre.',
   chatEmpty: 'Ingen meldinger ennå. Si hei til de andre lagene!',
   chatPlaceholder: 'Skriv en melding',
   chatSend: 'Send',
