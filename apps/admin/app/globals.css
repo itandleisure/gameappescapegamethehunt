@@ -1,10 +1,11 @@
+/* Kleurenpalet van badassgames.nl: leisteenblauw met oranje accent. */
 :root {
-  --bg: #f6f5f2;
+  --bg: #f3f4f6;
   --surface: #ffffff;
-  --text: #1c1b19;
-  --muted: #6b675f;
-  --line: #e2dfd8;
-  --accent: #c2410c;
+  --text: #252f3d;
+  --muted: #5f6b7a;
+  --line: #dde1e6;
+  --accent: #a85d18;
   --accent-text: #ffffff;
   --danger: #b91c1c;
   --ok: #15803d;
@@ -13,13 +14,13 @@
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #161514;
-    --surface: #211f1d;
-    --text: #f2efe9;
-    --muted: #a39e94;
-    --line: #36332f;
-    --accent: #f97316;
-    --accent-text: #1c1b19;
+    --bg: #1f2733;
+    --surface: #252f3d;
+    --text: #f4f5f6;
+    --muted: #a9b2bd;
+    --line: #38434f;
+    --accent: #e5963f;
+    --accent-text: #1f2733;
     --danger: #f87171;
     --ok: #4ade80;
     color-scheme: dark;
