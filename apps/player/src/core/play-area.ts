@@ -50,7 +50,7 @@ export function tileCount([west, south, east, north]: Bounds, minZoom: number, m
   return total;
 }
 
-function tileXY(lng: number, lat: number, z: number): [number, number] {
+export function tileXY(lng: number, lat: number, z: number): [number, number] {
   const n = 2 ** z;
   const x = Math.floor(((lng + 180) / 360) * n);
   const rad = (lat * Math.PI) / 180;

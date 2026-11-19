@@ -11,6 +11,7 @@ import {
   loadChain,
   publish,
   setCityBaseVersion,
+  versionLabel,
   type BaseVersion,
 } from "@/lib/game-store";
 import { GameNav } from "@/editor/GameNav";
@@ -162,7 +163,7 @@ export default function GamePage() {
     try {
       const version = await publish(supabase(), id);
       setNotice(
-        t("Gepubliceerd als versie {n}. Nieuwe hunts kunnen deze versie kiezen.", { n: version }),
+        t("Gepubliceerd als versie {n}. Nieuwe events kunnen deze versie kiezen.", { n: version }),
       );
       await load();
     } catch (err) {
@@ -179,10 +180,14 @@ export default function GamePage() {
   // Versies van het basisspel: vastzetten (basisspel) en kiezen (stad).
   const city = chain.find((c) => c.game.layer === "city");
   const cityVersion = city?.game.base_version ?? null;
-  const versionLabel = (v: BaseVersion) =>
-    t("Versie {n}", { n: v.version }) +
+  const versionOption = (v: BaseVersion) =>
+    versionLabel(v) +
     ` · ${new Date(v.created_at).toLocaleDateString(locale)}` +
-    (v.note ? ` · ${v.note}` : "");
+    (v.note ? ` · ${v.note.split("\n")[0]}` : "");
+  const versionText = (n: number | null) => {
+    const v = baseVersions.find((x) => x.version === n);
+    return n === null ? t("werkversie") : v ? versionLabel(v) : t("versie {n}", { n });
+  };
 
   const doChooseVersion = async (value: string) => {
     setBusy(true);
@@ -194,9 +199,9 @@ export default function GamePage() {
       setNotice(
         (version === null
           ? t("Deze stad volgt nu de werkversie van het basisspel.")
-          : t("Deze stad bouwt nu voort op versie {n} van het basisspel.", { n: version })) +
+          : t("Deze stad bouwt nu voort op {version}.", { version: versionText(version) })) +
           " " +
-          t("Publiceer de stad (en de klantvarianten eronder) opnieuw om dit in nieuwe hunts te gebruiken."),
+          t("Publiceer de stad (en de klantvarianten eronder) opnieuw om dit in nieuwe events te gebruiken."),
       );
       await load();
     } catch (err) {
@@ -281,7 +286,7 @@ export default function GamePage() {
       setNameDraft(null);
       setNotice(
         isBase
-          ? t("Naam opgeslagen. Publiceer het spel opnieuw, en ook de steden en klantvarianten eronder, om de nieuwe naam in nieuwe hunts te zien. Hunts die al bestaan, houden hun oude naam.")
+          ? t("Naam opgeslagen. Publiceer het spel opnieuw, en ook de steden en klantvarianten eronder, om de nieuwe naam in nieuwe events te zien. Events die al bestaan, houden hun oude naam.")
           : t("Naam opgeslagen."),
       );
       await load();
@@ -451,7 +456,7 @@ export default function GamePage() {
           <p className="muted" style={{ marginTop: 0 }}>
             {isBase
               ? t("Dit is de naam die spelers in de app zien.")
-              : t("Dit is de naam in de beheeromgeving, bijvoorbeeld bij het kiezen van een spel voor een nieuwe hunt. Spelers zien de naam van het basisspel.")}
+              : t("Dit is de naam in de beheeromgeving, bijvoorbeeld bij het kiezen van een spel voor een nieuw event. Spelers zien de naam van het basisspel.")}
           </p>
           <div className="row">
             {self.game.languages.map((lang) => (
@@ -580,7 +585,7 @@ export default function GamePage() {
 
       {legacy ? (
         <p className="card">
-          {t('Dit spel is als kant-en-klaar spelpakket geïmporteerd en heeft daarom geen losse opdrachten om te bewerken. Je kunt er wel hunts mee maken. Importeer het spel opnieuw als bundel om het te bewerken.')}
+          {t('Dit spel is als kant-en-klaar spelpakket geïmporteerd en heeft daarom geen losse opdrachten om te bewerken. Je kunt er wel events mee maken. Importeer het spel opnieuw als bundel om het te bewerken.')}
         </p>
       ) : null}
 
@@ -588,7 +593,7 @@ export default function GamePage() {
         <TemplateVersions
           baseId={id}
           versions={baseVersions}
-          cities={children}
+          cities={children.map((c) => ({ ...c, name: displayName(c) }))}
           onChanged={async (message) => {
             setErrors([]);
             setNotice(message);
@@ -612,7 +617,7 @@ export default function GamePage() {
           >
             {baseVersions.map((v) => (
               <option key={v.version} value={String(v.version)}>
-                {versionLabel(v)}
+                {versionOption(v)}
                 {v.version === baseVersions[0]?.version ? ` (${t("nieuwste")})` : ""}
               </option>
             ))}
@@ -622,7 +627,7 @@ export default function GamePage() {
             {cityVersion !== null &&
             baseVersions[0] &&
             baseVersions[0].version > cityVersion
-              ? t("Er is een nieuwere versie van het basisspel: versie {n}. Kies die hierboven om deze stad over te zetten.", { n: baseVersions[0].version })
+              ? t("Er is een nieuwere versie van het basisspel: {version}. Kies die hierboven om deze stad over te zetten.", { version: versionLabel(baseVersions[0]) })
               : t("Nieuwe versies van het basisspel komen pas in deze stad als je ze hier kiest.")}
           </p>
         </section>
@@ -632,7 +637,7 @@ export default function GamePage() {
         <p className="muted">
           {cityVersion === null
             ? t("Volgt de stad {city}, die de werkversie van het basisspel gebruikt.", { city: city.game.slug })
-            : t("Volgt de stad {city}: versie {n} van het basisspel.", { city: city.game.slug, n: cityVersion })}
+            : t("Volgt de stad {city}: {version}.", { city: city.game.slug, version: versionText(cityVersion) })}
         </p>
       ) : null}
 
@@ -646,7 +651,7 @@ export default function GamePage() {
                 <span className="muted">
                   ({c.slug} · {t(LAYER_LABEL[c.layer])}
                   {c.layer === "city"
-                    ? ` · ${c.base_version === null ? t("werkversie") : t("versie {n}", { n: c.base_version })}`
+                    ? ` · ${versionText(c.base_version)}`
                     : ""}
                   )
                 </span>
@@ -777,7 +782,7 @@ export default function GamePage() {
       <section className="card" style={{ marginTop: 32 }}>
         <h2 style={{ marginTop: 0 }}>{t('Spel verwijderen')}</h2>
         <p className="muted">
-          {t('Verwijdert dit spel met alle opdrachten, versies en testhunts. Een spel met varianten eronder of met echte hunts (geen testhunt) kan niet weg. Dit is niet terug te draaien.')}
+          {t('Verwijdert dit spel met alle opdrachten, versies en testevents. Een spel met varianten eronder of met echte events (geen testevent) kan niet weg. Dit is niet terug te draaien.')}
         </p>
         {confirmDelete ? (
           <div className="actions">

@@ -1,10 +1,10 @@
 import { boundaryPath, DEFAULT_BOUNDARY_COLOR, outsideShade, trackColor, t as tx } from "@hunt/engine";
 import { Redirect, router, useSegments } from "expo-router";
-import { useKeepAwake } from "expo-keep-awake";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Image,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -28,8 +28,10 @@ import {
 import { downloadPlayArea } from "../src/services/map-download";
 import { Banner, Body, Button, Screen, Title } from "../src/ui/components";
 import { LeaveGame } from "../src/ui/LeaveGame";
+import { WebPlayBanners, WebStartInfo, webLocationHelp } from "../src/ui/WebNotices";
 import { takePhoto } from "../src/ui/camera";
 import { playSiren } from "../src/services/siren";
+import { useScreenOn } from "../src/services/screen-on";
 import { useGame } from "../src/ui/GameProvider";
 import GameMap from "../src/ui/map/GameMap";
 import { colors, contentColumn, radius, space } from "../src/ui/theme";
@@ -63,7 +65,7 @@ export default function PlayScreen() {
   const [dismissedMessages, setDismissedMessages] = useState(0);
   const lastShown = useRef<string | undefined>(undefined);
   const lastClosed = useRef(0);
-  useKeepAwake();
+  useScreenOn();
 
   const state = snapshot?.state ?? null;
   const game = snapshot?.game;
@@ -209,18 +211,24 @@ export default function PlayScreen() {
               <Text style={styles.teamCode}>{snapshot.team.teamCode}</Text>
             )}
           </View>
+          {/* Webapp: uitleg dat het scherm aan moet blijven (de browser stopt de GPS anders). */}
+          <WebStartInfo lang={lang} />
           <View style={styles.spacer} />
           <Body>{t("locationNeeded")}</Body>
-          <Body muted>{t("locationAlways")}</Body>
+          {Platform.OS !== "web" ? <Body muted>{t("locationAlways")}</Body> : null}
           {permission === "denied" ? (
-            <>
-              <Banner tone="danger">{t("locationDenied")}</Banner>
-              <Button
-                kind="secondary"
-                label={t("openSettings")}
-                onPress={() => void Linking.openSettings()}
-              />
-            </>
+            webLocationHelp(lang) ? (
+              <Banner tone="danger">{webLocationHelp(lang)!}</Banner>
+            ) : (
+              <>
+                <Banner tone="danger">{t("locationDenied")}</Banner>
+                <Button
+                  kind="secondary"
+                  label={t("openSettings")}
+                  onPress={() => void Linking.openSettings()}
+                />
+              </>
+            )
           ) : null}
           <View style={styles.spacer} />
           <Body muted>{t("startExplain")}</Body>
@@ -336,8 +344,10 @@ export default function PlayScreen() {
           {!snapshot.online ? (
             <Banner tone="warning">{t("offline")}</Banner>
           ) : null}
+          {/* Webapp: GPS weggevallen, even uit beeld geweest, scherm kan niet aan blijven. */}
+          <WebPlayBanners lang={lang} />
           {weakGps ? <Banner tone="warning">{t("gpsWeak")}</Banner> : null}
-          {permission === "denied" ? (
+          {permission === "denied" && Platform.OS !== "web" ? (
             <Banner tone="danger">{t("locationDenied")}</Banner>
           ) : null}
           {download !== null && download < 100 ? (

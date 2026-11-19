@@ -87,7 +87,7 @@ export default function PhotobookSettingsPage() {
   return (
     <>
       <p className="muted">
-        <Link href="/sessies">{t('Hunts')}</Link> › {t('Fotoboek')}
+        <Link href="/sessies">{t('Events')}</Link> › {t('Fotoboek')}
       </p>
       <h1>{t("Vaste foto's en links van elk fotoboek")}</h1>
       <p className="muted">

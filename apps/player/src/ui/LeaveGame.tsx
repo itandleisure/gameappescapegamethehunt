@@ -1,8 +1,9 @@
 import { router } from "expo-router";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { leaveGame } from "../services/game";
 import { stopTracking } from "../services/location";
 import { Body, Button } from "./components";
+import { confirmAction } from "./confirm";
 import { useGame } from "./GameProvider";
 import { colors, space } from "./theme";
 
@@ -18,18 +19,11 @@ export function LeaveGame({ showCode = true }: { showCode?: boolean }) {
 
   const confirm = () => {
     const unsent = snapshot.pending > 0 ? `\n\n${t("leaveUnsent", { count: snapshot.pending })}` : "";
-    Alert.alert(t("leave"), t("leaveConfirmCode", { code, name }) + unsent, [
-      { text: t("no"), style: "cancel" },
-      {
-        text: t("yes"),
-        style: "destructive",
-        onPress: async () => {
-          await stopTracking().catch(() => undefined);
-          await leaveGame();
-          router.replace("/");
-        },
-      },
-    ]);
+    confirmAction(t("leave"), t("leaveConfirmCode", { code, name }) + unsent, t("yes"), t("no"), async () => {
+      await stopTracking().catch(() => undefined);
+      await leaveGame();
+      router.replace("/");
+    });
   };
 
   return (

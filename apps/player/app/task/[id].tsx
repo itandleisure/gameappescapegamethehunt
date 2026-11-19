@@ -217,7 +217,7 @@ export default function TaskScreen() {
                 label={t("answerPlaceholder")}
                 value={text}
                 onChangeText={setText}
-                keyboardType={answer.type === "number" ? "numeric" : "default"}
+                keyboardType={answer.type === "number" || (answer.type === "text" && answer.accepted.length > 0 && answer.accepted.every((a) => /^\s*\d+([.,]\d+)?\s*$/.test(a))) ? "numeric" : "default"}
                 autoCorrect={false}
                 autoCapitalize="none"
                 returnKeyType="send"

@@ -80,7 +80,18 @@ const config: ExpoConfig = {
     ],
     '@maplibre/maplibre-react-native',
   ],
-  experiments: { typedRoutes: false },
+  // Webapp (speler-app in de browser, zie scripts/web-build.mjs): staat onder
+  // een eigen pad op het domein van de beheeromgeving, standaard /speel.
+  web: {
+    output: 'single',
+    bundler: 'metro',
+    name: 'Escape Game The Hunt',
+    shortName: 'The Hunt',
+    themeColor: '#101214',
+    backgroundColor: '#101214',
+    favicon: './web/favicon.png',
+  },
+  experiments: { typedRoutes: false, ...(process.env.PLAYER_WEB_BASE ? { baseUrl: process.env.PLAYER_WEB_BASE } : {}) },
   // Testversies via EAS Update. Met de SDK-versie als runtime kunnen ze ook in
   // Expo Go draaien (zie src/services/runtime.ts).
   runtimeVersion: { policy: 'sdkVersion' },

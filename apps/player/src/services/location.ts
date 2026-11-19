@@ -2,8 +2,7 @@ import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import { LOCATION_TASK } from '../config';
-import { currentGame, resumeGame } from './game';
-import { currentLeader, resumeLeader, shareLeaderPosition } from './leader';
+import { handleFixes, onFix, type Fix } from './location-handler';
 import { IN_EXPO_GO } from './runtime';
 
 /**
@@ -11,8 +10,6 @@ import { IN_EXPO_GO } from './runtime';
  * blijven metingen binnenkomen via een achtergrondtaak; op Android met een
  * melding, zoals de regels van Google voorschrijven.
  */
-
-type Fix = { lat: number; lng: number; accuracy: number; at: number };
 
 function toFix(location: Location.LocationObject): Fix {
   return {
@@ -23,39 +20,10 @@ function toFix(location: Location.LocationObject): Fix {
   };
 }
 
-let lastFix: Fix | null = null;
-const fixWatchers = new Set<(fix: Fix) => void>();
+export { onFix };
 
-/** Laatste meting, voor de GPS-indicator op het scherm. */
-export function onFix(watch: (fix: Fix) => void): () => void {
-  fixWatchers.add(watch);
-  if (lastFix) watch(lastFix);
-  return () => fixWatchers.delete(watch);
-}
-
-async function handle(locations: Location.LocationObject[]) {
-  // Spelleider: geen spel, alleen de positie delen met de andere spelleiders.
-  const leader = currentLeader() ?? (currentGame() ? null : await resumeLeader());
-  if (leader) {
-    const latest = [...locations].sort((a, b) => a.timestamp - b.timestamp).map(toFix).pop();
-    if (!latest) return;
-    lastFix = latest;
-    for (const watch of fixWatchers) watch(latest);
-    await shareLeaderPosition(latest);
-    return;
-  }
-  const game = currentGame() ?? (await resumeGame());
-  if (!game) return;
-  const sorted = [...locations].sort((a, b) => a.timestamp - b.timestamp);
-  for (const location of sorted) {
-    const fix = toFix(location);
-    lastFix = fix;
-    for (const watch of fixWatchers) watch(fix);
-    const opened = await game.onLocation(fix);
-    if (opened.length > 0) void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  }
-  void game.tick();
-}
+const handle = (locations: Location.LocationObject[]) =>
+  handleFixes(locations.map(toFix), () => void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success));
 
 // Moet bovenaan in de bundel gedefinieerd zijn, ook als de app op de
 // achtergrond wordt gestart door het besturingssysteem.

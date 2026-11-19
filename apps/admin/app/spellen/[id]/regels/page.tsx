@@ -279,7 +279,7 @@ export default function RulesPage() {
       <h1>{t('Spelverloop')}</h1>
       <GameNav id={id} layer={rows.game.layer} active="regels" />
       <p className="muted">
-        {t('Wat er tijdens het spel gebeurt en wanneer. Elk moment gaat één keer per team. Wijzig een moment met Wijzigen en publiceer het spel om het in de app te gebruiken. In een testhunt kun je in de app de tijd vooruitzetten, zodat je niet hoeft te wachten.')}
+        {t('Wat er tijdens het spel gebeurt en wanneer. Elk moment gaat één keer per team. Wijzig een moment met Wijzigen en publiceer het spel om het in de app te gebruiken. In een testevent kun je in de app de tijd vooruitzetten, zodat je niet hoeft te wachten.')}
       </p>
       {notice ? <p className="notice">{notice}</p> : null}
       {errors.length > 0 ? (

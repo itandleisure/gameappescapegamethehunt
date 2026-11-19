@@ -1,6 +1,6 @@
 # Speler-app
 
-React Native + Expo (TypeScript) voor iPhone en Android.
+React Native + Expo (TypeScript) voor iPhone en Android, en als webapp in de browser (zie [docs/webapp.md](../../docs/webapp.md)).
 
 ## Wat de app doet
 
@@ -49,6 +49,14 @@ cd apps/player
 npx eas-cli build --profile development --platform android   # APK voor je eigen Android-telefoon
 npx expo start --dev-client
 ```
+
+### Webapp (in de browser)
+
+```bash
+pnpm --filter @hunt/player exec node scripts/web-build.mjs   # naar dist-web/, onder /speel
+```
+
+Browserversies van telefoonfuncties staan naast het origineel met `.web.ts(x)`: GPS (`location.web.ts`, stopt bij scherm uit), kaart (`GameMap.web.tsx`), camera, trillen, scherm aan (`screen-on.web.ts`), kaart vooraf laden (`map-download.web.ts`). Uitleg en meldingen alleen voor de webapp: `src/ui/WebNotices.web.tsx`. Zie [docs/webapp.md](../../docs/webapp.md) voor wat wel en niet werkt.
 
 ### Testen in Expo Go
 
