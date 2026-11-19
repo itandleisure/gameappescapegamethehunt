@@ -2,7 +2,7 @@ import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { APP_LANGUAGES, LANGUAGE_NAMES } from '../src/core/i18n';
+import { APP_LANGUAGES, LANGUAGE_NAMES, MAIN_LANGUAGES } from '../src/core/i18n';
 import { BackendError } from '../src/core/supabase-backend';
 import { joinGame, rejoinGame } from '../src/services/game';
 import { isValidPhone } from '../src/core/view';
@@ -24,6 +24,8 @@ export default function JoinScreen() {
   const [busy, setBusy] = useState<'join' | 'rejoin' | null>(null);
   const [error, setError] = useState<MessageKey | null>(null);
   const [keyboard, setKeyboard] = useState(false);
+  // De zeven hoofdtalen staan altijd in beeld; de andere Europese talen klap je uit.
+  const [allLanguages, setAllLanguages] = useState(false);
   useEffect(() => {
     const shown = Keyboard.addListener('keyboardDidShow', () => setKeyboard(true));
     const hidden = Keyboard.addListener('keyboardDidHide', () => setKeyboard(false));
@@ -94,9 +96,12 @@ export default function JoinScreen() {
           />
           <Body muted>{t('language')}</Body>
           <View style={styles.chips}>
-            {APP_LANGUAGES.map((code) => (
+            {APP_LANGUAGES.filter((code) => allLanguages || MAIN_LANGUAGES.includes(code) || code === lang).map((code) => (
               <Chip key={code} label={LANGUAGE_NAMES[code] ?? code} selected={lang === code} onPress={() => setLang(code)} />
             ))}
+            {allLanguages ? null : (
+              <Chip label={`+${APP_LANGUAGES.filter((code) => !MAIN_LANGUAGES.includes(code) && code !== lang).length}`} selected={false} onPress={() => setAllLanguages(true)} />
+            )}
           </View>
           <Button
             label={t('join')}

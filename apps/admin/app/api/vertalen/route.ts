@@ -11,6 +11,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { GAME_LANGUAGE_ENGLISH } from '@/lib/game-languages';
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from '@/lib/supabase-config';
 
 export const runtime = 'nodejs';
@@ -20,15 +21,7 @@ export const maxDuration = 120;
 
 const MODEL = 'claude-opus-5-5';
 
-const LANGUAGE_NAMES: Record<string, string> = {
-  nl: 'Dutch',
-  en: 'English',
-  de: 'German',
-  es: 'Spanish (Spain)',
-  pt: 'Portuguese (Portugal)',
-  it: 'Italian',
-  fr: 'French',
-};
+const LANGUAGE_NAMES: Record<string, string> = GAME_LANGUAGE_ENGLISH;
 
 const MAX_FIELDS = 120;
 const MAX_CHARS = 40_000;

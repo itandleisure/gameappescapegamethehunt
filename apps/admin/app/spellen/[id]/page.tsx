@@ -21,6 +21,7 @@ import {
   variantName,
   type NameByLang,
 } from "@/lib/game-name";
+import { GAME_LANGUAGES, gameLanguageName } from "@/lib/game-languages";
 import { tKey } from "@/lib/i18n";
 import { useLanguage } from "@/lib/language";
 import { supabase } from "@/lib/supabase";
@@ -305,6 +306,29 @@ export default function GamePage() {
     }
   };
 
+  /** Basisspel: een speltaal erbij. Daarna kun je de opdrachten automatisch laten vertalen. */
+  const doAddLanguage = async (lang: string) => {
+    if (!lang || self.game.languages.includes(lang)) return;
+    setBusy(true);
+    setErrors([]);
+    setNotice(null);
+    const { error } = await supabase()
+      .from("games")
+      .update({ languages: [...self.game.languages, lang] })
+      .eq("id", id);
+    setBusy(false);
+    if (error) {
+      setErrors([error.message]);
+      return;
+    }
+    setNotice(
+      t("{lang} toegevoegd. Vertaal nu de opdrachten (knop bij Opdrachten) en publiceer daarna het spel.", {
+        lang: gameLanguageName(lang),
+      }),
+    );
+    await load();
+  };
+
   const addTask = async (e: FormEvent) => {
     e.preventDefault();
     const key = newKey.trim().toLowerCase();
@@ -400,6 +424,25 @@ export default function GamePage() {
             </button>
           </>
         )}
+        {isBase && !nameDraft && !legacy ? (
+          <>
+            {" · "}
+            <select
+              aria-label={t("Taal toevoegen")}
+              value=""
+              disabled={busy}
+              onChange={(e) => void doAddLanguage(e.target.value)}
+              style={{ width: "auto", display: "inline-block", padding: "2px 6px" }}
+            >
+              <option value="">{t("Taal toevoegen")}…</option>
+              {GAME_LANGUAGES.filter((l) => !self.game.languages.includes(l)).map((l) => (
+                <option key={l} value={l}>
+                  {gameLanguageName(l)}
+                </option>
+              ))}
+            </select>
+          </>
+        ) : null}
       </p>
       {nameDraft ? (
         <form className="card" onSubmit={doSaveName} style={{ marginBottom: 16 }}>

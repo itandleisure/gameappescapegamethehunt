@@ -28,15 +28,36 @@ async function translateOne(token: string, source: string, target: string, texts
   return body.translations[target] ?? {};
 }
 
+/** Hoeveel talen er tegelijk vertaald worden; meer geeft snel "te veel tegelijk" bij Anthropic. */
+const PARALLEL = 6;
+
+/** Zoals Promise.allSettled, maar met hooguit `limit` taken tegelijk. */
+async function settleLimited<T>(tasks: (() => Promise<T>)[], limit: number): Promise<PromiseSettledResult<T>[]> {
+  const results: PromiseSettledResult<T>[] = new Array(tasks.length);
+  let next = 0;
+  const worker = async () => {
+    while (next < tasks.length) {
+      const i = next++;
+      try {
+        results[i] = { status: 'fulfilled', value: await tasks[i]!() };
+      } catch (reason) {
+        results[i] = { status: 'rejected', reason };
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, tasks.length) }, worker));
+  return results;
+}
+
 /**
- * Vertaalt teksten naar alle doeltalen. Per taal een eigen aanvraag, tegelijk:
- * dat is sneller en blijft ruim binnen de tijdslimiet van de server.
+ * Vertaalt teksten naar alle doeltalen. Per taal een eigen aanvraag, een paar
+ * tegelijk: dat is sneller en blijft ruim binnen de tijdslimiet van de server.
  */
 export async function translateTexts(source: string, targets: readonly string[], texts: Record<string, string>): Promise<Translations> {
   const { data } = await supabase().auth.getSession();
   const token = data.session?.access_token;
   if (!token) throw new Error(t('Log opnieuw in om te vertalen.'));
-  const results = await Promise.allSettled(targets.map((l) => translateOne(token, source, l, texts)));
+  const results = await settleLimited(targets.map((l) => () => translateOne(token, source, l, texts)), PARALLEL);
   const out: Translations = {};
   const failed: string[] = [];
   results.forEach((r, i) => {

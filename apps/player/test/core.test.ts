@@ -43,6 +43,8 @@ describe('talen van de app', () => {
     expect(pickLanguage(['es-ES', 'en-GB'], ['nl', 'en', 'es'], 'nl')).toBe('es');
     expect(pickLanguage(['fr-FR'], ['nl', 'en'], 'nl')).toBe('nl');
     expect(pickLanguage([], ['en'], 'nl')).toBe('en');
+    expect(pickLanguage(['nb-NO'], ['nl', 'no'], 'nl')).toBe('no');
+    expect(pickLanguage(['pl-PL'], ['nl', 'en', 'pl'], 'nl')).toBe('pl');
   });
 
   it('heeft elke tekst in elke taal', () => {
@@ -53,9 +55,18 @@ describe('talen van de app', () => {
     }
   });
 
+  it('houdt de {plekken} gelijk in elke taal', () => {
+    const marks = (s: string) => [...s.matchAll(/\{\w+\}/g)].map((m) => m[0]).sort().join();
+    const nl = MESSAGES.nl!;
+    for (const [lang, messages] of Object.entries(MESSAGES)) {
+      for (const key of Object.keys(nl) as (keyof typeof nl)[]) expect(marks(messages[key]), `${lang}.${key}`).toBe(marks(nl[key]));
+    }
+  });
+
   it('vult variabelen in en valt terug op Engels', () => {
     expect(msg('nl', 'hintCost', { cost: 25 })).toBe('Hint gebruiken (−25 punten)');
-    expect(msg('fi', 'submit')).toBe('Submit');
+    expect(msg('fi', 'submit')).toBe('Lähetä');
+    expect(msg('xx', 'submit')).toBe('Submit');
     expect(formatDuration(65_000)).toBe('1:05');
     expect(formatDuration(3_909_000)).toBe('1:05:09');
   });
