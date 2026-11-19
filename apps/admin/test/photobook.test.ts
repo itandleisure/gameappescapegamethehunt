@@ -3,6 +3,11 @@ import {
   bookText,
   defaultItems,
   coverCrop,
+  footerText,
+  groupPhotoIndex,
+  parseGames,
+  setGroupPhoto,
+  DEFAULT_GAMES,
   huntStats,
   zipEntryNames,
   displayUrl,
@@ -52,9 +57,43 @@ describe('fotoboek', () => {
       'wolven/fotomissie/1.jpg',
       'huisstijl/org/a.jpg',
     ]);
-    expect(items[0]).toEqual({ source: 'game', path: 'vossen/_teamfoto/3.jpg', caption: 'vossen' });
+    expect(items[0]).toEqual({ source: 'game', path: 'vossen/_teamfoto/3.jpg', caption: 'vossen', large: true });
+    expect(groupPhotoIndex(items)).toBe(0);
     expect(items[2]).toEqual({ source: 'game', path: 'vossen/brug/5.jpg', caption: 'vossen · Opdracht' });
     expect(items[5]).toEqual({ source: 'stock', path: 'huisstijl/org/a.jpg', caption: '' });
+  });
+
+  it('vult alleen aan met vaste foto\'s als de spelers weinig foto\'s hebben', () => {
+    const stock = Array.from({ length: 6 }, (_, i) => `huisstijl/org/${i}.jpg`);
+    const few = defaultItems(photos, [], (p) => p.team_id, stock);
+    expect(few.filter((i) => i.source === 'stock')).toHaveLength(3);
+    const many = Array.from({ length: 9 }, (_, i) => photo(String(10 + i), 'vossen', 'brug', `13:${10 + i}`));
+    expect(defaultItems(many, [], (p) => p.team_id, stock).some((i) => i.source === 'stock')).toBe(false);
+    expect(defaultItems(many, [], (p) => p.team_id, stock)[0]!.large).toBeUndefined();
+  });
+
+  it('maakt een foto de groepsfoto: vooraan en groot', () => {
+    const items = [
+      { source: 'game' as const, path: 'a', caption: '', large: true },
+      { source: 'game' as const, path: 'b', caption: '' },
+      { source: 'own' as const, path: 'c', caption: '' },
+    ];
+    const next = setGroupPhoto(items, 2);
+    expect(next.map((i) => i.path)).toEqual(['c', 'a', 'b']);
+    expect(next[0]!.large).toBe(true);
+    expect(next[1]!.large).toBeUndefined();
+    expect(setGroupPhoto([{ source: 'game', path: 'a', caption: '' }], 0)[0]!.large).toBe(true);
+  });
+
+  it('zet het merk in de voettekst', () => {
+    expect(footerText('Amsterdam')).toBe('ESCAPE GAME THE HUNT · AMSTERDAM');
+    expect(footerText(' ')).toBe('ESCAPE GAME THE HUNT');
+  });
+
+  it('leest de andere spellen, met de standaardspellen als er niets is ingesteld', () => {
+    expect(parseGames(null).map((g) => g.name)).toEqual(DEFAULT_GAMES.map((g) => g.name));
+    expect(parseGames([])).toEqual([]);
+    expect(parseGames([{ name: ' X ', text: 1, url: 'u' }, { name: '' }, 'x'])).toEqual([{ name: 'X', text: '', url: 'u', image_path: null }]);
   });
 
   it('toont foto\'s die nog niet in het boek staan', () => {

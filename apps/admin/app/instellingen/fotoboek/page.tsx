@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth';
 import { tKey } from '@/lib/i18n';
 import { useLanguage } from '@/lib/language';
-import { moveItem, type BookLinks, type PhotobookSettings } from '@/lib/photobook';
+import { DEFAULT_GAMES, MAX_GAMES, moveItem, type BookGame, type BookLinks, type PhotobookSettings } from '@/lib/photobook';
 import { deleteFile, loadSettings, saveSettings, signItems, uploadStockPhoto } from '@/lib/photobook-store';
 
 const LINK_FIELDS: { key: keyof BookLinks; label: string; placeholder: string }[] = [
@@ -15,6 +15,7 @@ const LINK_FIELDS: { key: keyof BookLinks; label: string; placeholder: string }[
   { key: 'website', label: tKey('Website'), placeholder: 'escapegamethehunt.nl' },
   { key: 'email', label: tKey('E-mail'), placeholder: 'info@…' },
   { key: 'phone', label: tKey('Telefoon'), placeholder: '085 …' },
+  { key: 'games', label: tKey('Website met alle spellen (knop op de laatste pagina)'), placeholder: 'https://badassgames.nl' },
 ];
 
 /** Vaste onderdelen van elk fotoboek: omslagfoto, algemene foto's en links. */
@@ -34,7 +35,13 @@ export default function PhotobookSettingsPage() {
     void loadSettings(org.id).then(setSettings, (e: unknown) => setError(e instanceof Error ? e.message : String(e)));
   }, [org]);
 
-  const paths = settings ? [...(settings.cover_path ? [settings.cover_path] : []), ...settings.stock_paths] : [];
+  const paths = settings
+    ? [
+        ...(settings.cover_path ? [settings.cover_path] : []),
+        ...settings.stock_paths,
+        ...settings.games.flatMap((g) => (g.image_path ? [g.image_path] : [])),
+      ]
+    : [];
   const missing = paths.filter((p) => !urls.has(p)).join('|');
   useEffect(() => {
     if (!missing) return;
@@ -69,6 +76,13 @@ export default function PhotobookSettingsPage() {
       if (cover) change({ cover_path: added[0] ?? settings.cover_path });
       else change({ stock_paths: [...settings.stock_paths, ...added] });
     });
+  const setGame = (index: number, patch: Partial<BookGame>) =>
+    change({ games: settings.games.map((g, i) => (i === index ? { ...g, ...patch } : g)) });
+  const uploadGame = (index: number, files: FileList | null) =>
+    void run(t("Foto's uploaden…"), async () => {
+      const file = files?.[0];
+      if (file) setGame(index, { image_path: await uploadStockPhoto(org.id, file) });
+    });
   const remove = (path: string) =>
     void run(t('Verwijderen…'), async () => {
       const next = { ...settings, stock_paths: settings.stock_paths.filter((p) => p !== path), cover_path: settings.cover_path === path ? null : settings.cover_path };
@@ -95,8 +109,8 @@ export default function PhotobookSettingsPage() {
       </p>
       {!canEdit ? <p className="muted">{t('Alleen eigenaren, beheerders en partners kunnen dit wijzigen.')}</p> : null}
 
-      <h2>{t('Omslagfoto')}</h2>
-      <p className="muted small">{t('Grote foto op de voorkant en bij de video. Zonder omslagfoto komt de eerste foto van het fotoboek op de voorkant.')}</p>
+      <h2>{t('Vaste foto voor de voorkant')}</h2>
+      <p className="muted small">{t('Een foto van jullie die altijd groot op de voorkant staat, en bij de video. Zonder deze foto komt de eerste foto van het fotoboek op de voorkant.')}</p>
       <div className="photowall photobook">
         {settings.cover_path ? (
           <figure>
@@ -119,7 +133,9 @@ export default function PhotobookSettingsPage() {
       ) : null}
 
       <h2>{t("Vaste foto's")}</h2>
-      <p className="muted small">{t("Algemene foto's van jullie, bijvoorbeeld van de Hunters. De eerste twee komen ook op de reviewpagina.")}</p>
+      <p className="muted small">
+        {t("Algemene foto's van jullie, bijvoorbeeld van de Hunters. Hebben de spelers minder dan {n} foto's, dan vullen deze foto's het fotoboek aan. De eerste twee komen ook op de reviewpagina.", { n: 8 })}
+      </p>
       <div className="photowall photobook">
         {settings.stock_paths.map((path, i) => (
           <figure key={path}>
@@ -155,6 +171,58 @@ export default function PhotobookSettingsPage() {
           {t("Vaste foto's toevoegen")}
           <input type="file" accept="image/*" multiple disabled={!!busy} onChange={(e) => upload(e.target.files, false)} />
         </label>
+      ) : null}
+
+      <h2>{t('Meer spellen van Badass Games')}</h2>
+      <p className="muted small">{t('Blokken op de laatste pagina ("Bedankt voor het spelen"), met een foto, een korte tekst en een link. Hooguit {n}.', { n: MAX_GAMES })}</p>
+      <div className="pb-games">
+        {settings.games.map((g, i) => (
+          <div className="card" key={i}>
+            <div className="row">
+              <div>
+                <label htmlFor={`game-name-${i}`}>{t('Naam')}</label>
+                <input id={`game-name-${i}`} value={g.name} disabled={!canEdit} onChange={(e) => setGame(i, { name: e.target.value })} />
+              </div>
+              <div style={{ flex: '2 1 260px' }}>
+                <label htmlFor={`game-url-${i}`}>{t('Link')}</label>
+                <input id={`game-url-${i}`} value={g.url} placeholder="https://badassgames.nl/…" disabled={!canEdit} onChange={(e) => setGame(i, { url: e.target.value })} />
+              </div>
+            </div>
+            <label htmlFor={`game-text-${i}`}>{t('Tekst')}</label>
+            <textarea id={`game-text-${i}`} rows={2} maxLength={300} value={g.text} disabled={!canEdit} onChange={(e) => setGame(i, { text: e.target.value })} />
+            <div className="row" style={{ alignItems: 'center' }}>
+              {g.image_path ? <div className="pb-game-img">{img(g.image_path)}</div> : <p className="muted small">{t('Nog geen foto.')}</p>}
+              {canEdit ? (
+                <div className="actions" style={{ marginTop: 0 }}>
+                  <label className={`filebutton ${busy ? 'disabled' : ''}`}>
+                    {g.image_path ? t('Andere foto') : t('Foto kiezen')}
+                    <input type="file" accept="image/*" disabled={!!busy} onChange={(e) => uploadGame(i, e.target.files)} />
+                  </label>
+                  <button className="secondary" disabled={i === 0} onClick={() => change({ games: moveItem(settings.games, i, i - 1) })}>
+                    ↑
+                  </button>
+                  <button className="link" onClick={() => change({ games: settings.games.filter((_, j) => j !== i) })}>
+                    {t('Weghalen')}
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ))}
+      </div>
+      {canEdit ? (
+        <div className="actions">
+          <button
+            className="secondary"
+            disabled={settings.games.length >= MAX_GAMES}
+            onClick={() => change({ games: [...settings.games, { name: '', text: '', url: '', image_path: null }] })}
+          >
+            {t('Spel toevoegen')}
+          </button>
+          <button className="link" onClick={() => change({ games: DEFAULT_GAMES.map((g) => ({ ...g })) })}>
+            {t('Terug naar de vier standaardspellen')}
+          </button>
+        </div>
       ) : null}
 
       <h2>{t('Links')}</h2>

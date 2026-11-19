@@ -52,9 +52,12 @@ insert into public.photos (team_id, task_key, path) values
 -- ---------------------------------------------------------------------------
 select tests.login('a1000000-0000-0000-0000-000000000002');
 insert into storage.objects (bucket_id, name) values ('photobooks', 'huisstijl/0a100000-0000-0000-0000-00000000000a/omslag.jpg');
-insert into public.photobook_settings (org_id, cover_path, stock_paths, links) values (
+insert into public.photobook_settings (org_id, cover_path, stock_paths, links, games) values (
   '0a100000-0000-0000-0000-00000000000a', 'huisstijl/0a100000-0000-0000-0000-00000000000a/omslag.jpg',
-  '["huisstijl/0a100000-0000-0000-0000-00000000000a/a.jpg"]', '{"google_review": "https://example.com/review"}');
+  '["huisstijl/0a100000-0000-0000-0000-00000000000a/a.jpg"]', '{"google_review": "https://example.com/review"}',
+  '[{"name": "The Hundred", "text": "100 munten", "url": "https://badassgames.nl/the-hundred",
+     "image_path": "huisstijl/0a100000-0000-0000-0000-00000000000a/hundred.jpg"},
+    {"name": "Elders", "text": "", "url": "", "image_path": "huisstijl/0b100000-0000-0000-0000-00000000000b/x.jpg"}]');
 
 -- Een instructeur gebruikt de vaste foto's, maar wijzigt ze niet.
 select tests.login('a1000000-0000-0000-0000-000000000001');
@@ -178,6 +181,9 @@ begin
   assert jsonb_array_length(b -> 'teams') = 1 and b #>> '{teams,0,name}' = 'Vossen', 'cijfers van gestarte teams';
   assert b ->> 'cover_path' like 'huisstijl/%', 'omslagfoto';
   assert b #>> '{links,google_review}' = 'https://example.com/review', 'links';
+  assert jsonb_array_length(b -> 'games') = 2 and b #>> '{games,0,name}' = 'The Hundred', 'andere spellen';
+  assert b #>> '{games,0,image_path}' like 'huisstijl/0a1%', 'foto van een spel';
+  assert b #> '{games,1,image_path}' = 'null'::jsonb, 'geen foto van een andere organisatie';
   assert b ->> 'pdf_path' like '5a100000-0000-0000-0000-000000000001/%', 'pdf';
 end $$;
 
