@@ -31,6 +31,15 @@ export default function LoginPage() {
     setBusy(false);
   };
 
+  const forgot = async () => {
+    setError(null);
+    setNotice(null);
+    if (!email) return setError(t('Vul eerst je e-mailadres in.'));
+    const { error: err } = await supabase().auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/wachtwoord` });
+    if (err) setError(err.message);
+    else setNotice(t('Als dit adres een account heeft, krijg je een mail met een link om een nieuw wachtwoord te kiezen.'));
+  };
+
   return (
     <div className="card narrow">
       <div className="langcorner">
@@ -64,6 +73,11 @@ export default function LoginPage() {
           <button type="button" className="link" onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}>
             {mode === 'login' ? t('Uitgenodigd? Account aanmaken') : t('Ik heb al een account')}
           </button>
+          {mode === 'login' ? (
+            <button type="button" className="link" onClick={() => void forgot()}>
+              {t('Wachtwoord vergeten?')}
+            </button>
+          ) : null}
         </div>
       </form>
     </div>
