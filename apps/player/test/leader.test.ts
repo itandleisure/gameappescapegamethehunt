@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { lastPositions, leaderError, mergePositions, standings, type LeaderPosition, type LeaderTeam } from '../src/core/leader.js';
+import { LeaderApi, lastPositions, leaderError, mergePositions, standings, type LeaderPosition, type LeaderTeam } from '../src/core/leader.js';
 import { LEADER_MESSAGES, leaderMsg } from '../src/core/leader-i18n.js';
 
 const pos = (id: number, team: string, at: string, accuracy = 5): LeaderPosition => ({
@@ -59,5 +59,21 @@ describe('spelleider-modus', () => {
     for (const dict of Object.values(LEADER_MESSAGES)) expect(Object.keys(dict).sort()).toEqual(keys);
     expect(leaderMsg('nl', 'leaderPoints', { n: 40 })).toBe('40 punten');
     expect(leaderMsg('fi', 'leaderButton')).toBe("I'm a game leader");
+  });
+
+  it('stuurt de teamchat en de hunters-chat naar hun eigen functie', async () => {
+    const calls: [string, Record<string, unknown>][] = [];
+    const client = {
+      rpc: async (fn: string, args: Record<string, unknown>) => {
+        calls.push([fn, args]);
+        return { data: fn.includes('send') ? { id: 'm' } : [], error: null };
+      },
+    };
+    const api = new LeaderApi(client as unknown as ConstructorParameters<typeof LeaderApi>[0]);
+    await api.messages('s');
+    await api.messages('s', 'hunters');
+    await api.send('s', 'hoi');
+    await api.send('s', 'hoi', 'hunters');
+    expect(calls.map(([fn]) => fn)).toEqual(['leader_messages', 'leader_hunter_messages', 'leader_send_message', 'leader_send_hunter_message']);
   });
 });

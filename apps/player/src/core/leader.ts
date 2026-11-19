@@ -63,7 +63,12 @@ export interface LeaderMessage {
   sender_name: string | null;
   body: string;
   created_at: string;
+  /** Alleen in de hunters-chat: eigen bericht. */
+  own?: boolean;
 }
+
+/** Teamchat (alle teams en de hunters) of de onderlinge chat van de hunters. */
+export type LeaderChannel = 'teams' | 'hunters';
 
 export type LeaderErrorKey = 'leaderUnknownCode' | 'leaderFull' | 'leaderNameTaken' | 'leaderSignedOut' | 'errorNetwork' | 'errorGeneric';
 
@@ -167,14 +172,16 @@ export class LeaderApi {
     return data as number;
   }
 
-  async messages(sessionId: string): Promise<LeaderMessage[]> {
-    const { data, error } = await this.client.rpc('leader_messages', { p_session: sessionId });
+  async messages(sessionId: string, channel: LeaderChannel = 'teams'): Promise<LeaderMessage[]> {
+    const fn = channel === 'hunters' ? 'leader_hunter_messages' : 'leader_messages';
+    const { data, error } = await this.client.rpc(fn, { p_session: sessionId });
     if (error) throw leaderError(error);
     return data as LeaderMessage[];
   }
 
-  async send(sessionId: string, body: string): Promise<LeaderMessage> {
-    const { data, error } = await this.client.rpc('leader_send_message', { p_session: sessionId, p_body: body });
+  async send(sessionId: string, body: string, channel: LeaderChannel = 'teams'): Promise<LeaderMessage> {
+    const fn = channel === 'hunters' ? 'leader_send_hunter_message' : 'leader_send_message';
+    const { data, error } = await this.client.rpc(fn, { p_session: sessionId, p_body: body });
     if (error) throw leaderError(error);
     return data as LeaderMessage;
   }

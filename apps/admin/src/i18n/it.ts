@@ -938,4 +938,8 @@ export const it: Record<string, string> = {
   "Nog geen accounts.": "Ancora nessun account.",
   "Omschrijving wijzigen": "Modifica descrizione",
   "Account toevoegen": "Aggiungi account",
+  "Chat hunters": "Chat hunter",
+  "Dit bericht verwijderen?": "Eliminare questo messaggio?",
+  "De onderlinge chat van de spelleiders in de app. Teams zien deze chat niet. Spelleiders staan erin met hun eigen naam, jij als Organisatie.": "La chat interna dei game master nell'app. Le squadre non vedono questa chat. I game master appaiono con il proprio nome, tu come Organizzazione.",
+  "Bericht aan de spelleiders": "Messaggio ai game master",
 };
