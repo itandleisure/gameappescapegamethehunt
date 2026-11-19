@@ -9,38 +9,37 @@ import { LOGO_ICON_DATA_URI } from './logo-data';
 // ES-modules, waardoor een gewone <script>-tag niets laadt en de kaart leeg bleef.
 export const MAPLIBRE = 'https://unpkg.com/maplibre-gl@5.6.0/dist';
 
-export function webMapHtml(styleUrl: string, accent: string, dark: string, rewrites: UrlRewrite[]) {
-  return `<!doctype html><html><head>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<link rel="stylesheet" href="${MAPLIBRE}/maplibre-gl.css">
-<script>
-// Fouten zichtbaar maken in plaats van een zwart scherm.
-function showError(msg) { var e = document.getElementById('err'); if (!e) { document.body.insertAdjacentHTML('beforeend', '<div id="err"></div>'); e = document.getElementById('err'); } e.textContent = 'Kaart: ' + msg; }
-window.onerror = function (m) { showError(String(m)); };
-</script>
-<script src="${MAPLIBRE}/maplibre-gl.js"></script>
-<style>
-html,body,#map{margin:0;height:100%;background:${dark}}
-.pin{background:${accent};color:${dark};font:700 13px -apple-system,sans-serif;padding:4px 8px;border-radius:12px;border:2px solid ${dark};max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/** Opmaak van de markeringen en de foutmelding (pagina en webapp). */
+export function mapCss(accent: string, dark: string) {
+  return `.pin{background:${accent};color:${dark};font:700 13px -apple-system,sans-serif;padding:4px 8px;border-radius:12px;border:2px solid ${dark};max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .badge{width:30px;height:30px;padding:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px}
 .logo{width:34px;height:34px;padding:0;border-radius:50%;background-image:url(${LOGO_ICON_DATA_URI});background-size:78%;background-position:center;background-repeat:no-repeat}
 .flag{background:#fff;color:#111;border-radius:15px;padding:3px 8px;font-size:15px}
 .person{display:flex;align-items:center;gap:4px}.person .dot{width:16px;height:16px;border-radius:50%;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5)}.person .name{background:#fff;color:#111;font:600 12px -apple-system,sans-serif;padding:3px 6px;border-radius:4px;white-space:nowrap}.person.stale{opacity:.5}
 .me{width:16px;height:16px;border-radius:50%;background:#2f81f7;border:3px solid #fff;box-shadow:0 0 0 2px rgba(47,129,247,.4)}
 #err{position:absolute;top:40%;left:16px;right:16px;text-align:center;color:#fff;background:rgba(37,47,61,.88);padding:10px 12px;border-radius:8px;font:14px -apple-system,sans-serif}
-</style></head><body><div id="map"></div><script>
-if (!window.maplibregl) { showError('kon niet laden (geen internet?)'); window.hunt = () => {}; throw new Error('maplibre ontbreekt'); }
-// Kaartdienst: adressen omzetten naar MapTiler (zie map-provider.ts in de engine).
-const rewrites = ${JSON.stringify(rewrites)}.map((r) => [new RegExp(r.find), r.replace]);
+`;
+}
+
+/**
+ * De kaart zelf, als tekst: de body van een functie met de parameters
+ * (maplibregl, container, styleUrl, rewriteList, showError). Geeft hunt(data)
+ * terug. Dezelfde code draait in de kaartpagina (Expo Go) en rechtstreeks in
+ * de webapp (GameMap.web.tsx).
+ */
+export const MAP_SCRIPT = String.raw`// Kaartdienst: adressen omzetten naar MapTiler (zie map-provider.ts in de engine).
+const rewrites = rewriteList.map((r) => [new RegExp(r.find), r.replace]);
 const transformRequest = (url) => ({ url: rewrites.reduce((u, [find, replace]) => u.replace(find, replace), url) });
-const map = new maplibregl.Map({ container: 'map', style: ${JSON.stringify(styleUrl)}, attributionControl: { compact: true }, transformRequest });
+const map = new maplibregl.Map({ container, style: styleUrl, attributionControl: { compact: true }, transformRequest });
 map.on('error', (e) => showError((e && e.error && e.error.message) || 'onbekende fout'));
 let markers = [], me = null, fitted = false;
-let current = ${JSON.stringify(styleUrl)}, last = null;
-window.hunt = (data) => {
+let current = styleUrl, last = null;
+const hunt = (data) => {
   last = data;
   // Andere kaartstijl gekozen: stijl wisselen zonder het beeld te verplaatsen, daarna alles er weer op.
-  if (data.style && data.style !== current) { current = data.style; map.setStyle(data.style); map.once('style.load', () => apply(last)); return; }
+  // Zonder diff: false komt er geen 'style.load' als de nieuwe stijl op de oude lijkt (zoals Toner
+  // zonder MapTiler, die zwart-wit wordt), en dan kwamen de pinnen en de eigen positie nooit op de kaart.
+  if (data.style && data.style !== current) { current = data.style; map.once('style.load', () => apply(last)); map.setStyle(data.style, { diff: false }); return; }
   map.loaded() ? apply(data) : map.once('load', () => apply(data));
 };
 function apply(d) {
@@ -82,5 +81,25 @@ function apply(d) {
     else me.setLngLat([d.position.lng, d.position.lat]);
   }
 }
+hunt.remove = () => map.remove();
+return hunt;
+`;
+
+export function webMapHtml(styleUrl: string, accent: string, dark: string, rewrites: UrlRewrite[]) {
+  return `<!doctype html><html><head>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<link rel="stylesheet" href="${MAPLIBRE}/maplibre-gl.css">
+<script>
+// Fouten zichtbaar maken in plaats van een zwart scherm.
+function showError(msg) { var e = document.getElementById('err'); if (!e) { document.body.insertAdjacentHTML('beforeend', '<div id="err"></div>'); e = document.getElementById('err'); } e.textContent = 'Kaart: ' + msg; }
+window.onerror = function (m) { showError(String(m)); };
+</script>
+<script src="${MAPLIBRE}/maplibre-gl.js"></script>
+<style>
+html,body,#map{margin:0;height:100%;background:${dark}}
+${mapCss(accent, dark)}
+</style></head><body><div id="map"></div><script>
+if (!window.maplibregl) { showError('kon niet laden (geen internet?)'); window.hunt = () => {}; throw new Error('maplibre ontbreekt'); }
+window.hunt = new Function('maplibregl', 'container', 'styleUrl', 'rewriteList', 'showError', ${JSON.stringify(MAP_SCRIPT)})(maplibregl, 'map', ${JSON.stringify(styleUrl)}, ${JSON.stringify(rewrites)}, showError);
 </script></body></html>`;
 }
