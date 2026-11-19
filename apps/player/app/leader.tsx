@@ -1,4 +1,5 @@
 import { boundaryPath, DEFAULT_BOUNDARY_COLOR, outsideShade } from '@hunt/engine';
+import * as Clipboard from 'expo-clipboard';
 import { Redirect, router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -60,7 +61,7 @@ function ago(iso: string | null, now: number): string | null {
 
 /**
  * Spelleider-modus: geen spel, maar de teams en de andere spelleiders op de
- * kaart, de ranglijst met bellen en "gepakt", de teamchat als The Hunters en
+ * kaart, de ranglijst met telefoonnummers (tikken kopieert) en "gepakt", de teamchat als The Hunters en
  * een onderlinge chat van de hunters (met eigen naam, teams zien die niet).
  * De positie van de spelleider gaat mee, ook met het scherm uit.
  */
@@ -316,8 +317,19 @@ function LeaderTeams({
 }) {
   const [pending, setPending] = useState<Record<string, number>>({});
   const [error, setError] = useState<LeaderKey | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
   if (!data) return <View style={styles.flex} />;
   const colorOf = teamColors(data.teams);
+  // Tikken kopieert het nummer in plaats van te bellen, zodat een spelleider niet per ongeluk belt.
+  const copyPhone = async (teamId: string, phone: string) => {
+    try {
+      await Clipboard.setStringAsync(phone);
+      setCopied(teamId);
+      setTimeout(() => setCopied((c) => (c === teamId ? null : c)), 2000);
+    } catch {
+      setError('errorGeneric');
+    }
+  };
   const progress = puzzleProgress(data, now);
   const last = lastPositions(data.positions, data.game?.gps?.maxAccuracy ?? 50);
 
@@ -367,10 +379,11 @@ function LeaderTeams({
                 <Pressable
                   accessibilityRole="button"
                   style={styles.call}
-                  onPress={() => void Linking.openURL(`tel:${tm.phone!.replace(/[^\d+]/g, '')}`)}
+                  accessibilityLabel={`${t('leaderCopy')} ${tm.phone}`}
+                  onPress={() => void copyPhone(tm.id, tm.phone!)}
                 >
                   <Text style={styles.callText}>
-                    {t('leaderCall')} {tm.phone}
+                    {copied === tm.id ? `${t('leaderCopied')} ✓` : `${t('leaderCopy')} ${tm.phone}`}
                   </Text>
                 </Pressable>
               ) : (
