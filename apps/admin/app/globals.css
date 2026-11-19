@@ -409,3 +409,11 @@ a.button.secondary { background: transparent; color: var(--text); border-color: 
 .pz-photo { margin: 6px 0 4px; }
 .pz-photo img { max-width: 220px; max-height: 160px; border-radius: 8px; display: block; margin-bottom: 6px; border: 1px solid var(--line); }
 .pz-photo .actions { margin: 0; align-items: center; }
+
+/* Spelleiders (The Hunters) op de live kaart: zwart met rode rand, zodat ze niet op een team lijken. */
+.hunterdot { background: #111 !important; box-shadow: 0 0 0 2px #dc2626; }
+.huntermarker { display: flex; align-items: center; gap: 4px; z-index: 3; }
+.huntermarker .dot { width: 18px; height: 18px; border-radius: 50%; background: #111; border: 3px solid #dc2626; box-shadow: 0 1px 4px rgba(0,0,0,.5); }
+.huntermarker .name { background: #111; color: #fff; font: 600 12px/1 system-ui, sans-serif; padding: 4px 6px; border-radius: 4px; white-space: nowrap; }
+.huntermarker.stale { opacity: 0.55; }
+.bigcode { font-size: 1.4em; letter-spacing: 0.1em; font-family: ui-monospace, monospace; }

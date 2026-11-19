@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { useAuth } from '@/lib/auth';
 import { tKey } from '@/lib/i18n';
 import { useLanguage } from '@/lib/language';
 import { buildTrails, teamColor } from '@/lib/live-map';
@@ -11,7 +12,7 @@ import { useSessionLive } from '@/lib/session-live';
 import { Answers } from '@/results/Answers';
 import { LiveMap } from '@/results/LiveMap';
 import { DeleteSession } from '@/results/DeleteSession';
-import { LeaderLink } from '@/results/LeaderLink';
+import { LeaderCode } from '@/results/LeaderCode';
 import { OpenToggle } from '@/results/OpenToggle';
 import { PhotobookEditor } from '@/results/PhotobookEditor';
 import { Photowall } from '@/results/Photowall';
@@ -32,6 +33,7 @@ export default function SessionLivePage() {
   const { id } = useParams<{ id: string }>();
   const { data, error, updatedAt, reload } = useSessionLive(id);
   const { t, lang, locale } = useLanguage();
+  const { org } = useAuth();
   const [tab, setTab] = useState<Tab>('kaart');
   const [now, setNow] = useState(() => Date.now());
 
@@ -99,7 +101,13 @@ export default function SessionLivePage() {
         </div>
       </div>
       <div className="actions">
-        <LeaderLink sessionId={session.id} />
+        <LeaderCode
+          sessionId={session.id}
+          maxLeaders={session.max_leaders ?? 5}
+          leaders={data.leaders}
+          canEdit={org?.role !== 'instructor'}
+          onChange={() => void reload()}
+        />
       </div>
       <p className="muted">
         <OpenToggle id={session.id} status={session.status} onChange={() => void reload()} />{' '}

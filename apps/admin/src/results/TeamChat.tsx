@@ -17,16 +17,6 @@ const COLUMNS = 'id, team_id, sender, sender_name, body, created_at';
 const MAX_LENGTH = 500;
 
 /**
- * Hoe de chat leest en schrijft. Zonder api: met het account van de
- * beheerder (live via Supabase Realtime). Met api: bijvoorbeeld via de
- * spelleider-link, dan elke paar seconden opnieuw ophalen.
- */
-export interface ChatApi {
-  load: () => Promise<{ rows: ChatRow[] | null; error: string | null }>;
-  send: (body: string) => Promise<{ row: ChatRow | null; error: string | null }>;
-}
-
-/**
  * Teamchat van een hunt: alle teams en de spelleiding in één gesprek. De
  * spelleider zet de chat aan of uit, praat mee en haalt berichten weg.
  */
@@ -34,13 +24,10 @@ export function TeamChat({
   data,
   colors,
   onChange,
-  api,
 }: {
   data: SessionLive;
   colors: Map<string, string>;
   onChange: () => void;
-  /** Lezen en sturen zonder account (spelleider-link): geen aan/uit en niet verwijderen. */
-  api?: ChatApi;
 }) {
   const { session } = data;
   const { t, locale } = useLanguage();
@@ -51,12 +38,6 @@ export function TeamChat({
   const list = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
-    if (api) {
-      const r = await api.load();
-      if (r.error) setError(r.error);
-      else setRows(r.rows);
-      return;
-    }
     const { data: d, error: e } = await supabase()
       .from('messages')
       .select(COLUMNS)
@@ -65,14 +46,10 @@ export function TeamChat({
       .order('created_at');
     if (e) setError(e.message);
     else setRows(d as ChatRow[]);
-  }, [session.id, api]);
+  }, [session.id]);
 
   useEffect(() => {
     void load();
-    if (api) {
-      const poll = setInterval(() => !document.hidden && void load(), 5_000);
-      return () => clearInterval(poll);
-    }
     const db = supabase();
     const channel = db
       .channel(`teamchat-beheer-${session.id}`)
@@ -92,7 +69,7 @@ export function TeamChat({
       clearInterval(timer);
       void db.removeChannel(channel);
     };
-  }, [session.id, load, api]);
+  }, [session.id, load]);
 
   useEffect(() => {
     list.current?.scrollTo({ top: list.current.scrollHeight });
@@ -112,17 +89,14 @@ export function TeamChat({
     setBusy(true);
     setError(null);
     // Afzender, naam ("The Hunters") en tijd vult de database in.
-    const { row, error: err } = api
-      ? await api.send(body)
-      : await supabase()
-          .from('messages')
-          .insert({ session_id: session.id, sender: 'staff', channel: 'teams', body })
-          .select(COLUMNS)
-          .single()
-          .then((r) => ({ row: r.data as ChatRow | null, error: r.error?.message ?? null }));
+    const { data: row, error: err } = await supabase()
+      .from('messages')
+      .insert({ session_id: session.id, sender: 'staff', channel: 'teams', body })
+      .select(COLUMNS)
+      .single();
     setBusy(false);
-    if (err || !row) {
-      setError(err);
+    if (err) {
+      setError(err.message);
       return;
     }
     setText('');
@@ -140,9 +114,6 @@ export function TeamChat({
 
   return (
     <div className="teamchat">
-      {api ? (
-        <p className="muted">{session.team_chat ? t('Teamchat aan') : t('Teamchat uit')}</p>
-      ) : (
       <p>
         <label className="switch">
           <input type="checkbox" role="switch" checked={session.team_chat} onChange={() => void toggle()} />
@@ -155,7 +126,6 @@ export function TeamChat({
             : t('Zet de teamchat aan om teams elkaar berichten te laten sturen. Eerdere berichten blijven zichtbaar.')}
         </span>
       </p>
-      )}
       {error ? <ul className="errors"><li>{error}</li></ul> : null}
       <div className="chatlist" ref={list}>
         {rows === null ? <p className="muted">{t('Laden…')}</p> : null}
@@ -166,11 +136,9 @@ export function TeamChat({
               {m.team_id ? <span className="dot" style={{ background: colors.get(m.team_id) ?? 'var(--muted)' }} /> : null}
               <strong>{m.sender === 'staff' ? (m.sender_name ?? t('Spelleiding')) : (m.sender_name ?? t('Onbekend team'))}</strong>
               <span className="muted">{time.format(new Date(m.created_at))}</span>
-              {api ? null : (
-                <button className="link" title={t('Verwijderen')} onClick={() => void remove(m)}>
-                  {t('Verwijderen')}
-                </button>
-              )}
+              <button className="link" title={t('Verwijderen')} onClick={() => void remove(m)}>
+                {t('Verwijderen')}
+              </button>
             </div>
             <div className="chatbody">{m.body}</div>
           </div>

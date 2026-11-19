@@ -3,10 +3,11 @@ import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import { LOCATION_TASK } from '../config';
 import { currentGame, resumeGame } from './game';
+import { currentLeader, resumeLeader, shareLeaderPosition } from './leader';
 import { IN_EXPO_GO } from './runtime';
 
 /**
- * GPS tijdens het spel. Op de achtergrond (scherm uit, telefoon in de zak)
+ * GPS tijdens het spel, en voor een spelleider om zijn positie te delen. Op de achtergrond (scherm uit, telefoon in de zak)
  * blijven metingen binnenkomen via een achtergrondtaak; op Android met een
  * melding, zoals de regels van Google voorschrijven.
  */
@@ -33,6 +34,16 @@ export function onFix(watch: (fix: Fix) => void): () => void {
 }
 
 async function handle(locations: Location.LocationObject[]) {
+  // Spelleider: geen spel, alleen de positie delen met de andere spelleiders.
+  const leader = currentLeader() ?? (currentGame() ? null : await resumeLeader());
+  if (leader) {
+    const latest = [...locations].sort((a, b) => a.timestamp - b.timestamp).map(toFix).pop();
+    if (!latest) return;
+    lastFix = latest;
+    for (const watch of fixWatchers) watch(latest);
+    await shareLeaderPosition(latest);
+    return;
+  }
   const game = currentGame() ?? (await resumeGame());
   if (!game) return;
   const sorted = [...locations].sort((a, b) => a.timestamp - b.timestamp);

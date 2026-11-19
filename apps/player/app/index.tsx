@@ -1,10 +1,12 @@
-import { Redirect } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { APP_LANGUAGES, languageLabel, MAIN_LANGUAGES } from '../src/core/i18n';
 import { BackendError } from '../src/core/supabase-backend';
 import { joinGame, rejoinGame } from '../src/services/game';
+import { useLeader } from '../src/services/leader';
+import { leaderMsg } from '../src/core/leader-i18n';
 import { isValidPhone } from '../src/core/view';
 import { Banner, Body, Button, Chip, Field, Title } from '../src/ui/components';
 import { useGame } from '../src/ui/GameProvider';
@@ -14,6 +16,7 @@ import { msg, type MessageKey } from '../src/core/i18n';
 /** Aanmelden met de sessiecode, of verder spelen met de teamnaam. */
 export default function JoinScreen() {
   const { loading, controller, lang: deviceLang } = useGame();
+  const { loading: leaderLoading, leader } = useLeader();
   const [lang, setLang] = useState(deviceLang);
   const [joinCode, setJoinCode] = useState('');
   const [teamName, setTeamName] = useState('');
@@ -36,7 +39,7 @@ export default function JoinScreen() {
   }, []);
   const t = (key: MessageKey) => msg(lang, key);
 
-  if (loading) {
+  if (loading || leaderLoading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={colors.accent} size="large" />
@@ -44,6 +47,7 @@ export default function JoinScreen() {
     );
   }
   if (controller) return <Redirect href="/play" />;
+  if (leader) return <Redirect href="/leader" />;
 
   const run = async (kind: 'join' | 'rejoin', action: () => Promise<unknown>) => {
     setBusy(kind);
@@ -135,6 +139,10 @@ export default function JoinScreen() {
             disabled={rejoinName.trim().length === 0 || (askRejoinCode && rejoinCode.trim().length < 4) || busy !== null}
             onPress={() => run('rejoin', () => rejoinGame(rejoinName.trim(), askRejoinCode ? rejoinCode.trim() : ''))}
           />
+
+          <View style={styles.divider} />
+          {/* Spelleiders loggen in met de spelleider-code van de hunt en zien de teams in plaats van het spel. */}
+          <Button kind="secondary" label={leaderMsg(lang, 'leaderButton')} onPress={() => router.push('/leader-login')} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
