@@ -41,15 +41,12 @@ export interface ListGroup {
 /** Opdrachten voor het lijstscherm, gegroepeerd per playground. */
 export function listGroups(game: GamePackage, state: TeamState): ListGroup[] {
   const groups = new Map<string | undefined, Task[]>();
-  const puzzles = new Set(puzzleProgress(game, state).map((p) => p.task));
   for (const task of game.tasks) {
     const ts = state.tasks[task.id];
     if (!ts || ts.status === 'hidden' || ts.status === 'deactivated') continue;
     if (!ts.inList && ts.playground === undefined) continue;
-    // Gelezen uitleg (info) staat voortaan alleen nog op het tabblad met naslag, niet meer tussen de opdrachten.
-    if (ts.status === 'done' && task.answer.type === 'info') continue;
-    // Een opgeloste puzzel (met een codevakje) staat als vinkje in de blokjes bovenaan, niet meer als regel.
-    if (ts.status === 'done' && puzzles.has(task.id)) continue;
+    // Afgeronde opdrachten verdwijnen uit de lijst. Opgeloste puzzels (met een codevakje) staan als vinkje in de blokjes bovenaan.
+    if (ts.status === 'done') continue;
     const key = ts.playground;
     groups.set(key, [...(groups.get(key) ?? []), task]);
   }

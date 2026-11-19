@@ -70,6 +70,11 @@ describe('schermen', () => {
     const listed = listGroups(g, state).flatMap((gr) => gr.tasks).map((t) => t.id);
     expect(listed).toContain(PUZZLES[0].id);
     expect(listed).not.toContain(PUZZLES[1].id);
+    // Ook andere afgeronde opdrachten (zoals de fotomissie) verdwijnen uit de lijst.
+    state.tasks.fotomissie = { ...state.tasks.fotomissie!, status: 'visible', inList: true };
+    expect(listGroups(g, state).flatMap((gr) => gr.tasks).map((t) => t.id)).toContain('fotomissie');
+    state.tasks.fotomissie = { ...state.tasks.fotomissie!, status: 'done', correct: true };
+    expect(listGroups(g, state).flatMap((gr) => gr.tasks).map((t) => t.id)).not.toContain('fotomissie');
     expect(puzzleProgress(game, state)).toEqual([]);
   });
 
