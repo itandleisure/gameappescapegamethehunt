@@ -14,6 +14,7 @@ const NAV: { href: string; label: string; platformAdmin?: boolean }[] = [
   { href: '/templates', label: tKey('Templates') },
   { href: '/puzzels', label: tKey('Puzzels') },
   { href: '/logging', label: tKey('Logging') },
+  { href: '/instellingen/fotoboek', label: tKey('Fotoboek') },
   { href: '/instellingen/leden', label: tKey('Toegang') },
   { href: '/instellingen/accounts', label: tKey('Accounts'), platformAdmin: true },
 ];
