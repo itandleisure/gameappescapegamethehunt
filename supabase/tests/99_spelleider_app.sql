@@ -29,6 +29,11 @@ insert into public.game_versions (id, game_id, version, package) values
 select tests.login('fa000000-0000-0000-0000-000000000001');
 insert into public.sessions (id, org_id, game_version_id, name, join_code, status, team_chat, max_leaders) values
   ('5fa00000-0000-0000-0000-000000000001', :'org', '7fa00000-0000-0000-0000-000000000001', 'Jacht', 'JACHT', 'open', true, 2);
+insert into public.sessions (id, org_id, game_version_id, name, join_code, status)
+values ('5fa00000-0000-0000-0000-000000000002', :'org', '7fa00000-0000-0000-0000-000000000001', 'Standaard', 'STAND', 'open');
+do $$ begin
+  assert (select max_leaders from public.sessions where id = '5fa00000-0000-0000-0000-000000000002') = 20, 'standaard 20 spelleiders';
+end $$;
 select public.leader_code('5fa00000-0000-0000-0000-000000000001') as code \gset
 select set_config('tests.code', :'code', false);
 do $$ begin

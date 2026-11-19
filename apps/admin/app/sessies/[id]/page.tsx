@@ -103,7 +103,7 @@ export default function SessionLivePage() {
       <div className="actions">
         <LeaderCode
           sessionId={session.id}
-          maxLeaders={session.max_leaders ?? 5}
+          maxLeaders={session.max_leaders ?? 20}
           leaders={data.leaders}
           canEdit={org?.role !== 'instructor'}
           onChange={() => void reload()}
