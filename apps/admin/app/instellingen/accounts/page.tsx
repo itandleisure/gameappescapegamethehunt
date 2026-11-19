@@ -1,8 +1,8 @@
 'use client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth, type Org } from '@/lib/auth';
-import { tKey } from '@/lib/i18n';
 import { useLanguage } from '@/lib/language';
+import { ROLE_LABELS, roleKey } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 
 interface Right {
@@ -19,14 +19,9 @@ interface Account {
   login_count: number;
   confirmed: boolean;
   rights: Right[];
+  note: string | null;
 }
 
-const ROLE_LABELS: Record<Org['role'], string> = {
-  owner: tKey('Eigenaar'),
-  admin: tKey('Beheerder'),
-  editor: tKey('Redacteur'),
-  instructor: tKey('Spelleider'),
-};
 const PAGE = 50;
 
 /**
@@ -46,6 +41,9 @@ export default function AccountsPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  /** Account waarvan de omschrijving open staat om te bewerken. */
+  const [editing, setEditing] = useState<string | null>(null);
+  const [draft, setDraft] = useState('');
   const allowed = !!org && org.platform && ['owner', 'admin'].includes(org.role);
 
   const load = useCallback(async () => {
@@ -67,7 +65,10 @@ export default function AccountsPage() {
     const q = query.trim().toLowerCase();
     const list = (accounts ?? []).filter(
       (a) =>
-        (!q || a.email.toLowerCase().includes(q) || a.rights.some((r) => r.org.toLowerCase().includes(q))) &&
+        (!q ||
+          a.email.toLowerCase().includes(q) ||
+          (a.note ?? '').toLowerCase().includes(q) ||
+          a.rights.some((r) => r.org.toLowerCase().includes(q))) &&
         (!orgFilter || (orgFilter === '-' ? a.rights.length === 0 : a.rights.some((r) => r.org_id === orgFilter))) &&
         (!roleFilter || a.rights.some((r) => r.role === roleFilter && (!orgFilter || r.org_id === orgFilter))),
     );
@@ -103,6 +104,19 @@ export default function AccountsPage() {
     setBusy(false);
   };
 
+  const saveNote = async (a: Account) => {
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    const { error: e } = await supabase().rpc('set_account_note', { p_email: a.email, p_note: draft });
+    if (e) setError(e.message);
+    else {
+      setEditing(null);
+      await load();
+    }
+    setBusy(false);
+  };
+
   return (
     <>
       <h1>{t('Accounts')}</h1>
@@ -114,7 +128,7 @@ export default function AccountsPage() {
         <input
           type="search"
           aria-label={t('Zoeken')}
-          placeholder={t('Zoek op e-mail of organisatie')}
+          placeholder={t('Zoek op e-mail, organisatie of omschrijving')}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -166,13 +180,45 @@ export default function AccountsPage() {
                     <td>
                       {a.email}
                       {a.confirmed ? null : <div className="muted small">{t('nog niet bevestigd')}</div>}
+                      {editing === a.user_id ? (
+                        <div>
+                          <textarea
+                            aria-label={t('Omschrijving')}
+                            rows={3}
+                            maxLength={1000}
+                            value={draft}
+                            autoFocus
+                            onChange={(e) => setDraft(e.target.value)}
+                          />
+                          <button className="link small" disabled={busy} onClick={() => void saveNote(a)}>
+                            {t('Opslaan')}
+                          </button>
+                          {' · '}
+                          <button className="link small" disabled={busy} onClick={() => setEditing(null)}>
+                            {t('Annuleren')}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="small">
+                          {a.note ? <span style={{ whiteSpace: 'pre-wrap' }}>{a.note} </span> : null}
+                          <button
+                            className="link small"
+                            onClick={() => {
+                              setEditing(a.user_id);
+                              setDraft(a.note ?? '');
+                            }}
+                          >
+                            {a.note ? t('Wijzigen') : t('Omschrijving toevoegen')}
+                          </button>
+                        </div>
+                      )}
                     </td>
                     <td className="small">
                       {a.rights.length === 0 ? <span className="muted">{t('geen')}</span> : null}
                       {a.rights.map((r) => (
                         <div key={r.org_id}>
-                          {r.org}: {t(ROLE_LABELS[r.role])}
-                          {r.platform ? null : <span className="muted"> · {t('partner')}</span>}
+                          {r.org}: {t(roleKey(r.role, r.platform))}
+                          {r.platform || r.role === 'editor' ? null : <span className="muted"> · {t('partner')}</span>}
                         </div>
                       ))}
                     </td>

@@ -893,7 +893,6 @@ export const en: Record<string, string> = {
   "Accounts": "Accounts",
   "Alle accounts van de beheeromgeving, met hun rechten per organisatie. Rechten wijzigen doe je bij Toegang.": "All accounts of the admin environment, with their rights per organisation. Change rights under Access.",
   "Zoeken": "Search",
-  "Zoek op e-mail of organisatie": "Search by email or organisation",
   "Organisatie": "Organisation",
   "Alle organisaties": "All organisations",
   "Zonder organisatie": "Without organisation",
@@ -914,4 +913,8 @@ export const en: Record<string, string> = {
   "Een partner kan zelf collega's uitnodigen met dezelfde rechten, maar nooit als eigenaar of beheerder.": "A partner can invite colleagues with the same rights, but never as owner or administrator.",
   "{n} leden": "{n} members",
   "E-mail van de contactpersoon": "Contact person's email",
+  "Zoek op e-mail, organisatie of omschrijving": "Search by email, organisation or description",
+  "Omschrijving (alleen voor beheerders van het platform)": "Description (only for platform administrators)",
+  "Bijvoorbeeld: wie het is, welke afspraken, tot wanneer": "For example: who it is, what was agreed, until when",
+  "Partner": "Partner",
 };
