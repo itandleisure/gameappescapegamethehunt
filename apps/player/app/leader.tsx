@@ -26,6 +26,7 @@ import {
   mergePositions,
   standings,
   type LeaderData,
+  type LeaderChannel,
   type LeaderMessage,
   type LeaderTeam,
 } from '../src/core/leader';
@@ -46,7 +47,8 @@ const REFRESH_MS = 10_000;
 const CHAT_REFRESH_MS = 5_000;
 const CHAT_MAX_LENGTH = 500;
 
-type Tab = 'map' | 'teams' | 'chat';
+type Tab = 'map' | 'teams' | 'chat' | 'hunters';
+const TAB_LABEL: Record<Tab, LeaderKey> = { map: 'leaderMap', teams: 'leaderTeams', chat: 'leaderChat', hunters: 'leaderHunterChat' };
 
 function ago(iso: string | null, now: number): string | null {
   if (!iso) return null;
@@ -56,7 +58,8 @@ function ago(iso: string | null, now: number): string | null {
 
 /**
  * Spelleider-modus: geen spel, maar de teams en de andere spelleiders op de
- * kaart, de ranglijst met bellen en "gepakt", en de teamchat als The Hunters.
+ * kaart, de ranglijst met bellen en "gepakt", de teamchat als The Hunters en
+ * een onderlinge chat van de hunters (met eigen naam, teams zien die niet).
  * De positie van de spelleider gaat mee, ook met het scherm uit.
  */
 export default function LeaderScreen() {
@@ -183,11 +186,12 @@ export default function LeaderScreen() {
       <View style={styles.flex}>
         {tab === 'map' ? <LeaderMap data={data} position={position} now={now} /> : null}
         {tab === 'teams' ? <LeaderTeams data={data} now={now} t={t} onChange={load} /> : null}
-        {tab === 'chat' && data ? <LeaderChat sessionId={leader.sessionId} data={data} t={t} lang={lang} /> : null}
+        {tab === 'chat' && data ? <LeaderChat key="teams" channel="teams" sessionId={leader.sessionId} data={data} t={t} lang={lang} /> : null}
+        {tab === 'hunters' && data ? <LeaderChat key="hunters" channel="hunters" sessionId={leader.sessionId} data={data} t={t} lang={lang} /> : null}
       </View>
 
       <SafeAreaView edges={['bottom']} style={styles.tabs}>
-        {(['map', 'teams', 'chat'] as const).map((id) => (
+        {(['map', 'teams', 'chat', 'hunters'] as const).map((id) => (
           <Pressable
             key={id}
             accessibilityRole="tab"
@@ -196,7 +200,7 @@ export default function LeaderScreen() {
             style={[styles.tab, tab === id && styles.tabActive]}
           >
             <Text style={[styles.tabText, tab === id && styles.tabTextActive]}>
-              {t(id === 'map' ? 'leaderMap' : id === 'teams' ? 'leaderTeams' : 'leaderChat')}
+              {t(TAB_LABEL[id])}
             </Text>
           </Pressable>
         ))}
@@ -366,16 +370,19 @@ function LeaderTeams({
 }
 
 function LeaderChat({
+  channel,
   sessionId,
   data,
   t,
   lang,
 }: {
+  channel: LeaderChannel;
   sessionId: string;
   data: LeaderData;
   t: (key: LeaderKey) => string;
   lang: string;
 }) {
+  const hunters = channel === 'hunters';
   const [rows, setRows] = useState<LeaderMessage[] | null>(null);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -386,12 +393,12 @@ function LeaderChat({
 
   const load = useCallback(async () => {
     try {
-      setRows(await leaderApi.messages(sessionId));
+      setRows(await leaderApi.messages(sessionId, channel));
       setError(null);
     } catch (e) {
       setError(e instanceof LeaderError ? e.key : 'errorGeneric');
     }
-  }, [sessionId]);
+  }, [sessionId, channel]);
 
   useEffect(() => {
     void load();
@@ -407,7 +414,7 @@ function LeaderChat({
     setBusy(true);
     setError(null);
     try {
-      const row = await leaderApi.send(sessionId, body);
+      const row = await leaderApi.send(sessionId, body, channel);
       setRows((r) => [...(r ?? []), row]);
       setText('');
     } catch (e) {
@@ -426,16 +433,17 @@ function LeaderChat({
         keyboardShouldPersistTaps="handled"
         onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: false })}
       >
-        <Body muted>{data.session.team_chat ? t('leaderChatAs') : t('leaderChatOff')}</Body>
+        <Body muted>{hunters ? t('leaderHunterChatAs') : data.session.team_chat ? t('leaderChatAs') : t('leaderChatOff')}</Body>
         {error ? <Banner tone="danger">{t(error)}</Banner> : null}
         {rows && rows.length === 0 ? <Body muted>{t('leaderChatEmpty')}</Body> : null}
         {(rows ?? []).map((m) => {
-          const staff = m.sender === 'staff';
+          // Eigen berichten rechts: in de teamchat alles van The Hunters, in de hunters-chat alleen die van jou.
+          const staff = hunters ? m.own === true : m.sender === 'staff';
           return (
             <View key={m.id} style={[styles.bubble, staff ? styles.own : styles.other]}>
               <Text style={[styles.bubbleName, staff && styles.ownName]} numberOfLines={1}>
                 {!staff && m.team_id ? <Text style={{ color: colorOf.get(m.team_id) }}>● </Text> : null}
-                {m.sender_name ?? 'The Hunters'}
+                {m.sender_name ?? (hunters ? t('leaderOrganisation') : 'The Hunters')}
                 {'  '}
                 <Text style={[styles.bubbleTime, staff && styles.ownTime]}>{time.format(new Date(m.created_at))}</Text>
               </Text>
@@ -449,11 +457,11 @@ function LeaderChat({
           style={styles.input}
           value={text}
           onChangeText={setText}
-          placeholder={t('leaderChatPlaceholder')}
+          placeholder={t(hunters ? 'leaderHunterChatPlaceholder' : 'leaderChatPlaceholder')}
           placeholderTextColor={colors.textMuted}
           maxLength={CHAT_MAX_LENGTH}
           multiline
-          accessibilityLabel={t('leaderChatPlaceholder')}
+          accessibilityLabel={t(hunters ? 'leaderHunterChatPlaceholder' : 'leaderChatPlaceholder')}
         />
         <Pressable
           accessibilityRole="button"

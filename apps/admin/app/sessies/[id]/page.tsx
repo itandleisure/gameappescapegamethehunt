@@ -27,6 +27,7 @@ const TABS = [
   { id: 'fotos', label: tKey('Fotomuur') },
   { id: 'fotoboek', label: tKey('Fotoboek') },
   { id: 'chat', label: tKey('Teamchat') },
+  { id: 'hunters', label: tKey('Chat hunters') },
 ] as const;
 type Tab = (typeof TABS)[number]['id'];
 
@@ -136,7 +137,8 @@ export default function SessionLivePage() {
         <Photowall photos={data.photos} game={data.game} teamName={teamName} colors={colors} timeZone={session.timezone} />
       ) : null}
       {tab === 'fotoboek' ? <PhotobookEditor data={data} view={view} /> : null}
-      {tab === 'chat' ? <TeamChat data={data} colors={colors} onChange={() => void reload()} /> : null}
+      {tab === 'chat' ? <TeamChat key="teams" data={data} colors={colors} onChange={() => void reload()} /> : null}
+      {tab === 'hunters' ? <TeamChat key="hunters" channel="hunters" data={data} colors={colors} onChange={() => void reload()} /> : null}
     </>
   );
 }

@@ -136,6 +136,46 @@ do $$ begin
   end;
 end $$;
 
+-- Hunters-chat: spelleiders onderling, met hun eigen naam (migratie 20261120050000).
+select tests.login('fa000000-0000-0000-0000-000000000005');
+do $$ begin
+  assert public.leader_send_hunter_message('5fa00000-0000-0000-0000-000000000001', ' Ik sta bij de kerk ') ->> 'sender_name' in ('Piet', 'PIET'),
+    'eigen naam in de hunters-chat';
+end $$;
+select tests.login('fa000000-0000-0000-0000-000000000004');
+do $$ declare j jsonb; begin
+  perform public.leader_send_hunter_message('5fa00000-0000-0000-0000-000000000001', 'Ik neem de haven');
+  j := public.leader_hunter_messages('5fa00000-0000-0000-0000-000000000001');
+  assert jsonb_array_length(j) = 2, 'beide berichten';
+  assert (j -> 0 ->> 'body') = 'Ik sta bij de kerk' and (j -> 0 ->> 'own')::boolean = false, 'bericht van Piet, niet van mij';
+  assert (j -> 1 ->> 'sender_name') = 'Anna' and (j -> 1 ->> 'own')::boolean, 'eigen bericht';
+  assert not exists (select 1 from jsonb_array_elements(public.leader_messages('5fa00000-0000-0000-0000-000000000001')) m
+                     where m ->> 'body' = 'Ik neem de haven'), 'niet in de teamchat';
+end $$;
+select tests.login('fa000000-0000-0000-0000-000000000002');
+do $$ begin
+  assert not exists (select 1 from public.messages where channel = 'hunters'), 'team leest de hunters-chat niet';
+  assert exists (select 1 from public.messages where channel = 'teams'), 'team leest de teamchat wel';
+  begin
+    insert into public.messages (session_id, team_id, sender, sender_user, channel, body)
+    values ('5fa00000-0000-0000-0000-000000000001', current_setting('tests.vossen')::uuid, 'team', auth.uid(), 'hunters', 'Hallo');
+    raise exception 'team schreef in de hunters-chat';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    perform public.leader_hunter_messages('5fa00000-0000-0000-0000-000000000001');
+    raise exception 'team las de hunters-chat via de app';
+  exception when no_data_found then null;
+  end;
+end $$;
+select tests.login('fa000000-0000-0000-0000-000000000001');
+insert into public.messages (session_id, sender, sender_user, channel, body)
+values ('5fa00000-0000-0000-0000-000000000001', 'staff', auth.uid(), 'hunters', 'Goed bezig');
+do $$ begin
+  assert (select count(*) from public.messages where channel = 'hunters') = 3, 'beheer leest en schrijft mee';
+  assert (select sender_name from public.messages where body = 'Goed bezig') is null, 'beheer zonder spelleidernaam';
+end $$;
+
 -- Teams zien de spelleiders niet.
 select tests.login('fa000000-0000-0000-0000-000000000002');
 do $$ begin
