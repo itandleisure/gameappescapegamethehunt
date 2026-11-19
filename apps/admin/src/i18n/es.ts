@@ -904,7 +904,7 @@ export const es: Record<string, string> = {
   "{name} afmelden als spelleider?": "¿Desconectar a {name} como director de juego?",
   "Spelleiders ({n}/{max})": "Directores de juego ({n}/{max})",
   "Spelleiders": "Directores de juego",
-  "Spelleiders openen de game-app, kiezen \"Ik ben spelleider\" en vullen deze code en hun eigen naam in. Ze zien de teams en elkaar op de kaart, bellen teams, houden \"gepakt\" bij en chatten als The Hunters. Teams zien de spelleiders niet.": "Los directores de juego abren la app del juego, eligen \"Soy director de juego\" e introducen este código y su propio nombre. Ven los equipos y a los demás en el mapa, llaman a los equipos, cuentan \"atrapado\" y chatean como The Hunters. Los equipos no ven a los directores de juego.",
+  "Spelleiders openen de game-app, kiezen \"Inloggen als spelleider\" en vullen deze code en hun eigen naam in. Ze zien de teams en elkaar op de kaart, bellen teams, houden \"gepakt\" bij en chatten als The Hunters. Teams zien de spelleiders niet.": "Los directores de juego abren la app del juego, eligen \"Entrar como director de juego\" e introducen este código y su propio nombre. Ven los equipos y a los demás en el mapa, llaman a los equipos, cuentan \"atrapado\" y chatean como The Hunters. Los equipos no ven a los directores de juego.",
   "Spelleider-code": "Código de director de juego",
   "Maximaal aantal spelleiders": "Número máximo de directores de juego",
   "Nieuwe code (iedereen afmelden)": "Nuevo código (desconectar a todos)",

@@ -171,16 +171,13 @@ export default function JoinScreen() {
             }}
           />
 
-          {/* Onderaan klein: verder spelen met een bestaand team, en inloggen als spelleider. */}
-          <View style={styles.links}>
-            <Pressable accessibilityRole="button" accessibilityState={{ expanded: showRejoin || askRejoinCode }} onPress={() => setShowRejoin((open) => !open)} style={styles.link}>
-              <Text style={styles.linkText}>{t('rejoinTitle')}</Text>
-            </Pressable>
-            {/* Spelleiders loggen in met de spelleider-code van de hunt en zien de teams in plaats van het spel. */}
-            <Pressable accessibilityRole="button" onPress={() => router.push('/leader-login')} style={styles.link}>
-              <Text style={styles.linkText}>{leaderMsg(lang, 'leaderButton')}</Text>
-            </Pressable>
-          </View>
+          {/* Onder Meedoen, na een scheidingslijn: twee duidelijke knoppen voor de andere routes. */}
+          <View style={styles.divider} />
+          <Button
+            kind="secondary"
+            label={t('rejoinTitle')}
+            onPress={() => setShowRejoin((open) => !open)}
+          />
 
           {showRejoin || askRejoinCode ? (
             <View style={styles.rejoin}>
@@ -199,7 +196,6 @@ export default function JoinScreen() {
                 />
               ) : null}
               <Button
-                kind="secondary"
                 label={t('rejoin')}
                 busy={busy === 'rejoin'}
                 disabled={rejoinName.trim().length === 0 || (askRejoinCode && rejoinCode.trim().length < 4) || busy !== null}
@@ -207,6 +203,9 @@ export default function JoinScreen() {
               />
             </View>
           ) : null}
+
+          {/* Spelleiders loggen in met de spelleider-code van de hunt en zien de teams in plaats van het spel. */}
+          <Button kind="secondary" label={leaderMsg(lang, 'leaderTitle')} onPress={() => router.push('/leader-login')} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -234,8 +233,6 @@ const styles = StyleSheet.create({
   languageLabel: { color: colors.textMuted, fontSize: 14, marginRight: space.sm },
   languageValue: { color: colors.text, fontSize: 16, flexShrink: 1 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', marginTop: space.sm },
-  links: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginTop: space.sm },
-  link: { minHeight: 44, justifyContent: 'center', paddingVertical: space.xs },
-  linkText: { color: colors.accent, fontSize: 15, fontWeight: '600' },
-  rejoin: { marginTop: space.sm, paddingTop: space.md, borderTopWidth: 1, borderTopColor: colors.border },
+  divider: { height: 1, backgroundColor: colors.border, marginVertical: space.lg },
+  rejoin: { marginTop: space.md, padding: space.md, paddingBottom: space.sm, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border },
 });

@@ -904,7 +904,7 @@ export const en: Record<string, string> = {
   "{name} afmelden als spelleider?": "Sign out {name} as game leader?",
   "Spelleiders ({n}/{max})": "Game leaders ({n}/{max})",
   "Spelleiders": "Game leaders",
-  "Spelleiders openen de game-app, kiezen \"Ik ben spelleider\" en vullen deze code en hun eigen naam in. Ze zien de teams en elkaar op de kaart, bellen teams, houden \"gepakt\" bij en chatten als The Hunters. Teams zien de spelleiders niet.": "Game leaders open the game app, choose \"I'm a game leader\" and enter this code and their own name. They see the teams and each other on the map, call teams, keep track of \"caught\" and chat as The Hunters. Teams don't see the game leaders.",
+  "Spelleiders openen de game-app, kiezen \"Inloggen als spelleider\" en vullen deze code en hun eigen naam in. Ze zien de teams en elkaar op de kaart, bellen teams, houden \"gepakt\" bij en chatten als The Hunters. Teams zien de spelleiders niet.": "Game leaders open the game app, choose \"Sign in as game leader\" and enter this code and their own name. They see the teams and each other on the map, call teams, keep track of \"caught\" and chat as The Hunters. Teams don't see the game leaders.",
   "Spelleider-code": "Game leader code",
   "Maximaal aantal spelleiders": "Maximum number of game leaders",
   "Nieuwe code (iedereen afmelden)": "New code (sign everyone out)",
