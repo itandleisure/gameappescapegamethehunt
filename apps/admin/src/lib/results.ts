@@ -5,6 +5,7 @@
 import {
   briefingTasks,
   computeState,
+  puzzleTasks,
   t,
   type AnswerSpec,
   type AnswerValue,
@@ -14,6 +15,8 @@ import {
   type Task,
 } from '@hunt/engine';
 import { currentLanguage, currentLocale, t as tr } from './i18n';
+
+export { puzzleTasks };
 
 export interface TeamRow {
   id: string;
@@ -173,22 +176,6 @@ export function expectedAnswer(spec: AnswerSpec, language: Lang): string {
     default:
       return '';
   }
-}
-
-/**
- * De puzzels van het spel: de opdrachten achter de codevakjes (of de afgedekte
- * vakken van de foto) op een tabblad, zoals de zes puzzels die samen de
- * GPS-code van het extractiepunt geven. Elke opdracht één keer, in volgorde.
- * Heeft het spel die niet, dan de opdrachten met de tag "puzzel".
- */
-export function puzzleTasks(game: GamePackage): Task[] {
-  const ids: string[] = [];
-  for (const pg of game.playgrounds) {
-    for (const box of pg.code?.boxes ?? []) if (!ids.includes(box.task)) ids.push(box.task);
-    for (const piece of pg.reveal?.pieces ?? []) if (!ids.includes(piece.task)) ids.push(piece.task);
-  }
-  if (ids.length === 0) return game.tasks.filter((task) => task.tags.includes('puzzel'));
-  return ids.map((id) => game.tasks.find((task) => task.id === id)).filter((task): task is Task => task !== undefined);
 }
 
 /** Opdrachten die op de resultatenpagina een kolom krijgen. */
