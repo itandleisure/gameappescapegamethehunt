@@ -1,9 +1,8 @@
 'use client';
+import Link from 'next/link';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useAuth, type Org } from '@/lib/auth';
-import { displayName } from '@/lib/game-name';
-import type { GameRow } from '@/lib/game-model';
-import { PARTNER_ROLES, PLATFORM_ROLES, roleKey } from '@/lib/roles';
+import { PLATFORM_ROLES, roleKey } from '@/lib/roles';
 import { useLanguage } from '@/lib/language';
 import { supabase } from '@/lib/supabase';
 
@@ -25,14 +24,8 @@ interface Partner {
   owner_email: string | null;
   accepted: boolean;
   member_count: number;
+  description: string | null;
 }
-interface City {
-  id: string;
-  name: string;
-}
-
-
-/** Rollen die een partner kan hebben: nooit eigenaar of beheerder. */
 
 /** Keuzelijst met de huidige rol erbij, ook als die niet meer te kiezen is (oude spelleider-accounts). */
 const withCurrent = (roles: Org['role'][], current: Org['role']) => (roles.includes(current) ? roles : [...roles, current]);
@@ -51,9 +44,6 @@ export default function AccessPage() {
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [partners, setPartners] = useState<Partner[]>([]);
   const [platform, setPlatform] = useState(false);
-  const [cities, setCities] = useState<City[]>([]);
-  /** Gedeelde steden per partner (game_shares). */
-  const [shares, setShares] = useState<Map<string, Set<string>>>(new Map());
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<Org['role']>('admin');
   const [partnerName, setPartnerName] = useState('');
@@ -68,8 +58,6 @@ export default function AccessPage() {
   const canManage = !!org && org.platform && ['owner', 'admin'].includes(org.role);
   /** Een partner nodigt collega's uit met zijn eigen rol. */
   const canInvite = canManage || (!!org && !org.platform);
-  /** Leden per partner, opengeklapt in het overzicht. */
-  const [partnerMembers, setPartnerMembers] = useState<Map<string, Member[]>>(new Map());
 
   const load = useCallback(async () => {
     if (!org) return;
@@ -84,34 +72,11 @@ export default function AccessPage() {
     setInvitations((i.data ?? []) as Invitation[]);
     setPartners((p.data ?? []) as Partner[]);
     setPlatform(pl.data === true);
-    if (pl.data === true) {
-      const [g, s] = await Promise.all([
-        db.from('games').select('id, layer, slug, settings').eq('org_id', org.id).eq('layer', 'city'),
-        db.from('game_shares').select('game_id, org_id'),
-      ]);
-      setCities(
-        ((g.data ?? []) as Pick<GameRow, 'id' | 'layer' | 'slug' | 'settings'>[])
-          .map((x) => ({ id: x.id, name: displayName(x) }))
-          .sort((a, b) => a.name.localeCompare(b.name)),
-      );
-      const map = new Map<string, Set<string>>();
-      for (const r of (s.data ?? []) as { game_id: string; org_id: string }[]) {
-        if (!map.has(r.org_id)) map.set(r.org_id, new Set());
-        map.get(r.org_id)!.add(r.game_id);
-      }
-      setShares(map);
-    }
   }, [org]);
 
   useEffect(() => {
     void load();
   }, [load]);
-
-  /** Leden van een partner ophalen (of opnieuw na een wijziging). */
-  const loadPartnerMembers = useCallback(async (partner: string) => {
-    const { data } = await supabase().rpc('org_members', { p_org: partner });
-    setPartnerMembers((prev) => new Map(prev).set(partner, (data ?? []) as Member[]));
-  }, []);
 
   if (!org) return null;
 
@@ -164,8 +129,8 @@ export default function AccessPage() {
     const address = partnerEmail.trim();
     void run(async () => {
       const result = await supabase().rpc('create_partner', { p_name: partnerName, p_owner_email: address });
-      if (!result.error) {
-        const saved = await saveNote(address, partnerNote);
+      if (!result.error && partnerNote.trim()) {
+        const saved = await supabase().rpc('update_partner', { p_org: result.data, p_name: partnerName, p_description: partnerNote });
         if (saved.error) return saved;
       }
       if (!result.error && !(await mailLink(address))) {
@@ -178,33 +143,12 @@ export default function AccessPage() {
       setPartnerNote('');
     });
   };
-  const changeRole = (member: Member, next: Org['role'], target = org.id) =>
-    void run(async () => supabase().rpc('set_member_role', { p_org: target, p_user: member.user_id, p_role: next }), t('Rol gewijzigd.')).then(
-      () => (target === org.id ? undefined : loadPartnerMembers(target)),
-    );
-  const removeMember = (member: Member, target = org.id, targetName = org.name) => {
-    if (!window.confirm(t('{email} verwijderen uit {org}? Het account gaat dicht als het nergens anders lid van is.', { email: member.email, org: targetName }))) return;
-    void run(async () => supabase().rpc('remove_member', { p_org: target, p_user: member.user_id }), t('Lid verwijderd.')).then(() =>
-      target === org.id ? undefined : loadPartnerMembers(target),
-    );
+  const changeRole = (member: Member, next: Org['role']) =>
+    void run(async () => supabase().rpc('set_member_role', { p_org: org.id, p_user: member.user_id, p_role: next }), t('Rol gewijzigd.'));
+  const removeMember = (member: Member) => {
+    if (!window.confirm(t('{email} verwijderen uit {org}? Het account gaat dicht als het nergens anders lid van is.', { email: member.email, org: org.name }))) return;
+    void run(async () => supabase().rpc('remove_member', { p_org: org.id, p_user: member.user_id }), t('Lid verwijderd.'));
   };
-  const togglePartnerMembers = (partner: string) => {
-    if (partnerMembers.has(partner)) {
-      setPartnerMembers((prev) => {
-        const next = new Map(prev);
-        next.delete(partner);
-        return next;
-      });
-    } else void loadPartnerMembers(partner);
-  };
-  const toggleCity = (partner: string, city: string, on: boolean) =>
-    void run(
-      async () =>
-        on
-          ? supabase().from('game_shares').insert({ game_id: city, org_id: partner })
-          : supabase().from('game_shares').delete().eq('game_id', city).eq('org_id', partner),
-      on ? t('Stad gedeeld met de partner.') : t('Stad niet meer gedeeld met de partner.'),
-    );
   const withdraw = (address: string) =>
     void run(async () => supabase().from('invitations').delete().eq('org_id', org.id).eq('email', address), t('Uitnodiging ingetrokken.'));
 
@@ -301,63 +245,24 @@ export default function AccessPage() {
         <>
           <h2>{t('Partners')}</h2>
           <p className="muted small">
-            {t('Een partner krijgt een eigen organisatie met eigen hunts en resultaten. Vink per partner de steden aan die hij mag spelen.')}{' '}
+            {t('Een partner krijgt een eigen organisatie met eigen hunts en resultaten. Bij Bewerken wijzig je de naam en omschrijving, vink je de steden aan die de partner mag spelen en voeg je accounts toe.')}{' '}
             {t('Een partner kan zelf collega\'s uitnodigen met dezelfde rechten, maar nooit als eigenaar of beheerder.')}
           </p>
-          <table>
+          <table className="stack">
             <tbody>
               {partners.map((p) => (
                 <tr key={p.id}>
-                  <td>{p.name}</td>
+                  <td data-label={t('Naam')}>
+                    <Link href={`/instellingen/partners/${p.id}`}>
+                      <strong>{p.name}</strong>
+                    </Link>
+                    {p.description ? <div className="small muted">{p.description}</div> : null}
+                  </td>
+                  <td data-label={t('Contactpersoon')}>
+                    {p.owner_email ?? ''} · <span className="muted">{p.accepted ? t('actief') : t('uitgenodigd')}</span> · {t('{n} accounts', { n: p.member_count })}
+                  </td>
                   <td>
-                    {p.owner_email ?? ''} · <span className="muted">{p.accepted ? t('actief') : t('uitgenodigd')}</span> ·{' '}
-                    <button className="link" onClick={() => togglePartnerMembers(p.id)}>
-                      {t('{n} leden', { n: p.member_count })}
-                    </button>
-                    {partnerMembers.has(p.id) ? (
-                      <ul className="small">
-                        {partnerMembers.get(p.id)!.map((m) => (
-                          <li key={m.user_id}>
-                            {m.email}{' '}
-                            {canManage ? (
-                              <>
-                                <select
-                                  aria-label={t('Rol')}
-                                  value={m.role}
-                                  disabled={busy}
-                                  onChange={(e) => changeRole(m, e.target.value as Org['role'], p.id)}
-                                >
-                                  {withCurrent(PARTNER_ROLES, m.role).map((r) => (
-                                    <option key={r} value={r}>
-                                      {roleLabel(r)}
-                                    </option>
-                                  ))}
-                                </select>{' '}
-                                <button className="link" disabled={busy} onClick={() => removeMember(m, p.id, p.name)}>
-                                  {t('Verwijderen')}
-                                </button>
-                              </>
-                            ) : (
-                              roleLabel(m.role)
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : null}
-                    <div className="small">
-                      {cities.length === 0 ? <span className="muted">{t('Nog geen steden om te delen.')}</span> : null}
-                      {cities.map((c) => (
-                        <label key={c.id} style={{ display: 'inline-flex', gap: 4, marginRight: 12, fontWeight: 'normal' }}>
-                          <input
-                            type="checkbox"
-                            disabled={busy}
-                            checked={shares.get(p.id)?.has(c.id) ?? false}
-                            onChange={(e) => toggleCity(p.id, c.id, e.target.checked)}
-                          />
-                          {c.name}
-                        </label>
-                      ))}
-                    </div>
+                    <Link href={`/instellingen/partners/${p.id}`}>{t('Bewerken')}</Link>
                   </td>
                 </tr>
               ))}
@@ -369,7 +274,7 @@ export default function AccessPage() {
             <input id="partner-name" required minLength={2} maxLength={80} value={partnerName} onChange={(e) => setPartnerName(e.target.value)} />
             <label htmlFor="partner-email">{t('E-mail van de contactpersoon')}</label>
             <input id="partner-email" type="email" required value={partnerEmail} onChange={(e) => setPartnerEmail(e.target.value)} />
-            <label htmlFor="partner-note">{t('Omschrijving (alleen voor beheerders van het platform)')}</label>
+            <label htmlFor="partner-note">{t('Omschrijving van de partner (alleen voor beheerders van het platform)')}</label>
             <textarea
               id="partner-note"
               rows={2}
