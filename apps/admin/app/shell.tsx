@@ -8,7 +8,7 @@ import { LanguageProvider, useLanguage, useT } from '@/lib/language';
 import { supabase } from '@/lib/supabase';
 
 const NAV: { href: string; label: string; platformAdmin?: boolean }[] = [
-  { href: '/sessies', label: tKey('Events') },
+  { href: '/sessies', label: tKey('Tickets') },
   { href: '/spellen', label: tKey('Spellen') },
   { href: '/templates', label: tKey('Templates') },
   { href: '/puzzels', label: tKey('Puzzels') },

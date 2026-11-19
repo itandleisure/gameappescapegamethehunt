@@ -183,7 +183,7 @@ export default function TaskPage() {
     try {
       if (isVariant) await saveVariant(task);
       else await saveBase(task);
-      setNotice(layer === 'base' ? t('Opgeslagen in de template. Steden krijgen dit pas als je bij Templateversies "Opslaan als nieuwe versie" kiest en de steden overzet.') : t('Opgeslagen. Publiceer het spel om het in nieuwe events te gebruiken.'));
+      setNotice(layer === 'base' ? t('Opgeslagen in de template. Steden krijgen dit pas als je bij Templateversies "Opslaan als nieuwe versie" kiest en de steden overzet.') : t('Opgeslagen. Publiceer het spel om het in nieuwe tickets te gebruiken.'));
       await load();
     } catch (err) {
       setErrors([err instanceof Error ? err.message : String(err)]);

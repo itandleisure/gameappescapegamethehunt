@@ -124,7 +124,7 @@ export default function SessionsPage() {
       });
     setBusy(false);
     if (error) {
-      setErrors([/join_code/.test(error.message) ? t('Deze eventcode is al in gebruik. Kies een andere.') : error.message]);
+      setErrors([/join_code/.test(error.message) ? t('Deze ticketcode is al in gebruik. Kies een andere.') : error.message]);
       return;
     }
     setForm({ ...EMPTY, gameVersionId: form.gameVersionId });
@@ -134,15 +134,15 @@ export default function SessionsPage() {
 
   return (
     <>
-      <h1>{t('Events')}</h1>
+      <h1>{t('Tickets')}</h1>
       <p className="muted">
-        {t('Een event is één spel op één moment, bijvoorbeeld een bedrijfsuitje. Teams doen mee met de eventcode, zolang het event open staat. In testmodus kunnen opdrachten in de app geopend worden zonder ter plekke te zijn.')}
+        {t('Een ticket is één spel op één moment, bijvoorbeeld een bedrijfsuitje. Teams doen mee met de ticketcode, zolang het ticket open staat. In testmodus kunnen opdrachten in de app geopend worden zonder ter plekke te zijn.')}
       </p>
 
       {!showForm ? (
         <div className="actions">
           <button onClick={() => setShowForm(true)} disabled={versions.length === 0}>
-            {t('Nieuw event')}
+            {t('Nieuw ticket')}
           </button>
           {versions.length === 0 && sessions !== null ? (
             <span className="muted">{t('Publiceer eerst een spel onder Spellen.')}</span>
@@ -156,7 +156,7 @@ export default function SessionsPage() {
               <input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t('Bedrijfsuitje Parteon')} />
             </div>
             <div>
-              <label htmlFor="code">{t('Eventcode (optioneel)')}</label>
+              <label htmlFor="code">{t('Ticketcode (optioneel)')}</label>
               <input
                 id="code"
                 value={form.joinCode ?? ''}
@@ -223,7 +223,7 @@ export default function SessionsPage() {
           ) : null}
           <div className="actions">
             <button type="submit" disabled={busy}>
-              {t('Event aanmaken')}
+              {t('Ticket aanmaken')}
             </button>
             <button type="button" className="secondary" onClick={() => setShowForm(false)}>
               {t('Annuleren')}
@@ -244,14 +244,14 @@ export default function SessionsPage() {
       {sessions === null ? (
         <p className="muted">{t('Laden…')}</p>
       ) : sessions.length === 0 ? (
-        <p className="muted">{t('Nog geen events.')}</p>
+        <p className="muted">{t('Nog geen tickets.')}</p>
       ) : (
         <div className="table-wrap">
           <table className="stack">
             <thead>
               <tr>
-                <th>{t('Event')}</th>
-                <th>{t('Eventcode')}</th>
+                <th>{t('Ticket')}</th>
+                <th>{t('Ticketcode')}</th>
                 <th>{t('Start')}</th>
                 <th>{t('Status')}</th>
                 <th></th>
@@ -268,7 +268,7 @@ export default function SessionsPage() {
                       {s.game_versions ? versionLabel(s.game_versions) : ''} · {t('{n} tracks', { n: s.track_count })}
                     </div>
                   </td>
-                  <td className="code" data-label={t('Eventcode')}>{s.join_code}</td>
+                  <td className="code" data-label={t('Ticketcode')}>{s.join_code}</td>
                   <td data-label={t('Start')}>{formatInZone(s.starts_at, s.timezone)}</td>
                   <td data-label={t('Status')}>
                     <OpenToggle id={s.id} status={s.status} onChange={() => void load()} />{' '}

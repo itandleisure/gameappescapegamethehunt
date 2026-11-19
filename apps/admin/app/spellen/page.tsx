@@ -83,7 +83,7 @@ export default function GamesPage() {
     <>
       <h1>{t('Spellen')}</h1>
       <p className="muted">
-        {t('Hier staan de spellen per stad en klant. Een nieuwe stad maak je vanuit een template (onder Templates). Publiceren maakt een vaste versie waarmee je events maakt.')}
+        {t('Hier staan de spellen per stad en klant. Een nieuwe stad maak je vanuit een template (onder Templates). Publiceren maakt een vaste versie waarmee je tickets maakt.')}
       </p>
       <div className="actions">
         <Link href="/templates" className="filebutton">
