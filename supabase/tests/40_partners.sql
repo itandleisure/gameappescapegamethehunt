@@ -14,10 +14,10 @@ grant execute on all functions in schema tests to authenticated;
 -- Badass Games (eigenaar), partner in Spanje, partner in Italië
 insert into auth.users (id) values
   ('a0000000-0000-0000-0000-000000000001'), ('e5000000-0000-0000-0000-000000000001'), ('17000000-0000-0000-0000-000000000001');
-insert into public.organizations (id, name) values
-  ('0a000000-0000-0000-0000-00000000000a', 'Badass Games'),
-  ('0e500000-0000-0000-0000-00000000000e', 'Partner Madrid'),
-  ('01700000-0000-0000-0000-000000000017', 'Partner Roma');
+insert into public.organizations (id, name, is_platform) values
+  ('0a000000-0000-0000-0000-00000000000a', 'Badass Games', true),
+  ('0e500000-0000-0000-0000-00000000000e', 'Partner Madrid', true),
+  ('01700000-0000-0000-0000-000000000017', 'Partner Roma', true);
 insert into public.memberships values
   ('0a000000-0000-0000-0000-00000000000a', 'a0000000-0000-0000-0000-000000000001', 'owner'),
   ('0e500000-0000-0000-0000-00000000000e', 'e5000000-0000-0000-0000-000000000001', 'admin'),

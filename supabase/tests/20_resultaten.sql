@@ -19,8 +19,8 @@ grant execute on all functions in schema tests to authenticated, anon;
 insert into auth.users (id) values
   ('a0000000-0000-0000-0000-000000000001'), ('b0000000-0000-0000-0000-000000000001'),
   ('c0000000-0000-0000-0000-000000000001'), ('c0000000-0000-0000-0000-000000000002'), ('c0000000-0000-0000-0000-000000000003');
-insert into public.organizations (id, name) values
-  ('0a000000-0000-0000-0000-00000000000a', 'Badass Games'), ('0b000000-0000-0000-0000-00000000000b', 'Ander');
+insert into public.organizations (id, name, is_platform) values
+  ('0a000000-0000-0000-0000-00000000000a', 'Badass Games', true), ('0b000000-0000-0000-0000-00000000000b', 'Ander', true);
 insert into public.memberships values
   ('0a000000-0000-0000-0000-00000000000a', 'a0000000-0000-0000-0000-000000000001', 'instructor'),
   ('0b000000-0000-0000-0000-00000000000b', 'b0000000-0000-0000-0000-000000000001', 'owner');

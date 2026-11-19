@@ -17,12 +17,14 @@ interface Invitation {
   role: Org['role'];
   created_at: string;
   accepted_at: string | null;
+  invited_by: string | null;
 }
 interface Partner {
   id: string;
   name: string;
   owner_email: string | null;
   accepted: boolean;
+  member_count: number;
 }
 interface City {
   id: string;
@@ -36,10 +38,15 @@ const ROLES: { role: Org['role']; label: string }[] = [
   { role: 'instructor', label: tKey('Spelleider') },
 ];
 
+/** Rollen die een partner kan hebben: nooit eigenaar of beheerder. */
+const PARTNER_ROLES = ROLES.filter((r) => r.role === 'editor' || r.role === 'instructor');
+
 /**
  * Toegang tot de beheeromgeving. Registreren kan alleen met een uitnodiging:
- * eigenaren en beheerders nodigen collega's uit, en het platform maakt
- * partners aan (een eigen organisatie met een uitnodiging voor de eigenaar).
+ * eigenaren en beheerders van het platform nodigen collega's uit en maken
+ * partners aan (een eigen organisatie met een uitnodiging voor de
+ * contactpersoon). Een partner nodigt zelf collega's uit, alleen met zijn eigen
+ * rol; zijn leden verwijderen of hun rol wijzigen doet het platform.
  */
 export default function AccessPage() {
   const { org, user } = useAuth();
@@ -58,14 +65,19 @@ export default function AccessPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const canInvite = !!org && ['owner', 'admin'].includes(org.role);
+  /** Platform: eigenaren en beheerders beheren de leden. */
+  const canManage = !!org && org.platform && ['owner', 'admin'].includes(org.role);
+  /** Een partner nodigt collega's uit met zijn eigen rol. */
+  const canInvite = canManage || (!!org && !org.platform);
+  /** Leden per partner, opengeklapt in het overzicht. */
+  const [partnerMembers, setPartnerMembers] = useState<Map<string, Member[]>>(new Map());
 
   const load = useCallback(async () => {
     if (!org) return;
     const db = supabase();
     const [m, i, p, pl] = await Promise.all([
       db.rpc('org_members', { p_org: org.id }),
-      db.from('invitations').select('email, role, created_at, accepted_at').eq('org_id', org.id).is('accepted_at', null).order('created_at'),
+      db.from('invitations').select('email, role, created_at, accepted_at, invited_by').eq('org_id', org.id).is('accepted_at', null).order('created_at'),
       db.rpc('partner_orgs'),
       db.rpc('is_platform_admin'),
     ]);
@@ -96,6 +108,12 @@ export default function AccessPage() {
     void load();
   }, [load]);
 
+  /** Leden van een partner ophalen (of opnieuw na een wijziging). */
+  const loadPartnerMembers = useCallback(async (partner: string) => {
+    const { data } = await supabase().rpc('org_members', { p_org: partner });
+    setPartnerMembers((prev) => new Map(prev).set(partner, (data ?? []) as Member[]));
+  }, []);
+
   if (!org) return null;
 
   const run = async (work: () => Promise<{ error: { message: string } | null }>, done: string) => {
@@ -125,7 +143,7 @@ export default function AccessPage() {
     e.preventDefault();
     const address = email.trim();
     void run(async () => {
-      const result = await supabase().rpc('invite_member', { p_org: org.id, p_email: address, p_role: role });
+      const result = await supabase().rpc('invite_member', { p_org: org.id, p_email: address, p_role: org.platform ? role : org.role });
       if (!result.error && !(await mailLink(address))) {
         return { error: { message: t('Uitgenodigd, maar de mail kon niet worden verstuurd. Laat {email} een account aanmaken op {url} met dit e-mailadres.', { email: address, url: loginUrl }) } };
       }
@@ -146,11 +164,24 @@ export default function AccessPage() {
       setPartnerEmail('');
     });
   };
-  const changeRole = (member: Member, next: Org['role']) =>
-    void run(async () => supabase().rpc('set_member_role', { p_org: org.id, p_user: member.user_id, p_role: next }), t('Rol gewijzigd.'));
-  const removeMember = (member: Member) => {
-    if (!window.confirm(t('{email} verwijderen uit {org}? Het account gaat dicht als het nergens anders lid van is.', { email: member.email, org: org.name }))) return;
-    void run(async () => supabase().rpc('remove_member', { p_org: org.id, p_user: member.user_id }), t('Lid verwijderd.'));
+  const changeRole = (member: Member, next: Org['role'], target = org.id) =>
+    void run(async () => supabase().rpc('set_member_role', { p_org: target, p_user: member.user_id, p_role: next }), t('Rol gewijzigd.')).then(
+      () => (target === org.id ? undefined : loadPartnerMembers(target)),
+    );
+  const removeMember = (member: Member, target = org.id, targetName = org.name) => {
+    if (!window.confirm(t('{email} verwijderen uit {org}? Het account gaat dicht als het nergens anders lid van is.', { email: member.email, org: targetName }))) return;
+    void run(async () => supabase().rpc('remove_member', { p_org: target, p_user: member.user_id }), t('Lid verwijderd.')).then(() =>
+      target === org.id ? undefined : loadPartnerMembers(target),
+    );
+  };
+  const togglePartnerMembers = (partner: string) => {
+    if (partnerMembers.has(partner)) {
+      setPartnerMembers((prev) => {
+        const next = new Map(prev);
+        next.delete(partner);
+        return next;
+      });
+    } else void loadPartnerMembers(partner);
   };
   const toggleCity = (partner: string, city: string, on: boolean) =>
     void run(
@@ -179,7 +210,7 @@ export default function AccessPage() {
             <tr key={m.user_id}>
               <td>{m.email}</td>
               <td>
-                {canInvite && m.user_id !== user?.id && (m.role !== 'owner' || org.role === 'owner') ? (
+                {canManage && m.user_id !== user?.id && (m.role !== 'owner' || org.role === 'owner') ? (
                   <>
                     <select aria-label={t('Rol')} value={m.role} disabled={busy} onChange={(e) => changeRole(m, e.target.value as Org['role'])}>
                       {ROLES.filter((r) => r.role !== 'owner' || org.role === 'owner').map((r) => (
@@ -203,7 +234,7 @@ export default function AccessPage() {
               <td>{i.email}</td>
               <td>
                 {roleLabel(i.role)} · <span className="muted">{t('uitgenodigd')}</span>
-                {canInvite ? (
+                {canManage || (!org.platform && i.invited_by === user?.id) ? (
                   <>
                     {' '}
                     <button className="link" disabled={busy} onClick={() => withdraw(i.email)}>
@@ -222,14 +253,20 @@ export default function AccessPage() {
           <h2>{t('Collega uitnodigen')}</h2>
           <label htmlFor="invite-email">{t('E-mail')}</label>
           <input id="invite-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-          <label htmlFor="invite-role">{t('Rol')}</label>
-          <select id="invite-role" value={role} onChange={(e) => setRole(e.target.value as Org['role'])}>
-            {ROLES.filter((r) => r.role !== 'owner' || org.role === 'owner').map((r) => (
-              <option key={r.role} value={r.role}>
-                {t(r.label)}
-              </option>
-            ))}
-          </select>
+          {org.platform ? (
+            <>
+              <label htmlFor="invite-role">{t('Rol')}</label>
+              <select id="invite-role" value={role} onChange={(e) => setRole(e.target.value as Org['role'])}>
+                {ROLES.filter((r) => r.role !== 'owner' || org.role === 'owner').map((r) => (
+                  <option key={r.role} value={r.role}>
+                    {t(r.label)}
+                  </option>
+                ))}
+              </select>
+            </>
+          ) : (
+            <p className="muted small">{t('Je collega krijgt dezelfde rechten als jij: {role}, met dezelfde steden en spellen.', { role: roleLabel(org.role) })}</p>
+          )}
           <div className="actions">
             <button type="submit" disabled={busy}>
               {t('Uitnodigen')}
@@ -244,7 +281,8 @@ export default function AccessPage() {
         <>
           <h2>{t('Partners')}</h2>
           <p className="muted small">
-            {t('Een partner krijgt een eigen organisatie met eigen hunts en resultaten. Vink per partner de steden aan die hij mag spelen.')}
+            {t('Een partner krijgt een eigen organisatie met eigen hunts en resultaten. Vink per partner de steden aan die hij mag spelen.')}{' '}
+            {t('Een partner kan zelf collega\'s uitnodigen met dezelfde rechten, maar nooit als eigenaar of beheerder.')}
           </p>
           <table>
             <tbody>
@@ -252,7 +290,40 @@ export default function AccessPage() {
                 <tr key={p.id}>
                   <td>{p.name}</td>
                   <td>
-                    {p.owner_email ?? ''} · <span className="muted">{p.accepted ? t('actief') : t('uitgenodigd')}</span>
+                    {p.owner_email ?? ''} · <span className="muted">{p.accepted ? t('actief') : t('uitgenodigd')}</span> ·{' '}
+                    <button className="link" onClick={() => togglePartnerMembers(p.id)}>
+                      {t('{n} leden', { n: p.member_count })}
+                    </button>
+                    {partnerMembers.has(p.id) ? (
+                      <ul className="small">
+                        {partnerMembers.get(p.id)!.map((m) => (
+                          <li key={m.user_id}>
+                            {m.email}{' '}
+                            {canManage ? (
+                              <>
+                                <select
+                                  aria-label={t('Rol')}
+                                  value={m.role}
+                                  disabled={busy}
+                                  onChange={(e) => changeRole(m, e.target.value as Org['role'], p.id)}
+                                >
+                                  {PARTNER_ROLES.map((r) => (
+                                    <option key={r.role} value={r.role}>
+                                      {t(r.label)}
+                                    </option>
+                                  ))}
+                                </select>{' '}
+                                <button className="link" disabled={busy} onClick={() => removeMember(m, p.id, p.name)}>
+                                  {t('Verwijderen')}
+                                </button>
+                              </>
+                            ) : (
+                              roleLabel(m.role)
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
                     <div className="small">
                       {cities.length === 0 ? <span className="muted">{t('Nog geen steden om te delen.')}</span> : null}
                       {cities.map((c) => (
@@ -276,7 +347,7 @@ export default function AccessPage() {
             <h3>{t('Partner toevoegen')}</h3>
             <label htmlFor="partner-name">{t('Naam')}</label>
             <input id="partner-name" required minLength={2} maxLength={80} value={partnerName} onChange={(e) => setPartnerName(e.target.value)} />
-            <label htmlFor="partner-email">{t('E-mail van de eigenaar')}</label>
+            <label htmlFor="partner-email">{t('E-mail van de contactpersoon')}</label>
             <input id="partner-email" type="email" required value={partnerEmail} onChange={(e) => setPartnerEmail(e.target.value)} />
             <div className="actions">
               <button type="submit" disabled={busy}>

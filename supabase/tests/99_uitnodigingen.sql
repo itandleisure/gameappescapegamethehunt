@@ -51,8 +51,9 @@ select tests.login('f4000000-0000-0000-0000-000000000001');
 select public.invite_member('0f400000-0000-0000-0000-000000000001', ' Collega@Example.test ', 'editor');
 select public.create_partner('Partner Lissabon', 'eigenaar@partner.test') as partner \gset
 do $$ begin
-  assert (select count(*) from public.invitations) = 1, 'Frans ziet de uitnodiging in zijn eigen organisatie';
-  assert (select email from public.invitations) = 'collega@example.test', 'e-mail in kleine letters';
+  assert (select count(*) from public.invitations) = 2, 'Frans ziet de uitnodigingen van zijn organisatie en van de partner';
+  assert (select email from public.invitations where org_id = '0f400000-0000-0000-0000-000000000001') = 'collega@example.test',
+    'e-mail in kleine letters';
   assert (select count(*) from public.partner_orgs()) = 1, 'partner in het overzicht';
   assert (select count(*) from public.org_members('0f400000-0000-0000-0000-000000000001')) = 1, 'een lid';
 end $$;
@@ -72,8 +73,8 @@ do $$ begin
   assert (select role from public.memberships where user_id = 'f4000000-0000-0000-0000-000000000004') = 'editor',
     'collega is redacteur geworden';
   assert (select o.is_platform from public.memberships m join public.organizations o on o.id = m.org_id
-          where m.user_id = 'f4000000-0000-0000-0000-000000000005' and m.role = 'owner') = false,
-    'partner is eigenaar van zijn eigen (niet-platform) organisatie';
+          where m.user_id = 'f4000000-0000-0000-0000-000000000005' and m.role = 'editor') = false,
+    'partner is redacteur van zijn eigen (niet-platform) organisatie';
 end $$;
 
 -- De partner kan zelf geen partners maken, wel collega's uitnodigen in de eigen organisatie.
