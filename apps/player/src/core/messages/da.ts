@@ -14,7 +14,7 @@ export const da: Messages = {
   style_kleur: 'Farver',
   style_spel: 'Spilkort',
   phone: 'Telefonnummer',
-  phoneHint: 'Så spillederen kan ringe til jer under spillet.',
+  phoneHint: 'Så spillederen kan ringe til jer under spillet, hvis det er nødvendigt.',
   errorPhone: 'Indtast et gyldigt telefonnummer.',
   teamPhotoTitle: 'Holdfoto',
   teamPhotoExplain: 'Tag først et foto af hele holdet. Det kommer på fotovæggen.',

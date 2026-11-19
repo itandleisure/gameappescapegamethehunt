@@ -14,7 +14,7 @@ export const hr: Messages = {
   style_kleur: 'U boji',
   style_spel: 'Karta igre',
   phone: 'Broj telefona',
-  phoneHint: 'Kako bi vas voditelj igre mogao nazvati tijekom igre.',
+  phoneHint: 'Kako bi vas voditelj igre mogao nazvati tijekom igre ako bude potrebno.',
   errorPhone: 'Unesite valjani broj telefona.',
   teamPhotoTitle: 'Timska fotografija',
   teamPhotoExplain: 'Najprije snimite fotografiju cijelog tima. Ona ide na zid s fotografijama.',

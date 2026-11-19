@@ -14,7 +14,7 @@ export const cs: Messages = {
   style_kleur: 'Barevná',
   style_spel: 'Herní mapa',
   phone: 'Telefonní číslo',
-  phoneHint: 'Aby vám vedoucí hry mohl během hry zavolat.',
+  phoneHint: 'Aby vám vedoucí hry mohl během hry v případě potřeby zavolat.',
   errorPhone: 'Zadejte platné telefonní číslo.',
   teamPhotoTitle: 'Týmová fotka',
   teamPhotoExplain: 'Nejdřív vyfoťte celý tým. Fotka se objeví na fotostěně.',

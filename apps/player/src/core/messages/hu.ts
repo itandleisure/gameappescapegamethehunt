@@ -14,7 +14,7 @@ export const hu: Messages = {
   style_kleur: 'Színes',
   style_spel: 'Játéktérkép',
   phone: 'Telefonszám',
-  phoneHint: 'Hogy a játékvezető fel tudjon hívni titeket játék közben.',
+  phoneHint: 'Hogy a játékvezető szükség esetén fel tudjon hívni titeket játék közben.',
   errorPhone: 'Adjatok meg egy érvényes telefonszámot.',
   teamPhotoTitle: 'Csapatfotó',
   teamPhotoExplain: 'Először készítsetek fotót az egész csapatról. Ez kerül a fotófalra.',

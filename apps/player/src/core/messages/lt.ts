@@ -14,7 +14,7 @@ export const lt: Messages = {
   style_kleur: 'Spalvotas',
   style_spel: 'Žaidimo žemėlapis',
   phone: 'Telefono numeris',
-  phoneHint: 'Kad žaidimo vedėjas galėtų jums paskambinti žaidimo metu.',
+  phoneHint: 'Kad žaidimo vedėjas prireikus galėtų jums paskambinti žaidimo metu.',
   errorPhone: 'Įveskite tinkamą telefono numerį.',
   teamPhotoTitle: 'Komandos nuotrauka',
   teamPhotoExplain: 'Pirmiausia nufotografuokite visą komandą. Nuotrauka pateks ant nuotraukų sienos.',

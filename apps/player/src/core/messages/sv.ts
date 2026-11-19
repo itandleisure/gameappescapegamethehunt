@@ -14,7 +14,7 @@ export const sv: Messages = {
   style_kleur: 'Färg',
   style_spel: 'Spelkarta',
   phone: 'Telefonnummer',
-  phoneHint: 'Så att spelledaren kan ringa er under spelet.',
+  phoneHint: 'Så att spelledaren kan ringa er under spelet om det behövs.',
   errorPhone: 'Ange ett giltigt telefonnummer.',
   teamPhotoTitle: 'Lagfoto',
   teamPhotoExplain: 'Ta först ett foto av hela laget. Det hamnar på fotoväggen.',

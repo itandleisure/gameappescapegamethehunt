@@ -14,7 +14,7 @@ export const sl: Messages = {
   style_kleur: 'Barvni',
   style_spel: 'Zemljevid igre',
   phone: 'Telefonska številka',
-  phoneHint: 'Da vas lahko vodja igre med igro pokliče.',
+  phoneHint: 'Da vas lahko vodja igre med igro po potrebi pokliče.',
   errorPhone: 'Vnesite veljavno telefonsko številko.',
   teamPhotoTitle: 'Fotografija ekipe',
   teamPhotoExplain: 'Najprej fotografirajte celotno ekipo. Fotografija gre na foto steno.',

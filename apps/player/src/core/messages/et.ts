@@ -14,7 +14,7 @@ export const et: Messages = {
   style_kleur: 'Värviline',
   style_spel: 'Mängukaart',
   phone: 'Telefoninumber',
-  phoneHint: 'Et mängujuht saaks teile mängu ajal helistada.',
+  phoneHint: 'Et mängujuht saaks teile vajaduse korral mängu ajal helistada.',
   errorPhone: 'Sisestage kehtiv telefoninumber.',
   teamPhotoTitle: 'Meeskonnafoto',
   teamPhotoExplain: 'Tehke kõigepealt foto kogu meeskonnast. See läheb fotoseinale.',

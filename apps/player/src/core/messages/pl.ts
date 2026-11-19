@@ -14,7 +14,7 @@ export const pl: Messages = {
   style_kleur: 'Kolorowa',
   style_spel: 'Mapa gry',
   phone: 'Numer telefonu',
-  phoneHint: 'Aby prowadzący mógł do was zadzwonić w trakcie gry.',
+  phoneHint: 'Aby prowadzący mógł do was zadzwonić w trakcie gry, jeśli będzie to potrzebne.',
   errorPhone: 'Wpiszcie prawidłowy numer telefonu.',
   teamPhotoTitle: 'Zdjęcie drużyny',
   teamPhotoExplain: 'Najpierw zróbcie zdjęcie całej drużyny. Trafi ono na ścianę zdjęć.',
