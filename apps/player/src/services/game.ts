@@ -1,8 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
-import { File } from 'expo-file-system';
 import { GameController, type ControllerDeps } from '../core/game-controller';
 import { SupabaseBackend } from '../core/supabase-backend';
+import { readFile } from './read-file';
 import { supabase } from './supabase';
 
 /**
@@ -10,7 +10,7 @@ import { supabase } from './supabase';
  * gebruiken dezelfde controller.
  */
 const deps: ControllerDeps = {
-  backend: new SupabaseBackend(supabase, (uri) => new File(uri).arrayBuffer()),
+  backend: new SupabaseBackend(supabase, readFile),
   store: AsyncStorage,
   newId: () => Crypto.randomUUID(),
 };
