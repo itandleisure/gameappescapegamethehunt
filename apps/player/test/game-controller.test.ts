@@ -96,7 +96,7 @@ describe('GameController', () => {
     expect(c.snapshot().teamPhotoNeeded).toBe(false);
     expect(c.snapshot().pending).toBeGreaterThan(0);
     // Een tweede telefoon met de teamcode hoeft geen teamfoto te maken.
-    const second = await GameController.rejoin(s.deps, 'lwd001', c.team.name.toUpperCase());
+    const second = await GameController.rejoin(s.deps, c.team.name.toUpperCase());
     expect(second.snapshot().teamPhotoNeeded).toBe(false);
   });
 
@@ -235,7 +235,7 @@ describe('GameController', () => {
 
     // Tweede telefoon met de teamcode beantwoordt de start
     const other = setup();
-    const phone2 = await GameController.rejoin({ ...s.deps, store: other.store, newId: () => 'tweede-1' }, 'LWD001', c.team.name);
+    const phone2 = await GameController.rejoin({ ...s.deps, store: other.store, newId: () => 'tweede-1' }, c.team.name, 'LWD001');
     await phone2.answer('start', { type: 'info' });
     await phone2.tick();
 

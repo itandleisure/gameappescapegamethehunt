@@ -130,10 +130,10 @@ export class GameController {
     return GameController.open(deps, team, 'needed');
   }
 
-  /** Op een tweede telefoon verder spelen met de hunt-code en de teamnaam. */
-  static async rejoin(deps: ControllerDeps, joinCode: string, teamName: string) {
+  /** Op een tweede telefoon verder spelen met de teamnaam (en zo nodig de hunt-code). */
+  static async rejoin(deps: ControllerDeps, teamName: string, joinCode = '') {
     await deps.backend.ensureSignedIn();
-    const team = await deps.backend.rejoinTeam(joinCode, teamName);
+    const team = await deps.backend.rejoinTeam(teamName, joinCode);
     return GameController.open(deps, team);
   }
 

@@ -49,9 +49,9 @@ export class FakeBackend implements Backend {
     return { ...team };
   }
 
-  async rejoinTeam(joinCode: string, teamName: string) {
+  async rejoinTeam(teamName: string, joinCode = '') {
     this.guard();
-    const team = joinCode.trim().toUpperCase() === 'LWD001'
+    const team = joinCode.trim() === '' || joinCode.trim().toUpperCase() === 'LWD001'
       ? [...this.teams.values()].find((t) => t.name.toLowerCase() === teamName.trim().toLowerCase())
       : undefined;
     if (!team) throw new Error('P0002');

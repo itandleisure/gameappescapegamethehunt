@@ -5,7 +5,7 @@ import type { Backend, ChatMessage, LoadedGame, PendingPhoto, SessionInfo, TeamR
 /** Fout met een tekstsleutel uit i18n, zodat het scherm een nette melding toont. */
 export class BackendError extends Error {
   constructor(
-    readonly key: 'errorUnknownSession' | 'errorLocked' | 'errorUnknownTeam' | 'errorTeamNameTaken' | 'errorLanguage' | 'errorPhone' | 'errorNetwork' | 'errorGeneric',
+    readonly key: 'errorUnknownSession' | 'errorLocked' | 'errorUnknownTeam' | 'errorAmbiguousTeam' | 'errorTeamNameTaken' | 'errorLanguage' | 'errorPhone' | 'errorNetwork' | 'errorGeneric',
     cause?: unknown,
   ) {
     super(key);
@@ -93,6 +93,7 @@ export function fromEventRow(row: EventRow): GameEvent {
 function translate(error: { code?: string; message?: string } | null, fallback: BackendError['key'] = 'errorGeneric') {
   if (!error) return new BackendError(fallback);
   if (error.code === 'P0003') return new BackendError('errorLocked', error);
+  if (error.code === 'P0005') return new BackendError('errorAmbiguousTeam', error);
   if (error.code === '23505') return new BackendError('errorTeamNameTaken', error);
   if (error.code === 'P0002') return new BackendError(fallback === 'errorUnknownTeam' ? 'errorUnknownTeam' : 'errorUnknownSession', error);
   if (error.code === '22023' && error.message?.includes('telefoon')) return new BackendError('errorPhone', error);
@@ -132,7 +133,8 @@ export class SupabaseBackend implements Backend {
     return toTeam(data as TeamRow);
   }
 
-  async rejoinTeam(joinCode: string, teamName: string) {
+  async rejoinTeam(teamName: string, joinCode = '') {
+    // Zonder hunt-code zoekt de database in de hunts die nu lopen.
     const { data, error } = await this.client.rpc('rejoin_team_by_name', { p_join_code: joinCode, p_team_name: teamName });
     if (error) throw translate(error, 'errorUnknownTeam');
     return toTeam(data as TeamRow);
