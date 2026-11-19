@@ -14,7 +14,7 @@ export const no: Messages = {
   style_kleur: 'Farger',
   style_spel: 'Spillkart',
   phone: 'Telefonnummer',
-  phoneHint: 'Slik at spillederen kan ringe dere under spillet.',
+  phoneHint: 'Slik at spillederen kan ringe dere under spillet om nødvendig.',
   errorPhone: 'Skriv inn et gyldig telefonnummer.',
   teamPhotoTitle: 'Lagbilde',
   teamPhotoExplain: 'Ta først et bilde av hele laget. Det kommer på bildeveggen.',

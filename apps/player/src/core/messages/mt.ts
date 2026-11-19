@@ -14,7 +14,7 @@ export const mt: Messages = {
   style_kleur: 'Bil-kulur',
   style_spel: 'Mappa tal-logħba',
   phone: 'Numru tat-telefon',
-  phoneHint: 'Biex il-kap tal-logħba jkun jista’ jċemplilkom waqt il-logħba.',
+  phoneHint: 'Biex il-kap tal-logħba jkun jista’ jċemplilkom waqt il-logħba jekk ikun meħtieġ.',
   errorPhone: 'Daħħlu numru tat-telefon validu.',
   teamPhotoTitle: 'Ritratt tat-tim',
   teamPhotoExplain: 'L-ewwel ħudu ritratt tat-tim kollu. Dan imur fuq il-ħajt tar-ritratti.',

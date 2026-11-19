@@ -14,7 +14,7 @@ export const fi: Messages = {
   style_kleur: 'Värillinen',
   style_spel: 'Pelikartta',
   phone: 'Puhelinnumero',
-  phoneHint: 'Jotta pelinjohtaja voi soittaa teille pelin aikana.',
+  phoneHint: 'Jotta pelinjohtaja voi tarvittaessa soittaa teille pelin aikana.',
   errorPhone: 'Anna kelvollinen puhelinnumero.',
   teamPhotoTitle: 'Joukkuekuva',
   teamPhotoExplain: 'Ottakaa ensin kuva koko joukkueesta. Se tulee kuvaseinälle.',

@@ -14,7 +14,7 @@ export const fr: Messages = {
   style_kleur: 'Couleur',
   style_spel: 'Carte du jeu',
   phone: 'Numéro de téléphone',
-  phoneHint: 'Pour que le maître du jeu puisse vous appeler pendant le jeu.',
+  phoneHint: 'Pour que le maître du jeu puisse vous appeler pendant le jeu si nécessaire.',
   errorPhone: 'Saisissez un numéro de téléphone valide.',
   teamPhotoTitle: "Photo d'équipe",
   teamPhotoExplain: "Prenez d'abord une photo de toute l'équipe. Elle sera affichée sur le mur de photos.",

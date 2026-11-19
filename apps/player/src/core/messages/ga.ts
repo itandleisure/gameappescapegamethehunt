@@ -14,7 +14,7 @@ export const ga: Messages = {
   style_kleur: 'Daite',
   style_spel: 'Léarscáil an chluiche',
   phone: 'Uimhir theileafóin',
-  phoneHint: 'Ionas gur féidir leis an máistir cluiche glaoch oraibh le linn an chluiche.',
+  phoneHint: 'Ionas gur féidir leis an máistir cluiche glaoch oraibh le linn an chluiche más gá.',
   errorPhone: 'Cuir isteach uimhir theileafóin bhailí.',
   teamPhotoTitle: 'Grianghraf foirne',
   teamPhotoExplain: 'Ar dtús, glacaigí grianghraf den fhoireann ar fad. Rachaidh sé ar an mballa grianghraf.',

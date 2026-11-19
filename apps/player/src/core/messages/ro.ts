@@ -14,7 +14,7 @@ export const ro: Messages = {
   style_kleur: 'Color',
   style_spel: 'Harta jocului',
   phone: 'Număr de telefon',
-  phoneHint: 'Ca organizatorul să vă poată suna în timpul jocului.',
+  phoneHint: 'Ca organizatorul să vă poată suna în timpul jocului, dacă este nevoie.',
   errorPhone: 'Introduceți un număr de telefon valid.',
   teamPhotoTitle: 'Fotografia echipei',
   teamPhotoExplain: 'Mai întâi faceți o fotografie cu toată echipa. Ea va apărea pe peretele cu fotografii.',

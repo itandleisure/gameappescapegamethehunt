@@ -14,7 +14,7 @@ export const lv: Messages = {
   style_kleur: 'Krāsaina',
   style_spel: 'Spēles karte',
   phone: 'Tālruņa numurs',
-  phoneHint: 'Lai spēles vadītājs varētu jums piezvanīt spēles laikā.',
+  phoneHint: 'Lai spēles vadītājs vajadzības gadījumā varētu jums piezvanīt spēles laikā.',
   errorPhone: 'Ievadiet derīgu tālruņa numuru.',
   teamPhotoTitle: 'Komandas foto',
   teamPhotoExplain: 'Vispirms nofotografējiet visu komandu. Foto nonāks uz foto sienas.',
