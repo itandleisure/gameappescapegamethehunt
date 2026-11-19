@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    backgroundColor: "rgba(16,18,20,0.88)",
+    backgroundColor: "rgba(37,47,61,0.9)",
     borderRadius: radius.md,
     padding: space.md,
     marginTop: space.sm,

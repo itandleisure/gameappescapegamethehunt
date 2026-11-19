@@ -444,8 +444,8 @@ function PlaygroundCard({
                   width: `${(piece.w / reveal.width) * 100}%`,
                   height: `${(piece.h / reveal.height) * 100}%`,
                   background: "rgba(0,0,0,0.6)",
-                  border: `2px solid ${i === selected ? "#2f81f7" : "#f5a524"}`,
-                  color: "#f5a524",
+                  border: `2px solid ${i === selected ? "#2f81f7" : "#e5963f"}`,
+                  color: "#e5963f",
                   font: "700 14px sans-serif",
                   display: "flex",
                   alignItems: "center",
@@ -739,8 +739,8 @@ function CodeEditor({
 function CodePreview({ values, hint }: { values: string[]; hint: boolean }) {
   const t = useT();
   const cell = {
-    background: "#1b1f23",
-    border: "1px solid #f5a524",
+    background: "#2e3845",
+    border: "1px solid #e5963f",
     borderRadius: 6,
     color: "#f4f5f6",
     font: "800 22px sans-serif",
@@ -756,7 +756,7 @@ function CodePreview({ values, hint }: { values: string[]; hint: boolean }) {
       </p>
       <div
         style={{
-          background: "#101214",
+          background: "#252f3d",
           padding: 12,
           borderRadius: 12,
           display: "grid",

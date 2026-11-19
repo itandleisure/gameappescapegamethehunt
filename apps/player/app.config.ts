@@ -46,7 +46,7 @@ const config: ExpoConfig = {
         category: ['BROWSABLE', 'DEFAULT'],
       },
     ],
-    adaptiveIcon: { foregroundImage: './assets/adaptive-icon.png', backgroundColor: '#101214' },
+    adaptiveIcon: { foregroundImage: './assets/adaptive-icon.png', backgroundColor: '#252f3d' },
     permissions: [
       'ACCESS_FINE_LOCATION',
       'ACCESS_COARSE_LOCATION',
@@ -59,7 +59,7 @@ const config: ExpoConfig = {
   plugins: [
     'expo-router',
     'expo-localization',
-    ['expo-splash-screen', { image: './assets/splash-logo.png', imageWidth: 140, backgroundColor: '#101214', resizeMode: 'contain' }],
+    ['expo-splash-screen', { image: './assets/splash-logo.png', imageWidth: 140, backgroundColor: '#252f3d', resizeMode: 'contain' }],
     [
       'expo-location',
       {
@@ -87,8 +87,8 @@ const config: ExpoConfig = {
     bundler: 'metro',
     name: 'Escape Game The Hunt',
     shortName: 'The Hunt',
-    themeColor: '#101214',
-    backgroundColor: '#101214',
+    themeColor: '#252f3d',
+    backgroundColor: '#252f3d',
     favicon: './web/favicon.png',
   },
   experiments: { typedRoutes: false, ...(process.env.PLAYER_WEB_BASE ? { baseUrl: process.env.PLAYER_WEB_BASE } : {}) },

@@ -1,15 +1,15 @@
-/** Kleuren en maten van de app. Later af te stemmen op de huisstijl van Escape Game The Hunt. */
+/** Kleuren en maten van de app. Kleurenpalet van badassgames.nl: donker leisteenblauw met oranje accent. */
 export const colors = {
-  background: '#101214',
-  surface: '#1b1f23',
-  surfaceRaised: '#262b31',
+  background: '#252f3d',
+  surface: '#2e3845',
+  surfaceRaised: '#38434f',
   text: '#f4f5f6',
-  textMuted: '#a3abb4',
-  accent: '#f5a524',
-  accentText: '#101214',
+  textMuted: '#b4bcc6',
+  accent: '#e5963f',
+  accentText: '#1f2733',
   success: '#3fb950',
   danger: '#f85149',
-  border: '#33393f',
+  border: '#455262',
 };
 
 export const space = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 };
