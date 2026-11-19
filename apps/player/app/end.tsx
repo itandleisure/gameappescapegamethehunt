@@ -1,9 +1,10 @@
-import { DEFAULT_MEETING_RADIUS, distanceMeters, t as tx } from '@hunt/engine';
+import { boundaryPath, DEFAULT_BOUNDARY_COLOR, DEFAULT_MEETING_RADIUS, outsideShade, t as tx } from '@hunt/engine';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Redirect } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Linking, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { distanceText, MeetingArrival, metersTo } from '../src/core/meeting';
 import { mapStyleChoice } from '../src/core/view';
 import { onFix, startTracking, stopTracking } from '../src/services/location';
 import { removePlayAreas } from '../src/services/map-download';
@@ -13,17 +14,15 @@ import { LeaveGame } from '../src/ui/LeaveGame';
 import GameMap from '../src/ui/map/GameMap';
 import { colors, radius, space, contentColumn } from '../src/ui/theme';
 
-/**
- * Een team is er als het binnen de cirkel om het verzamelpunt staat. De GPS
- * zit er in de stad vaak wat naast; tot 20 meter van die onzekerheid telt mee.
- */
-const MAX_GPS_SLACK = 20;
 const ARRIVED_KEY = 'hunt.verzamelpunt';
 
 /**
  * Einde van het spel: uitkomst, eindscore en speeltijd. Is er een
- * verzamelpunt, dan gaat het team daar eerst heen; pas daarna kan het
- * zich afmelden.
+ * verzamelpunt, dan loopt het team daar eerst heen met de kaart in de app
+ * (eigen positie, stippellijn en afstand). Het spel is pas klaar als de GPS
+ * het team in de cirkel ziet, met dezelfde regels als bij een opdracht op
+ * locatie (ook de ruimere marge bij zwak signaal). De knop "Wij zijn er"
+ * verschijnt alleen als de GPS het niet doet, en in een testsessie.
  */
 export default function EndScreen() {
   const { controller, snapshot, t, lang } = useGame();
@@ -33,6 +32,10 @@ export default function EndScreen() {
   const teamId = snapshot?.team.id;
   const [arrived, setArrived] = useState<boolean | null>(null);
   const [position, setPosition] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
+  const [gpsFailing, setGpsFailing] = useState(false);
+  const arrival = useRef<MeetingArrival | null>(null);
+  const meetingRadius = meeting?.radius ?? DEFAULT_MEETING_RADIUS;
+  const maxAccuracy = snapshot?.game.gps.maxAccuracy ?? 30;
 
   // Al eerder aangekomen (app opnieuw geopend)?
   useEffect(() => {
@@ -58,16 +61,22 @@ export default function EndScreen() {
       return;
     }
     void startTracking(t('appName'), t('backgroundNotice'));
-    return onFix((fix) => setPosition({ lat: fix.lat, lng: fix.lng, accuracy: fix.accuracy }));
+    const gate = new MeetingArrival({ lat: meeting!.lat, lng: meeting!.lng, radius: meetingRadius }, maxAccuracy, Date.now());
+    arrival.current = gate;
+    const timer = setInterval(() => setGpsFailing(gate.gpsFailing(Date.now())), 1_000);
+    const off = onFix((fix) => {
+      setPosition({ lat: fix.lat, lng: fix.lng, accuracy: fix.accuracy });
+      if (gate.feed(fix)) markArrived();
+      setGpsFailing(gate.gpsFailing(Date.now()));
+    });
+    return () => {
+      clearInterval(timer);
+      off();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ended, walking, arrived]);
 
-  const distance = meeting && position ? Math.round(distanceMeters(position, meeting)) : null;
-  const meetingRadius = meeting?.radius ?? DEFAULT_MEETING_RADIUS;
-  useEffect(() => {
-    if (walking && distance !== null && position && distance <= meetingRadius + Math.min(position.accuracy, MAX_GPS_SLACK)) markArrived();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [walking, distance]);
+  const distance = meeting && position ? metersTo(position, meeting) : null;
 
   if (!controller || !snapshot || !state) return <Redirect href="/" />;
   if (!ended) return <Redirect href="/play" />;
@@ -75,15 +84,8 @@ export default function EndScreen() {
   const ending = game.endings.find((e) => e.id === ended.ending);
   const tr = (value: Parameters<typeof tx>[0]) => tx(value, lang, game.defaultLanguage);
 
-  const openRoute = () => {
-    if (!meeting) return;
-    const at = `${meeting.lat},${meeting.lng}`;
-    const url =
-      Platform.OS === 'ios'
-        ? `http://maps.apple.com/?daddr=${at}&dirflg=w`
-        : `https://www.google.com/maps/dir/?api=1&destination=${at}&travelmode=walking`;
-    void Linking.openURL(url);
-  };
+  const testMode = snapshot.session.testMode;
+  const far = distanceText(distance ?? 0, lang);
 
   const d = 0.0025;
   return (
@@ -96,7 +98,7 @@ export default function EndScreen() {
         {meeting && arrived !== true ? (
           <View style={styles.meeting}>
             <Title>{t('goToMeetingPoint')}</Title>
-            <Body>{tr(meeting.text)}</Body>
+            <Body>{t('meetingWalkHint')}</Body>
             <View style={styles.map}>
               <GameMap
                 styleUrl={mapStyleChoice(game, null).url}
@@ -104,17 +106,34 @@ export default function EndScreen() {
                 markers={[{ id: 'verzamelpunt', lat: meeting.lat, lng: meeting.lng, label: t('meetingPoint') }]}
                 circles={[{ lat: meeting.lat, lng: meeting.lng, radius: meetingRadius, color: colors.accent }]}
                 position={position}
+                follow={position ? [position, meeting] : undefined}
+                line={position ? { from: position, to: meeting, color: colors.accent } : undefined}
+                boundary={
+                  game.boundary
+                    ? {
+                        points: boundaryPath(game.boundary),
+                        color: game.boundary.color ?? DEFAULT_BOUNDARY_COLOR,
+                        outside: outsideShade(game.boundary),
+                      }
+                    : undefined
+                }
               />
             </View>
-            {distance !== null ? <Body muted>{t('distanceLeft', { meters: distance })}</Body> : null}
-            <Button kind="secondary" label={t('route')} onPress={openRoute} />
-            <Button label={t('weAreThere')} onPress={markArrived} />
+            {distance !== null ? <Text style={styles.distance}>{t(far.key, far.vars)}</Text> : null}
+            {gpsFailing ? (
+              <>
+                <Body muted>{t('meetingGpsHelp')}</Body>
+                <Button kind="secondary" label={t('weAreThere')} onPress={markArrived} />
+              </>
+            ) : testMode ? (
+              <Button kind="secondary" label={`📍 ${t('weAreThere')}`} onPress={markArrived} />
+            ) : null}
           </View>
         ) : (
           <>
             {meeting ? (
               <View style={styles.meeting}>
-                <Banner tone="success">{t('atMeetingPoint')}</Banner>
+                <Banner tone="success">{`${t('atMeetingPoint')} ${t('meetingThanks')}`}</Banner>
                 <Body>{tr(meeting.text)}</Body>
               </View>
             ) : null}
@@ -131,5 +150,6 @@ const styles = StyleSheet.create({
   content: { padding: space.md, paddingBottom: space.xl, ...contentColumn },
   kicker: { color: colors.accent, fontWeight: '700', textTransform: 'uppercase', marginBottom: space.sm },
   meeting: { marginTop: space.lg, gap: space.sm },
-  map: { height: 280, borderRadius: radius.md, overflow: 'hidden', borderWidth: 1, borderColor: colors.border },
+  distance: { color: colors.text, fontSize: 22, fontWeight: '700' },
+  map: { height: 340, borderRadius: radius.md, overflow: 'hidden', borderWidth: 1, borderColor: colors.border },
 });

@@ -15,10 +15,10 @@ import type { GameMapProps } from './types';
 type WebViewHandle = { injectJavaScript: (script: string) => void };
 const WebView = RNWebView as unknown as ComponentType<WebViewProps & { ref?: Ref<WebViewHandle> }>;
 
-export default function WebMap({ styleUrl, bounds, markers, overlay, boundary, circles, position }: GameMapProps) {
+export default function WebMap({ styleUrl, bounds, markers, overlay, boundary, circles, position, follow, line }: GameMapProps) {
   const ref = useRef<WebViewHandle>(null);
   const mask = boundary && boundary.outside.opacity > 0 ? boundaryMaskGeoJson(boundary) : null;
-  const payload = JSON.stringify({ bounds, markers, overlay, boundary, mask, circles: circles?.length ? circlesGeoJson(circles) : null, position, style: styleUrl, inside: insideStyleUrl(styleUrl) ?? null });
+  const payload = JSON.stringify({ bounds, markers, overlay, boundary, mask, circles: circles?.length ? circlesGeoJson(circles) : null, position, follow: follow?.length ? follow : null, line: line ?? null, style: styleUrl, inside: insideStyleUrl(styleUrl) ?? null });
   // De pagina zelf blijft op de eerste stijl; wisselen gaat via window.hunt.
   const [firstStyle] = useState(styleUrl);
 

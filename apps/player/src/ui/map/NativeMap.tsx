@@ -20,7 +20,15 @@ export default function NativeMap({
   overlay,
   boundary,
   circles,
+  follow,
+  line,
 }: GameMapProps) {
+  const lng = follow?.map((p) => p.lng) ?? [];
+  const lat = follow?.map((p) => p.lat) ?? [];
+  const followBounds = follow?.length
+    ? ([Math.min(...lng), Math.min(...lat), Math.max(...lng), Math.max(...lat)] as [number, number, number, number])
+    : undefined;
+  const start = followBounds ?? bounds;
   return (
     <Map
       style={StyleSheet.absoluteFill}
@@ -31,9 +39,9 @@ export default function NativeMap({
     >
       <Camera
         initialViewState={
-          bounds
+          start
             ? {
-                bounds,
+                bounds: start,
                 padding: { top: 120, bottom: 120, left: 40, right: 40 },
               }
             : undefined
@@ -80,6 +88,23 @@ export default function NativeMap({
         <GeoJSONSource id="circles" data={circlesGeoJson(circles) as GeoJSON.GeoJSON}>
           <Layer type="fill" id="circles-fill" paint={{ "fill-color": ["get", "color"], "fill-opacity": 0.15 }} />
           <Layer type="line" id="circles-line" paint={{ "line-color": ["get", "color"], "line-width": 2 }} />
+        </GeoJSONSource>
+      ) : null}
+      {line ? (
+        <GeoJSONSource
+          id="route"
+          data={{
+            type: "Feature",
+            properties: {},
+            geometry: { type: "LineString", coordinates: [[line.from.lng, line.from.lat], [line.to.lng, line.to.lat]] },
+          }}
+        >
+          <Layer
+            type="line"
+            id="route-line"
+            layout={{ "line-cap": "round" }}
+            paint={{ "line-color": line.color, "line-width": 4, "line-dasharray": [1, 2] }}
+          />
         </GeoJSONSource>
       ) : null}
       {markers.map((m) => (

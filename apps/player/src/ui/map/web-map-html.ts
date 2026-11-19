@@ -33,7 +33,11 @@ const rewrites = rewriteList.map((r) => [new RegExp(r.find), r.replace]);
 const transformRequest = (url) => ({ url: rewrites.reduce((u, [find, replace]) => u.replace(find, replace), url) });
 const map = new maplibregl.Map({ container, style: styleUrl, attributionControl: { compact: true }, transformRequest });
 map.on('error', (e) => showError((e && e.error && e.error.message) || 'onbekende fout'));
-let markers = [], me = null, fitted = false;
+let markers = [], me = null, fitted = false, followKey = null, userMoved = false;
+// Zelf schuiven of zoomen: dan schuift de kaart niet meer mee met de eigen positie.
+map.on('dragstart', () => { userMoved = true; });
+map.on('zoomstart', (e) => { if (e && e.originalEvent) userMoved = true; });
+map.on('rotatestart', (e) => { if (e && e.originalEvent) userMoved = true; });
 let current = styleUrl, last = null;
 // Kleur binnen het speelveld (zoals "Toner met kleur"): een tweede kaart met een eigen stijl,
 // direct boven de onderste kaart en onder de pinnen, uitgeknipt op de vorm van het speelveld.
@@ -74,6 +78,12 @@ const hunt = (data) => {
 function apply(d) {
   ring = !d.overlay && d.boundary && d.boundary.points.length >= 3 ? d.boundary.points.map((p) => [p.lng, p.lat]) : null;
   setInner(ring ? d.inside || null : null);
+  if (d.follow && !userMoved) {
+    const lng = d.follow.map((p) => p.lng), lat = d.follow.map((p) => p.lat);
+    const box = [[Math.min(...lng), Math.min(...lat)], [Math.max(...lng), Math.max(...lat)]];
+    const key = box.flat().map((v) => v.toFixed(5)).join(',');
+    if (key !== followKey) { map.fitBounds(box, { padding: { top: 70, bottom: 40, left: 40, right: 40 }, maxZoom: 17, animate: fitted, duration: 400 }); followKey = key; fitted = true; }
+  }
   if (d.bounds && !fitted) { map.fitBounds([[d.bounds[0], d.bounds[1]], [d.bounds[2], d.bounds[3]]], { padding: { top: 140, bottom: 120, left: 40, right: 40 }, animate: false }); fitted = true; }
   markers.forEach((m) => m.remove());
   markers = d.markers.map((m) => { const el = document.createElement('div'); if (m.person) { el.className = 'person' + (m.person.stale ? ' stale' : ''); const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = m.person.color; if (m.person.ring) dot.style.borderColor = m.person.ring; const name = document.createElement('span'); name.className = 'name'; name.textContent = m.label; el.append(dot, name); } else if (m.logoColor) { el.className = 'pin logo'; el.style.backgroundColor = m.logoColor; } else if (m.flag !== undefined) { el.className = 'pin flag'; el.textContent = '\u{1F3C1}' + m.flag; } else { el.className = m.badge ? 'pin badge' : 'pin'; el.textContent = m.badge || m.label; }
@@ -109,6 +119,9 @@ function lines(m, d) {
     if (m.getSource('boundary')) m.getSource('boundary').setData(b);
     else { m.addSource('boundary', { type: 'geojson', data: b }); m.addLayer({ id: 'boundary', type: 'line', source: 'boundary', layout: { 'line-join': 'round' }, paint: { 'line-color': d.boundary.color, 'line-width': 3 } }); }
   }
+  const route = { type: 'FeatureCollection', features: d.line ? [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [[d.line.from.lng, d.line.from.lat], [d.line.to.lng, d.line.to.lat]] } }] : [] };
+  if (m.getSource('route')) m.getSource('route').setData(route);
+  else if (d.line) { m.addSource('route', { type: 'geojson', data: route }); m.addLayer({ id: 'route', type: 'line', source: 'route', layout: { 'line-cap': 'round' }, paint: { 'line-color': d.line.color, 'line-width': 4, 'line-dasharray': [1, 2] } }); }
   if (d.circles) {
     if (m.getSource('circles')) m.getSource('circles').setData(d.circles);
     else {
