@@ -26,7 +26,7 @@ interface TeamRow {
   ready_at?: string | null;
 }
 
-interface EventRow {
+export interface EventRow {
   id: string;
   type: string;
   task_key: string | null;

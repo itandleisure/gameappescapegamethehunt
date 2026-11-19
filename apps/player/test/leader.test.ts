@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { LeaderApi, lastPositions, leaderError, mergePositions, standings, type LeaderPosition, type LeaderTeam } from '../src/core/leader.js';
+import { composeGame, type GameEvent } from '@hunt/engine';
+import { INTRO, leeuwarden, leeuwardenPoints as P, theHuntBase } from '../../../packages/engine/test/fixtures/the-hunt.js';
+import { min, Script, T0 } from '../../../packages/engine/test/helpers.js';
+import { LeaderApi, lastPositions, leaderError, mergePositions, puzzleProgress, standings, type LeaderPosition, type LeaderTeam } from '../src/core/leader.js';
 import { LEADER_MESSAGES, leaderMsg } from '../src/core/leader-i18n.js';
 
 const pos = (id: number, team: string, at: string, accuracy = 5): LeaderPosition => ({
@@ -75,5 +78,54 @@ describe('spelleider-modus', () => {
     await api.send('s', 'hoi');
     await api.send('s', 'hoi', 'hunters');
     expect(calls.map(([fn]) => fn)).toEqual(['leader_messages', 'leader_hunter_messages', 'leader_send_message', 'leader_send_hunter_message']);
+  });
+});
+
+describe('spelleider: puzzels per team', () => {
+  const game = composeGame(theHuntBase, [leeuwarden], { id: 'the-hunt-leeuwarden', version: 1 });
+  const rows = (teamId: string, events: GameEvent[]) =>
+    events.map((e) => {
+      const { id, at, type, ...rest } = e as GameEvent & Record<string, unknown>;
+      const { task, ...payload } = rest as { task?: string } & Record<string, unknown>;
+      return { id: `${teamId}-${id}`, team_id: teamId, type, task_key: task ?? null, payload, client_time: new Date(at).toISOString() };
+    });
+  const started = (id: string, started_at: string | null): LeaderTeam => ({ ...team(id, 0, 1), started_at });
+
+  it('telt de opgeloste puzzels, net als de resultatenpagina', () => {
+    const a = new Script();
+    a.reach(0.5, 'start', P.start).ok(0.7, 'start');
+    INTRO.forEach((id, i) => a.ok(1 + i * 0.5, id));
+    a.text(8, 'puzzel-tangram', 'Vluchtroute');
+    a.text(14, 'puzzel-morse', 'fout');
+    a.text(15, 'puzzel-morse', 'EXTRACTIE');
+    const b = new Script();
+    b.reach(0.5, 'start', P.start).ok(0.7, 'start');
+    INTRO.forEach((id, i) => b.ok(1 + i * 0.5, id));
+    b.text(9, 'puzzel-tangram', 'iets anders');
+
+    const T = new Date(T0).toISOString();
+    const progress = puzzleProgress(
+      {
+        session: { id: 's', name: 's', timezone: 'Europe/Amsterdam', status: 'live', team_chat: true },
+        game,
+        teams: [started('a', T), started('b', T), started('c', null)],
+        events: [...rows('a', a.events), ...rows('b', b.events)],
+        positions: [],
+        leaders: [],
+      },
+      min(30),
+    );
+    expect(progress.puzzles.map((p) => p.id)).toContain('puzzel-tangram');
+    expect([...progress.solved.get('a')!].sort()).toEqual(['puzzel-morse', 'puzzel-tangram']);
+    expect(progress.solved.get('b')!.size).toBe(0);
+    expect(progress.solved.get('c')!.size).toBe(0);
+  });
+
+  it('zonder spel geen puzzels', () => {
+    const progress = puzzleProgress(
+      { session: { id: 's', name: 's', timezone: 'UTC', status: 'live', team_chat: true }, game: null, teams: [], positions: [], leaders: [] },
+      0,
+    );
+    expect(progress.puzzles).toEqual([]);
   });
 });

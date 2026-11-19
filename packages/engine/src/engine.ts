@@ -66,6 +66,22 @@ export function canUseHint(game: GamePackage, state: TeamState, taskId: string):
 }
 
 /**
+ * De puzzels van het spel: de opdrachten achter de codevakjes (of de afgedekte
+ * vakken van de foto) op een tabblad, zoals de zes puzzels die samen de
+ * GPS-code van het extractiepunt geven. Elke opdracht één keer, in volgorde.
+ * Heeft het spel die niet, dan de opdrachten met de tag "puzzel".
+ */
+export function puzzleTasks(game: GamePackage): Task[] {
+  const ids: string[] = [];
+  for (const pg of game.playgrounds) {
+    for (const box of pg.code?.boxes ?? []) if (!ids.includes(box.task)) ids.push(box.task);
+    for (const piece of pg.reveal?.pieces ?? []) if (!ids.includes(piece.task)) ids.push(piece.task);
+  }
+  if (ids.length === 0) return game.tasks.filter((task) => task.tags.includes('puzzel'));
+  return ids.map((id) => game.tasks.find((task) => task.id === id)).filter((task): task is Task => task !== undefined);
+}
+
+/**
  * De opdrachten van de speluitleg die teams vóór een centrale start lezen.
  * Is er geen speluitleg ingesteld, dan de eerste reeks die de regels starten
  * (bij The Hunt de introreeks), zodat teams niet eerst op de start wachten.

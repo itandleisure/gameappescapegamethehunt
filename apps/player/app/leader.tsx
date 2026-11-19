@@ -24,11 +24,13 @@ import {
   TEAM_COLORS,
   lastPositions,
   mergePositions,
+  puzzleProgress,
   standings,
   type LeaderData,
   type LeaderChannel,
   type LeaderMessage,
   type LeaderTeam,
+  type PuzzleProgress,
 } from '../src/core/leader';
 import { leaderMsg, type LeaderKey } from '../src/core/leader-i18n';
 import { playAreaBounds } from '../src/core/play-area';
@@ -270,6 +272,39 @@ function LeaderMap({
   );
 }
 
+/** Vakje per puzzel, zoals op de resultatenpagina: groen met een vinkje als hij is opgelost. */
+function PuzzleChecks({
+  puzzles,
+  solved,
+  t,
+}: {
+  puzzles: PuzzleProgress['puzzles'];
+  solved: Set<string> | undefined;
+  t: (key: LeaderKey, vars?: Record<string, string | number>) => string;
+}) {
+  if (puzzles.length === 0) return null;
+  const count = puzzles.filter((p) => solved?.has(p.id)).length;
+  return (
+    <View
+      style={styles.puzzles}
+      accessible
+      accessibilityLabel={t('leaderPuzzles', { n: count, m: puzzles.length })}
+    >
+      {puzzles.map((p, i) => {
+        const done = solved?.has(p.id) ?? false;
+        return (
+          <View key={p.id} style={[styles.puzzle, done && styles.puzzleDone]}>
+            <Text style={[styles.puzzleText, done && styles.puzzleTextDone]}>{done ? '✓' : i + 1}</Text>
+          </View>
+        );
+      })}
+      <Text style={styles.muted}>
+        {count}/{puzzles.length}
+      </Text>
+    </View>
+  );
+}
+
 function LeaderTeams({
   data,
   now,
@@ -285,6 +320,7 @@ function LeaderTeams({
   const [error, setError] = useState<LeaderKey | null>(null);
   if (!data) return <View style={styles.flex} />;
   const colorOf = teamColors(data.teams);
+  const progress = puzzleProgress(data, now);
   const last = lastPositions(data.positions, data.game?.gps?.maxAccuracy ?? 50);
 
   const bump = async (team: LeaderTeam, delta: 1 | -1) => {
@@ -327,6 +363,7 @@ function LeaderTeams({
                 </Text>
               </View>
             </View>
+            <PuzzleChecks puzzles={progress.puzzles} solved={progress.solved.get(tm.id)} t={t} />
             <View style={styles.cardRow}>
               {tm.phone ? (
                 <Pressable
@@ -509,6 +546,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepText: { color: colors.text, fontSize: 22, fontWeight: '700' },
+  puzzles: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: space.xs },
+  puzzle: {
+    width: 26,
+    height: 26,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  puzzleDone: { backgroundColor: colors.success, borderColor: colors.success },
+  puzzleText: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
+  puzzleTextDone: { color: '#ffffff', fontSize: 15, fontWeight: '800' },
   caught: { color: colors.text, fontSize: 18, fontWeight: '700', minWidth: 28, textAlign: 'center' },
   section: { color: colors.textMuted, fontSize: 14, fontWeight: '700', marginTop: space.md, textTransform: 'uppercase' },
   bubble: { maxWidth: '85%', borderRadius: radius.md, paddingVertical: space.sm, paddingHorizontal: space.md },

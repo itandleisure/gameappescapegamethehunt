@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { GamePackage } from '@hunt/engine';
+import { computeState, puzzleTasks, t, type GamePackage } from '@hunt/engine';
+import { fromEventRow, type EventRow } from './supabase-backend.js';
 
 /**
  * Spelleider-modus: een spelleider logt in met de spelleider-code van een hunt
@@ -26,6 +27,8 @@ export interface LeaderTeam {
   ended_at: string | null;
   login_order: number;
   phone: string | null;
+  /** Speluitleg vóór een centrale start gelezen. */
+  ready_at?: string | null;
 }
 
 export interface LeaderPosition {
@@ -52,6 +55,8 @@ export interface LeaderData {
   session: { id: string; name: string; timezone: string; status: string; team_chat: boolean };
   game: GamePackage | null;
   teams: LeaderTeam[];
+  /** Gebeurtenissen van alle teams (antwoorden enz.), om de puzzels uit te rekenen. */
+  events?: (EventRow & { team_id: string })[];
   positions: LeaderPosition[];
   leaders: Hunter[];
 }
@@ -129,6 +134,50 @@ export function mergePositions(list: LeaderPosition[], fresh: LeaderPosition[], 
 /** Ranglijst: meeste punten eerst, bij gelijke stand wie het eerst inlogde. */
 export function standings(teams: LeaderTeam[]): LeaderTeam[] {
   return [...teams].sort((a, b) => b.score - a.score || a.login_order - b.login_order);
+}
+
+export interface PuzzleProgress {
+  /** De puzzels van het spel, in de volgorde van de codevakjes. */
+  puzzles: { id: string; title: string }[];
+  /** Per team de ids van de opgeloste puzzels. */
+  solved: Map<string, Set<string>>;
+}
+
+/**
+ * Welke puzzels elk team heeft opgelost, uitgerekend met de spelregel-engine
+ * uit dezelfde gebeurtenissen als de app en de resultatenpagina in het beheer.
+ */
+export function puzzleProgress(data: LeaderData, now: number): PuzzleProgress {
+  const game = data.game;
+  if (!game) return { puzzles: [], solved: new Map() };
+  const puzzles = puzzleTasks(game).map((task) => ({
+    id: task.id,
+    title: t(task.title, game.defaultLanguage) || task.id,
+  }));
+  const solved = new Map<string, Set<string>>();
+  if (puzzles.length === 0) return { puzzles, solved };
+  const byTeam = new Map<string, EventRow[]>();
+  for (const row of data.events ?? []) {
+    const list = byTeam.get(row.team_id) ?? [];
+    list.push(row);
+    byTeam.set(row.team_id, list);
+  }
+  for (const team of data.teams) {
+    const startedAt = team.started_at ? Date.parse(team.started_at) : null;
+    if (startedAt === null) {
+      solved.set(team.id, new Set());
+      continue;
+    }
+    const events = (byTeam.get(team.id) ?? []).map(fromEventRow).sort((a, b) => a.at - b.at);
+    const until = team.ended_at ? Date.parse(team.ended_at) : now;
+    try {
+      const state = computeState(game, { track: team.track, startedAt, briefingRead: Boolean(team.ready_at) }, events, until);
+      solved.set(team.id, new Set(puzzles.filter((p) => state.tasks[p.id]?.correct === true).map((p) => p.id)));
+    } catch {
+      solved.set(team.id, new Set());
+    }
+  }
+  return { puzzles, solved };
 }
 
 /** Toegang tot de database voor de spelleider. */
