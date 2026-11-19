@@ -208,7 +208,7 @@ export default function PartnerPage() {
       </div>
 
       <h2>{t('Accounts')}</h2>
-      <p className="muted small">{t('Elk account onder deze partner heeft de rechten van de partner: dezelfde steden, events en resultaten.')}</p>
+      <p className="muted small">{t('Elk account onder deze partner heeft de rechten van de partner: dezelfde steden, tickets en resultaten.')}</p>
       <table className="stack">
         <tbody>
           {accounts.length === 0 ? (

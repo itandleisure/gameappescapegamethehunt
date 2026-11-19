@@ -157,7 +157,7 @@ export function TeamChat({
           </label>{' '}
           <span className="muted">
             {session.team_chat
-              ? t('Alle teams van dit event kunnen elkaar berichten sturen. Jij leest mee en kunt berichten verwijderen.')
+              ? t('Alle teams van dit ticket kunnen elkaar berichten sturen. Jij leest mee en kunt berichten verwijderen.')
               : t('Zet de teamchat aan om teams elkaar berichten te laten sturen. Eerdere berichten blijven zichtbaar.')}
           </span>
         </p>

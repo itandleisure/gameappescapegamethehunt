@@ -280,8 +280,8 @@ export default function RulesPage() {
       <GameNav id={id} layer={rows.game.layer} active="regels" />
       <p className="muted">
         {rows.game.layer === 'base'
-          ? t('Wat er tijdens het spel gebeurt en wanneer. Elk moment gaat één keer per team. Wijzig een moment met Wijzigen. Steden krijgen het pas als je de template opslaat als nieuwe versie en de steden overzet. In een testevent kun je in de app de tijd vooruitzetten, zodat je niet hoeft te wachten.')
-          : t('Wat er tijdens het spel gebeurt en wanneer. Elk moment gaat één keer per team. Wijzig een moment met Wijzigen en publiceer het spel om het in de app te gebruiken. In een testevent kun je in de app de tijd vooruitzetten, zodat je niet hoeft te wachten.')}
+          ? t('Wat er tijdens het spel gebeurt en wanneer. Elk moment gaat één keer per team. Wijzig een moment met Wijzigen. Steden krijgen het pas als je de template opslaat als nieuwe versie en de steden overzet. In een testticket kun je in de app de tijd vooruitzetten, zodat je niet hoeft te wachten.')
+          : t('Wat er tijdens het spel gebeurt en wanneer. Elk moment gaat één keer per team. Wijzig een moment met Wijzigen en publiceer het spel om het in de app te gebruiken. In een testticket kun je in de app de tijd vooruitzetten, zodat je niet hoeft te wachten.')}
       </p>
       {notice ? <p className="notice">{notice}</p> : null}
       {errors.length > 0 ? (

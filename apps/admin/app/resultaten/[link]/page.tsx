@@ -44,7 +44,7 @@ export default function ResultsLinkPage() {
     return (
       <>
         <h1>{t('Resultaten niet gevonden')}</h1>
-        <p>{t('Er is geen event met deze spelcode, of je hebt geen toegang tot dit event.')}</p>
+        <p>{t('Er is geen ticket met deze spelcode, of je hebt geen toegang tot dit ticket.')}</p>
         <p>
           <Link href="/sessies">{t('Naar het overzicht')}</Link>
         </p>

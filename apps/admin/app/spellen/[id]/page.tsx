@@ -163,7 +163,7 @@ export default function GamePage() {
     try {
       const version = await publish(supabase(), id);
       setNotice(
-        t("Gepubliceerd als versie {n}. Nieuwe events kunnen deze versie kiezen.", { n: version }),
+        t("Gepubliceerd als versie {n}. Nieuwe tickets kunnen deze versie kiezen.", { n: version }),
       );
       await load();
     } catch (err) {
@@ -201,7 +201,7 @@ export default function GamePage() {
           ? t("Deze stad volgt nu de werkversie van het basisspel.")
           : t("Deze stad bouwt nu voort op {version}.", { version: versionText(version) })) +
           " " +
-          t("Publiceer de stad (en de klantvarianten eronder) opnieuw om dit in nieuwe events te gebruiken."),
+          t("Publiceer de stad (en de klantvarianten eronder) opnieuw om dit in nieuwe tickets te gebruiken."),
       );
       await load();
     } catch (err) {
@@ -286,7 +286,7 @@ export default function GamePage() {
       setNameDraft(null);
       setNotice(
         isBase
-          ? t("Naam opgeslagen. Sla de template op als nieuwe versie en zet de steden over om de nieuwe naam in nieuwe events te zien. Events die al bestaan, houden hun oude naam.")
+          ? t("Naam opgeslagen. Sla de template op als nieuwe versie en zet de steden over om de nieuwe naam in nieuwe tickets te zien. Tickets die al bestaan, houden hun oude naam.")
           : t("Naam opgeslagen."),
       );
       await load();
@@ -461,7 +461,7 @@ export default function GamePage() {
           <p className="muted" style={{ marginTop: 0 }}>
             {isBase
               ? t("Dit is de naam die spelers in de app zien.")
-              : t("Dit is de naam in de beheeromgeving, bijvoorbeeld bij het kiezen van een spel voor een nieuw event. Spelers zien de naam van het basisspel.")}
+              : t("Dit is de naam in de beheeromgeving, bijvoorbeeld bij het kiezen van een spel voor een nieuw ticket. Spelers zien de naam van het basisspel.")}
           </p>
           <div className="row">
             {self.game.languages.map((lang) => (
@@ -590,7 +590,7 @@ export default function GamePage() {
 
       {legacy ? (
         <p className="card">
-          {t('Dit spel is als kant-en-klaar spelpakket geïmporteerd en heeft daarom geen losse opdrachten om te bewerken. Je kunt er wel events mee maken. Importeer het spel opnieuw als bundel om het te bewerken.')}
+          {t('Dit spel is als kant-en-klaar spelpakket geïmporteerd en heeft daarom geen losse opdrachten om te bewerken. Je kunt er wel tickets mee maken. Importeer het spel opnieuw als bundel om het te bewerken.')}
         </p>
       ) : null}
 
@@ -787,7 +787,7 @@ export default function GamePage() {
       <section className="card" style={{ marginTop: 32 }}>
         <h2 style={{ marginTop: 0 }}>{t('Spel verwijderen')}</h2>
         <p className="muted">
-          {t('Verwijdert dit spel met alle opdrachten, versies en testevents. Een spel met varianten eronder of met echte events (geen testevent) kan niet weg. Dit is niet terug te draaien.')}
+          {t('Verwijdert dit spel met alle opdrachten, versies en testtickets. Een spel met varianten eronder of met echte tickets (geen testticket) kan niet weg. Dit is niet terug te draaien.')}
         </p>
         {confirmDelete ? (
           <div className="actions">

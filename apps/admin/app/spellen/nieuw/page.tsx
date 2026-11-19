@@ -276,7 +276,7 @@ function NewCity() {
           <section className="card" style={{ marginTop: 16 }}>
             <h2 style={{ marginTop: 0 }}>3. {t('Naam van het spel')}</h2>
             <p className="muted" style={{ marginTop: 0 }}>
-              {t('Dit is de naam in de beheeromgeving, bijvoorbeeld bij het kiezen van een spel voor een nieuw event. Spelers zien de naam van het basisspel.')}
+              {t('Dit is de naam in de beheeromgeving, bijvoorbeeld bij het kiezen van een spel voor een nieuw ticket. Spelers zien de naam van het basisspel.')}
             </p>
             <div className="row">
               {(base?.languages ?? []).map((l) => (

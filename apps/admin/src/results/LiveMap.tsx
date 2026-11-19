@@ -312,7 +312,7 @@ export function LiveMap({ data, colors }: { data: SessionLive; colors: Map<strin
         ) : null}
 
         <h2>{t('Teams')}</h2>
-        {mapTeams.length === 0 ? <p className="muted">{t('Nog geen teams in dit event.')}</p> : null}
+        {mapTeams.length === 0 ? <p className="muted">{t('Nog geen teams in dit ticket.')}</p> : null}
         <ul className="teamlist">
           {mapTeams.map((tm) => {
             const trail = fullTrails.get(tm.id);
