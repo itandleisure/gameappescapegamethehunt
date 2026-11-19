@@ -59,6 +59,12 @@ async function prepare(): Promise<GameController | null> {
     else await controller.tick();
     return controller;
   }
+  if (code) {
+    // Een paar puzzels al opgelost, voor de blokjes met vinkjes bovenaan de opdrachten.
+    await controller.answer('puzzel-tangram', { type: 'text', text: 'vluchtroute' });
+    await controller.answer('puzzel-morse', { type: 'text', text: 'extractie' });
+    await controller.answer('puzzel-stratenkaart', { type: 'text', text: 'Oldehove' });
+  }
   if (long) backend.offline = true;
   await controller.tick();
   return controller;
