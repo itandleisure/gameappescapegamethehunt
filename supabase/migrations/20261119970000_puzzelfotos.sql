@@ -3,10 +3,12 @@
 -- bucket media onder puzzels/<org_id>/<bestand>; redacteuren van de
 -- organisatie mogen ze plaatsen, vervangen en verwijderen.
 
-alter table public.puzzles add column image text check (image is null or char_length(image) <= 2000);
+-- Idempotent: deze migratie is in productie al eens (deels) uitgevoerd onder
+-- een andere versie, voordat hij een eigen tijdstempel kreeg.
+alter table public.puzzles add column if not exists image text check (image is null or char_length(image) <= 2000);
 
 -- De organisatie van een puzzelfoto, of null als het pad niet puzzels/<uuid>/... is.
-create function public.media_puzzle_org(p_name text)
+create or replace function public.media_puzzle_org(p_name text)
 returns uuid
 language sql immutable set search_path = ''
 as $$
@@ -17,18 +19,22 @@ as $$
   end
 $$;
 
+drop policy if exists media_puzzle_insert on storage.objects;
 create policy media_puzzle_insert on storage.objects for insert to authenticated with check (
   bucket_id = 'media' and public.is_member(public.media_puzzle_org(name), array['owner', 'admin', 'editor']::public.member_role[])
 );
 
+drop policy if exists media_puzzle_select on storage.objects;
 create policy media_puzzle_select on storage.objects for select to authenticated using (
   bucket_id = 'media' and public.is_member(public.media_puzzle_org(name))
 );
 
+drop policy if exists media_puzzle_update on storage.objects;
 create policy media_puzzle_update on storage.objects for update to authenticated
   using (bucket_id = 'media' and public.is_member(public.media_puzzle_org(name), array['owner', 'admin', 'editor']::public.member_role[]))
   with check (bucket_id = 'media' and public.is_member(public.media_puzzle_org(name), array['owner', 'admin', 'editor']::public.member_role[]));
 
+drop policy if exists media_puzzle_delete on storage.objects;
 create policy media_puzzle_delete on storage.objects for delete to authenticated using (
   bucket_id = 'media' and public.is_member(public.media_puzzle_org(name), array['owner', 'admin', 'editor']::public.member_role[])
 );
