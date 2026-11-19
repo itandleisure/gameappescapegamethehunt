@@ -417,3 +417,53 @@ a.button.secondary { background: transparent; color: var(--text); border-color: 
 .huntermarker .name { background: #111; color: #fff; font: 600 12px/1 system-ui, sans-serif; padding: 4px 6px; border-radius: 4px; white-space: nowrap; }
 .huntermarker.stale { opacity: 0.55; }
 .bigcode { font-size: 1.4em; letter-spacing: 0.1em; font-family: ui-monospace, monospace; }
+
+/* Telefoon: compacte kop met een menu dat horizontaal scrolt, en tabellen als kaarten. */
+@media (max-width: 700px) {
+  header.top { gap: 6px 12px; padding: 8px 16px 0; }
+  header.top .brand { font-size: 15px; }
+  header.top .brand .logo { height: 26px; }
+  header.top .who { order: 2; margin-left: auto; gap: 8px; }
+  header.top .who .email { display: none; }
+  header.top .who .langpick { width: auto; padding: 4px 6px; font-size: 13px; }
+  header.top nav { order: 3; flex: 1 1 100%; gap: 0; overflow-x: auto; margin: 0 -16px; padding: 0 8px; scrollbar-width: none; }
+  header.top nav::-webkit-scrollbar { display: none; }
+  header.top nav a { padding: 10px 8px; white-space: nowrap; border-bottom: 3px solid transparent; }
+  header.top nav a.active { border-bottom-color: var(--accent); }
+  main { padding: 16px 16px 48px; }
+  h1 { font-size: 21px; }
+  .card { padding: 14px; }
+  .actions > button, .actions > .buttonlink { min-height: 44px; }
+
+  table.stack, table.stack tbody, table.stack tr, table.stack td { display: block; width: 100%; }
+  table.stack { border: none; background: none; }
+  table.stack thead { display: none; }
+  table.stack tr { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 10px; padding: 8px 4px; }
+  table.stack td { border: none; padding: 4px 12px; }
+  table.stack td[data-label]::before { content: attr(data-label); display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+  table.stack td.code { font-size: 18px; }
+
+  .mapgrid { margin-top: 8px; }
+  .mapgrid .map.livemap { height: 60vh; min-height: 320px; }
+  nav.tabs { margin: 12px -16px; padding: 0 8px; }
+}
+
+.livehead > .actions { flex: 0 0 auto; }
+@media (max-width: 700px) {
+  .livehead > .actions { flex: 1 1 100%; }
+}
+@media (max-width: 700px) {
+  /* Ranglijst als kaart per team: naam bovenaan, cijfers in drie kolommen. */
+  table.standings.stack tfoot { display: block; }
+  table.standings.stack tr:not(.details) { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px 0; }
+  table.standings.stack td { text-align: left; }
+  table.standings.stack td.rank, table.standings.stack td:empty { display: none; }
+  table.standings.stack td.team, table.standings.stack td.puzzles { grid-column: 1 / -1; }
+  table.standings.stack tr.details { padding: 0; }
+  table.standings.stack tr.details > td { padding: 12px; }
+}
+@media (max-width: 700px) {
+  /* Op de telefoon alleen wat de spelleider onderweg nodig heeft; de rest staat in de Excel-export. */
+  table.standings.stack td.minor { display: none; }
+  table.standings.stack td.puzzles { order: 1; }
+}

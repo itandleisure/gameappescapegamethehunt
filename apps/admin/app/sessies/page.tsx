@@ -247,7 +247,7 @@ export default function SessionsPage() {
         <p className="muted">{t('Nog geen hunts.')}</p>
       ) : (
         <div className="table-wrap">
-          <table>
+          <table className="stack">
             <thead>
               <tr>
                 <th>{t('Hunt')}</th>
@@ -268,9 +268,9 @@ export default function SessionsPage() {
                       {s.game_versions ? versionLabel(s.game_versions) : ''} · {t('{n} tracks', { n: s.track_count })}
                     </div>
                   </td>
-                  <td className="code">{s.join_code}</td>
-                  <td>{formatInZone(s.starts_at, s.timezone)}</td>
-                  <td>
+                  <td className="code" data-label={t('Hunt-code')}>{s.join_code}</td>
+                  <td data-label={t('Start')}>{formatInZone(s.starts_at, s.timezone)}</td>
+                  <td data-label={t('Status')}>
                     <OpenToggle id={s.id} status={s.status} onChange={() => void load()} />{' '}
                     {s.test_mode ? <span className="badge test">{t('Test')}</span> : null}
                   </td>
