@@ -439,6 +439,8 @@ function LeaderChat({
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [sendingPhoto, setSendingPhoto] = useState(false);
+  /** Technische oorzaak als een foto niet verstuurd kon worden. */
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const [error, setError] = useState<LeaderKey | null>(null);
   const scroll = useRef<ScrollViewInstance>(null);
   const colorOf = teamColors(data.teams);
@@ -480,6 +482,7 @@ function LeaderChat({
   // Foto die al op de telefoon staat in de teamchat zetten; wat er in het tekstvak staat gaat mee als tekst.
   const sendPhoto = async () => {
     setError(null);
+    setPhotoError(null);
     try {
       const photo = await pickPhoto();
       if (!photo) return;
@@ -489,6 +492,8 @@ function LeaderChat({
       setText('');
     } catch (e) {
       setError(e instanceof LeaderError ? e.key : 'errorGeneric');
+      const cause = e instanceof LeaderError ? (e as { cause?: { message?: string } }).cause : e;
+      setPhotoError(`${t('leaderChatPhoto')}: ${(cause as { message?: string } | undefined)?.message ?? String(e)}`);
     } finally {
       setSendingPhoto(false);
     }
@@ -505,6 +510,7 @@ function LeaderChat({
       >
         <Body muted>{hunters ? t('leaderHunterChatAs') : data.session.team_chat ? t('leaderChatAs') : t('leaderChatOff')}</Body>
         {error ? <Banner tone="danger">{t(error)}</Banner> : null}
+        {photoError ? <Body muted>{photoError}</Body> : null}
         {rows && rows.length === 0 ? <Body muted>{t('leaderChatEmpty')}</Body> : null}
         {(rows ?? []).map((m) => {
           // Eigen berichten rechts: in de teamchat alles van The Hunters, in de hunters-chat alleen die van jou.

@@ -13,6 +13,14 @@ cd "$(dirname "$0")/.."
 : "${DATABASE_URL:?Zet DATABASE_URL naar een lege Postgres-database}"
 PSQL=(psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q -X -o /dev/null)
 
+# Twee migraties met hetzelfde versienummer blokkeren "supabase db push" op
+# het live project (dan gaat geen enkele volgende migratie meer live).
+dupes=$(ls supabase/migrations/*.sql | xargs -n1 basename | cut -d_ -f1 | sort | uniq -d)
+if [ -n "$dupes" ]; then
+  echo "✗ Dubbel migratienummer: $dupes. Geef elke migratie een eigen tijdstempel." >&2
+  exit 1
+fi
+
 echo "→ Supabase-stub"
 "${PSQL[@]}" -f supabase/tests/00_supabase_stub.sql
 

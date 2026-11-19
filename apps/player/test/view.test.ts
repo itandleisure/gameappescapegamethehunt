@@ -1,7 +1,7 @@
 import { composeGame, computeState } from '@hunt/engine';
 import { describe, expect, it } from 'vitest';
-import { INTRO, leeuwarden, leeuwardenPoints, theHuntBase } from '../../../packages/engine/test/fixtures/the-hunt.js';
-import { answerFeedback, isAnswerable, isValidPhone, listGroups, mapStyleChoice, taskToShow } from '../src/core/view.js';
+import { INTRO, leeuwarden, leeuwardenPoints, PUZZLES, theHuntBase } from '../../../packages/engine/test/fixtures/the-hunt.js';
+import { answerFeedback, isAnswerable, isValidPhone, listGroups, mapStyleChoice, puzzleProgress, taskToShow } from '../src/core/view.js';
 import { insideStyleUrl, MAP_STYLES } from '@hunt/engine';
 
 const game = composeGame(theHuntBase, [leeuwarden], { id: 'lwd', version: 1 });
@@ -57,6 +57,20 @@ describe('schermen', () => {
     const groups = listGroups(g, state);
     expect(groups.some((gr) => gr.playground === 'speluitleg')).toBe(false);
     expect(groups.flatMap((gr) => gr.tasks).map((t) => t.id)).not.toContain('start');
+  });
+
+  it('toont opgeloste puzzels als vinkje in de blokjes en haalt ze uit de lijst', () => {
+    const base = JSON.parse(JSON.stringify(theHuntBase)) as typeof theHuntBase;
+    base.playgrounds.find((p) => p.id === 'extractiepunt')!.code = { boxes: PUZZLES.map((z) => ({ task: z.id, value: '1' })) };
+    const g = composeGame(base, [leeuwarden], { id: 'lwd', version: 1 });
+    const state = computeState(g, team, [], at(1));
+    for (const z of PUZZLES) state.tasks[z.id] = { ...state.tasks[z.id]!, status: 'visible', inList: true };
+    state.tasks[PUZZLES[1].id] = { ...state.tasks[PUZZLES[1].id]!, status: 'done', correct: true };
+    expect(puzzleProgress(g, state).map((p) => p.solved)).toEqual([false, true, false, false, false, false]);
+    const listed = listGroups(g, state).flatMap((gr) => gr.tasks).map((t) => t.id);
+    expect(listed).toContain(PUZZLES[0].id);
+    expect(listed).not.toContain(PUZZLES[1].id);
+    expect(puzzleProgress(game, state)).toEqual([]);
   });
 
   it('controleert telefoonnummers', () => {
