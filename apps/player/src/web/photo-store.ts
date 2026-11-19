@@ -29,12 +29,25 @@ async function run<T>(mode: IDBTransactionMode, action: (store: IDBObjectStore) 
   }
 }
 
+/**
+ * Opgeslagen als bytes, niet als Blob: Safari op de iPhone weigert soms een
+ * Blob in IndexedDB ("Error preparing Blob/File data to be stored in object
+ * store"). Bytes gaan altijd goed.
+ */
+interface StoredPhoto {
+  type: string;
+  data: ArrayBuffer;
+}
+
 export async function savePhoto(key: string, blob: Blob): Promise<void> {
-  await run('readwrite', (s) => s.put(blob, key));
+  const stored: StoredPhoto = { type: blob.type || 'image/jpeg', data: await blob.arrayBuffer() };
+  await run('readwrite', (s) => s.put(stored, key));
 }
 
 export async function loadPhoto(key: string): Promise<Blob | undefined> {
-  return run<Blob | undefined>('readonly', (s) => s.get(key) as IDBRequest<Blob | undefined>);
+  const stored = await run<StoredPhoto | Blob | undefined>('readonly', (s) => s.get(key) as IDBRequest<StoredPhoto | Blob | undefined>);
+  if (!stored || stored instanceof Blob) return stored; // oudere versie bewaarde een Blob
+  return new Blob([stored.data], { type: stored.type });
 }
 
 export async function clearPhotos(): Promise<void> {
