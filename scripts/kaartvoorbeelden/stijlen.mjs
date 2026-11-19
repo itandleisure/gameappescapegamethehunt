@@ -5,7 +5,8 @@ const SRC = { omt: { type: 'vector', url: 'https://tiles.openfreemap.org/planet'
 const GLYPHS = 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf';
 const zw = (a, b) => ['interpolate', ['exponential', 1.5], ['zoom'], ...a.flatMap((z, i) => [z, b[i]])];
 
-const POI_CLASSES = ['museum', 'attraction', 'place_of_worship', 'town_hall', 'library', 'theatre', 'cinema', 'castle', 'monument', 'art_gallery', 'zoo'];
+// Alleen herkenningspunten: kerken, stadhuis, musea, monumenten. Geen horeca of winkels.
+export const POI_CLASSES = ['place_of_worship', 'town_hall', 'museum', 'castle', 'monument', 'attraction', 'theatre', 'library'];
 
 export function makeStyle(p, { labels = true, landmarks = false } = {}) {
   const roadColor = p.road;

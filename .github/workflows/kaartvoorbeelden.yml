@@ -8,6 +8,8 @@ on:
     paths:
       - .github/workflows/kaartvoorbeelden.yml
       - scripts/kaartvoorbeelden/*.mjs
+      - scripts/kaartvoorbeelden/*.html
+      - apps/player/src/ui/map/web-map-html.ts
 
 permissions:
   contents: write
@@ -26,9 +28,9 @@ jobs:
           mkdir -p "$RUNNER_TEMP/pw" && cd "$RUNNER_TEMP/pw"
           npm init -y >/dev/null && npm i playwright@1.49.1
           npx playwright install --with-deps chromium
-          cp "$GITHUB_WORKSPACE"/scripts/kaartvoorbeelden/*.mjs .
+          cp "$GITHUB_WORKSPACE"/scripts/kaartvoorbeelden/** .
       - name: Plaatjes maken
-        run: cd "$RUNNER_TEMP/pw" && node maak.mjs "$GITHUB_WORKSPACE/scripts/kaartvoorbeelden/uitvoer"
+        run: cd "$RUNNER_TEMP/pw" && node maak.mjs "$GITHUB_WORKSPACE/scripts/kaartvoorbeelden/uitvoer" "$GITHUB_WORKSPACE/scripts/kaartvoorbeelden/proefkaart-leeuwarden.html"
       - name: Op de branch zetten
         run: |
           git config user.name "github-actions[bot]"

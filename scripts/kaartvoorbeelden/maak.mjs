@@ -50,6 +50,24 @@ const runs = [
   ...VARIANTEN.map((v) => ({ id: v.id, inside: makeStyle(v.palet, { labels: true, landmarks: true }) })),
   { id: '0-huidig-alleen-toner', inside: outside },
 ];
+// Proefpagina met de echte kaartcode van de app: overzicht, ingezoomd en verschoven.
+if (process.argv[3]) {
+  const p = await ctx.newPage();
+  p.on('pageerror', (e) => console.error('proefkaart', e.message));
+  p.on('console', (m) => console.log('proefkaart:', m.text()));
+  await p.goto('file://' + process.argv[3]);
+  await p.waitForTimeout(8000);
+  await p.screenshot({ path: `${OUT}/proefkaart--overzicht.png` });
+  await p.mouse.move(195, 420);
+  for (let i = 0; i < 6; i++) { await p.mouse.wheel(0, -300); await p.waitForTimeout(300); }
+  await p.waitForTimeout(6000);
+  await p.screenshot({ path: `${OUT}/proefkaart--ingezoomd.png` });
+  await p.mouse.move(195, 420); await p.mouse.down(); await p.mouse.move(330, 520, { steps: 10 }); await p.mouse.up();
+  await p.waitForTimeout(5000);
+  await p.screenshot({ path: `${OUT}/proefkaart--verschoven.png` });
+  await p.close();
+  console.log('klaar proefkaart');
+}
 for (const r of runs) {
   for (const view of VIEWS) {
     const p = await ctx.newPage();
