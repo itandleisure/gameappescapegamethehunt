@@ -264,9 +264,12 @@ export class LeaderApi {
     const path = chatPhotoPath(sessionId, photoId);
     const upload = await this.client.storage.from('photobooks').upload(path, photo, { contentType: 'image/jpeg', upsert: false });
     // Bestaat het bestand al, dan was een eerdere poging gelukt maar het antwoord kwijt.
-    if (upload.error && !/exists|Duplicate/i.test(upload.error.message)) throw leaderError(upload.error);
+    // Bij een fout zegt het bericht welke stap mislukte (opslag of bericht), zodat de oorzaak te vinden is.
+    if (upload.error && !/exists|Duplicate/i.test(upload.error.message)) {
+      throw leaderError({ message: `opslag: ${upload.error.message}` });
+    }
     const { data, error } = await this.client.rpc('leader_send_photo', { p_session: sessionId, p_photo: photoId, p_body: text });
-    if (error) throw leaderError(error);
+    if (error) throw leaderError({ code: error.code, message: `bericht: ${error.code ?? ''} ${error.message}` });
     return data as LeaderMessage;
   }
 
