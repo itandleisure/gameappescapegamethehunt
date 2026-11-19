@@ -227,11 +227,11 @@ export interface RevealPiece {
 
 export interface MeetingPoint extends LatLng {
   text: Text;
-  /** Straal in meters van de cirkel om het verzamelpunt; daarbinnen is een team er. Standaard 10. */
+  /** Straal in meters van de cirkel om het verzamelpunt; daarbinnen is een team er. Standaard 20. */
   radius?: number;
 }
 
-export const DEFAULT_MEETING_RADIUS = 10;
+export const DEFAULT_MEETING_RADIUS = 20;
 
 export interface MapOverlay {
   /** Media-id of URL van de afbeelding. */
