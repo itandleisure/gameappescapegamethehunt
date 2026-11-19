@@ -1,18 +1,10 @@
 name: Kaartvoorbeelden
 
-# Maakt voorbeeldplaatjes van kaartstijlen (Leeuwarden) en zet ze op deze branch.
+# Maakt voorbeeldplaatjes van de kaartstijlen (Leeuwarden) en een proefkaart met de
+# kaartcode van de app. Met de hand te starten via Actions; de plaatjes staan daarna
+# bij de run onder Artifacts.
 on:
   workflow_dispatch:
-  push:
-    branches: [claude/project-thread-ro640a]
-    paths:
-      - .github/workflows/kaartvoorbeelden.yml
-      - scripts/kaartvoorbeelden/*.mjs
-      - scripts/kaartvoorbeelden/*.html
-      - apps/player/src/ui/map/web-map-html.ts
-
-permissions:
-  contents: write
 
 jobs:
   plaatjes:
@@ -29,12 +21,12 @@ jobs:
           npm init -y >/dev/null && npm i playwright@1.49.1
           npx playwright install --with-deps chromium
           cp "$GITHUB_WORKSPACE"/scripts/kaartvoorbeelden/*.mjs .
+          node "$GITHUB_WORKSPACE/scripts/kaartvoorbeelden/proefkaart.mjs" "$RUNNER_TEMP/proefkaart-leeuwarden.html"
       - name: Plaatjes maken
-        run: cd "$RUNNER_TEMP/pw" && node maak.mjs "$GITHUB_WORKSPACE/scripts/kaartvoorbeelden/uitvoer" "$GITHUB_WORKSPACE/scripts/kaartvoorbeelden/proefkaart-leeuwarden.html"
-      - name: Op de branch zetten
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add scripts/kaartvoorbeelden/uitvoer
-          git commit -m "Kaartvoorbeelden (plaatjes)"
-          git push origin HEAD:${{ github.ref_name }}
+        run: cd "$RUNNER_TEMP/pw" && node maak.mjs "$RUNNER_TEMP/uitvoer" "$RUNNER_TEMP/proefkaart-leeuwarden.html"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kaartvoorbeelden
+          path: |
+            ${{ runner.temp }}/uitvoer/
+            ${{ runner.temp }}/proefkaart-leeuwarden.html
