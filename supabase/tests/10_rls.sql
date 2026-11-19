@@ -143,12 +143,14 @@ declare
 begin
   assert (select count(*) from public.sessions) = 1, 'speler ziet alleen de eigen sessie';
   assert (select count(*) from public.game_versions) = 1, 'speler ziet de gespeelde versie';
-  assert (select count(*) from public.teams) = 6, 'speler ziet de teams in de eigen sessie (scores)';
+  assert (select count(*) from public.teams) = 1, 'speler ziet alleen het eigen team (geen teamcodes van anderen)';
   assert (select count(*) from public.games) = 0, 'speler ziet geen beheerdata';
   assert (select count(*) from public.team_members) = 1, 'speler ziet alleen het eigen lidmaatschap';
 
   select id into own from public.teams where login_order = 1;
-  select id into other from public.teams where login_order = 2;
+  perform set_config('role', 'postgres', true);
+  select id into other from public.teams where session_id = (select session_id from public.teams where id = own) and login_order = 2;
+  perform set_config('role', 'authenticated', true);
 
   -- Servertijd wordt altijd door de database gezet.
   insert into public.events (id, team_id, type, task_key, client_time, server_time)

@@ -47,11 +47,11 @@ do $$ begin
   assert (select phone from public.team_contacts) = '+31 6 1234 5678', 'eigen team ziet zijn nummer';
 end $$;
 
--- Een ander team ziet de teams, maar niet elkaars telefoonnummer.
+-- Een ander team ziet alleen zijn eigen team en nooit elkaars telefoonnummer.
 select tests.login('e0000000-0000-0000-0000-000000000003');
 select public.join_session('HUNT1', 'Wolven', 'nl', '0612345678');
 do $$ begin
-  assert (select count(*) from public.teams) = 2, 'ziet beide teams';
+  assert (select count(*) from public.teams) = 1, 'ziet alleen het eigen team';
   assert (select count(*) from public.team_contacts) = 1, 'ziet alleen het eigen nummer';
 end $$;
 
