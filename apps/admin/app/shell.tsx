@@ -11,6 +11,7 @@ const NAV = [
   { href: '/sessies', label: tKey('Hunts') },
   { href: '/spellen', label: tKey('Spellen') },
   { href: '/templates', label: tKey('Templates') },
+  { href: '/puzzels', label: tKey('Puzzels') },
   { href: '/instellingen/leden', label: tKey('Toegang') },
 ];
 

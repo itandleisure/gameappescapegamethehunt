@@ -1,4 +1,4 @@
--- Tests voor leden verwijderen en rollen wijzigen (migratie 20261119830000_toegang_beheren).
+-- Tests voor leden verwijderen en rollen wijzigen (migratie 20261119940000_toegang_beheren).
 \set ON_ERROR_STOP on
 begin;
 

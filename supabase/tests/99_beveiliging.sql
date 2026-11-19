@@ -1,4 +1,4 @@
--- Tests voor de aangescherpte beveiliging (migratie 20261119700000_beveiliging).
+-- Tests voor de aangescherpte beveiliging (migratie 20261119900000_beveiliging).
 \set ON_ERROR_STOP on
 begin;
 

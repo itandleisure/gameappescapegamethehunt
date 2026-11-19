@@ -46,14 +46,3 @@ export function gatherAt(pins: Pin[], start: LatLng): Record<string, TaskLocatio
   const points = spreadAround(start, pins.length + 1).slice(1);
   return Object.fromEntries(pins.map((p, i) => [pinKey(p), { ...points[i]!, radius: p.location?.radius ?? 25 }]));
 }
-
-/** De puzzels van het spel (opdrachten met de tag "puzzel"), in spelvolgorde. */
-export function puzzles(game: GamePackage): { key: string; title: GamePackage['tasks'][number]['title'] }[] {
-  return game.tasks.filter((t) => t.tags.includes('puzzel')).map((t) => ({ key: t.id, title: t.title }));
-}
-
-/** Welke puzzels de stad gebruikt (settings.puzzles); standaard allemaal. */
-export function puzzleChoice(settings: Record<string, unknown> | null | undefined, game: GamePackage): Record<string, boolean> {
-  const saved = (settings?.puzzles ?? {}) as Record<string, unknown>;
-  return Object.fromEntries(puzzles(game).map((p) => [p.key, saved[p.key] !== false]));
-}

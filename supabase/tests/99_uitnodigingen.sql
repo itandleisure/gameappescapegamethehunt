@@ -1,4 +1,4 @@
--- Tests voor de beheeromgeving op uitnodiging (migratie 20261119810000_uitnodigingen).
+-- Tests voor de beheeromgeving op uitnodiging (migratie 20261119920000_uitnodigingen).
 \set ON_ERROR_STOP on
 begin;
 

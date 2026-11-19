@@ -3,6 +3,7 @@
 // Punten en antwoorden worden opnieuw uitgerekend met de spelregel-engine,
 // uit dezelfde gebeurtenissen als de app; zo kloppen ze altijd met het spel.
 import {
+  briefingTasks,
   computeState,
   t,
   type AnswerSpec,
@@ -25,6 +26,10 @@ export interface TeamRow {
   ended_at: string | null;
   /** Uit session_results(): gelopen afstand volgens de GPS-route. */
   distance_m?: number;
+  /** Aantal keren gepakt door de hunters, bijgehouden door de spelleider. */
+  caught?: number;
+  /** Speluitleg vóór een centrale start gelezen (dan telt die als gelezen). */
+  ready_at?: string | null;
 }
 
 export interface EventRow {
@@ -82,6 +87,18 @@ export interface TeamResult {
   bonusPoints: number;
   playing: boolean;
   answers: TaskAnswer[];
+  /** Aantal keren gepakt door de hunters, bijgehouden door de spelleider. */
+  caught: number;
+  /** Ids van de puzzels (zie `puzzleTasks`) die het team goed heeft. */
+  solvedPuzzles: string[];
+  /** Hoeveel schermen van de speluitleg (zoals de 12 introschermen) het team heeft gelezen. */
+  briefing: { read: number; total: number };
+}
+
+/** Een puzzel in de ranglijst: één vakje per puzzel, groen als hij is opgelost. */
+export interface PuzzleColumn {
+  id: string;
+  title: string;
 }
 
 export interface TaskColumn {
@@ -97,6 +114,8 @@ export interface SessionResultsView {
   teams: TeamResult[];
   /** Opdrachten met een antwoord, in spelvolgorde: de kolommen van het overzicht. */
   tasks: TaskColumn[];
+  /** De puzzels van het spel, in de volgorde van de codevakjes. */
+  puzzles: PuzzleColumn[];
 }
 
 const ms = (iso: string | null) => (iso === null ? null : Date.parse(iso));
@@ -156,6 +175,22 @@ export function expectedAnswer(spec: AnswerSpec, language: Lang): string {
   }
 }
 
+/**
+ * De puzzels van het spel: de opdrachten achter de codevakjes (of de afgedekte
+ * vakken van de foto) op een tabblad, zoals de zes puzzels die samen de
+ * GPS-code van het extractiepunt geven. Elke opdracht één keer, in volgorde.
+ * Heeft het spel die niet, dan de opdrachten met de tag "puzzel".
+ */
+export function puzzleTasks(game: GamePackage): Task[] {
+  const ids: string[] = [];
+  for (const pg of game.playgrounds) {
+    for (const box of pg.code?.boxes ?? []) if (!ids.includes(box.task)) ids.push(box.task);
+    for (const piece of pg.reveal?.pieces ?? []) if (!ids.includes(piece.task)) ids.push(piece.task);
+  }
+  if (ids.length === 0) return game.tasks.filter((task) => task.tags.includes('puzzel'));
+  return ids.map((id) => game.tasks.find((task) => task.id === id)).filter((task): task is Task => task !== undefined);
+}
+
 /** Opdrachten die op de resultatenpagina een kolom krijgen. */
 export function scoredTasks(game: GamePackage): Task[] {
   return game.tasks.filter((task) => task.answer.type !== 'info');
@@ -178,6 +213,8 @@ export function buildResults(
     byTeam.set(row.team_id, list);
   }
   const tasks = scoredTasks(game);
+  const puzzles = puzzleTasks(game);
+  const briefing = briefingTasks(game);
   // Spelteksten in de taal van de beheerder als het spel die heeft, anders Nederlands of de standaardtaal.
   const display: Lang = (game.languages as string[]).includes(currentLanguage())
     ? (currentLanguage() as Lang)
@@ -197,6 +234,7 @@ export function buildResults(
       track: team.track,
       language: team.language,
       distanceM: team.distance_m ?? null,
+      caught: team.caught ?? 0,
     };
     if (startedAt === null) {
       return {
@@ -211,11 +249,13 @@ export function buildResults(
         bonusPoints: 0,
         playing: false,
         answers: [],
+        solvedPuzzles: [],
+        briefing: { read: team.ready_at ? briefing.length : 0, total: briefing.length },
       };
     }
     const evs = (byTeam.get(team.id) ?? []).sort((a, b) => a.at - b.at);
     const until = endedAt ?? now;
-    const state = computeState(game, { track: team.track, startedAt }, evs, until);
+    const state = computeState(game, { track: team.track, startedAt, briefingRead: Boolean(team.ready_at) }, evs, until);
     const end = state.ended?.at ?? endedAt ?? now;
 
     const pointsPerTask = new Map<string, number>();
@@ -268,6 +308,8 @@ export function buildResults(
       bonusPoints,
       playing: !state.ended && endedAt === null,
       answers,
+      solvedPuzzles: puzzles.filter((p) => state.tasks[p.id]?.correct === true).map((p) => p.id),
+      briefing: { read: briefing.filter((id) => state.tasks[id]?.status === 'done').length, total: briefing.length },
     };
   });
 
@@ -297,7 +339,11 @@ export function buildResults(
     return { id: task.id, title: t(task.title, display) || task.id, points: task.points, correct: ok, answered };
   });
 
-  return { teams: ranked, tasks: columns };
+  return {
+    teams: ranked,
+    tasks: columns,
+    puzzles: puzzles.map((task) => ({ id: task.id, title: t(task.title, display) || task.id })),
+  };
 }
 
 /** 3780 → "1:03:00", 754 → "12:34" */

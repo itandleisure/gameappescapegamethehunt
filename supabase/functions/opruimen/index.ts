@@ -2,7 +2,7 @@
 //
 //   POST /functions/v1/opruimen   → { "opgeruimd": <aantal hunts> }
 //
-// Draait elke nacht via pg_cron (migratie 20261119820000_bewaartermijn). Per
+// Draait elke nacht via pg_cron (migratie 20261119930000_bewaartermijn). Per
 // hunt waarvan de termijn voorbij is: eerst de foto's en fotoboekbestanden uit
 // de opslag, daarna anonymize_session() in de database. Iedereen mag deze
 // functie aanroepen: hij doet alleen wat toch al moet gebeuren, en geeft geen

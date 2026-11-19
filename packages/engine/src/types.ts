@@ -137,7 +137,12 @@ export type Action =
   | { kind: 'message'; text: Text }
   /** Start een reeks schermen die na elkaar openen. */
   | { kind: 'startSequence'; sequence: string }
-  | { kind: 'end'; ending: string };
+  | { kind: 'end'; ending: string }
+  /**
+   * Punten niet meer tonen aan het team, voor de spanning in de laatste fase
+   * (zoals "na 60 minuten" in Loquiz). De spelleiding ziet ze gewoon.
+   */
+  | { kind: 'hideScore' };
 
 export interface Rule {
   id: string;
@@ -443,6 +448,8 @@ export interface TeamState {
   ledger: LedgerEntry[];
   activeSequence?: { id: string; index: number };
   ended?: { ending: string; at: number };
+  /** Tijdstip waarop de punten voor het team zijn verborgen (actie `hideScore`). */
+  scoreHiddenAt?: number;
   /** Gebeurtenissen die niet zijn toegepast, met reden (voor de monitor). */
   rejected: Rejection[];
 }

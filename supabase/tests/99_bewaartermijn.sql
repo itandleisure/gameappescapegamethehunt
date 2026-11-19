@@ -1,4 +1,4 @@
--- Tests voor de bewaartermijn van 28 dagen (migratie 20261119820000_bewaartermijn).
+-- Tests voor de bewaartermijn van 28 dagen (migratie 20261119930000_bewaartermijn).
 \set ON_ERROR_STOP on
 begin;
 

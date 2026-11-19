@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { theHuntBase } from '../../../packages/engine/test/fixtures/the-hunt.js';
-import { finishPoint, gatherAt, iconPins, pinKey, puzzleChoice, puzzles, startPoint } from '../src/lib/city-setup.js';
+import { finishPoint, gatherAt, iconPins, pinKey, startPoint } from '../src/lib/city-setup.js';
 import type { Pin } from '../src/lib/map-edit.js';
 
 const pin = (key: string, track: number | null, editable = true): Pin => ({
@@ -34,10 +34,5 @@ describe('stappenplan stad inrichten', () => {
     expect(startPoint({})).toBeNull();
     const game = { ...theHuntBase, version: 0 };
     expect(finishPoint(game)).not.toBeNull();
-    const keys = puzzles(game).map((p) => p.key);
-    expect(keys.length).toBeGreaterThan(0);
-    const choice = puzzleChoice({ puzzles: { [keys[0]!]: false } }, game);
-    expect(choice[keys[0]!]).toBe(false);
-    expect(Object.values(choice).filter(Boolean)).toHaveLength(keys.length - 1);
   });
 });
