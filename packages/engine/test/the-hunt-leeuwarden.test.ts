@@ -200,11 +200,19 @@ describe('Escape Game The Hunt Leeuwarden', () => {
   describe('GPS', () => {
     it('weigert onnauwkeurige metingen en metingen buiten de straal', () => {
       const s = new Script()
-        .reach(0.2, 'start', P.start, 45)
+        .reach(0.2, 'start', P.start, 120)
         .reach(0.3, 'start', { lat: P.start.lat + 0.001, lng: P.start.lng }, 5); // ±111 m
       const state = computeState(game, team, s.events, min(1));
       expect(state.rejected.map((r) => r.reason)).toEqual(['GPS-meting te onnauwkeurig', 'buiten de straal']);
       expect(state.tasks['start']!.status).toBe('visible');
+    });
+
+    it('accepteert een zwakke meting als de onzekerheid de cirkel raakt', () => {
+      const near = { lat: P.start.lat + 0.0007, lng: P.start.lng }; // ±78 m, straal 50
+      const weak = computeState(game, team, new Script().reach(0.2, 'start', near, 50).events, min(1));
+      expect(weak.rejected).toEqual([]);
+      const good = computeState(game, team, new Script().reach(0.2, 'start', near, 10).events, min(1));
+      expect(good.rejected.map((r) => r.reason)).toEqual(['buiten de straal']);
     });
 
     it('trackvragen openen alleen op de locatie van de eigen track', () => {

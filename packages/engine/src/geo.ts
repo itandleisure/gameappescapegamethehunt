@@ -16,6 +16,29 @@ export function isInside(point: LatLng, location: TaskLocation): boolean {
   return distanceMeters(point, location) <= location.radius;
 }
 
+/**
+ * Bovengrens (meters) voor een zwakke meting. Een meting die onnauwkeuriger is
+ * dan `maxAccuracy` telt toch mee als de onzekerheid de cirkel raakt, maar
+ * alleen tot deze grens: een meting van honderden meters opent niets.
+ */
+export const WEAK_GPS_LIMIT = 75;
+
+export type FixResult = 'inside' | 'outside' | 'unusable';
+
+/**
+ * Of een meting binnen de cirkel van een locatie valt.
+ *
+ * - Goede meting (onzekerheid tot `maxAccuracy`): het punt moet in de cirkel liggen.
+ * - Zwakke meting (tot `WEAK_GPS_LIMIT`): het is genoeg als de onzekerheid
+ *   (de cirkel om het punt) de cirkel van de opdracht raakt.
+ * - Nog slechter: de meting telt niet mee.
+ */
+export function checkFix(fix: LatLng & { accuracy: number }, location: TaskLocation, maxAccuracy: number): FixResult {
+  if (!(fix.accuracy >= 0) || fix.accuracy > Math.max(maxAccuracy, WEAK_GPS_LIMIT)) return 'unusable';
+  const margin = fix.accuracy > maxAccuracy ? fix.accuracy : 0;
+  return distanceMeters(fix, location) <= location.radius + margin ? 'inside' : 'outside';
+}
+
 export interface GpsFix extends LatLng {
   /** Onzekerheid in meters (zoals de telefoon die opgeeft). */
   accuracy: number;
@@ -24,7 +47,10 @@ export interface GpsFix extends LatLng {
 }
 
 export interface LocationGateOptions {
-  /** Metingen met grotere onzekerheid tellen niet mee. Standaard 30 m. */
+  /**
+   * Metingen met grotere onzekerheid tellen alleen mee als de onzekerheid de
+   * cirkel raakt (tot `WEAK_GPS_LIMIT`). Standaard 30 m.
+   */
   maxAccuracy?: number;
   /** Aantal opeenvolgende goede metingen binnen de cirkel. Standaard 2. */
   requiredFixes?: number;
@@ -48,8 +74,9 @@ interface TargetTrack {
 /**
  * Bepaalt in de app wanneer een team echt bij een locatie is.
  *
- * - Metingen met slechte nauwkeurigheid worden genegeerd: ze tellen niet mee
- *   en resetten ook niets.
+ * - Zwakke metingen (onnauwkeuriger dan `maxAccuracy`) tellen mee als hun
+ *   onzekerheid de cirkel raakt; nog slechtere metingen worden genegeerd en
+ *   resetten niets.
  * - Een locatie opent pas na `requiredFixes` opeenvolgende goede metingen
  *   binnen de cirkel, of na `dwellMs` binnen de cirkel.
  * - Een eenmaal geopende locatie opent pas opnieuw nadat het team de cirkel
@@ -70,12 +97,13 @@ export class LocationGate {
 
   /** Verwerkt een meting en geeft de opdrachten terug die nu openen. */
   feed(fix: GpsFix, targets: GateTarget[]): string[] {
-    if (!(fix.accuracy >= 0) || fix.accuracy > this.opts.maxAccuracy) return [];
+    const weak = fix.accuracy > this.opts.maxAccuracy;
     const reached: string[] = [];
     for (const target of targets) {
+      const result = checkFix(fix, target.location, this.opts.maxAccuracy);
+      if (result === 'unusable') continue;
       const track = this.tracks.get(target.task) ?? { insideFixes: 0, triggered: false };
-      const distance = distanceMeters(fix, target.location);
-      if (distance <= target.location.radius) {
+      if (result === 'inside') {
         track.insideFixes += 1;
         track.firstInsideAt ??= fix.at;
         const dwellReached = fix.at - track.firstInsideAt >= this.opts.dwellMs;
@@ -86,7 +114,9 @@ export class LocationGate {
       } else {
         track.insideFixes = 0;
         track.firstInsideAt = undefined;
-        if (distance > target.location.radius + this.opts.exitMargin) track.triggered = false;
+        // Alleen een goede meting bepaalt dat het team echt weg is.
+        const distance = distanceMeters(fix, target.location);
+        if (!weak && distance > target.location.radius + this.opts.exitMargin) track.triggered = false;
       }
       this.tracks.set(target.task, track);
     }
