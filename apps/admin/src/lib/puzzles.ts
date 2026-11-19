@@ -7,7 +7,7 @@
  * vastzitten; de gekozen puzzel vult alleen titel, tekst, antwoord, hints en
  * reacties van de plek in.
  */
-import type { AnswerSpec, GamePackage, Hint, Task, Text } from '@hunt/engine';
+import type { Action, AnswerSpec, GamePackage, Hint, Task, Text } from '@hunt/engine';
 
 export interface PuzzleRow {
   id: string;
@@ -18,9 +18,11 @@ export interface PuzzleRow {
   wrong_comment: Text;
   answer: Extract<AnswerSpec, { type: 'text' } | { type: 'number' }>;
   hints: Hint[];
+  /** Foto boven de opdrachttekst; leeg = die van de puzzelplek. */
+  image: string | null;
 }
 
-export const PUZZLE_COLUMNS = 'id, name, title, body, correct_comment, wrong_comment, answer, hints';
+export const PUZZLE_COLUMNS = 'id, name, title, body, correct_comment, wrong_comment, answer, hints, image';
 
 /** Keuze per puzzelplek (sleutel van de opdracht) → id van de puzzel; geen keuze = die uit het template. */
 export type PuzzleChoice = Record<string, string | null>;
@@ -52,34 +54,94 @@ export function applyPuzzle(task: Task, puzzle: PuzzleRow): Task {
     body: filled(puzzle.body) ? puzzle.body : task.body,
     correctComment: filled(puzzle.correct_comment) ? puzzle.correct_comment : task.correctComment,
     wrongComment: filled(puzzle.wrong_comment) ? puzzle.wrong_comment : task.wrongComment,
+    image: puzzle.image?.trim() || task.image,
     answer: puzzle.answer,
     hints: puzzle.hints.map((h) => ({ ...h, text: h.text ?? {} })),
   };
 }
 
-/** Alle gekozen puzzels in het spelpakket zetten. Een puzzel die niet (meer) bestaat, laat de plek zoals hij is. */
+/**
+ * Alle gekozen puzzels in het spelpakket zetten. Een puzzel die niet (meer)
+ * bestaat, laat de plek zoals hij is. Teksten die de oude puzzel bij naam
+ * noemen (de tijdlijnberichten, de uitleg) krijgen de naam van de nieuwe.
+ */
 export function applyPuzzles(game: GamePackage, choice: PuzzleChoice, puzzles: PuzzleRow[]): GamePackage {
   const byId = new Map(puzzles.map((p) => [p.id, p]));
+  let out: GamePackage = game;
+  for (const slot of puzzleSlots(game)) {
+    const id = choice[slot.id];
+    const puzzle = id ? byId.get(id) : undefined;
+    if (!puzzle) continue;
+    const next = applyPuzzle(slot, puzzle);
+    out = renameMentions({ ...out, tasks: out.tasks.map((t) => (t.id === slot.id ? next : t)) }, slot, next);
+  }
+  return out;
+}
+
+const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** Vervangt per taal de oude naam door de nieuwe. `loose`: overal; anders alleen "naam puzzel", "naam-puzzel" of "naampuzzel". */
+function renameText(text: Text, from: Text, to: Text, loose: boolean): Text {
+  let changed = false;
+  const result: Text = {};
+  for (const [lang, value] of Object.entries(text)) {
+    const old = from[lang]?.trim() || from.nl?.trim();
+    const name = to[lang]?.trim() || to.nl?.trim();
+    if (typeof value !== 'string' || !old || !name || old === name) {
+      result[lang] = value;
+      continue;
+    }
+    const pattern = new RegExp(`(?<![\\p{L}\\p{N}])${escape(old)}${loose ? '' : '(?=[ -]?puzzel)'}`, 'giu');
+    const next = value.replace(pattern, () => name);
+    if (next !== value) changed = true;
+    result[lang] = next;
+  }
+  return changed ? result : text;
+}
+
+/** Waar de oude puzzel bij naam genoemd wordt, de naam van de nieuwe zetten. */
+function renameMentions(game: GamePackage, before: Task, after: Task): GamePackage {
+  const from = before.title ?? {};
+  const to = after.title ?? {};
+  // Regels die deze puzzel vrijgeven: hun bericht gaat over deze puzzel.
+  const showsSlot = (a: Action) =>
+    a.kind === 'show' && (('task' in a.select && a.select.task === before.id) || ('tasks' in a.select && a.select.tasks.includes(before.id)));
   return {
     ...game,
+    rules: game.rules.map((r) => {
+      const loose = r.then.some(showsSlot);
+      let changed = false;
+      const then = r.then.map((a) => {
+        if (a.kind !== 'message') return a;
+        const text = renameText(a.text, from, to, loose);
+        if (text === a.text) return a;
+        changed = true;
+        return { ...a, text };
+      });
+      return changed ? { ...r, then } : r;
+    }),
     tasks: game.tasks.map((t) => {
-      const id = choice[t.id];
-      const puzzle = id ? byId.get(id) : undefined;
-      return puzzle && t.tags.includes('puzzel') ? applyPuzzle(t, puzzle) : t;
+      const own = t.id === before.id;
+      const body = renameText(t.body, from, to, own);
+      return body === t.body ? t : { ...t, body };
     }),
   };
 }
+
+/** Alleen de Nederlandse tekst: de fysieke puzzels zijn er in het Nederlands; andere talen klik je per puzzel bij. */
+const nlOnly = (t: Text | undefined): Text => (t?.nl ? { nl: t.nl } : {});
 
 /** Een puzzel uit een opdracht van het template, om de lijst mee te beginnen. */
 export function puzzleFromTask(task: Task, name: string): Omit<PuzzleRow, 'id'> | null {
   if (task.answer.type !== 'text' && task.answer.type !== 'number') return null;
   return {
     name,
-    title: task.title ?? {},
-    body: task.body ?? {},
-    correct_comment: task.correctComment ?? {},
-    wrong_comment: task.wrongComment ?? {},
+    title: nlOnly(task.title),
+    body: nlOnly(task.body),
+    correct_comment: nlOnly(task.correctComment),
+    wrong_comment: nlOnly(task.wrongComment),
     answer: task.answer,
-    hints: task.hints,
+    hints: task.hints.map((h) => ({ ...h, text: nlOnly(h.text) })),
+    image: task.image ?? null,
   };
 }

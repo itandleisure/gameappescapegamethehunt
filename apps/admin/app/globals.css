@@ -404,3 +404,8 @@ a.button.secondary { background: transparent; color: var(--text); border-color: 
 .counter { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .counter button.small { padding: 0 8px; min-width: 26px; line-height: 22px; }
 .counter strong { min-width: 1.2em; text-align: center; }
+
+/* Foto's bij fysieke puzzels */
+.pz-photo { margin: 6px 0 4px; }
+.pz-photo img { max-width: 220px; max-height: 160px; border-radius: 8px; display: block; margin-bottom: 6px; border: 1px solid var(--line); }
+.pz-photo .actions { margin: 0; align-items: center; }
