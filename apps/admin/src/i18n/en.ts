@@ -814,4 +814,8 @@ export const en: Record<string, string> = {
   "Eén keer meer gepakt": "Caught one more time",
   "Puzzels": "Puzzles",
   "Gepakt": "Caught",
+  "punten verbergen voor het team": "hide points from the team",
+  "Punten verdwijnen uit beeld bij het team": "Points disappear from the team's screen",
+  "(de spelleiding ziet ze gewoon in de ranglijst)": "(game masters still see them in the leaderboard)",
+  "Punten verbergen": "Hide points",
 };

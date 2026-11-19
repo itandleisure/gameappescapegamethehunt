@@ -814,4 +814,8 @@ export const pt: Record<string, string> = {
   "Eén keer meer gepakt": "Mais uma captura",
   "Puzzels": "Enigmas",
   "Gepakt": "Capturado",
+  "punten verbergen voor het team": "ocultar os pontos da equipa",
+  "Punten verdwijnen uit beeld bij het team": "Os pontos desaparecem do ecrã da equipa",
+  "(de spelleiding ziet ze gewoon in de ranglijst)": "(a organização continua a vê-los na classificação)",
+  "Punten verbergen": "Ocultar pontos",
 };

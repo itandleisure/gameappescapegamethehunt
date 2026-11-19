@@ -202,6 +202,11 @@ export function RuleForm({ rule: initial, isNew, names, tasks, playgrounds, busy
                   ))}
                 </select>
               </div>
+            ) : a.kind === "hideScore" ? (
+              <p>
+                🙈 {t("Punten verdwijnen uit beeld bij het team")}{" "}
+                <span className="muted small">{t("(de spelleiding ziet ze gewoon in de ranglijst)")}</span>
+              </p>
             ) : (
               (() => {
                 const line = actionLine(a, names);
@@ -231,6 +236,13 @@ export function RuleForm({ rule: initial, isNew, names, tasks, playgrounds, busy
         </button>
         <button className="secondary" disabled={!firstTask} onClick={() => addAction({ kind: "open", task: firstTask })}>
           + {t("Opdracht direct openen")}
+        </button>
+        <button
+          className="secondary"
+          disabled={rule.then.some((x) => x.kind === "hideScore")}
+          onClick={() => addAction({ kind: "hideScore" })}
+        >
+          + {t("Punten verbergen")}
         </button>
       </div>
 

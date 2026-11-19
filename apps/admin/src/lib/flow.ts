@@ -145,6 +145,8 @@ export function actionLine(a: Action, n: Names): ActionLine {
       const s = n.sequence(a.sequence);
       return { icon: '▶️', text: t('Reeks {name} start: {n} schermen na elkaar', { name: q(s.name), n: s.count }) };
     }
+    case 'hideScore':
+      return { icon: '🙈', text: t('Punten verdwijnen uit beeld bij het team') };
     case 'end':
       return { icon: '🏁', text: t('Spel eindigt: {name}', { name: q(n.ending(a.ending)) }) };
     default:
