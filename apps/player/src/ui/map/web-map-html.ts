@@ -27,7 +27,7 @@ html,body,#map{margin:0;height:100%;background:${dark}}
 .flag{background:#fff;color:#111;border-radius:15px;padding:3px 8px;font-size:15px}
 .person{display:flex;align-items:center;gap:4px}.person .dot{width:16px;height:16px;border-radius:50%;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5)}.person .name{background:#fff;color:#111;font:600 12px -apple-system,sans-serif;padding:3px 6px;border-radius:4px;white-space:nowrap}.person.stale{opacity:.5}
 .me{width:16px;height:16px;border-radius:50%;background:#2f81f7;border:3px solid #fff;box-shadow:0 0 0 2px rgba(47,129,247,.4)}
-#err{position:absolute;top:40%;left:16px;right:16px;text-align:center;color:#fff;font:14px -apple-system,sans-serif}
+#err{position:absolute;top:40%;left:16px;right:16px;text-align:center;color:#fff;background:rgba(16,18,20,.85);padding:10px 12px;border-radius:8px;font:14px -apple-system,sans-serif}
 </style></head><body><div id="map"></div><script>
 if (!window.maplibregl) { showError('kon niet laden (geen internet?)'); window.hunt = () => {}; throw new Error('maplibre ontbreekt'); }
 // Kaartdienst: adressen omzetten naar MapTiler (zie map-provider.ts in de engine).
