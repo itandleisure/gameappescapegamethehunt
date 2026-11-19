@@ -1,0 +1,38 @@
+name: Kaartvoorbeelden
+
+# Maakt voorbeeldplaatjes van kaartstijlen (Leeuwarden) en zet ze op deze branch.
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/project-thread-ro640a]
+    paths:
+      - .github/workflows/kaartvoorbeelden.yml
+      - scripts/kaartvoorbeelden/*.mjs
+
+permissions:
+  contents: write
+
+jobs:
+  plaatjes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Playwright
+        run: |
+          mkdir -p "$RUNNER_TEMP/pw" && cd "$RUNNER_TEMP/pw"
+          npm init -y >/dev/null && npm i playwright@1.49.1
+          npx playwright install --with-deps chromium
+          cp "$GITHUB_WORKSPACE"/scripts/kaartvoorbeelden/*.mjs .
+      - name: Plaatjes maken
+        run: cd "$RUNNER_TEMP/pw" && node maak.mjs "$GITHUB_WORKSPACE/scripts/kaartvoorbeelden/uitvoer"
+      - name: Op de branch zetten
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/kaartvoorbeelden/uitvoer
+          git commit -m "Kaartvoorbeelden (plaatjes)"
+          git push origin HEAD:${{ github.ref_name }}
