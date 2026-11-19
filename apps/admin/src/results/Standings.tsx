@@ -5,7 +5,7 @@ import { useT } from '@/lib/language';
 import { formatDistance, formatDuration, type SessionResultsView, type TeamResult } from '@/lib/results';
 import { supabase } from '@/lib/supabase';
 
-/** Vakjes per puzzel achter de teamnaam: groen met een vinkje als hij is opgelost. */
+/** Vakjes per puzzel achter de teamnaam, elk met het nummer van zijn puzzel: groen als die is opgelost. */
 function PuzzleChecks({ team, puzzles }: { team: TeamResult; puzzles: SessionResultsView['puzzles'] }) {
   const t = useT();
   if (puzzles.length === 0) return null;
@@ -15,7 +15,7 @@ function PuzzleChecks({ team, puzzles }: { team: TeamResult; puzzles: SessionRes
         const done = team.solvedPuzzles.includes(p.id);
         return (
           <span key={p.id} className={done ? 'puzzle done' : 'puzzle'} title={`${p.title}: ${done ? t('opgelost') : t('nog niet opgelost')}`}>
-            {done ? '✓' : i + 1}
+            {i + 1}
           </span>
         );
       })}
