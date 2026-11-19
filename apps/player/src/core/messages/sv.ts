@@ -34,6 +34,7 @@ export const sv: Messages = {
   tasks: 'Uppdrag',
   map: 'Karta',
   noTasks: 'Det finns inga uppdrag just nu.',
+  codeTitle: 'GPS-kod för extraktionspunkten',
   answerPlaceholder: 'Ert svar',
   submit: 'Skicka',
   correct: 'Rätt!',

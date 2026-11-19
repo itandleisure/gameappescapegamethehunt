@@ -34,6 +34,7 @@ export const pl: Messages = {
   tasks: 'Zadania',
   map: 'Mapa',
   noTasks: 'W tej chwili nie ma dostępnych zadań.',
+  codeTitle: 'Kod GPS punktu ewakuacji',
   answerPlaceholder: 'Wasza odpowiedź',
   submit: 'Wyślij',
   correct: 'Dobrze!',

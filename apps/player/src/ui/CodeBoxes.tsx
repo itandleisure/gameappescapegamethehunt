@@ -49,10 +49,10 @@ export function CodeBoxes({
   );
 }
 
-const GAP = space.sm;
+const GAP = space.md;
 
 const styles = StyleSheet.create({
-  wrap: { marginBottom: space.md },
+  wrap: { marginBottom: space.lg },
   grid: { flexDirection: "row", flexWrap: "wrap", marginHorizontal: -GAP / 2 },
   cell: { width: "33.333%", paddingHorizontal: GAP / 2, marginBottom: GAP },
   box: {

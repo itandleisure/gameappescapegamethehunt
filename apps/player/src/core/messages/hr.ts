@@ -34,6 +34,7 @@ export const hr: Messages = {
   tasks: 'Zadaci',
   map: 'Karta',
   noTasks: 'Trenutačno nema dostupnih zadataka.',
+  codeTitle: 'GPS kod točke izvlačenja',
   answerPlaceholder: 'Vaš odgovor',
   submit: 'Pošalji',
   correct: 'Točno!',

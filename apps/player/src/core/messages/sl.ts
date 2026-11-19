@@ -34,6 +34,7 @@ export const sl: Messages = {
   tasks: 'Naloge',
   map: 'Zemljevid',
   noTasks: 'Trenutno ni na voljo nobene naloge.',
+  codeTitle: 'GPS koda točke umika',
   answerPlaceholder: 'Vaš odgovor',
   submit: 'Pošlji',
   correct: 'Pravilno!',

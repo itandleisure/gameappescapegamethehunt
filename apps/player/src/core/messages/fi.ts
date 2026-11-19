@@ -34,6 +34,7 @@ export const fi: Messages = {
   tasks: 'Tehtävät',
   map: 'Kartta',
   noTasks: 'Tehtäviä ei ole juuri nyt saatavilla.',
+  codeTitle: 'Poistumispisteen GPS-koodi',
   answerPlaceholder: 'Vastauksenne',
   submit: 'Lähetä',
   correct: 'Oikein!',

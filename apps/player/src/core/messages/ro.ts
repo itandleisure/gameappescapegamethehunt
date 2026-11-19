@@ -34,6 +34,7 @@ export const ro: Messages = {
   tasks: 'Misiuni',
   map: 'Hartă',
   noTasks: 'Momentan nu există misiuni disponibile.',
+  codeTitle: 'Codul GPS al punctului de extracție',
   answerPlaceholder: 'Răspunsul vostru',
   submit: 'Trimiteți',
   correct: 'Corect!',
