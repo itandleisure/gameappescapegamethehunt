@@ -353,23 +353,29 @@
    "source-layer": "poi",
    "minzoom": 14,
    "filter": [
-    "in",
+    "all",
     [
-     "get",
-     "class"
+     "in",
+     [
+      "get",
+      "class"
+     ],
+     [
+      "literal",
+      [
+       "place_of_worship",
+       "town_hall",
+       "museum",
+       "castle",
+       "monument",
+       "attraction",
+       "theatre"
+      ]
+     ]
     ],
     [
-     "literal",
-     [
-      "place_of_worship",
-      "town_hall",
-      "museum",
-      "castle",
-      "monument",
-      "attraction",
-      "theatre",
-      "library"
-     ]
+     "has",
+     "name"
     ]
    ],
    "paint": {
@@ -478,23 +484,29 @@
    "source-layer": "poi",
    "minzoom": 14,
    "filter": [
-    "in",
+    "all",
     [
-     "get",
-     "class"
+     "in",
+     [
+      "get",
+      "class"
+     ],
+     [
+      "literal",
+      [
+       "place_of_worship",
+       "town_hall",
+       "museum",
+       "castle",
+       "monument",
+       "attraction",
+       "theatre"
+      ]
+     ]
     ],
     [
-     "literal",
-     [
-      "place_of_worship",
-      "town_hall",
-      "museum",
-      "castle",
-      "monument",
-      "attraction",
-      "theatre",
-      "library"
-     ]
+     "has",
+     "name"
     ]
    ],
    "layout": {

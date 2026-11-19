@@ -5,8 +5,9 @@ const SRC = { omt: { type: 'vector', url: 'https://tiles.openfreemap.org/planet'
 const GLYPHS = 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf';
 const zw = (a, b) => ['interpolate', ['exponential', 1.5], ['zoom'], ...a.flatMap((z, i) => [z, b[i]])];
 
-// Alleen herkenningspunten: kerken, stadhuis, musea, monumenten. Geen horeca of winkels.
-export const POI_CLASSES = ['place_of_worship', 'town_hall', 'museum', 'castle', 'monument', 'attraction', 'theatre', 'library'];
+// Alleen herkenningspunten: kerken, stadhuis, musea, monumenten. Geen horeca of winkels
+// (ook geen 'library': daar vallen in OpenMapTiles ook boekwinkels onder).
+export const POI_CLASSES = ['place_of_worship', 'town_hall', 'museum', 'castle', 'monument', 'attraction', 'theatre'];
 
 export function makeStyle(p, { labels = true, landmarks = false } = {}) {
   const roadColor = p.road;
@@ -39,7 +40,7 @@ export function makeStyle(p, { labels = true, landmarks = false } = {}) {
   );
   if (landmarks) {
     layers.push(
-      { id: 'herkenningspunt', type: 'circle', source: 'omt', 'source-layer': 'poi', minzoom: 14, filter: ['in', ['get', 'class'], ['literal', POI_CLASSES]], paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 14, 3, 18, 6], 'circle-color': p.poi, 'circle-stroke-color': p.halo, 'circle-stroke-width': 1.5 } },
+      { id: 'herkenningspunt', type: 'circle', source: 'omt', 'source-layer': 'poi', minzoom: 14, filter: ['all', ['in', ['get', 'class'], ['literal', POI_CLASSES]], ['has', 'name']], paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 14, 3, 18, 6], 'circle-color': p.poi, 'circle-stroke-color': p.halo, 'circle-stroke-width': 1.5 } },
     );
   }
   if (labels) {
@@ -51,7 +52,7 @@ export function makeStyle(p, { labels = true, landmarks = false } = {}) {
   if (landmarks) {
     layers.push(
       { id: 'park-naam', type: 'symbol', source: 'omt', 'source-layer': 'park', minzoom: 14, layout: { 'text-field': ['get', 'name'], 'text-font': ['Noto Sans Italic'], 'text-size': 12, 'text-max-width': 8 }, paint: { 'text-color': p.parkText, 'text-halo-color': p.halo, 'text-halo-width': 1.5 } },
-      { id: 'herkenningspunt-naam', type: 'symbol', source: 'omt', 'source-layer': 'poi', minzoom: 14, filter: ['in', ['get', 'class'], ['literal', POI_CLASSES]], layout: { 'text-field': ['get', 'name'], 'text-font': ['Noto Sans Bold'], 'text-size': 11, 'text-offset': [0, 0.9], 'text-anchor': 'top', 'text-max-width': 8 }, paint: { 'text-color': p.poiText ?? p.poi, 'text-halo-color': p.halo, 'text-halo-width': 1.5 } },
+      { id: 'herkenningspunt-naam', type: 'symbol', source: 'omt', 'source-layer': 'poi', minzoom: 14, filter: ['all', ['in', ['get', 'class'], ['literal', POI_CLASSES]], ['has', 'name']], layout: { 'text-field': ['get', 'name'], 'text-font': ['Noto Sans Bold'], 'text-size': 11, 'text-offset': [0, 0.9], 'text-anchor': 'top', 'text-max-width': 8 }, paint: { 'text-color': p.poiText ?? p.poi, 'text-halo-color': p.halo, 'text-halo-width': 1.5 } },
     );
   }
   return { version: 8, sources: SRC, glyphs: GLYPHS, layers };
