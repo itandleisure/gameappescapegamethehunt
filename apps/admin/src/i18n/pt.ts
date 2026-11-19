@@ -944,9 +944,6 @@ export const pt: Record<string, string> = {
   "Het spel is gesloten.": "O jogo está fechado.",
   "Het spel is nog niet geopend. Aanmelden kan zodra de spelleiding het spel opent.": "O jogo ainda não está aberto. Podem registar-se assim que o diretor de jogo o abrir.",
   "Zo doe je mee": "Como participar",
-  "Download de app Escape Game The Hunt.": "Descarreguem a app Escape Game The Hunt.",
-  "Scan de QR-code daarna nog een keer, of tik opnieuw op deze link: de app opent met de spelcode al ingevuld.": "Depois, leiam outra vez o código QR ou toquem de novo nesta ligação: a app abre com o código de jogo já preenchido.",
-  "Lukt dat niet? Open de app en vul de spelcode {code} in.": "Não funcionou? Abram a app e introduzam o código de jogo {code}.",
   "Download in de App Store": "Descarregar na App Store",
   "Download op Google Play": "Disponível no Google Play",
   "Ik heb de app al: open de app": "Já tenho a app: abrir a app",
@@ -969,4 +966,8 @@ export const pt: Record<string, string> = {
   "Voor de spelleiding: opent deze resultatenpagina (inloggen nodig).": "Para os diretores de jogo: abre esta página de resultados (é preciso iniciar sessão).",
   "QR-code van de spellink": "Código QR da ligação de jogo",
   "QR-code downloaden": "Descarregar código QR",
+  "Tik op \"Nu spelen\": het spel opent in je browser, met de spelcode al ingevuld.": "Toquem em «Jogar agora»: o jogo abre no navegador com o código de jogo já preenchido.",
+  "Nu spelen in de browser": "Jogar agora no navegador",
+  "Liever de app?": "Preferem a app?",
+  "Download de app en scan de QR-code daarna nog een keer: de app opent met de spelcode al ingevuld. Of open de app en vul de spelcode {code} in.": "Descarreguem a app e depois leiam outra vez o código QR: a app abre com o código de jogo já preenchido. Ou abram a app e introduzam o código de jogo {code}.",
 };

@@ -9,6 +9,7 @@ import {
   eventPath,
   parseEventLink,
   playStoreUrl,
+  webPlayUrl,
   type EventLink,
 } from '@/lib/event-links';
 import { useLanguage } from '@/lib/language';
@@ -123,20 +124,25 @@ export default function EventLinkPage() {
           ) : null}
 
           <h2>{t('Zo doe je mee')}</h2>
-          <ol className="eventlink-steps">
-            <li>{t('Download de app Escape Game The Hunt.')}</li>
-            <li>{t('Scan de QR-code daarna nog een keer, of tik opnieuw op deze link: de app opent met de spelcode al ingevuld.')}</li>
-            <li>{t('Lukt dat niet? Open de app en vul de spelcode {code} in.', { code: link.code })}</li>
-          </ol>
+          <p>{t('Tik op "Nu spelen": het spel opent in je browser, met de spelcode al ingevuld.')}</p>
+          <div className="eventlink-buttons">
+            <a className="button" href={webPlayUrl(link)}>
+              {t('Nu spelen in de browser')}
+            </a>
+          </div>
 
+          <h3 style={{ marginTop: 24 }}>{t('Liever de app?')}</h3>
+          <p className="small">
+            {t('Download de app en scan de QR-code daarna nog een keer: de app opent met de spelcode al ingevuld. Of open de app en vul de spelcode {code} in.', { code: link.code })}
+          </p>
           <div className="eventlink-buttons">
             {device !== 'android' && appStore ? (
-              <a className="button" href={appStore}>
+              <a className="button secondary" href={appStore}>
                 {t('Download in de App Store')}
               </a>
             ) : null}
             {device !== 'ios' ? (
-              <a className="button" href={playStoreUrl()}>
+              <a className="button secondary" href={playStoreUrl()}>
                 {t('Download op Google Play')}
               </a>
             ) : null}

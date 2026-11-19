@@ -19,10 +19,11 @@ In de beheeromgeving staat bij elk event de knop **Spellink en QR-code**: kopië
 
 1. **App staat al op de telefoon** (en de app-build met app-links is geïnstalleerd): de app opent direct op het
    aanmeldscherm met de spelcode ingevuld. Teamnaam en telefoonnummer invullen, klaar.
-2. **App staat er nog niet op**: de telefoon opent de spellinkpagina met de naam van het spel, de spelcode groot in beeld
-   en knoppen naar de App Store / Google Play, plus “Ik heb de app al: open de app”.
-   Na het installeren scant de speler de QR-code nog een keer (of tikt opnieuw op de link): dan opent de app met de code
-   ingevuld. (De winkels geven de code niet door aan een net geïnstalleerde app; daarom die tweede keer scannen.)
+2. **App staat er nog niet op**: de telefoon opent de spellinkpagina met de naam van het spel en de spelcode. De
+   hoofdknop is **Nu spelen in de browser**: die opent de webapp op `/speel?code=<spelcode>&game=<game-ID>` (zelfde
+   domein), met de spelcode al ingevuld. Daaronder staan, voor wie liever de app wil, de knoppen naar de App Store /
+   Google Play en "Ik heb de app al: open de app". Na het installeren scant de speler de QR-code nog een keer; de winkels
+   geven de code niet door aan een net geïnstalleerde app.
 
 ## Zelf instellen
 

@@ -102,6 +102,16 @@ export function appSchemeUrl({ gameId, code }: EventLink): string {
   return `${APP_SCHEME}:///?${params.toString()}`;
 }
 
+/**
+ * Spelen in de browser: de speler-app als webapp op /speel van hetzelfde
+ * domein, met de spelcode al ingevuld.
+ */
+export function webPlayUrl({ gameId, code }: EventLink): string {
+  const params = new URLSearchParams({ code });
+  if (gameId) params.set('game', gameId);
+  return `/speel?${params.toString()}`;
+}
+
 /** App Store: NEXT_PUBLIC_APP_STORE_URL, bijv. https://apps.apple.com/app/id1234567890. */
 export function appStoreUrl(): string | null {
   return process.env.NEXT_PUBLIC_APP_STORE_URL || null;
