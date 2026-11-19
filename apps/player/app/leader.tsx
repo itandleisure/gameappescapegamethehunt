@@ -272,7 +272,7 @@ function LeaderMap({
   );
 }
 
-/** Vakje per puzzel, zoals op de resultatenpagina: groen met een vinkje als hij is opgelost. */
+/** Vakje per puzzel met het nummer van die puzzel, groen als hij is opgelost, met daaronder welke dat zijn. */
 function PuzzleChecks({
   puzzles,
   solved,
@@ -283,24 +283,22 @@ function PuzzleChecks({
   t: (key: LeaderKey, vars?: Record<string, string | number>) => string;
 }) {
   if (puzzles.length === 0) return null;
-  const count = puzzles.filter((p) => solved?.has(p.id)).length;
+  // Elk vakje hoort bij één puzzel en houdt zijn nummer: puzzel 3 opgelost = vakje 3 groen.
+  const done = puzzles.map((p, i) => ({ n: i + 1, title: p.title, done: solved?.has(p.id) ?? false }));
+  const names = done.filter((p) => p.done).map((p) => `${p.n} ${p.title}`);
   return (
-    <View
-      style={styles.puzzles}
-      accessible
-      accessibilityLabel={t('leaderPuzzles', { n: count, m: puzzles.length })}
-    >
-      {puzzles.map((p, i) => {
-        const done = solved?.has(p.id) ?? false;
-        return (
-          <View key={p.id} style={[styles.puzzle, done && styles.puzzleDone]}>
-            <Text style={[styles.puzzleText, done && styles.puzzleTextDone]}>{done ? '✓' : i + 1}</Text>
+    <View style={styles.puzzleWrap} accessible accessibilityLabel={`${t('leaderPuzzles', { n: names.length, m: puzzles.length })}${names.length ? `: ${names.join(', ')}` : ''}`}>
+      <View style={styles.puzzles}>
+        {done.map((p) => (
+          <View key={p.n} style={[styles.puzzle, p.done && styles.puzzleDone]}>
+            <Text style={[styles.puzzleText, p.done && styles.puzzleTextDone]}>{p.n}</Text>
           </View>
-        );
-      })}
-      <Text style={styles.muted}>
-        {count}/{puzzles.length}
-      </Text>
+        ))}
+        <Text style={styles.muted}>
+          {names.length}/{puzzles.length}
+        </Text>
+      </View>
+      {names.length ? <Text style={styles.muted}>{names.join(' · ')}</Text> : null}
     </View>
   );
 }
@@ -546,6 +544,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepText: { color: colors.text, fontSize: 22, fontWeight: '700' },
+  puzzleWrap: { gap: space.xs },
   puzzles: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: space.xs },
   puzzle: {
     width: 26,
@@ -558,7 +557,7 @@ const styles = StyleSheet.create({
   },
   puzzleDone: { backgroundColor: colors.success, borderColor: colors.success },
   puzzleText: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
-  puzzleTextDone: { color: '#ffffff', fontSize: 15, fontWeight: '800' },
+  puzzleTextDone: { color: '#ffffff', fontWeight: '800' },
   caught: { color: colors.text, fontSize: 18, fontWeight: '700', minWidth: 28, textAlign: 'center' },
   section: { color: colors.textMuted, fontSize: 14, fontWeight: '700', marginTop: space.md, textTransform: 'uppercase' },
   bubble: { maxWidth: '85%', borderRadius: radius.md, paddingVertical: space.sm, paddingHorizontal: space.md },
