@@ -26,7 +26,7 @@ end $$;
 
 -- Frans maakt Badass Games en is eigenaar.
 select tests.login('b0000000-0000-0000-0000-000000000001');
-select public.create_organization('  Badass Games  ') as org \gset
+select stub.create_organization('  Badass Games  ') as org \gset
 do $$ begin
   if (select name from public.organizations) <> 'Badass Games' then raise exception 'naam niet opgeschoond'; end if;
   if (select role from public.memberships where user_id = auth.uid()) <> 'owner' then raise exception 'geen eigenaar'; end if;

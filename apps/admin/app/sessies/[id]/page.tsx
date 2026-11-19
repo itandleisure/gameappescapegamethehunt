@@ -10,6 +10,7 @@ import { formatInZone } from '@/lib/sessions';
 import { useSessionLive } from '@/lib/session-live';
 import { Answers } from '@/results/Answers';
 import { LiveMap } from '@/results/LiveMap';
+import { DeleteSession } from '@/results/DeleteSession';
 import { OpenToggle } from '@/results/OpenToggle';
 import { PhotobookEditor } from '@/results/PhotobookEditor';
 import { Photowall } from '@/results/Photowall';
@@ -54,7 +55,7 @@ export default function SessionLivePage() {
   const view = useMemo(() => {
     if (!data) return null;
     const trails = buildTrails(data.positions, { maxAccuracy: data.game.gps?.maxAccuracy ?? 30 });
-    const teams = data.teams.map((t) => ({ ...t, distance_m: trails.get(t.id)?.distanceM ?? 0 }));
+    const teams = data.teams.map((t) => ({ ...t, distance_m: trails.get(t.id)?.distanceM ?? t.stored_distance_m ?? 0 }));
     return buildResults(data.game, teams, data.events, Math.max(now, updatedAt));
     // lang: resultaten bevatten teksten in de gekozen taal.
   }, [data, now, updatedAt, lang]);
@@ -93,6 +94,7 @@ export default function SessionLivePage() {
           <button className="secondary" onClick={download} disabled={view.teams.length === 0}>
             {t('Excel-export')}
           </button>
+          <DeleteSession id={session.id} name={session.name} photoPaths={data.photos.map((p) => p.path)} />
         </div>
       </div>
       <p className="muted">

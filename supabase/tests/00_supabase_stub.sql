@@ -42,3 +42,30 @@ create or replace function storage.foldername(name text) returns text[]
 language sql immutable
 as $$ select (string_to_array(name, '/'))[1:array_length(string_to_array(name, '/'), 1) - 1] $$;
 grant execute on function storage.foldername(text) to anon, authenticated;
+
+-- Bevestiging van het e-mailadres (uitnodigingen worden pas dan geaccepteerd).
+alter table auth.users add column if not exists email_confirmed_at timestamptz;
+
+-- Organisatie aanmaken in tests (zelf aanmaken kan in de app niet meer; in
+-- productie maakt het platform partners aan met create_partner).
+create schema if not exists stub;
+grant usage on schema stub to authenticated;
+create or replace function stub.create_organization(p_name text) returns uuid
+language plpgsql security definer set search_path = ''
+as $$
+declare
+  v_org uuid;
+begin
+  insert into public.organizations (name) values (trim(p_name)) returning id into v_org;
+  insert into public.memberships (org_id, user_id, role) values (v_org, auth.uid(), 'owner');
+  return v_org;
+end;
+$$;
+grant execute on function stub.create_organization(text) to authenticated;
+
+-- Databasegebruiker van Supabase Auth (registreren loopt via deze gebruiker).
+do $$ begin
+  if not exists (select 1 from pg_roles where rolname = 'supabase_auth_admin') then create role supabase_auth_admin nologin; end if;
+end $$;
+grant usage on schema auth to supabase_auth_admin;
+grant select, insert, update on auth.users to supabase_auth_admin;

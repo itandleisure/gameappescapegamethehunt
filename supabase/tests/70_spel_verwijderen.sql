@@ -16,7 +16,7 @@ insert into auth.users (id, is_anonymous) values
   ('d0000000-0000-0000-0000-000000000002', false);  -- buitenstaander
 
 select tests.login('d0000000-0000-0000-0000-000000000001');
-select public.create_organization('Wis BV') as org \gset
+select stub.create_organization('Wis BV') as org \gset
 insert into public.games (id, org_id, layer, slug, languages, default_language) values
   ('6d000000-0000-0000-0000-000000000001', :'org', 'base', 'test-spel', array['nl'], 'nl'),
   ('6d000000-0000-0000-0000-000000000002', :'org', 'base', 'echt-spel', array['nl'], 'nl');

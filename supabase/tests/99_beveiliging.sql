@@ -17,7 +17,7 @@ insert into auth.users (id, is_anonymous) values
   ('f3000000-0000-0000-0000-000000000003', true);   -- team De Wolven
 
 select tests.login('f3000000-0000-0000-0000-000000000001');
-select public.create_organization('Veilig BV') as org \gset
+select stub.create_organization('Veilig BV') as org \gset
 insert into public.games (id, org_id, layer, slug, languages, default_language)
 values ('6f300000-0000-0000-0000-000000000001', :'org', 'base', 'veilig-spel', array['nl'], 'nl');
 reset role;

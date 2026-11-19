@@ -24,7 +24,8 @@ export default function LoginPage() {
       if (error) setError(error.message === 'Invalid login credentials' ? t('E-mail of wachtwoord klopt niet.') : error.message);
     } else {
       const { data, error } = await auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } });
-      if (error) setError(error.message);
+      // Zonder uitnodiging weigert de database het account (melding van Supabase Auth).
+      if (error) setError(/database error|uitnodiging/i.test(error.message) ? t('Een account aanmaken kan alleen met een uitnodiging. Vraag de beheerder om je uit te nodigen.') : error.message);
       else if (!data.session) setNotice(t('Check je mail en klik op de bevestigingslink. Daarna kun je inloggen.'));
     }
     setBusy(false);
@@ -61,7 +62,7 @@ export default function LoginPage() {
             {mode === 'login' ? t('Inloggen') : t('Account aanmaken')}
           </button>
           <button type="button" className="link" onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}>
-            {mode === 'login' ? t('Nog geen account?') : t('Ik heb al een account')}
+            {mode === 'login' ? t('Uitgenodigd? Account aanmaken') : t('Ik heb al een account')}
           </button>
         </div>
       </form>

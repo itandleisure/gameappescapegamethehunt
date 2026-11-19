@@ -25,6 +25,8 @@ export interface LiveTeam extends TeamRow {
   team_code: string;
   /** Telefoonnummer uit de aanmelding (tabel team_contacts), alleen voor de spelleiding. */
   phone?: string | null;
+  /** Afstand die bij het opruimen (na 28 dagen) is vastgelegd; daarna zijn er geen posities meer. */
+  stored_distance_m?: number | null;
 }
 
 /** Telefoonnummers per team. Leeg als de tabel er (nog) niet is of er geen toegang is. */
@@ -64,7 +66,7 @@ function mergeById<T extends { id: string | number }>(list: T[], rows: T[]): T[]
   return fresh.length ? [...list, ...fresh] : list;
 }
 
-const TEAM_COLUMNS = 'id, name, track, language, score, outcome, started_at, ended_at, login_order, team_code';
+const TEAM_COLUMNS = 'id, name, track, language, score, outcome, started_at, ended_at, login_order, team_code, stored_distance_m:distance_m';
 
 export function useSessionLive(id: string) {
   const [data, setData] = useState<SessionLive | null>(null);

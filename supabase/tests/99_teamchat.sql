@@ -18,7 +18,7 @@ insert into auth.users (id, is_anonymous) values
   ('f1000000-0000-0000-0000-000000000004', true);   -- team in een andere hunt
 
 select tests.login('f1000000-0000-0000-0000-000000000001');
-select public.create_organization('Chat BV') as org \gset
+select stub.create_organization('Chat BV') as org \gset
 insert into public.games (id, org_id, layer, slug, languages, default_language)
 values ('6f100000-0000-0000-0000-000000000001', :'org', 'base', 'chat-spel', array['nl'], 'nl');
 reset role;

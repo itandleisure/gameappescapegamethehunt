@@ -17,7 +17,7 @@ insert into auth.users (id, is_anonymous) values
   ('e0000000-0000-0000-0000-000000000003', true);   -- team 2
 
 select tests.login('e0000000-0000-0000-0000-000000000001');
-select public.create_organization('Tel BV') as org \gset
+select stub.create_organization('Tel BV') as org \gset
 insert into public.games (id, org_id, layer, slug, languages, default_language)
 values ('6e000000-0000-0000-0000-000000000001', :'org', 'base', 'tel-spel', array['nl'], 'nl');
 reset role;
