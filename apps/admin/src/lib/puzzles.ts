@@ -18,9 +18,11 @@ export interface PuzzleRow {
   wrong_comment: Text;
   answer: Extract<AnswerSpec, { type: 'text' } | { type: 'number' }>;
   hints: Hint[];
+  /** Foto boven de opdrachttekst; leeg = die van de puzzelplek. */
+  image: string | null;
 }
 
-export const PUZZLE_COLUMNS = 'id, name, title, body, correct_comment, wrong_comment, answer, hints';
+export const PUZZLE_COLUMNS = 'id, name, title, body, correct_comment, wrong_comment, answer, hints, image';
 
 /** Keuze per puzzelplek (sleutel van de opdracht) → id van de puzzel; geen keuze = die uit het template. */
 export type PuzzleChoice = Record<string, string | null>;
@@ -52,6 +54,7 @@ export function applyPuzzle(task: Task, puzzle: PuzzleRow): Task {
     body: filled(puzzle.body) ? puzzle.body : task.body,
     correctComment: filled(puzzle.correct_comment) ? puzzle.correct_comment : task.correctComment,
     wrongComment: filled(puzzle.wrong_comment) ? puzzle.wrong_comment : task.wrongComment,
+    image: puzzle.image?.trim() || task.image,
     answer: puzzle.answer,
     hints: puzzle.hints.map((h) => ({ ...h, text: h.text ?? {} })),
   };
@@ -125,16 +128,20 @@ function renameMentions(game: GamePackage, before: Task, after: Task): GamePacka
   };
 }
 
+/** Alleen de Nederlandse tekst: de fysieke puzzels zijn er in het Nederlands; andere talen klik je per puzzel bij. */
+const nlOnly = (t: Text | undefined): Text => (t?.nl ? { nl: t.nl } : {});
+
 /** Een puzzel uit een opdracht van het template, om de lijst mee te beginnen. */
 export function puzzleFromTask(task: Task, name: string): Omit<PuzzleRow, 'id'> | null {
   if (task.answer.type !== 'text' && task.answer.type !== 'number') return null;
   return {
     name,
-    title: task.title ?? {},
-    body: task.body ?? {},
-    correct_comment: task.correctComment ?? {},
-    wrong_comment: task.wrongComment ?? {},
+    title: nlOnly(task.title),
+    body: nlOnly(task.body),
+    correct_comment: nlOnly(task.correctComment),
+    wrong_comment: nlOnly(task.wrongComment),
     answer: task.answer,
-    hints: task.hints,
+    hints: task.hints.map((h) => ({ ...h, text: nlOnly(h.text) })),
+    image: task.image ?? null,
   };
 }

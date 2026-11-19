@@ -1,8 +1,10 @@
 'use client';
 import type { Hint, Text } from '@hunt/engine';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
 import { useAuth } from '@/lib/auth';
 import { composeChain, loadChain } from '@/lib/game-store';
+import { mediaPath } from '@/lib/map-settings';
+import { shrinkImage } from '@/lib/shrink-image';
 import { ADMIN_LANGUAGES, ADMIN_LANGUAGE_NAMES } from '@/lib/i18n';
 import { useT } from '@/lib/language';
 import { PUZZLE_COLUMNS, puzzleFromTask, puzzleSlots, type PuzzleRow } from '@/lib/puzzles';
@@ -24,6 +26,7 @@ const empty = (): Draft => ({
     { cost: 50, text: {} },
     { cost: 75, text: {} },
   ],
+  image: null,
 });
 
 function must<T extends { error: { message: string } | null }>(r: T): T {
@@ -106,7 +109,11 @@ export default function PuzzlesPage() {
         correct_comment: clean(draft.correct_comment),
         wrong_comment: clean(draft.wrong_comment),
         answer: answer.type === 'text' ? { type: 'text', accepted: answer.accepted.map((a) => a.trim()).filter(Boolean) } : answer,
-        hints: draft.hints.filter((h) => Object.values(h.text).some((v) => v?.trim()) || h.image).map((h) => ({ ...h, text: clean(h.text) })),
+        image: draft.image?.trim() || null,
+        hints: draft.hints.filter((h) => Object.values(h.text).some((v) => v?.trim()) || h.image).map((h) => {
+          const { image, ...rest } = h;
+          return image?.trim() ? { ...rest, text: clean(h.text), image: image.trim() } : { ...rest, text: clean(h.text) };
+        }),
         updated_at: new Date().toISOString(),
       };
       const db = supabase();
@@ -143,10 +150,68 @@ export default function PuzzlesPage() {
       return t('{n} puzzels overgenomen uit het template.', { n: rows.length });
     });
 
+  /** Een taal uit alle teksten en hints van de puzzel halen. */
+  const removeLanguage = (lang: string) => {
+    if (!draft) return;
+    const drop = (t: Text): Text => Object.fromEntries(Object.entries(t).filter(([k]) => k !== lang));
+    setDraft({
+      ...draft,
+      title: drop(draft.title),
+      body: drop(draft.body),
+      correct_comment: drop(draft.correct_comment),
+      wrong_comment: drop(draft.wrong_comment),
+      hints: draft.hints.map((h) => ({ ...h, text: drop(h.text) })),
+    });
+    setLangs(langs.filter((l) => l !== lang));
+  };
+
   const setText = (field: 'title' | 'body' | 'correct_comment' | 'wrong_comment', lang: string, value: string) =>
     draft && setDraft({ ...draft, [field]: { ...draft[field], [lang]: value } });
   const setHint = (i: number, patch: Partial<Hint>) =>
     draft && setDraft({ ...draft, hints: draft.hints.map((h, j) => (j === i ? { ...h, ...patch } : h)) });
+
+  /** Foto uploaden (verkleind) naar puzzels/<organisatie>/ en het adres teruggeven. */
+  const upload = async (e: ChangeEvent<HTMLInputElement>, name: string, use: (url: string) => void) => {
+    const chosen = e.target.files?.[0];
+    e.target.value = '';
+    if (!chosen || !org) return;
+    setBusy(true);
+    setErrors([]);
+    try {
+      const file = await shrinkImage(chosen);
+      const db = supabase();
+      const path = mediaPath(`puzzels/${org.id}`, name, file.type);
+      const up = await db.storage.from('media').upload(path, file, { contentType: file.type });
+      if (up.error) throw new Error(up.error.message);
+      use(db.storage.from('media').getPublicUrl(path).data.publicUrl);
+    } catch (err) {
+      setErrors([err instanceof Error ? err.message : String(err)]);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** Foto tonen met knoppen om te uploaden, weg te halen of een adres in te vullen. */
+  const photo = (id: string, url: string | null | undefined, name: string, change: (url: string) => void) => (
+    <div className="pz-photo">
+      {url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={url} alt="" />
+      ) : null}
+      <div className="actions">
+        <label className="filebutton">
+          {url ? t('Andere foto') : t('Foto uploaden')}
+          <input type="file" accept="image/png,image/jpeg,image/webp" hidden disabled={busy} onChange={(e) => void upload(e, name, change)} />
+        </label>
+        {url ? (
+          <button className="link small" onClick={() => change('')}>
+            {t('Foto weghalen')}
+          </button>
+        ) : null}
+      </div>
+      <input id={id} className="small-input" value={url ?? ''} placeholder={t('Of een adres (https)')} aria-label={t('Of een adres (https)')} onChange={(e) => change(e.target.value)} />
+    </div>
+  );
 
   const answerText = (p: PuzzleRow) => (p.answer.type === 'number' ? String(p.answer.value) : p.answer.accepted.join(', '));
 
@@ -218,17 +283,27 @@ export default function PuzzlesPage() {
               <button className="link small" onClick={() => setDraft({ ...draft, hints: draft.hints.filter((_, j) => j !== i) })}>
                 {t('Weg')}
               </button>
+              <div style={{ flex: '1 0 100%' }}>{photo(`pz-hint-img-${i}`, h.image, `hint-${i + 1}`, (url) => setHint(i, { image: url }))}</div>
             </div>
           ))}
           <button className="link small" onClick={() => setDraft({ ...draft, hints: [...draft.hints, { cost: 25 * (draft.hints.length + 1), text: {} }] })}>
             {t('Hint toevoegen')}
           </button>
 
+          <h3>{t('Foto')}</h3>
+          <p className="muted small">{t('Spelers zien de foto boven de opdrachttekst. Leeg laten = de foto van de puzzelplek.')}</p>
+          {photo('pz-image', draft.image, 'puzzel', (url) => setDraft({ ...draft, image: url }))}
+
           <h3>{t('Teksten per taal')}</h3>
           <p className="muted small">{t('Leeg laten = de tekst van de puzzelplek in het template.')}</p>
           {langs.map((l) => (
             <details key={l} open={l === 'nl'} style={{ margin: '8px 0' }}>
               <summary>{ADMIN_LANGUAGE_NAMES[l as keyof typeof ADMIN_LANGUAGE_NAMES] ?? l.toUpperCase()}</summary>
+              {l !== 'nl' ? (
+                <button className="link small" onClick={() => removeLanguage(l)}>
+                  {t('Deze taal weghalen')}
+                </button>
+              ) : null}
               <label htmlFor={`pz-title-${l}`}>{t('Titel')}</label>
               <input id={`pz-title-${l}`} value={draft.title[l] ?? ''} onChange={(e) => setText('title', l, e.target.value)} />
               <label htmlFor={`pz-body-${l}`}>{t('Opdrachttekst')}</label>
@@ -291,7 +366,10 @@ export default function PuzzlesPage() {
                   </button>
                 </td>
                 <td>{answerText(p)}</td>
-                <td>{p.hints.length}</td>
+                <td>
+                  {p.hints.length}
+                  {p.hints.some((h) => h.image) ? <span className="muted small"> · {t('{n} met foto', { n: p.hints.filter((h) => h.image).length })}</span> : null}
+                </td>
                 <td>{languagesOf({ ...p }).join(', ').toUpperCase()}</td>
                 <td>
                   <button className="link small" onClick={() => remove(p)} disabled={busy}>

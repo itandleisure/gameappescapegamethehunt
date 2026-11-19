@@ -886,4 +886,7 @@ export const de: Record<string, string> = {
   "Wachtwoord vergeten?": "Passwort vergessen?",
   "Wachtwoord kiezen": "Passwort wählen",
   "Kies een wachtwoord voor {email}. Daarmee log je voortaan in.": "Wähle ein Passwort für {email}. Damit meldest du dich künftig an.",
+  "Spelers zien de foto boven de opdrachttekst. Leeg laten = de foto van de puzzelplek.": "Die Spieler sehen das Foto über dem Aufgabentext. Leer lassen = das Foto des Rätselplatzes.",
+  "{n} met foto": "{n} mit Foto",
+  "Deze taal weghalen": "Diese Sprache entfernen",
 };

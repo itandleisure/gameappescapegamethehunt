@@ -35,5 +35,17 @@ do $$ begin
 exception when insufficient_privilege then null;
 end $$;
 
+-- Puzzelfoto's: alleen redacteuren van de organisatie mogen uploaden onder puzzels/<org>/.
+do $$ begin
+  insert into storage.objects (bucket_id, name) values ('media', 'puzzels/' || current_setting('tests.org') || '/nep.jpg');
+  raise exception 'buitenstaander kon een puzzelfoto uploaden';
+exception when insufficient_privilege then null;
+end $$;
+select tests.login('d0000000-0000-0000-0000-000000000001');
+insert into storage.objects (bucket_id, name) values ('media', 'puzzels/' || current_setting('tests.org') || '/tangram.jpg');
+do $$ begin
+  if (select count(*) from storage.objects where name like 'puzzels/%') <> 1 then raise exception 'eigenaar kon geen puzzelfoto uploaden'; end if;
+end $$;
+
 \echo Alle tests voor fysieke puzzels geslaagd
 rollback;

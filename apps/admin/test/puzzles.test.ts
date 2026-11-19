@@ -16,6 +16,7 @@ const intl: PuzzleRow = {
   wrong_comment: {},
   answer: { type: 'number', value: 42 },
   hints: [{ cost: 25, text: { en: 'Listen closely' } }],
+  image: null,
 };
 
 describe('fysieke puzzels', () => {
@@ -53,7 +54,10 @@ describe('fysieke puzzels', () => {
   it('maakt een puzzel van een opdracht uit het template', () => {
     const p = puzzleFromTask(slots[0]!, 'Tangram');
     expect(p?.answer).toEqual(slots[0]!.answer);
-    expect(p?.hints).toEqual(slots[0]!.hints);
+    expect(p?.hints.map((h) => h.cost)).toEqual(slots[0]!.hints.map((h) => h.cost));
+    // Alleen Nederlands: de fysieke puzzels zijn er in het Nederlands.
+    expect(p?.title).toEqual({ nl: 'Tangram' });
+    expect(p?.hints.every((h) => Object.keys(h.text).every((k) => k === 'nl'))).toBe(true);
   });
 });
 
@@ -84,5 +88,23 @@ describe('naam van de gekozen puzzel in de teksten', () => {
 
   it('verandert niets zonder keuze', () => {
     expect(applyPuzzles(base, {}, [sudoku])).toEqual(base);
+  });
+});
+
+describe('foto\'s bij puzzels', () => {
+  const slots = puzzleSlots(game);
+
+  it('neemt de foto\'s van de hints en de opdracht mee uit het template', () => {
+    const task = { ...slots[0]!, image: 'https://x/p.jpg', hints: [{ cost: 25, text: {}, image: 'https://x/h1.jpg' }] };
+    const p = puzzleFromTask(task, 'Tangram')!;
+    expect(p.image).toBe('https://x/p.jpg');
+    expect(p.hints[0]!.image).toBe('https://x/h1.jpg');
+  });
+
+  it('zet de foto van de puzzel op de plek; leeg = die van de plek', () => {
+    const slot = { ...slots[1]!, image: 'https://x/plek.jpg' };
+    const g = { ...game, tasks: game.tasks.map((t) => (t.id === slot.id ? slot : t)) };
+    expect(applyPuzzles(g, { [slot.id]: ID }, [{ ...intl, image: 'https://x/nieuw.jpg' }]).tasks.find((t) => t.id === slot.id)!.image).toBe('https://x/nieuw.jpg');
+    expect(applyPuzzles(g, { [slot.id]: ID }, [intl]).tasks.find((t) => t.id === slot.id)!.image).toBe('https://x/plek.jpg');
   });
 });
