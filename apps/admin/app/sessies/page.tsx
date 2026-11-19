@@ -13,6 +13,7 @@ import {
   type SessionStatus,
 } from '@/lib/sessions';
 import { supabase } from '@/lib/supabase';
+import { DeleteSession } from '@/results/DeleteSession';
 import { OpenToggle } from '@/results/OpenToggle';
 import { tx } from '@/lib/text';
 import { displayName } from '@/lib/game-name';
@@ -39,6 +40,7 @@ interface SessionRow {
   starts_at: string | null;
   timezone: string;
   game_versions: { version: number; name: unknown; games?: GameRef } | null;
+  teams: { count: number }[];
 }
 
 interface VersionOption {
@@ -73,7 +75,7 @@ export default function SessionsPage() {
     const [s, v] = await Promise.all([
       db
         .from('sessions')
-        .select('id, name, join_code, status, test_mode, track_count, starts_at, timezone, game_versions(version, name:package->name, games(layer, slug, settings))')
+        .select('id, name, join_code, status, test_mode, track_count, starts_at, timezone, teams(count), game_versions(version, name:package->name, games(layer, slug, settings))')
         .eq('org_id', org.id)
         .order('created_at', { ascending: false }),
       db.from('game_versions').select('id, game_id, version, name:package->name, games(layer, slug, settings)').order('version', { ascending: false }),
@@ -275,10 +277,13 @@ export default function SessionsPage() {
                     {s.test_mode ? <span className="badge test">{t('Test')}</span> : null}
                   </td>
                   <td>
-                    <div className="actions" style={{ marginTop: 0, flexWrap: 'nowrap' }}>
+                    <div className="actions" style={{ marginTop: 0, flexWrap: 'wrap' }}>
                     <Link href={`/sessies/${s.id}`} className="buttonlink">
                       {t('Live & resultaten')}
                     </Link>
+                    {org?.role !== 'instructor' ? (
+                      <DeleteSession id={s.id} name={s.name} teamCount={s.teams?.[0]?.count ?? 0} onDeleted={() => void load()} short />
+                    ) : null}
                     </div>
                   </td>
                 </tr>
