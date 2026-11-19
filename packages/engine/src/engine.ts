@@ -351,6 +351,13 @@ class Run {
       case 'locationReached': {
         if (ts.status !== 'visible' || !ts.onMap) return this.reject(event, 'opdracht staat niet open op de kaart');
         const location = locationFor(task, this.team.track);
+        // Aangekomen vóór deze versie gepubliceerd werd (het spel is tijdens het
+        // spelen live bijgewerkt): de vorige versie keurde de locatie al goed.
+        // Is een locatie verplaatst, dan houdt het team zo zijn voortgang.
+        if (this.game.publishedAt !== undefined && event.at < this.game.publishedAt) {
+          ts.status = task.confirm ? 'confirming' : 'open';
+          return;
+        }
         if (!location) return this.reject(event, 'opdracht heeft geen locatie');
         const result = checkFix(event, location, this.game.gps.maxAccuracy);
         if (result === 'unusable') return this.reject(event, 'GPS-meting te onnauwkeurig');

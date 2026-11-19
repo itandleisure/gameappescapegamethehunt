@@ -83,6 +83,8 @@ export const hu: Messages = {
   errorLocked: 'Ehhez a játékhoz már nem csatlakozhatnak új csapatok. Már játszotok? Írjátok be lent a játékkódot és a csapatnevet.',
   chat: 'Chat',
   chatTitle: 'Chat a többi csapattal',
+  gameUpdatedTitle: 'A játék frissült',
+  gameUpdatedBody: 'A játékmester módosította a játékot. Az előrehaladásotok, pontjaitok és időtök megmarad. Játsszatok tovább.',
   chatEmpty: 'Még nincsenek üzenetek. Köszönjetek a többi csapatnak!',
   chatPlaceholder: 'Írjatok üzenetet',
   chatSend: 'Küldés',

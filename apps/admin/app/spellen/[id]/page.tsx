@@ -9,7 +9,9 @@ import type { LayerRows } from "@/lib/game-model";
 import {
   loadBaseVersions,
   loadChain,
-  publish,
+  liveSessionsSummary,
+  publishLive,
+  type LiveSessions,
   setCityBaseVersion,
   versionLabel,
   type BaseVersion,
@@ -95,6 +97,9 @@ export default function GamePage() {
   const [nameDraft, setNameDraft] = useState<NameByLang | null>(null);
   /** Voortgang van "Alle opdrachten vertalen". */
   const [bulk, setBulk] = useState<{ done: number; total: number } | null>(null);
+  /** Open tickets die bij publiceren live bijgewerkt kunnen worden. */
+  const [live, setLive] = useState<LiveSessions | null>(null);
+  const [updateLive, setUpdateLive] = useState(false);
 
   const load = useCallback(async () => {
     const db = supabase();
@@ -116,6 +121,7 @@ export default function GamePage() {
       setVersions((v.data ?? []) as Version[]);
       setChildren((k.data ?? []) as Child[]);
       setBaseVersions(await loadBaseVersions(db, c[0]!.game.id));
+      setLive(c[c.length - 1]!.game.layer === "base" ? null : await liveSessionsSummary(db, id));
     } catch (err) {
       setErrors([err instanceof Error ? err.message : String(err)]);
     }
@@ -161,10 +167,13 @@ export default function GamePage() {
     setErrors([]);
     setNotice(null);
     try {
-      const version = await publish(supabase(), id);
+      const { version, updated } = await publishLive(supabase(), id, updateLive && (live?.sessions ?? 0) > 0);
       setNotice(
-        t("Gepubliceerd als versie {n}. Nieuwe tickets kunnen deze versie kiezen.", { n: version }),
+        updated > 0
+          ? t("Gepubliceerd als versie {n}. {count} lopende tickets zijn bijgewerkt: de spelers krijgen binnen een halve minuut de melding “Spel bijgewerkt” en spelen verder met hun voortgang.", { n: version, count: updated })
+          : t("Gepubliceerd als versie {n}. Nieuwe tickets kunnen deze versie kiezen.", { n: version }),
       );
+      setUpdateLive(false);
       await load();
     } catch (err) {
       setErrors(
@@ -504,9 +513,23 @@ export default function GamePage() {
         // publiceren (een versie waar hunts mee spelen) hoort bij een stad of klant.
         before={
           isBase ? null : (
-            <button onClick={() => void doPublish()} disabled={busy}>
-              {busy ? t("Bezig…") : t("Publiceren")}
-            </button>
+            <>
+              <button onClick={() => void doPublish()} disabled={busy}>
+                {busy ? t("Bezig…") : t("Publiceren")}
+              </button>
+              {live && live.sessions > 0 ? (
+                <label
+                  style={{ display: "inline-flex", gap: 6, alignItems: "center", fontWeight: "normal" }}
+                  title={t("De open tickets van dit spel krijgen meteen de nieuwe versie. Opgeloste opdrachten, punten en tijd blijven bewaard.")}
+                >
+                  <input type="checkbox" checked={updateLive} disabled={busy} onChange={(e) => setUpdateLive(e.target.checked)} />
+                  {t("Ook lopende spelers bijwerken ({sessions} open tickets, {teams} teams spelen nu)", {
+                    sessions: live.sessions,
+                    teams: live.teams,
+                  })}
+                </label>
+              ) : null}
+            </>
           )
         }
         after={

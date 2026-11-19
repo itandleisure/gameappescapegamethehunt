@@ -83,6 +83,8 @@ export const ga: Messages = {
   errorLocked: 'Ní féidir le foirne nua páirt a ghlacadh sa chluiche seo a thuilleadh. Ag imirt cheana? Cuirigí cód an chluiche agus ainm na foirne isteach thíos.',
   chat: 'Comhrá',
   chatTitle: 'Comhrá leis na foirne eile',
+  gameUpdatedTitle: 'Cluiche nuashonraithe',
+  gameUpdatedBody: 'Tá an cluiche nuashonraithe ag an máistir cluiche. Coinnítear bhur ndul chun cinn, pointí agus am. Leanaigí ar aghaidh ag imirt.',
   chatEmpty: 'Níl aon teachtaireachtaí fós. Abraigí haigh leis na foirne eile!',
   chatPlaceholder: 'Clóscríobh teachtaireacht',
   chatSend: 'Seol',

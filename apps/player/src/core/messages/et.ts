@@ -83,6 +83,8 @@ export const et: Messages = {
   errorLocked: 'Selle mänguga ei saa uued meeskonnad enam liituda. Mängite juba? Sisestage allpool mängukood ja meeskonna nimi.',
   chat: 'Vestlus',
   chatTitle: 'Vestlus teiste meeskondadega',
+  gameUpdatedTitle: 'Mängu uuendati',
+  gameUpdatedBody: 'Mängujuht uuendas mängu. Teie edenemine, punktid ja aeg säilivad. Mängige lihtsalt edasi.',
   chatEmpty: 'Sõnumeid veel pole. Öelge teistele meeskondadele tere!',
   chatPlaceholder: 'Kirjutage sõnum',
   chatSend: 'Saada',

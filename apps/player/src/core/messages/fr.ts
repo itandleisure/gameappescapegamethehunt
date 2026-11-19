@@ -83,6 +83,8 @@ export const fr: Messages = {
   errorLocked: "Les nouvelles équipes ne peuvent plus rejoindre cette partie. Vous jouez déjà ? Saisissez ci-dessous le code du jeu et le nom de votre équipe.",
   chat: 'Chat',
   chatTitle: 'Chat avec les autres équipes',
+  gameUpdatedTitle: 'Jeu mis à jour',
+  gameUpdatedBody: 'Le maître du jeu a modifié le jeu. Votre progression, vos points et votre temps sont conservés. Continuez à jouer.',
   chatEmpty: 'Pas encore de messages. Dites bonjour aux autres équipes !',
   chatPlaceholder: 'Écrivez un message',
   chatSend: 'Envoyer',

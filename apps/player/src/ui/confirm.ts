@@ -7,3 +7,8 @@ export function confirmAction(title: string, message: string, yes: string, no: s
     { text: yes, style: 'destructive', onPress: onYes },
   ]);
 }
+
+/** Melding met één knop. */
+export function notify(title: string, message: string, ok: string) {
+  Alert.alert(title, message, [{ text: ok }]);
+}

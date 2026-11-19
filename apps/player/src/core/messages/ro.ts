@@ -83,6 +83,8 @@ export const ro: Messages = {
   errorLocked: 'Echipele noi nu mai pot intra în acest joc. Jucați deja? Introduceți mai jos codul jocului și numele echipei.',
   chat: 'Chat',
   chatTitle: 'Chat cu celelalte echipe',
+  gameUpdatedTitle: 'Joc actualizat',
+  gameUpdatedBody: 'Organizatorul a actualizat jocul. Progresul, punctele și timpul vostru rămân salvate. Continuați să jucați.',
   chatEmpty: 'Încă nu sunt mesaje. Salutați celelalte echipe!',
   chatPlaceholder: 'Scrieți un mesaj',
   chatSend: 'Trimite',

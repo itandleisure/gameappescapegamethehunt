@@ -83,6 +83,8 @@ export const lv: Messages = {
   errorLocked: 'Jaunas komandas vairs nevar pievienoties šai spēlei. Jau spēlējat? Zemāk ievadiet spēles kodu un komandas nosaukumu.',
   chat: 'Tērzēšana',
   chatTitle: 'Tērzēšana ar citām komandām',
+  gameUpdatedTitle: 'Spēle atjaunināta',
+  gameUpdatedBody: 'Spēles vadītājs atjaunināja spēli. Jūsu progress, punkti un laiks saglabājas. Vienkārši spēlējiet tālāk.',
   chatEmpty: 'Vēl nav ziņu. Sasveiciniet citas komandas!',
   chatPlaceholder: 'Rakstiet ziņu',
   chatSend: 'Sūtīt',

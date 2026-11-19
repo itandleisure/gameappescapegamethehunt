@@ -166,6 +166,7 @@ describe('GameController', () => {
     const snap = c.snapshot();
     expect(snap.online).toBe(false);
     expect(snap.pending).toBe(2);
+    expect(snap.state!.rejected).toEqual([]);
     expect(snap.state!.tasks.start!.status).toBe('done'); // spel loopt gewoon door
 
     s.backend.offline = false;
@@ -343,4 +344,60 @@ describe('teamchat', () => {
     expect(c.teamChat).toBe(false);
     expect(c.snapshot().chatUnread).toBe(0);
   });
+
+  it('laadt een live bijgewerkt spel, meldt het één keer en houdt de voortgang', async () => {
+    const s = setup();
+    const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl', '06 12345678');
+    await c.start();
+    s.advance(5_000);
+    await c.onLocation(s.fix(leeuwardenPoints.start));
+    s.advance(1_000);
+    expect(await c.onLocation(s.fix(leeuwardenPoints.start))).toEqual(['start']);
+    await c.answer('start', { type: 'info' });
+    await c.tick();
+    const before = c.snapshot().state!;
+    expect(before.tasks.start!.status).toBe('done');
+
+    s.advance(60_000);
+    // De beheerder verplaatst de startlocatie en werkt de hunt live bij.
+    const v2 = {
+      ...game,
+      version: 2,
+      publishedAt: s.backend.serverNow,
+      tasks: game.tasks.map((t) => (t.id === 'start' && t.location ? { ...t, location: { ...t.location, lat: t.location.lat + 0.005 } } : t)),
+    };
+    s.backend.liveUpdate(v2, 'versie-2');
+    s.advance(31_000);
+    await c.tick();
+
+    const snap = c.snapshot();
+    expect(snap.game.version).toBe(2);
+    expect(snap.gameUpdated).toBe(true);
+    expect(snap.state!.rejected).toEqual([]);
+    expect(snap.state!.tasks.start!.status).toBe('done');
+    expect(snap.state!.score).toBe(before.score);
+    expect(snap.state!.rejected).toEqual([]);
+
+    await c.dismissGameUpdate();
+    s.advance(31_000);
+    await c.tick();
+    expect(c.snapshot().gameUpdated).toBe(false);
+
+    // Na herstarten van de app blijft het de nieuwe versie, zonder nieuwe melding.
+    const again = await GameController.resume(s.deps);
+    expect(again!.game.version).toBe(2);
+    expect(again!.snapshot().gameUpdated).toBe(false);
+  });
+
+  it('meldt niets bij een spel van vóór de versiecontrole dat niet veranderd is', async () => {
+    const s = setup();
+    await GameController.join(s.deps, 'LWD001', 'Team', 'nl', '06 12345678');
+    // Zoals een spel dat al op de telefoon stond vóór deze update: zonder versie-id.
+    const saved = JSON.parse((await s.store.getItem(STORAGE_KEY))!);
+    delete saved.loaded.versionId;
+    await s.store.setItem(STORAGE_KEY, JSON.stringify(saved));
+    const resumed = await GameController.resume(s.deps);
+    expect(resumed!.snapshot().gameUpdated).toBe(false);
+  });
 });
+

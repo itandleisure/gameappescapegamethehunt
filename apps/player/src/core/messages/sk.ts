@@ -83,6 +83,8 @@ export const sk: Messages = {
   errorLocked: 'Do tejto hry sa už nové tímy nemôžu pridať. Už hráte? Zadajte nižšie kód hry a názov tímu.',
   chat: 'Chat',
   chatTitle: 'Chat s ostatnými tímami',
+  gameUpdatedTitle: 'Hra aktualizovaná',
+  gameUpdatedBody: 'Organizátor hru upravil. Váš postup, body aj čas zostávajú zachované. Hrajte ďalej.',
   chatEmpty: 'Zatiaľ žiadne správy. Pozdravte ostatné tímy!',
   chatPlaceholder: 'Napíšte správu',
   chatSend: 'Odoslať',
