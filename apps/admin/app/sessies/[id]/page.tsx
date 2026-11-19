@@ -13,6 +13,7 @@ import { Answers } from '@/results/Answers';
 import { LiveMap } from '@/results/LiveMap';
 import { DeleteSession } from '@/results/DeleteSession';
 import { EventLinks } from '@/results/EventLinks';
+import { EventLog } from '@/results/EventLog';
 import { LeaderCode } from '@/results/LeaderCode';
 import { OpenToggle } from '@/results/OpenToggle';
 import { PhotobookEditor } from '@/results/PhotobookEditor';
@@ -28,6 +29,7 @@ const TABS = [
   { id: 'fotoboek', label: tKey('Fotoboek') },
   { id: 'chat', label: tKey('Teamchat') },
   { id: 'hunters', label: tKey('Chat hunters') },
+  { id: 'logging', label: tKey('Logging') },
 ] as const;
 type Tab = (typeof TABS)[number]['id'];
 
@@ -139,6 +141,7 @@ export default function SessionLivePage() {
       {tab === 'fotoboek' ? <PhotobookEditor data={data} view={view} /> : null}
       {tab === 'chat' ? <TeamChat key="teams" data={data} colors={colors} onChange={() => void reload()} /> : null}
       {tab === 'hunters' ? <TeamChat key="hunters" channel="hunters" data={data} colors={colors} onChange={() => void reload()} /> : null}
+      {tab === 'logging' ? <EventLog data={data} colors={colors} updatedAt={Math.max(now, updatedAt)} /> : null}
     </>
   );
 }
