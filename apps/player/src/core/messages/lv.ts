@@ -35,6 +35,7 @@ export const lv: Messages = {
   map: 'Karte',
   noTasks: 'Pašlaik nav pieejamu uzdevumu.',
   codeTitle: 'Evakuācijas punkta GPS kods',
+  codeHintTitle: 'Mājiens par evakuācijas punktu',
   answerPlaceholder: 'Jūsu atbilde',
   submit: 'Nosūtīt',
   correct: 'Pareizi!',

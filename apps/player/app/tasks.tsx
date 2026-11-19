@@ -47,6 +47,7 @@ export default function TasksScreen() {
                 <CodeBoxes
                   view={code}
                   hintText={code.hint?.open ? tr(code.hint.text) : undefined}
+                  hintTitle={t("codeHintTitle")}
                 />
               ) : null}
               {group.tasks.map((task) => {

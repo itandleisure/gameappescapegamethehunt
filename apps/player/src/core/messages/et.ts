@@ -35,6 +35,7 @@ export const et: Messages = {
   map: 'Kaart',
   noTasks: 'Praegu pole ühtegi ülesannet saadaval.',
   codeTitle: 'Väljumispunkti GPS-kood',
+  codeHintTitle: 'Vihje väljumispunkti kohta',
   answerPlaceholder: 'Teie vastus',
   submit: 'Saada',
   correct: 'Õige!',

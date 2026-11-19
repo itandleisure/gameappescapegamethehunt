@@ -35,6 +35,7 @@ export const mt: Messages = {
   map: 'Mappa',
   noTasks: 'Bħalissa m’hemm l-ebda kompitu disponibbli.',
   codeTitle: 'Kodiċi GPS tal-punt tal-ħruġ',
+  codeHintTitle: 'Ħjiel dwar il-punt tal-ħruġ',
   answerPlaceholder: 'It-tweġiba tagħkom',
   submit: 'Ibgħat',
   correct: 'Tajjeb!',

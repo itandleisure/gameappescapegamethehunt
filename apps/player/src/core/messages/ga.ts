@@ -35,6 +35,7 @@ export const ga: Messages = {
   map: 'Léarscáil',
   noTasks: 'Níl aon tascanna ar fáil faoi láthair.',
   codeTitle: 'Cód GPS an phointe éalaithe',
+  codeHintTitle: 'Leid faoin bpointe éalaithe',
   answerPlaceholder: 'Bhur bhfreagra',
   submit: 'Seol',
   correct: 'Ceart!',
