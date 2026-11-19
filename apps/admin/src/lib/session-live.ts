@@ -49,6 +49,8 @@ export interface LiveTeam extends TeamRow {
   phone?: string | null;
   /** Afstand die bij het opruimen (na 28 dagen) is vastgelegd; daarna zijn er geen posities meer. */
   stored_distance_m?: number | null;
+  /** Moment van aanmelden (voor het logboek). */
+  created_at?: string | null;
 }
 
 /** Telefoonnummers per team. Leeg als de tabel er (nog) niet is of er geen toegang is. */
@@ -89,7 +91,7 @@ function mergeById<T extends { id: string | number }>(list: T[], rows: T[]): T[]
   return fresh.length ? [...list, ...fresh] : list;
 }
 
-const TEAM_COLUMNS = 'id, name, track, language, score, outcome, started_at, ended_at, login_order, team_code, caught, ready_at, stored_distance_m:distance_m';
+const TEAM_COLUMNS = 'id, name, track, language, score, outcome, started_at, ended_at, login_order, team_code, caught, ready_at, created_at, stored_distance_m:distance_m';
 
 export function useSessionLive(id: string) {
   const [data, setData] = useState<SessionLive | null>(null);
