@@ -193,7 +193,8 @@ export default function SetupPage() {
       must(await db.from('games').update({ settings: { ...settings, ...extra, todo: done } }).eq('id', id));
       await load();
       if (step < CITY_TODOS.length) goTo(step + 1);
-      else setNotice(t('Opgeslagen.'));
+      // Laatste stap: naar het overzicht van het spel, om te controleren en te publiceren.
+      else router.push(`/spellen/${id}`);
     } catch (err) {
       setErrors([err instanceof Error ? err.message : String(err)]);
     } finally {
