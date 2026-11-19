@@ -12,6 +12,8 @@ export interface TaskForm {
   title: Texts;
   body: Texts;
   image: string;
+  /** Foto: kaartje van het getekende speelveld in plaats van een eigen foto. */
+  playfieldImage: boolean;
   hasConfirm: boolean;
   confirm: Texts;
   correctComment: Texts;
@@ -47,6 +49,7 @@ export function taskToForm(task: Task): TaskForm {
     title: texts(task.title),
     body: texts(task.body),
     image: task.image ?? '',
+    playfieldImage: task.playfieldImage ?? false,
     hasConfirm: task.confirm !== undefined,
     confirm: texts(task.confirm),
     correctComment: texts(task.correctComment),
@@ -163,6 +166,7 @@ export function formToTask(key: string, form: TaskForm): { task: Task; errors: s
     task.mapLabel = mapLabel;
   }
   if (form.mapIcon) task.mapIcon = form.mapIcon;
+  if (form.playfieldImage) task.playfieldImage = true;
   if (wrongPoints !== 0) task.wrongPoints = wrongPoints;
   if (form.hasConfirm) task.confirm = cleanText(form.confirm);
   if (form.retryUntilCorrect) task.retryUntilCorrect = true;

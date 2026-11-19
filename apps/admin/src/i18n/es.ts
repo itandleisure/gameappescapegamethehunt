@@ -989,4 +989,10 @@ export const es: Record<string, string> = {
   "Meteen opnieuw publiceren (ook de klantvarianten eronder), zodat nieuwe events deze versie krijgen": "Publicar de nuevo enseguida (también las variantes de cliente debajo), para que los nuevos eventos reciban esta versión",
   "1 stad overzetten": "Cambiar 1 ciudad",
   "{n} steden overzetten": "Cambiar {n} ciudades",
+  "Bij publiceren wordt van het speelveld een kaartje gemaakt. Dat staat als foto bij de uitleg “Speelveld” (en elke opdracht met “Kaartje van het speelveld tonen”).": "Al publicar se crea una imagen del mapa del área de juego. Aparece como foto en la explicación «Área de juego» (y en cada tarea con «Mostrar imagen del mapa del área de juego»).",
+  "Voorbeeld van het kaartje": "Vista previa de la imagen del mapa",
+  "Kaartje van het speelveld": "Imagen del mapa del área de juego",
+  "In de app staat hier het kaartje van het speelveld van deze stad. Het wordt bij publiceren vanzelf gemaakt van de getekende grens op de kaartpagina.": "En la app aquí aparece la imagen del mapa del área de juego de esta ciudad. Se crea automáticamente al publicar, a partir del límite dibujado en la página del mapa.",
+  "Kaartje van het speelveld tonen": "Mostrar imagen del mapa del área de juego",
+  "Bij publiceren maakt de beheeromgeving per stad een kaartje van het getekende speelveld (kaart met de grens erop) en toont dat in plaats van de foto hierboven. Zonder getekend speelveld blijft de foto staan.": "Al publicar, la administración crea para cada ciudad una imagen del mapa del área de juego dibujada (el mapa con el límite) y la muestra en lugar de la foto de arriba. Sin área de juego dibujada se mantiene la foto.",
 };

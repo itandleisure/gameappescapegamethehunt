@@ -29,6 +29,7 @@ import { useT } from '@/lib/language';
 import { allPins, circle, pinsFor, trackColor, trackCount, type Pin, type TrackChoice } from '@/lib/map-edit';
 import { gameFieldEditable, imageCorners, ownGameField, type MapGameField } from '@/lib/map-settings';
 import { loadMaplibre } from '@/lib/maplibre';
+import { playfieldStyle, renderPlayfieldImage } from '@/lib/playfield-image';
 import { supabase } from '@/lib/supabase';
 import { tx } from '@/lib/text';
 import { GameNav } from '@/editor/GameNav';
@@ -78,6 +79,9 @@ export default function MapPage() {
   const [allowed, setAllowed] = useState<Record<MapGameField, Layer[]>>({ map: [], mapOverlay: [], meetingPoint: [], boundary: [] });
   const [allowedDirty, setAllowedDirty] = useState(false);
   const shownStyle = useRef<string | null>(null);
+  /** Voorbeeld van het kaartje voor de speluitleg (zie playfield-image.ts). */
+  const [preview, setPreview] = useState<string | null>(null);
+  const [previewBusy, setPreviewBusy] = useState(false);
   const meetingMarker = useRef<Marker | null>(null);
 
   const load = useCallback(async () => {
@@ -477,6 +481,24 @@ export default function MapPage() {
     }
   };
 
+  const makePreview = async () => {
+    if (!boundary) return;
+    setPreviewBusy(true);
+    setErrors([]);
+    try {
+      const { styleUrl, attribution } = playfieldStyle({ map: mapSource ?? undefined });
+      const blob = await renderPlayfieldImage(await loadMaplibre(), boundary, styleUrl, attribution);
+      setPreview((old) => {
+        if (old) URL.revokeObjectURL(old);
+        return URL.createObjectURL(blob);
+      });
+    } catch (err) {
+      setErrors([err instanceof Error ? err.message : String(err)]);
+    } finally {
+      setPreviewBusy(false);
+    }
+  };
+
   const reset = async (field: MapGameField) => {
     // Een variant valt terug op de waarde uit de laag erboven.
     setBusy(true);
@@ -682,6 +704,22 @@ export default function MapPage() {
           ) : (
             <p className="muted small">{t('Niet aan te passen in deze laag.')}</p>
           )}
+          {boundary && boundary.points.length >= 3 ? (
+            <>
+              <p className="muted small">
+                {t('Bij publiceren wordt van het speelveld een kaartje gemaakt. Dat staat als foto bij de uitleg “Speelveld” (en elke opdracht met “Kaartje van het speelveld tonen”).')}
+              </p>
+              <div className="actions">
+                <button className="secondary" disabled={previewBusy} onClick={() => void makePreview()}>
+                  {previewBusy ? t('Bezig…') : t('Voorbeeld van het kaartje')}
+                </button>
+              </div>
+              {preview ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={preview} alt={t('Kaartje van het speelveld')} style={{ width: '100%', border: '1px solid #ddd', borderRadius: 6 }} />
+              ) : null}
+            </>
+          ) : null}
           <h2>{t('Verzamelpunt')}</h2>
           <p className="muted small">{t('Waar teams aan het begin en einde samenkomen. Sleep het oranje icoon om het te verplaatsen.')}</p>
           {!canMeeting ? (

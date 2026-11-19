@@ -69,6 +69,13 @@ export interface Task {
   body: Text;
   /** Ondersteunende foto bij de tekst: absolute https-URL (PNG, JPG of WebP). */
   image?: string;
+  /**
+   * Toon als foto een kaartje van het getekende speelveld (kaart met de grens
+   * erop), zoals bij het uitlegscherm "Speelveld". De beheeromgeving maakt dat
+   * kaartje per stad bij het publiceren en zet het in `image`. Zonder getekend
+   * speelveld blijft de gewone foto staan.
+   */
+  playfieldImage?: boolean;
   /** Kort nummer of teken in het kaarticoon (bijvoorbeeld 1, 2, 3) in plaats van de titel. */
   mapLabel?: string;
   /**
