@@ -102,12 +102,13 @@ export function Button({
   );
 }
 
-export function Field(props: TextInputProps & { label: string; hint?: string }) {
-  const { label, hint, style, ...rest } = props;
+/** Invoerveld met label. `compact`: minder ruimte eromheen, voor formulieren die zonder scrollen in beeld moeten passen. */
+export function Field(props: TextInputProps & { label: string; hint?: string; compact?: boolean }) {
+  const { label, hint, compact, style, ...rest } = props;
   return (
-    <View style={styles.field}>
+    <View style={[styles.field, compact && styles.fieldCompact]}>
       <Text style={styles.label}>{label}</Text>
-      <TextInput placeholderTextColor={colors.textMuted} style={[styles.input, style]} {...rest} />
+      <TextInput placeholderTextColor={colors.textMuted} style={[styles.input, compact && styles.inputCompact, style]} {...rest} />
       {hint ? <Text style={styles.hint}>{hint}</Text> : null}
     </View>
   );
@@ -164,6 +165,7 @@ const styles = StyleSheet.create({
   buttonLabel: { color: colors.accentText, fontSize: 17, fontWeight: '700' },
   buttonLabelLight: { color: colors.text },
   field: { marginBottom: space.md },
+  fieldCompact: { marginBottom: 12 },
   label: { color: colors.textMuted, fontSize: 14, marginBottom: space.xs },
   input: {
     backgroundColor: colors.surface,
@@ -175,6 +177,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 18,
   },
+  inputCompact: { paddingVertical: 10 },
   hint: { color: colors.textMuted, fontSize: 13, marginTop: space.xs },
   banner: { borderRadius: radius.sm, padding: space.sm, marginBottom: space.sm },
   bannerText: { fontSize: 14, fontWeight: '600' },
