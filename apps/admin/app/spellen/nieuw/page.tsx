@@ -15,7 +15,7 @@ import {
 } from '@/lib/city-rollout';
 import { GameNav } from '@/editor/GameNav';
 import { cleanName } from '@/lib/game-name';
-import { loadBaseVersions, rolloutCity, type BaseVersion } from '@/lib/game-store';
+import { loadBaseVersions, rolloutCity, versionLabel, type BaseVersion } from '@/lib/game-store';
 import { useLanguage } from '@/lib/language';
 import { supabase } from '@/lib/supabase';
 
@@ -193,7 +193,7 @@ function NewCity() {
                 <select id="version" value={version} onChange={(e) => setVersion(e.target.value)} disabled={busy}>
                   {versions.map((v, i) => (
                     <option key={v.version} value={String(v.version)}>
-                      {t('Template versie {n}', { n: v.version })} · {new Date(v.created_at).toLocaleDateString(locale)}
+                      {versionLabel(v)} · {new Date(v.created_at).toLocaleDateString(locale)}
                       {i === 0 ? ` (${t('nieuwste')})` : ''}
                     </option>
                   ))}
@@ -276,7 +276,7 @@ function NewCity() {
           <section className="card" style={{ marginTop: 16 }}>
             <h2 style={{ marginTop: 0 }}>3. {t('Naam van het spel')}</h2>
             <p className="muted" style={{ marginTop: 0 }}>
-              {t('Dit is de naam in de beheeromgeving, bijvoorbeeld bij het kiezen van een spel voor een nieuwe hunt. Spelers zien de naam van het basisspel.')}
+              {t('Dit is de naam in de beheeromgeving, bijvoorbeeld bij het kiezen van een spel voor een nieuw event. Spelers zien de naam van het basisspel.')}
             </p>
             <div className="row">
               {(base?.languages ?? []).map((l) => (

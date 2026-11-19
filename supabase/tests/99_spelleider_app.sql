@@ -136,7 +136,7 @@ do $$ begin
   end;
 end $$;
 
--- Hunters-chat: spelleiders onderling, met hun eigen naam (migratie 20261120035000).
+-- Hunters-chat: spelleiders onderling, met hun eigen naam (migratie 20261120050000).
 select tests.login('fa000000-0000-0000-0000-000000000005');
 do $$ begin
   assert public.leader_send_hunter_message('5fa00000-0000-0000-0000-000000000001', ' Ik sta bij de kerk ') ->> 'sender_name' in ('Piet', 'PIET'),
