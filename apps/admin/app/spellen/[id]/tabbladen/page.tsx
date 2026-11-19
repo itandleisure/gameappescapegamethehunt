@@ -204,7 +204,7 @@ export default function TabbladenPage() {
       <h1>{t('Tabbladen')}</h1>
       <GameNav id={id} layer={self.game.layer} active="tabbladen" />
       <p className="muted">
-        {t('Tabbladen staan in de app onder Opdrachten, zoals Speluitleg en Extractiepunt. Een tabblad kan een naslagtekst hebben (per taal) en vakjes met de GPS-code: elk vakje gaat open zodra de opdracht die erbij hoort goed is. Gelezen uitleg verdwijnt uit de lijst; de naslagtekst blijft hier staan.')}
+        {t('Tabbladen staan in de app onder Opdrachten, zoals Extractiepunt. Een tabblad kan vakjes met de GPS-code hebben: elk vakje gaat open zodra de opdracht die erbij hoort goed is. Gelezen uitleg verdwijnt uit de lijst. Een tabblad met alleen uitleg (zoals Speluitleg) staat niet tussen de opdrachten.')}
       </p>
       {!isBase ? (
         <>
@@ -382,19 +382,6 @@ function PlaygroundCard({
         value={p.name[lang] ?? ""}
         placeholder={p.name[base.defaultLanguage] ?? ""}
         onChange={(e) => setText("name", lang, e.target.value)}
-      />
-
-      <label htmlFor={`${p.id}-body`}>
-        {t("Naslagtekst ({lang})", { lang: gameLanguageShort(lang) })}
-      </label>
-      <p className="muted" style={{ marginTop: 0 }}>
-        {t("Vaste tekst bovenaan dit tabblad, zoals de tijdlijn van het spel. Mag leeg blijven.")}
-      </p>
-      <textarea
-        id={`${p.id}-body`}
-        rows={p.body?.[lang] ? 8 : 3}
-        value={p.body?.[lang] ?? ""}
-        onChange={(e) => setText("body", lang, e.target.value)}
       />
 
       {/* De codevakjes horen alleen bij het extractiepunt. */}
