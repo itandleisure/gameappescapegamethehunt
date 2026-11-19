@@ -28,13 +28,34 @@ describe('GPS', () => {
     expect(gate.feed(fix(5, 8, 3000), [target])).toEqual(['t']);
   });
 
-  it('telt metingen met slechte nauwkeurigheid niet mee', () => {
+  it('negeert metingen die extreem onnauwkeurig zijn', () => {
     const gate = new LocationGate();
-    expect(gate.feed(fix(0, 50, 0), [target])).toEqual([]);
-    expect(gate.feed(fix(0, 50, 1000), [target])).toEqual([]);
+    expect(gate.feed(fix(0, 200, 0), [target])).toEqual([]);
+    expect(gate.feed(fix(0, 200, 1000), [target])).toEqual([]);
     expect(gate.feed(fix(0, 12, 2000), [target])).toEqual([]);
-    expect(gate.feed(fix(0, 45, 3000), [target])).toEqual([]); // reset niets
+    expect(gate.feed(fix(0, 120, 3000), [target])).toEqual([]); // reset niets
     expect(gate.feed(fix(0, 12, 4000), [target])).toEqual(['t']);
+  });
+
+  it('opent bij zwak signaal als de onzekerheid de cirkel raakt', () => {
+    const gate = new LocationGate();
+    // 60 m van het midden, straal 20, onzekerheid 50: raakt de cirkel
+    expect(gate.feed(fix(60, 50, 0), [target])).toEqual([]);
+    expect(gate.feed(fix(60, 50, 1000), [target])).toEqual(['t']);
+  });
+
+  it('opent bij zwak signaal niet als de onzekerheid de cirkel niet raakt', () => {
+    const gate = new LocationGate();
+    // 90 m van het midden, straal 20, onzekerheid 50: blijft erbuiten
+    expect(gate.feed(fix(90, 50, 0), [target])).toEqual([]);
+    expect(gate.feed(fix(90, 50, 1000), [target])).toEqual([]);
+  });
+
+  it('een zwakke meting buiten de cirkel heropent een locatie niet', () => {
+    const gate = new LocationGate({ requiredFixes: 1 });
+    expect(gate.feed(fix(0, 5, 0), [target])).toEqual(['t']);
+    gate.feed(fix(150, 60, 1000), [target]); // zwak en ver weg: niet "vertrokken"
+    expect(gate.feed(fix(0, 5, 2000), [target])).toEqual([]);
   });
 
   it('opent ook na een paar seconden binnen de cirkel', () => {

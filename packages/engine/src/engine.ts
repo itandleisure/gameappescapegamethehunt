@@ -1,5 +1,5 @@
 import { checkAnswer } from './answers.js';
-import { distanceMeters } from './geo.js';
+import { checkFix } from './geo.js';
 import type {
   Action,
   Condition,
@@ -352,10 +352,9 @@ class Run {
         if (ts.status !== 'visible' || !ts.onMap) return this.reject(event, 'opdracht staat niet open op de kaart');
         const location = locationFor(task, this.team.track);
         if (!location) return this.reject(event, 'opdracht heeft geen locatie');
-        if (!(event.accuracy >= 0) || event.accuracy > this.game.gps.maxAccuracy) {
-          return this.reject(event, 'GPS-meting te onnauwkeurig');
-        }
-        if (distanceMeters(event, location) > location.radius) return this.reject(event, 'buiten de straal');
+        const result = checkFix(event, location, this.game.gps.maxAccuracy);
+        if (result === 'unusable') return this.reject(event, 'GPS-meting te onnauwkeurig');
+        if (result === 'outside') return this.reject(event, 'buiten de straal');
         ts.status = task.confirm ? 'confirming' : 'open';
         return;
       }
