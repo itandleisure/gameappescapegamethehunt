@@ -37,7 +37,7 @@ end $$;
 select public.leader_code('5fa00000-0000-0000-0000-000000000001') as code \gset
 select set_config('tests.code', :'code', false);
 do $$ begin
-  assert length(current_setting('tests.code')) = 6, 'code van zes tekens';
+  assert current_setting('tests.code') ~ '^GAME[0-9]{3}$', 'code is GAME + 3 cijfers';
   assert public.leader_code('5fa00000-0000-0000-0000-000000000001') = current_setting('tests.code'), 'zelfde code opnieuw';
 end $$;
 
@@ -103,7 +103,8 @@ end $$;
 -- Anna logt in en ziet Piet; een derde past niet meer (maximaal 2).
 select tests.login('fa000000-0000-0000-0000-000000000004');
 do $$ begin
-  perform public.leader_join(current_setting('tests.code'), 'Anna');
+  -- Hoofdletters, spaties en streepjes maken niet uit.
+  perform public.leader_join(' ' || replace(lower(current_setting('tests.code')), 'game', 'Game-') || ' ', 'Anna');
   begin
     perform public.leader_join(current_setting('tests.code'), 'piet');
     raise exception 'naam van een ander overgenomen terwijl al ingelogd';

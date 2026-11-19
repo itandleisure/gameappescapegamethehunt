@@ -46,6 +46,7 @@ export default function LeaderLoginScreen() {
             hint={t('leaderCodeHint')}
             value={code}
             onChangeText={(v) => setCode(v.toUpperCase())}
+            placeholder="GAME123"
             autoCapitalize="characters"
             autoCorrect={false}
             maxLength={12}
