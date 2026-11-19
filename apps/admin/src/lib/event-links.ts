@@ -8,9 +8,8 @@
  * spelcode is de code van het event (bijv. "ABC12"). De spelcode alleen is al
  * genoeg om het event te vinden; het game-ID maakt de link leesbaar.
  *
- * play.badassgames.nl is het centrale adres voor alle spellen: het game-ID
- * bepaalt bij welk spel (en later: welke app of webapp) de link hoort. Nu is
- * dat altijd de app van Escape Game The Hunt (zie docs/spellinks.md).
+ * Het spel-domein (bijv. thehunt.badassgames.nl) hoort alleen bij Escape Game
+ * The Hunt; andere spellen krijgen een eigen domein (zie docs/spellinks.md).
  *
  * De spellink opent de app als die er is (universal link / app link) en
  * anders een webpagina met de knoppen naar de App Store en Google Play.
@@ -78,7 +77,7 @@ export function cleanOrigin(origin: string): string {
 
 /**
  * Domein van de spellinks. Ingesteld met NEXT_PUBLIC_SPEL_DOMEIN (bijv.
- * https://play.badassgames.nl); anders het adres van de beheeromgeving zelf.
+ * https://thehunt.badassgames.nl); anders het adres van de beheeromgeving zelf.
  */
 export function playOrigin(): string {
   const configured = process.env.NEXT_PUBLIC_SPEL_DOMEIN;

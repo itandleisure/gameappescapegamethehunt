@@ -12,7 +12,7 @@ import type { ExpoConfig } from 'expo/config';
  * na een nieuwe app-build (niet via een update), en alleen als het domein de
  * bestanden in /.well-known/ laat zien (zie docs/spellinks.md).
  */
-const APP_LINK_HOST = process.env.APP_LINK_HOST ?? 'play.badassgames.nl';
+const APP_LINK_HOST = process.env.APP_LINK_HOST ?? 'thehunt.badassgames.nl';
 
 const config: ExpoConfig = {
   name: 'Escape Game The Hunt',

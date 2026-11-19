@@ -27,7 +27,7 @@ describe('spellinks /<game-ID>:<spelcode>', () => {
 
   it('bouwt de links', () => {
     const link = { gameId: 'leeuwarden', code: 'ABC12' };
-    expect(playUrl(link, 'https://play.badassgames.nl')).toBe('https://play.badassgames.nl/leeuwarden:ABC12');
+    expect(playUrl(link, 'https://thehunt.badassgames.nl')).toBe('https://thehunt.badassgames.nl/leeuwarden:ABC12');
     expect(resultsUrl(link, 'https://beheer.example')).toBe('https://beheer.example/resultaten/leeuwarden:ABC12');
     expect(appSchemeUrl(link)).toBe('thehunt:///?code=ABC12&game=leeuwarden');
   });
