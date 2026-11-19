@@ -74,7 +74,7 @@ export function cleanOrigin(origin: string): string {
 
 /**
  * Domein van de spellinks. Ingesteld met NEXT_PUBLIC_SPEL_DOMEIN (bijv.
- * https://app.escapegamethehunt.nl); anders het adres van de beheeromgeving zelf.
+ * https://app.badassgames.nl); anders het adres van de beheeromgeving zelf.
  */
 export function playOrigin(): string {
   const configured = process.env.NEXT_PUBLIC_SPEL_DOMEIN;

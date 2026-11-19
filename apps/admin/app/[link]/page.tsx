@@ -105,8 +105,8 @@ export default function EventLinkPage() {
 
       {info === 'missing' ? (
         <div className="card">
-          <h1>{t('Deze spellink klopt niet')}</h1>
-          <p>{t('We vinden geen event met spelcode {code}. Controleer de link of vraag de organisatie om een nieuwe.', { code: parsed.code })}</p>
+          <h1>{t('Deze spelcode kennen we niet')}</h1>
+          <p>{t('We kennen spelcode {code} niet. Controleer de link of vraag de organisatie om een nieuwe.', { code: parsed.code })}</p>
         </div>
       ) : null}
 
@@ -117,9 +117,9 @@ export default function EventLinkPage() {
             {t('Jullie spelcode')}
           </p>
           <p className="eventlink-code">{link.code}</p>
-          {info.status === 'closed' ? <p className="error">{t('Dit event is gesloten.')}</p> : null}
+          {info.status === 'closed' ? <p className="error">{t('Het spel is gesloten.')}</p> : null}
           {info.status === 'draft' ? (
-            <p className="muted">{t('Dit event is nog niet geopend. Aanmelden kan zodra de spelleiding het event opent.')}</p>
+            <p className="muted">{t('Het spel is nog niet geopend. Aanmelden kan zodra de spelleiding het spel opent.')}</p>
           ) : null}
 
           <h2>{t('Zo doe je mee')}</h2>
