@@ -15,8 +15,8 @@ export const ROLE_LABELS: Record<Org['role'], string> = {
 
 /**
  * Rollen die het platform aan eigen collega's geeft. Een spelleider krijgt geen
- * account maar de spelleider-link van een hunt; bestaande spelleider-accounts
- * kunnen alleen nog kijken.
+ * account: hij logt in de game-app in met de spelleider-code van een hunt.
+ * Bestaande spelleider-accounts kunnen alleen nog kijken.
  */
 export const PLATFORM_ROLES: Org['role'][] = ['owner', 'admin'];
 /** Rollen bij een partner: nooit eigenaar of beheerder. */

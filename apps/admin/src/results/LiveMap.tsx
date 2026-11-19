@@ -26,7 +26,7 @@ function savedStyle(): string | null {
 }
 
 export function LiveMap({ data, colors }: { data: SessionLive; colors: Map<string, string> }) {
-  const { game, teams, positions } = data;
+  const { game, teams, positions, leaders } = data;
   const { t, locale } = useLanguage();
   const [focus, setFocus] = useState<string>(''); // '' = alle teams
   const [showTasks, setShowTasks] = useState(true);
@@ -34,6 +34,8 @@ export function LiveMap({ data, colors }: { data: SessionLive; colors: Map<strin
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MlMap | null>(null);
   const teamMarkers = useRef<Map<string, Marker>>(new Map());
+  const hunterMarkers = useRef<Map<string, Marker>>(new Map());
+  const [showHunters, setShowHunters] = useState(true);
   const taskMarkers = useRef<Marker[]>([]);
   // Telt op bij elke (nieuwe) kaartstijl, zodat routes opnieuw getekend worden.
   const [ready, setReady] = useState(0);
@@ -194,6 +196,39 @@ export function LiveMap({ data, colors }: { data: SessionLive; colors: Map<strin
     });
   }, [ready, visible, fullTrails, now, t]);
 
+  // Spelleiders (The Hunters) die in de game-app zijn ingelogd.
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready) return;
+    void loadMaplibre().then(({ Marker: MarkerClass }) => {
+      const keep = new Set<string>();
+      for (const h of showHunters ? leaders : []) {
+        if (h.lat === null || h.lng === null || !h.located_at) continue;
+        keep.add(h.id);
+        let marker = hunterMarkers.current.get(h.id);
+        if (!marker) {
+          const el = document.createElement('div');
+          el.className = 'huntermarker';
+          el.innerHTML = '<span class="dot"></span><span class="name"></span>';
+          marker = new MarkerClass({ element: el, anchor: 'left', offset: [-9, 0] }).setLngLat([h.lng, h.lat]).addTo(m);
+          hunterMarkers.current.set(h.id, marker);
+        }
+        marker.setLngLat([h.lng, h.lat]);
+        const el = marker.getElement();
+        const at = Date.parse(h.located_at);
+        el.classList.toggle('stale', isStale(at, now));
+        (el.querySelector('.name') as HTMLElement).textContent = h.name;
+        el.title = `${h.name} · ${ago(at, now)}`;
+      }
+      for (const [id, marker] of hunterMarkers.current) {
+        if (!keep.has(id)) {
+          marker.remove();
+          hunterMarkers.current.delete(id);
+        }
+      }
+    });
+  }, [ready, leaders, showHunters, now]);
+
   // Opdrachten.
   useEffect(() => {
     const m = map.current;
@@ -269,6 +304,12 @@ export function LiveMap({ data, colors }: { data: SessionLive; colors: Map<strin
           <input type="checkbox" checked={showTasks} onChange={(e) => setShowTasks(e.target.checked)} />
           {t('Opdrachten tonen')}
         </label>
+        {leaders.length ? (
+          <label className="check">
+            <input type="checkbox" checked={showHunters} onChange={(e) => setShowHunters(e.target.checked)} />
+            {t('Spelleiders tonen')}
+          </label>
+        ) : null}
 
         <h2>{t('Teams')}</h2>
         {mapTeams.length === 0 ? <p className="muted">{t('Nog geen teams in deze hunt.')}</p> : null}
@@ -306,6 +347,31 @@ export function LiveMap({ data, colors }: { data: SessionLive; colors: Map<strin
             );
           })}
         </ul>
+        {leaders.length ? (
+          <>
+            <h2>{t('Spelleiders')}</h2>
+            <ul className="teamlist">
+              {leaders.map((h) => (
+                <li key={h.id}>
+                  <span className="dot hunterdot" />
+                  <button
+                    className="link"
+                    onClick={() =>
+                      h.lat !== null && h.lng !== null
+                        ? map.current?.flyTo({ center: [h.lng, h.lat], zoom: Math.max(map.current.getZoom(), 16) })
+                        : undefined
+                    }
+                  >
+                    {h.name}
+                  </button>
+                  <span className={`muted small${h.located_at && isStale(Date.parse(h.located_at), now) ? ' warn' : ''}`}>
+                    {h.located_at ? ago(Date.parse(h.located_at), now) : t('nog geen locatie')}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : null}
         <p className="muted small">
           {t('Een grijs team heeft al meer dan 2 minuten geen locatie gestuurd (geen bereik of GPS uit).')}
         </p>

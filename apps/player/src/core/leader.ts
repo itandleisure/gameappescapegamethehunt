@@ -1,0 +1,186 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { GamePackage } from '@hunt/engine';
+
+/**
+ * Spelleider-modus: een spelleider logt in met de spelleider-code van een hunt
+ * en een eigen naam. Hij ziet geen spel, maar de teams en de andere
+ * spelleiders op de kaart, de ranglijst met telefoonnummers en de teamchat.
+ * Alles loopt via functies in de database; teams zien de spelleiders niet.
+ */
+
+/** Wie er op deze telefoon als spelleider is ingelogd. */
+export interface LeaderLogin {
+  sessionId: string;
+  sessionName: string;
+  name: string;
+}
+
+export interface LeaderTeam {
+  id: string;
+  name: string;
+  track: number;
+  score: number;
+  caught: number;
+  outcome: string | null;
+  started_at: string | null;
+  ended_at: string | null;
+  login_order: number;
+  phone: string | null;
+}
+
+export interface LeaderPosition {
+  id: number;
+  team_id: string;
+  lat: number;
+  lng: number;
+  accuracy: number;
+  recorded_at: string;
+}
+
+export interface Hunter {
+  id: string;
+  name: string;
+  lat: number | null;
+  lng: number | null;
+  accuracy: number | null;
+  located_at: string | null;
+  /** Deze telefoon. */
+  me: boolean;
+}
+
+export interface LeaderData {
+  session: { id: string; name: string; timezone: string; status: string; team_chat: boolean };
+  game: GamePackage | null;
+  teams: LeaderTeam[];
+  positions: LeaderPosition[];
+  leaders: Hunter[];
+}
+
+export interface LeaderMessage {
+  id: string;
+  team_id: string | null;
+  sender: 'team' | 'staff';
+  sender_name: string | null;
+  body: string;
+  created_at: string;
+}
+
+export type LeaderErrorKey = 'leaderUnknownCode' | 'leaderFull' | 'leaderNameTaken' | 'leaderSignedOut' | 'errorNetwork' | 'errorGeneric';
+
+export class LeaderError extends Error {
+  constructor(
+    readonly key: LeaderErrorKey,
+    cause?: unknown,
+  ) {
+    super(key);
+    this.name = 'LeaderError';
+    (this as { cause?: unknown }).cause = cause;
+  }
+}
+
+/** Databasefout → tekstsleutel voor het scherm. */
+export function leaderError(error: { code?: string; message?: string } | null, signedIn = true): LeaderError {
+  if (!error) return new LeaderError('errorGeneric');
+  if (error.code === 'P0002') return new LeaderError(signedIn ? 'leaderSignedOut' : 'leaderUnknownCode', error);
+  if (error.code === 'P0006') return new LeaderError('leaderFull', error);
+  if (error.code === '23505') return new LeaderError('leaderNameTaken', error);
+  if (error.message?.includes('Failed to fetch') || error.message?.includes('Network request failed')) {
+    return new LeaderError('errorNetwork', error);
+  }
+  return new LeaderError('errorGeneric', error);
+}
+
+/** Kleuren voor de teams, goed te onderscheiden op de kaart (zelfde als in het beheer). */
+export const TEAM_COLORS = [
+  '#e6194b', '#3cb44b', '#4363d8', '#f58231', '#911eb4', '#0fa3b1',
+  '#f032e6', '#9a6324', '#808000', '#000075', '#ff6f91', '#2a9d8f',
+  '#bc6c25', '#6a4c93', '#d00000', '#1982c4',
+];
+export const HUNTER_COLOR = '#111111';
+export const HUNTER_RING = '#dc2626';
+
+/** Na zoveel tijd zonder positie toont de kaart iemand vervaagd. */
+export const STALE_MS = 2 * 60_000;
+
+/** Laatste bruikbare positie per team. */
+export function lastPositions(positions: LeaderPosition[], maxAccuracy = 50): Map<string, LeaderPosition> {
+  const out = new Map<string, LeaderPosition>();
+  for (const p of positions) {
+    if (p.accuracy > maxAccuracy) continue;
+    const cur = out.get(p.team_id);
+    if (!cur || Date.parse(p.recorded_at) >= Date.parse(cur.recorded_at)) out.set(p.team_id, p);
+  }
+  return out;
+}
+
+/** Nieuwe posities erbij, zonder dubbele; de oudste vallen weg zodat het geheugen niet volloopt. */
+export function mergePositions(list: LeaderPosition[], fresh: LeaderPosition[], keep = 5_000): LeaderPosition[] {
+  if (fresh.length === 0) return list;
+  const seen = new Set(list.map((p) => p.id));
+  const merged = [...list, ...fresh.filter((p) => !seen.has(p.id))];
+  return merged.length > keep ? merged.slice(merged.length - keep) : merged;
+}
+
+/** Ranglijst: meeste punten eerst, bij gelijke stand wie het eerst inlogde. */
+export function standings(teams: LeaderTeam[]): LeaderTeam[] {
+  return [...teams].sort((a, b) => b.score - a.score || a.login_order - b.login_order);
+}
+
+/** Toegang tot de database voor de spelleider. */
+export class LeaderApi {
+  constructor(private readonly client: SupabaseClient) {}
+
+  async ensureSignedIn() {
+    const { data } = await this.client.auth.getSession();
+    if (data.session) return;
+    const { error } = await this.client.auth.signInAnonymously();
+    if (error) throw leaderError(error);
+  }
+
+  async join(code: string, name: string): Promise<LeaderLogin> {
+    await this.ensureSignedIn();
+    const { data, error } = await this.client.rpc('leader_join', { p_code: code, p_name: name });
+    if (error) throw leaderError(error, false);
+    const row = data as { session_id: string; session_name: string; name: string };
+    return { sessionId: row.session_id, sessionName: row.session_name, name: row.name };
+  }
+
+  async load(sessionId: string, afterPosition = 0): Promise<LeaderData> {
+    const { data, error } = await this.client.rpc('leader_session', { p_session: sessionId, p_after_position: afterPosition });
+    if (error) throw leaderError(error);
+    return data as LeaderData;
+  }
+
+  async position(sessionId: string, fix: { lat: number; lng: number; accuracy: number }) {
+    const { error } = await this.client.rpc('leader_position', {
+      p_session: sessionId,
+      p_lat: fix.lat,
+      p_lng: fix.lng,
+      p_accuracy: fix.accuracy,
+    });
+    if (error) throw leaderError(error);
+  }
+
+  async bumpCaught(sessionId: string, teamId: string, delta: 1 | -1): Promise<number> {
+    const { data, error } = await this.client.rpc('leader_bump_caught', { p_session: sessionId, p_team: teamId, p_delta: delta });
+    if (error) throw leaderError(error);
+    return data as number;
+  }
+
+  async messages(sessionId: string): Promise<LeaderMessage[]> {
+    const { data, error } = await this.client.rpc('leader_messages', { p_session: sessionId });
+    if (error) throw leaderError(error);
+    return data as LeaderMessage[];
+  }
+
+  async send(sessionId: string, body: string): Promise<LeaderMessage> {
+    const { data, error } = await this.client.rpc('leader_send_message', { p_session: sessionId, p_body: body });
+    if (error) throw leaderError(error);
+    return data as LeaderMessage;
+  }
+
+  async leave(sessionId: string) {
+    const { error } = await this.client.rpc('leader_leave', { p_session: sessionId });
+    if (error) throw leaderError(error);
+  }
+}

@@ -30,6 +30,8 @@ export default function RootLayout() {
           <Stack.Screen name="chat" options={{ presentation: 'modal' }} />
           <Stack.Screen name="task/[id]" options={{ presentation: 'modal', gestureEnabled: false }} />
           <Stack.Screen name="end" options={{ gestureEnabled: false }} />
+          <Stack.Screen name="leader-login" />
+          <Stack.Screen name="leader" options={{ gestureEnabled: false }} />
         </Stack>
       </GameProvider>
     </SafeAreaProvider>

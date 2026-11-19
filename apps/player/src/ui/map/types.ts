@@ -11,6 +11,8 @@ export interface MapMarker {
   logoColor?: string;
   /** Finishvlag met dit nummer (mag leeg zijn), zoals bij de extractiepunten. */
   flag?: string;
+  /** Persoon op de kaart (team of spelleider): gekleurde stip met de naam ernaast. */
+  person?: { color: string; ring?: string; stale?: boolean };
 }
 
 export interface MapOverlayImage {

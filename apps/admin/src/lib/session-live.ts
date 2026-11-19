@@ -17,6 +17,28 @@ export interface SessionInfo {
   join_code: string;
   /** Teams kunnen elkaar berichten sturen. */
   team_chat: boolean;
+  /** Zoveel spelleiders mogen tegelijk inloggen in de game-app. */
+  max_leaders: number;
+}
+
+/** Spelleider die in de game-app is ingelogd, met zijn laatste positie. Teams zien deze niet. */
+export interface LeaderRow {
+  id: string;
+  name: string;
+  lat: number | null;
+  lng: number | null;
+  accuracy: number | null;
+  located_at: string | null;
+  created_at: string;
+}
+
+const LEADER_COLUMNS = 'id, name, lat, lng, accuracy, located_at, created_at';
+
+/** Ingelogde spelleiders. Leeg als de tabel er (nog) niet is. */
+async function loadLeaders(sessionId: string): Promise<LeaderRow[]> {
+  const { data, error } = await supabase().from('session_leaders').select(LEADER_COLUMNS).eq('session_id', sessionId).order('created_at');
+  if (error || !data) return [];
+  return data as LeaderRow[];
 }
 
 export interface LiveTeam extends TeamRow {
@@ -44,6 +66,7 @@ export interface SessionLive {
   events: EventRow[];
   positions: (PositionRow & { id: number })[];
   photos: PhotoRow[];
+  leaders: LeaderRow[];
 }
 
 const PAGE = 1000;
@@ -80,7 +103,7 @@ export function useSessionLive(id: string) {
     try {
       const s = await db
         .from('sessions')
-        .select('id, name, status, test_mode, starts_at, timezone, join_code, team_chat, game_versions(package)')
+        .select('id, name, status, test_mode, starts_at, timezone, join_code, team_chat, max_leaders, game_versions(package)')
         .eq('id', id)
         .single();
       if (s.error) throw new Error(s.error.message);
@@ -91,6 +114,7 @@ export function useSessionLive(id: string) {
       const ids = (t.data as LiveTeam[]).map((x) => x.id);
       const phones = await loadPhones(ids);
       const teams = (t.data as LiveTeam[]).map((x) => ({ ...x, phone: phones.get(x.id) ?? null }));
+      const leaders = await loadLeaders(id);
       const [events, positions, photos] = ids.length
         ? await Promise.all([
             all<EventRow>((a, b) =>
@@ -105,7 +129,7 @@ export function useSessionLive(id: string) {
           ])
         : [[], [], []];
       const { game_versions, ...session } = row;
-      setData({ session, game: game_versions.package, teams, events, positions, photos });
+      setData({ session, game: game_versions.package, teams, events, positions, photos, leaders });
       setUpdatedAt(Date.now());
       setError(null);
     } catch (err) {
@@ -118,6 +142,24 @@ export function useSessionLive(id: string) {
   }, [load]);
 
   const teamKey = data?.teams.map((x) => x.id).join(',') ?? '';
+
+  // Spelleiders in de game-app: live, met elke 15 seconden een vangnet.
+  useEffect(() => {
+    const db = supabase();
+    const refresh = () => {
+      if (document.hidden) return;
+      void loadLeaders(id).then((leaders) => setData((d) => (d ? { ...d, leaders } : d)));
+    };
+    const channel = db
+      .channel(`spelleiders-${id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_leaders', filter: `session_id=eq.${id}` }, refresh)
+      .subscribe();
+    const timer = setInterval(refresh, 15_000);
+    return () => {
+      clearInterval(timer);
+      void db.removeChannel(channel);
+    };
+  }, [id]);
 
   // Live: nieuwe posities, antwoorden en foto's komen direct binnen.
   useEffect(() => {

@@ -83,8 +83,21 @@ export default function NativeMap({
         </GeoJSONSource>
       ) : null}
       {markers.map((m) => (
-        <Marker key={m.id} id={m.id} lngLat={[m.lng, m.lat]} anchor="bottom">
-          {m.flag !== undefined ? (
+        <Marker key={m.id} id={m.id} lngLat={[m.lng, m.lat]} anchor={m.person ? "left" : "bottom"}>
+          {m.person ? (
+            <View style={[styles.person, m.person.stale ? styles.stale : null]}>
+              <View
+                style={[
+                  styles.personDot,
+                  { backgroundColor: m.person.color },
+                  m.person.ring ? { borderColor: m.person.ring } : null,
+                ]}
+              />
+              <Text style={styles.personName} numberOfLines={1}>
+                {m.label}
+              </Text>
+            </View>
+          ) : m.flag !== undefined ? (
             <View style={[styles.pin, styles.flag]}>
               <Text style={[styles.pinText, styles.flagText]}>{`\u{1F3C1}${m.flag}`}</Text>
             </View>
@@ -137,5 +150,19 @@ const styles = StyleSheet.create({
   badgeText: { fontSize: 16 },
   flag: { backgroundColor: "#ffffff", borderRadius: 16 },
   flagText: { color: "#111111", fontSize: 15 },
+  person: { flexDirection: "row", alignItems: "center", gap: 4 },
+  stale: { opacity: 0.5 },
+  personDot: { width: 18, height: 18, borderRadius: 9, borderWidth: 3, borderColor: "#ffffff" },
+  personName: {
+    backgroundColor: "#ffffff",
+    color: "#111111",
+    fontSize: 12,
+    fontWeight: "600",
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 4,
+    overflow: "hidden",
+    maxWidth: 140,
+  },
   pinText: { color: colors.accentText, fontWeight: "700", fontSize: 13 },
 });
