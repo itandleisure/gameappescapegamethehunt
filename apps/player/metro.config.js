@@ -10,7 +10,8 @@ const defaultResolve = config.resolver.resolveRequest;
 // kaart en camera vervangen door nepversies uit preview/. Nooit in de echte app.
 const PREVIEW = process.env.SCREEN_PREVIEW === '1';
 const SRC = path.join(__dirname, 'src') + path.sep;
-const REPLACED = /^(services[\\/](game|location|map-download|siren)|ui[\\/]camera|ui[\\/]map[\\/]GameMap)\.tsx?$/;
+// Ook de webversies (.web.ts) van deze bestanden: die kiest Metro in de browser.
+const REPLACED = /^(services[\\/](game|location|map-download|siren)|ui[\\/]camera|ui[\\/]map[\\/]GameMap)(\.web)?\.tsx?$/;
 
 // Pakketten die in een browser zonder scherm niet werken.
 const PREVIEW_MODULES = {
@@ -22,13 +23,21 @@ function preview(result) {
   if (!PREVIEW || result.type !== 'sourceFile' || !result.filePath.startsWith(SRC)) return result;
   const rel = result.filePath.slice(SRC.length);
   if (!REPLACED.test(rel)) return result;
-  return { ...result, filePath: path.join(__dirname, 'preview', rel) };
+  return { ...result, filePath: path.join(__dirname, 'preview', rel.replace(/\.web(\.tsx?)$/, '$1')) };
 }
+
+// Webapp (speler-app in de browser): pakketten met een eigen webversie uit src/web/.
+const WEB_MODULES = {
+  '@react-native-async-storage/async-storage': 'async-storage.ts',
+};
 
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   const resolve = defaultResolve ?? context.resolveRequest;
   if (PREVIEW && PREVIEW_MODULES[moduleName]) {
     return { type: 'sourceFile', filePath: path.join(__dirname, 'preview', PREVIEW_MODULES[moduleName]) };
+  }
+  if (platform === 'web' && WEB_MODULES[moduleName]) {
+    return { type: 'sourceFile', filePath: path.join(__dirname, 'src', 'web', WEB_MODULES[moduleName]) };
   }
   if (moduleName.startsWith('.') && moduleName.endsWith('.js')) {
     try {

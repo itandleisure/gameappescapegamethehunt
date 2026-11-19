@@ -36,6 +36,7 @@ import { leaderApi, leaveLeader, useLeader } from '../src/services/leader';
 import { onFix, requestLocationPermission, startTracking, stopTracking, type PermissionResult } from '../src/services/location';
 import { Banner, Body, Button } from '../src/ui/components';
 import { useGame } from '../src/ui/GameProvider';
+import { WebPlayBanners } from '../src/ui/WebNotices';
 import GameMap, { type MapMarker } from '../src/ui/map/GameMap';
 import { colors, contentColumn, radius, space } from '../src/ui/theme';
 
@@ -164,7 +165,12 @@ export default function LeaderScreen() {
             <Banner tone="danger">{t(error)}</Banner>
           </View>
         ) : null}
-        {permission === 'denied' || permission === 'foreground' ? (
+        {Platform.OS === 'web' ? (
+          // Webapp: scherm aan houden, GPS weg of geweigerd (een browser kent geen "Altijd toestaan").
+          <View style={styles.banner}>
+            <WebPlayBanners lang={lang} />
+          </View>
+        ) : permission === 'denied' || permission === 'foreground' ? (
           <View style={styles.banner}>
             <Banner tone={permission === 'denied' ? 'danger' : undefined}>
               {t(permission === 'denied' ? 'leaderLocationDenied' : 'leaderLocationForeground')}
