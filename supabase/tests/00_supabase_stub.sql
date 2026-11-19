@@ -45,6 +45,8 @@ grant execute on function storage.foldername(text) to anon, authenticated;
 
 -- Bevestiging van het e-mailadres (uitnodigingen worden pas dan geaccepteerd).
 alter table auth.users add column if not exists email_confirmed_at timestamptz;
+alter table auth.users add column if not exists last_sign_in_at timestamptz;
+alter table auth.users add column if not exists created_at timestamptz not null default now();
 
 -- Organisatie aanmaken in tests (zelf aanmaken kan in de app niet meer; in
 -- productie maakt het platform partners aan met create_partner).
@@ -56,7 +58,8 @@ as $$
 declare
   v_org uuid;
 begin
-  insert into public.organizations (name) values (trim(p_name)) returning id into v_org;
+  -- Een eigen organisatie van het platform (partners hebben geen eigenaar).
+  insert into public.organizations (name, is_platform) values (trim(p_name), true) returning id into v_org;
   insert into public.memberships (org_id, user_id, role) values (v_org, auth.uid(), 'owner');
   return v_org;
 end;

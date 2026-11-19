@@ -32,7 +32,7 @@ insert into auth.users (id, email) values
 insert into auth.users (id, is_anonymous)
   select ('c0000000-0000-0000-0000-00000000000' || n)::uuid, true from generate_series(1, 9) n;
 
-insert into public.organizations (id, name) values (:orgA, 'Badass Games'), (:orgB, 'World of City Escapes');
+insert into public.organizations (id, name, is_platform) values (:orgA, 'Badass Games', true), (:orgB, 'World of City Escapes', true);
 insert into public.memberships (org_id, user_id, role) values
   (:orgA, :frans, 'owner'), (:orgA, :editor, 'editor'), (:orgA, :instructor, 'instructor'), (:orgB, :other, 'admin');
 

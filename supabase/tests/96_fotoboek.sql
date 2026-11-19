@@ -24,8 +24,8 @@ insert into auth.users (id) values
   ('b1000000-0000-0000-0000-000000000001'),  -- andere organisatie
   ('c1000000-0000-0000-0000-000000000001'),  -- speler
   ('c1000000-0000-0000-0000-000000000002');  -- speler in andere sessie
-insert into public.organizations (id, name) values
-  ('0a100000-0000-0000-0000-00000000000a', 'The Hunt'), ('0b100000-0000-0000-0000-00000000000b', 'Ander');
+insert into public.organizations (id, name, is_platform) values
+  ('0a100000-0000-0000-0000-00000000000a', 'The Hunt', true), ('0b100000-0000-0000-0000-00000000000b', 'Ander', true);
 insert into public.memberships values
   ('0a100000-0000-0000-0000-00000000000a', 'a1000000-0000-0000-0000-000000000001', 'instructor'),
   ('0a100000-0000-0000-0000-00000000000a', 'a1000000-0000-0000-0000-000000000002', 'editor'),

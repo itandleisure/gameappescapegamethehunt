@@ -8,6 +8,8 @@ export interface Org {
   id: string;
   name: string;
   role: 'owner' | 'admin' | 'editor' | 'instructor';
+  /** Organisatie van Escape Game The Hunt zelf (false = partner). */
+  platform: boolean;
 }
 
 interface AuthState {
@@ -35,11 +37,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user && !user.is_anonymous) {
       const { data: rows } = await supabase()
         .from('memberships')
-        .select('role, organizations(id, name)')
+        .select('role, organizations(id, name, is_platform)')
         .eq('user_id', user.id)
         .limit(1);
-      const row = rows?.[0] as { role: Org['role']; organizations: { id: string; name: string } } | undefined;
-      if (row) org = { id: row.organizations.id, name: row.organizations.name, role: row.role };
+      const row = rows?.[0] as { role: Org['role']; organizations: { id: string; name: string; is_platform: boolean } } | undefined;
+      if (row) org = { id: row.organizations.id, name: row.organizations.name, role: row.role, platform: row.organizations.is_platform };
     }
     setState({ loading: false, user, org });
   }, []);
