@@ -837,6 +837,7 @@ export const en: Record<string, string> = {
   "Reactie bij goed antwoord": "Response to a correct answer",
   "Reactie bij fout antwoord": "Response to a wrong answer",
   "Taal toevoegen": "Add language",
+  "{lang} toegevoegd. Vertaal nu de opdrachten (knop bij Opdrachten) en publiceer daarna het spel.": "{lang} added. Now translate the tasks (button under Tasks) and then publish the game.",
   "Puzzels uit het template overnemen": "Copy puzzles from the template",
   "Nog geen puzzels. Neem de puzzels uit het template over, of maak een nieuwe.": "No puzzles yet. Copy the puzzles from the template, or make a new one.",
   "Er zijn altijd zes puzzels. Kies per puzzelplek welke fysieke puzzel erin zit; antwoord en hints komen dan van die puzzel.": "There are always six puzzles. Choose which physical puzzle goes in each slot; the answer and hints then come from that puzzle.",

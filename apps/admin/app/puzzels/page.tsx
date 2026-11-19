@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth';
 import { composeChain, loadChain } from '@/lib/game-store';
 import { mediaPath } from '@/lib/map-settings';
 import { shrinkImage } from '@/lib/shrink-image';
-import { ADMIN_LANGUAGES, ADMIN_LANGUAGE_NAMES } from '@/lib/i18n';
+import { GAME_LANGUAGES, gameLanguageName } from '@/lib/game-languages';
 import { useT } from '@/lib/language';
 import { PUZZLE_COLUMNS, puzzleFromTask, puzzleSlots, type PuzzleRow } from '@/lib/puzzles';
 import { supabase } from '@/lib/supabase';
@@ -298,7 +298,7 @@ export default function PuzzlesPage() {
           <p className="muted small">{t('Leeg laten = de tekst van de puzzelplek in het template.')}</p>
           {langs.map((l) => (
             <details key={l} open={l === 'nl'} style={{ margin: '8px 0' }}>
-              <summary>{ADMIN_LANGUAGE_NAMES[l as keyof typeof ADMIN_LANGUAGE_NAMES] ?? l.toUpperCase()}</summary>
+              <summary>{gameLanguageName(l)}</summary>
               {l !== 'nl' ? (
                 <button className="link small" onClick={() => removeLanguage(l)}>
                   {t('Deze taal weghalen')}
@@ -317,9 +317,9 @@ export default function PuzzlesPage() {
           <label htmlFor="pz-lang">{t('Taal toevoegen')}</label>
           <select id="pz-lang" value="" onChange={(e) => e.target.value && setLangs([...langs, e.target.value])} style={{ maxWidth: 240 }}>
             <option value="">…</option>
-            {ADMIN_LANGUAGES.filter((l) => !langs.includes(l)).map((l) => (
+            {GAME_LANGUAGES.filter((l) => !langs.includes(l)).map((l) => (
               <option key={l} value={l}>
-                {ADMIN_LANGUAGE_NAMES[l]}
+                {gameLanguageName(l)}
               </option>
             ))}
           </select>

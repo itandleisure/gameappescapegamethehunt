@@ -837,6 +837,7 @@ export const de: Record<string, string> = {
   "Reactie bij goed antwoord": "Reaktion bei richtiger Antwort",
   "Reactie bij fout antwoord": "Reaktion bei falscher Antwort",
   "Taal toevoegen": "Sprache hinzufügen",
+  "{lang} toegevoegd. Vertaal nu de opdrachten (knop bij Opdrachten) en publiceer daarna het spel.": "{lang} hinzugefügt. Übersetze jetzt die Aufgaben (Schaltfläche bei Aufgaben) und veröffentliche danach das Spiel.",
   "Puzzels uit het template overnemen": "Rätsel aus der Vorlage übernehmen",
   "Nog geen puzzels. Neem de puzzels uit het template over, of maak een nieuwe.": "Noch keine Rätsel. Übernimm die Rätsel aus der Vorlage oder erstelle ein neues.",
   "Er zijn altijd zes puzzels. Kies per puzzelplek welke fysieke puzzel erin zit; antwoord en hints komen dan van die puzzel.": "Es gibt immer sechs Rätsel. Wähle pro Platz, welches physische Rätsel hineinkommt; Antwort und Hinweise kommen dann von diesem Rätsel.",

@@ -1,3 +1,23 @@
+import { fr } from './messages/fr';
+import { da } from './messages/da';
+import { sv } from './messages/sv';
+import { no } from './messages/no';
+import { fi } from './messages/fi';
+import { pl } from './messages/pl';
+import { cs } from './messages/cs';
+import { sk } from './messages/sk';
+import { hu } from './messages/hu';
+import { ro } from './messages/ro';
+import { bg } from './messages/bg';
+import { el } from './messages/el';
+import { hr } from './messages/hr';
+import { sl } from './messages/sl';
+import { et } from './messages/et';
+import { lv } from './messages/lv';
+import { lt } from './messages/lt';
+import { ga } from './messages/ga';
+import { mt } from './messages/mt';
+
 /**
  * Teksten van de app zelf (knoppen, meldingen). De teksten van het spel
  * komen uit het spelpakket. De app opent in de taal van de telefoon als het
@@ -98,7 +118,7 @@ const nl = {
 };
 
 export type MessageKey = keyof typeof nl;
-type Messages = Record<MessageKey, string>;
+export type Messages = Record<MessageKey, string>;
 
 const en: Messages = {
   appName: 'Escape Game The Hunt',
@@ -565,19 +585,49 @@ const it: Messages = {
   testMode: 'Modalità test: tocca un compito per andarci subito.',
 };
 
-export const MESSAGES: Record<string, Messages> = { nl, en, de, es, pt, it };
+/**
+ * Alle talen van de app, in de volgorde van de taalkeuze. De eerste zeven
+ * staan altijd in beeld; de andere Europese talen klap je uit.
+ */
+export const MESSAGES: Record<string, Messages> = {
+  nl, en, de, fr, es, it, pt,
+  da, sv, no, fi, pl, cs, sk, hu, ro, bg, el, hr, sl, et, lv, lt, ga, mt,
+};
 export const APP_LANGUAGES = Object.keys(MESSAGES);
+/** Talen die op het aanmeldscherm altijd zichtbaar zijn. */
+export const MAIN_LANGUAGES = ['nl', 'en', 'de', 'fr', 'es', 'it', 'pt'];
 
 /** Naam van elke taal in die taal zelf, voor de taalkeuze. */
 export const LANGUAGE_NAMES: Record<string, string> = {
   nl: 'Nederlands',
   en: 'English',
   de: 'Deutsch',
-  es: 'Español',
-  pt: 'Português',
-  it: 'Italiano',
   fr: 'Français',
+  es: 'Español',
+  it: 'Italiano',
+  pt: 'Português',
+  da: 'Dansk',
+  sv: 'Svenska',
+  no: 'Norsk',
+  fi: 'Suomi',
+  pl: 'Polski',
+  cs: 'Čeština',
+  sk: 'Slovenčina',
+  hu: 'Magyar',
+  ro: 'Română',
+  bg: 'Български',
+  el: 'Ελληνικά',
+  hr: 'Hrvatski',
+  sl: 'Slovenščina',
+  et: 'Eesti',
+  lv: 'Latviešu',
+  lt: 'Lietuvių',
+  ga: 'Gaeilge',
+  mt: 'Malti',
 };
+
+/** Telefoons melden Noors als nb (Bokmål) of nn (Nynorsk); het spel kent "no". */
+const LANGUAGE_ALIASES: Record<string, string> = { nb: 'no', nn: 'no' };
 
 /**
  * Kiest de taal: de eerste taal van de telefoon die het spel heeft, anders de
@@ -585,7 +635,8 @@ export const LANGUAGE_NAMES: Record<string, string> = {
  */
 export function pickLanguage(deviceLanguages: readonly string[], available: readonly string[], fallback: string): string {
   for (const tag of deviceLanguages) {
-    const code = tag.toLowerCase().split(/[-_]/)[0]!;
+    const raw = tag.toLowerCase().split(/[-_]/)[0]!;
+    const code = LANGUAGE_ALIASES[raw] ?? raw;
     if (available.includes(code)) return code;
   }
   return available.includes(fallback) ? fallback : (available[0] ?? fallback);
