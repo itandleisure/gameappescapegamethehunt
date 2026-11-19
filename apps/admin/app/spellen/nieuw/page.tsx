@@ -15,7 +15,7 @@ import {
 } from '@/lib/city-rollout';
 import { GameNav } from '@/editor/GameNav';
 import { cleanName } from '@/lib/game-name';
-import { loadBaseVersions, rolloutCity, type BaseVersion } from '@/lib/game-store';
+import { loadBaseVersions, rolloutCity, versionLabel, type BaseVersion } from '@/lib/game-store';
 import { useLanguage } from '@/lib/language';
 import { supabase } from '@/lib/supabase';
 
@@ -193,7 +193,7 @@ function NewCity() {
                 <select id="version" value={version} onChange={(e) => setVersion(e.target.value)} disabled={busy}>
                   {versions.map((v, i) => (
                     <option key={v.version} value={String(v.version)}>
-                      {t('Template versie {n}', { n: v.version })} · {new Date(v.created_at).toLocaleDateString(locale)}
+                      {versionLabel(v)} · {new Date(v.created_at).toLocaleDateString(locale)}
                       {i === 0 ? ` (${t('nieuwste')})` : ''}
                     </option>
                   ))}

@@ -94,8 +94,20 @@ export function snapshotToLayer(snapshot: LayerRows): LayerRows {
 
 export interface BaseVersion {
   version: number;
+  /** Eigen naam, bv. "Nederland" of "Internationaal – Spanje/Frankrijk". */
+  name: string | null;
   note: string | null;
   created_at: string;
+}
+
+/** De naam van een versie zoals je hem overal ziet: de eigen naam, of anders "Template v{n}". */
+export function versionTitle(v: { version: number; name?: string | null }): string {
+  return v.name?.trim() || tr('Template v{n}', { n: v.version });
+}
+
+/** Naam met nummer erachter, voor keuzelijsten en korte vermeldingen: "Nederland (v2)" of "Template v2". */
+export function versionLabel(v: { version: number; name?: string | null }): string {
+  return v.name?.trim() ? `${v.name.trim()} (v${v.version})` : tr('Template v{n}', { n: v.version });
 }
 
 /** De vastgezette versies van een basisspel, nieuwste eerst. */
@@ -103,16 +115,31 @@ export async function loadBaseVersions(db: SupabaseClient, baseId: string): Prom
   return check<BaseVersion[]>(
     (await db
       .from('base_versions')
-      .select('version, note, created_at')
+      .select('version, name, note, created_at')
       .eq('game_id', baseId)
       .order('version', { ascending: false })) as never,
   );
 }
 
 /** Zet het basisspel zoals het nu is vast als nieuwe versie. Geeft het versienummer. */
-export async function createBaseVersion(db: SupabaseClient, baseId: string, note: string): Promise<number> {
+export async function createBaseVersion(db: SupabaseClient, baseId: string, note: string, name = ''): Promise<number> {
   const row = check<{ version: number }>(await db.rpc('create_base_version', { p_game: baseId, p_note: note }));
+  if (name.trim()) await setBaseVersionName(db, baseId, row.version, name);
   return row.version;
+}
+
+/** Geeft een versie een eigen naam (leeg: weer gewoon "Template v{n}"). */
+export async function setBaseVersionName(db: SupabaseClient, baseId: string, version: number, name: string): Promise<void> {
+  const text = name.trim().slice(0, 80);
+  check(
+    await db
+      .from('base_versions')
+      .update({ name: text === '' ? null : text })
+      .eq('game_id', baseId)
+      .eq('version', version)
+      .select('version')
+      .single(),
+  );
 }
 
 /** De inhoud van één vastgezette versie, in dezelfde vorm als loadLayer. */
@@ -153,6 +180,38 @@ export async function deleteBaseVersion(db: SupabaseClient, baseId: string, vers
 /** Koppelt een stad aan een versie van het basisspel (null: altijd de werkversie). */
 export async function setCityBaseVersion(db: SupabaseClient, cityId: string, version: number | null): Promise<void> {
   check(await db.from('games').update({ base_version: version }).eq('id', cityId).select('id').single());
+}
+
+/**
+ * Zet meerdere steden tegelijk over naar een versie van het basisspel, en
+ * publiceert ze (met de klantvarianten eronder) meteen opnieuw als dat
+ * gevraagd is, zodat nieuwe hunts de nieuwe versie gebruiken. Geeft per stad
+ * terug of het lukte: een stad die niet lukt, houdt de andere niet tegen.
+ */
+export async function setCitiesBaseVersion(
+  db: SupabaseClient,
+  cityIds: string[],
+  version: number,
+  republish: boolean,
+): Promise<{ id: string; error: string | null }[]> {
+  const results: { id: string; error: string | null }[] = [];
+  // Na elkaar: publiceren stelt het hele spel samen en is niet licht.
+  for (const id of cityIds) {
+    try {
+      await setCityBaseVersion(db, id, version);
+      if (republish) {
+        await publish(db, id);
+        const clients = check<{ id: string }[]>(
+          (await db.from('games').select('id').eq('parent_id', id).eq('layer', 'client')) as never,
+        );
+        for (const c of clients) await publish(db, c.id);
+      }
+      results.push({ id, error: null });
+    } catch (err) {
+      results.push({ id, error: err instanceof Error ? err.message : String(err) });
+    }
+  }
+  return results;
 }
 
 /** Stelt het spel samen zoals het gespeeld wordt. Gooit een CompositionError bij fouten. */

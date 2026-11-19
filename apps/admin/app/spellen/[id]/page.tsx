@@ -10,6 +10,7 @@ import {
   loadChain,
   publish,
   setCityBaseVersion,
+  versionLabel,
   type BaseVersion,
 } from "@/lib/game-store";
 import { GameNav } from "@/editor/GameNav";
@@ -178,10 +179,14 @@ export default function GamePage() {
   // Versies van het basisspel: vastzetten (basisspel) en kiezen (stad).
   const city = chain.find((c) => c.game.layer === "city");
   const cityVersion = city?.game.base_version ?? null;
-  const versionLabel = (v: BaseVersion) =>
-    t("Versie {n}", { n: v.version }) +
+  const versionOption = (v: BaseVersion) =>
+    versionLabel(v) +
     ` · ${new Date(v.created_at).toLocaleDateString(locale)}` +
-    (v.note ? ` · ${v.note}` : "");
+    (v.note ? ` · ${v.note.split("\n")[0]}` : "");
+  const versionText = (n: number | null) => {
+    const v = baseVersions.find((x) => x.version === n);
+    return n === null ? t("werkversie") : v ? versionLabel(v) : t("versie {n}", { n });
+  };
 
   const doChooseVersion = async (value: string) => {
     setBusy(true);
@@ -193,7 +198,7 @@ export default function GamePage() {
       setNotice(
         (version === null
           ? t("Deze stad volgt nu de werkversie van het basisspel.")
-          : t("Deze stad bouwt nu voort op versie {n} van het basisspel.", { n: version })) +
+          : t("Deze stad bouwt nu voort op {version}.", { version: versionText(version) })) +
           " " +
           t("Publiceer de stad (en de klantvarianten eronder) opnieuw om dit in nieuwe events te gebruiken."),
       );
@@ -586,7 +591,7 @@ export default function GamePage() {
         <TemplateVersions
           baseId={id}
           versions={baseVersions}
-          cities={children}
+          cities={children.map((c) => ({ ...c, name: displayName(c) }))}
           onChanged={async (message) => {
             setErrors([]);
             setNotice(message);
@@ -610,7 +615,7 @@ export default function GamePage() {
           >
             {baseVersions.map((v) => (
               <option key={v.version} value={String(v.version)}>
-                {versionLabel(v)}
+                {versionOption(v)}
                 {v.version === baseVersions[0]?.version ? ` (${t("nieuwste")})` : ""}
               </option>
             ))}
@@ -620,7 +625,7 @@ export default function GamePage() {
             {cityVersion !== null &&
             baseVersions[0] &&
             baseVersions[0].version > cityVersion
-              ? t("Er is een nieuwere versie van het basisspel: versie {n}. Kies die hierboven om deze stad over te zetten.", { n: baseVersions[0].version })
+              ? t("Er is een nieuwere versie van het basisspel: {version}. Kies die hierboven om deze stad over te zetten.", { version: versionLabel(baseVersions[0]) })
               : t("Nieuwe versies van het basisspel komen pas in deze stad als je ze hier kiest.")}
           </p>
         </section>
@@ -630,7 +635,7 @@ export default function GamePage() {
         <p className="muted">
           {cityVersion === null
             ? t("Volgt de stad {city}, die de werkversie van het basisspel gebruikt.", { city: city.game.slug })
-            : t("Volgt de stad {city}: versie {n} van het basisspel.", { city: city.game.slug, n: cityVersion })}
+            : t("Volgt de stad {city}: {version}.", { city: city.game.slug, version: versionText(cityVersion) })}
         </p>
       ) : null}
 
@@ -644,7 +649,7 @@ export default function GamePage() {
                 <span className="muted">
                   ({c.slug} · {t(LAYER_LABEL[c.layer])}
                   {c.layer === "city"
-                    ? ` · ${c.base_version === null ? t("werkversie") : t("versie {n}", { n: c.base_version })}`
+                    ? ` · ${versionText(c.base_version)}`
                     : ""}
                   )
                 </span>

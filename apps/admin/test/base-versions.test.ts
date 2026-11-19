@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { leeuwarden, theHuntBase } from '../../../packages/engine/test/fixtures/the-hunt.js';
 import { baseToRows, variantToRows } from '../src/lib/game-model.js';
-import { composeChain, snapshotToLayer } from '../src/lib/game-store.js';
+import { composeChain, snapshotToLayer, versionLabel, versionTitle } from '../src/lib/game-store.js';
 
 const json = (v: unknown) => JSON.parse(JSON.stringify(v));
 const baseRows = baseToRows(theHuntBase, { id: 'base', slug: 'the-hunt' });
@@ -24,5 +24,18 @@ describe('versies van het basisspel', () => {
     const snapshot = snapshotToLayer(old);
     expect(snapshot.playgrounds).toEqual([]);
     expect(snapshot.rules).toEqual([]);
+  });
+});
+
+describe('naam van een templateversie', () => {
+  it('toont de eigen naam, en anders "Template v{n}"', () => {
+    expect(versionTitle({ version: 2, name: 'Nederland' })).toBe('Nederland');
+    expect(versionTitle({ version: 2, name: null })).toBe('Template v2');
+    expect(versionTitle({ version: 3, name: '  ' })).toBe('Template v3');
+  });
+
+  it('zet in keuzelijsten het nummer achter de naam', () => {
+    expect(versionLabel({ version: 3, name: 'Internationaal – Spanje/Frankrijk' })).toBe('Internationaal – Spanje/Frankrijk (v3)');
+    expect(versionLabel({ version: 1, name: null })).toBe('Template v1');
   });
 });

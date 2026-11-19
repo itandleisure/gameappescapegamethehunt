@@ -50,17 +50,23 @@ export default function GamesPage() {
   const [games, setGames] = useState<GameRow[] | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
+  /** Eigen namen van templateversies, per "basisspel:versie". */
+  const [versionNames, setVersionNames] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     if (!org) return;
     const db = supabase();
-    const [g, n] = await Promise.all([
+    const [g, n, bv] = await Promise.all([
       db
         .from('games')
         .select('id, slug, parent_id, layer, base_version, languages, settings, game_versions(version, published_at)')
         .eq('org_id', org.id),
       db.from('translations').select('game_id, text, lang').eq('entity', 'game').eq('entity_id', '').eq('field', 'name'),
+      db.from('base_versions').select('game_id, version, name').not('name', 'is', null),
     ]);
+    setVersionNames(
+      Object.fromEntries(((bv.data ?? []) as { game_id: string; version: number; name: string }[]).map((r) => [`${r.game_id}:${r.version}`, r.name])),
+    );
     if (g.error || n.error) {
       setErrors([(g.error ?? n.error)!.message]);
       return;
@@ -130,9 +136,12 @@ export default function GamesPage() {
                           {(() => {
                             const base = games.find((b) => b.id === g.parent_id);
                             const name = base ? gameTitle(base) : '';
+                            const own = versionNames[`${g.parent_id}:${g.base_version}`];
                             return g.base_version === null
                               ? t('{template}: werkversie', { template: name })
-                              : t('{template} v{n}', { template: name, n: g.base_version });
+                              : own
+                                ? `${name}: ${own} (v${g.base_version})`
+                                : t('{template} v{n}', { template: name, n: g.base_version });
                           })()}
                         </div>
                       ) : null}

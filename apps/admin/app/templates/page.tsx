@@ -9,7 +9,10 @@ import {
   deleteBaseVersion,
   importBundle,
   loadBaseVersions,
+  setBaseVersionName,
   setBaseVersionNote,
+  versionLabel,
+  versionTitle,
   type BaseVersion,
 } from '@/lib/game-store';
 import { useLanguage } from '@/lib/language';
@@ -40,7 +43,9 @@ export default function TemplatesPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   /** Formulier voor een nieuwe versie: bij welke template, met welke omschrijving. */
-  const [creating, setCreating] = useState<{ id: string; note: string } | null>(null);
+  const [creating, setCreating] = useState<{ id: string; note: string; name: string } | null>(null);
+  /** Versie waarvan de naam wordt aangepast. */
+  const [naming, setNaming] = useState<{ id: string; version: number; name: string } | null>(null);
   /** Versie die op bevestiging wacht om te verwijderen. */
   const [removing, setRemoving] = useState<{ id: string; version: number } | null>(null);
 
@@ -62,9 +67,21 @@ export default function TemplatesPage() {
     e.preventDefault();
     if (!creating) return;
     void run(async () => {
-      const n = await createBaseVersion(supabase(), creating.id, creating.note);
+      const n = await createBaseVersion(supabase(), creating.id, creating.note, creating.name);
       setCreating(null);
       return t('Template v{n} gemaakt: een volledige kopie van de template zoals die nu is.', { n });
+    });
+  };
+
+  const saveName = (e: FormEvent) => {
+    e.preventDefault();
+    if (!naming) return;
+    void run(async () => {
+      await setBaseVersionName(supabase(), naming.id, naming.version, naming.name);
+      setNaming(null);
+      return naming.name.trim()
+        ? t('Template v{n} heet nu {name}.', { n: naming.version, name: naming.name.trim() })
+        : t('Template v{n} heeft weer geen eigen naam.', { n: naming.version });
     });
   };
 
@@ -72,7 +89,8 @@ export default function TemplatesPage() {
     void run(async () => {
       await deleteBaseVersion(supabase(), id, version);
       setRemoving(null);
-      return t('Template v{n} verwijderd.', { n: version });
+      const v = templates?.find((x) => x.id === id)?.versions.find((x) => x.version === version);
+      return t('{version} verwijderd.', { version: v ? versionLabel(v) : `v${version}` });
     });
 
   const load = useCallback(async () => {
@@ -204,7 +222,7 @@ export default function TemplatesPage() {
     <>
       <h1>{t('Templates')}</h1>
       <p className="muted">
-        {t('Een template is het basisspel waarmee je een nieuwe stad uitrolt. Elke template heeft vaste versies (v1, v2, ...); een stad bouwt voort op één versie.')}
+        {t('Een template is het basisspel waarmee je een nieuwe stad uitrolt. Elke template heeft vaste versies (v1, v2, ...) die je een eigen naam kunt geven, bijvoorbeeld "Nederland" of "Internationaal – Spanje/Frankrijk". Een stad bouwt voort op één versie.')}
       </p>
       <div className="actions">
         <label className={`filebutton${busy ? ' disabled' : ''}`}>
@@ -253,9 +271,43 @@ export default function TemplatesPage() {
                         <tbody>
                           {tp.versions.map((v) => (
                             <tr key={v.version}>
-                              <td style={{ whiteSpace: 'nowrap' }}>
-                                <strong>{t('Template v{n}', { n: v.version })}</strong>
-                                <div className="muted">{new Date(v.created_at).toLocaleDateString(locale)}</div>
+                              <td>
+                                {naming?.id === tp.id && naming.version === v.version ? (
+                                  <form onSubmit={saveName} style={{ minWidth: 220 }}>
+                                    <input
+                                      value={naming.name}
+                                      maxLength={80}
+                                      autoFocus
+                                      aria-label={t('Naam')}
+                                      placeholder={t('Bijvoorbeeld: Nederland, of Internationaal – Spanje/Frankrijk')}
+                                      onChange={(e) => setNaming({ ...naming, name: e.target.value })}
+                                    />
+                                    <div className="actions" style={{ margin: '6px 0 0' }}>
+                                      <button type="submit" disabled={busy}>
+                                        {busy ? t('Bezig…') : t('Opslaan')}
+                                      </button>
+                                      <button type="button" className="secondary" onClick={() => setNaming(null)} disabled={busy}>
+                                        {t('Annuleren')}
+                                      </button>
+                                    </div>
+                                  </form>
+                                ) : (
+                                  <>
+                                    <strong>{versionTitle(v)}</strong>
+                                    <div className="muted" style={{ whiteSpace: 'nowrap' }}>
+                                      {v.name ? `v${v.version} · ` : ''}
+                                      {new Date(v.created_at).toLocaleDateString(locale)}
+                                    </div>
+                                    <button
+                                      type="button"
+                                      className="link small"
+                                      disabled={busy}
+                                      onClick={() => setNaming({ id: tp.id, version: v.version, name: v.name ?? '' })}
+                                    >
+                                      {v.name ? t('Naam aanpassen') : t('Naam geven')}
+                                    </button>
+                                  </>
+                                )}
                               </td>
                               <td style={{ whiteSpace: 'pre-wrap' }}>{v.note ?? <span className="muted">–</span>}</td>
                               <td className="muted" style={{ whiteSpace: 'nowrap' }}>
@@ -268,6 +320,15 @@ export default function TemplatesPage() {
                                   <Link href={`/spellen/nieuw?basis=${tp.id}&versie=${v.version}`} className="filebutton">
                                     {t('Nieuwe stad uitrollen')}
                                   </Link>
+                                  {tp.cities > (tp.perVersion[v.version] ?? 0) ? (
+                                    <Link
+                                      href={`/spellen/${tp.id}?versie=${v.version}#versies`}
+                                      className="filebutton"
+                                      style={{ background: 'transparent', color: 'var(--text)', border: '1px solid var(--line)' }}
+                                    >
+                                      {t('Steden overzetten')}
+                                    </Link>
+                                  ) : null}
                                   {v.version === tp.versions[0]!.version ? (
                                     // Bewerken gaat altijd over de werkversie, waaruit de volgende templateversie komt.
                                     <Link
@@ -320,13 +381,21 @@ export default function TemplatesPage() {
                       <p className="muted" style={{ marginTop: 0 }}>
                         {t('Maakt een volledige, op zichzelf staande kopie van de template zoals die nu is. Bestaande steden blijven op hun versie; een oude versie zonder steden kun je daarna verwijderen.')}
                       </p>
+                      <label htmlFor={`name-${tp.id}`}>{t('Naam (mag leeg)')}</label>
+                      <input
+                        id={`name-${tp.id}`}
+                        value={creating.name}
+                        maxLength={80}
+                        autoFocus
+                        placeholder={t('Bijvoorbeeld: Nederland, of Internationaal – Spanje/Frankrijk')}
+                        onChange={(e) => setCreating({ ...creating, name: e.target.value })}
+                      />
                       <label htmlFor={`note-${tp.id}`}>{t('Wat zit erin, of wat is er anders?')}</label>
                       <textarea
                         id={`note-${tp.id}`}
                         value={creating.note}
                         maxLength={2000}
                         rows={3}
-                        autoFocus
                         onChange={(e) => setCreating({ ...creating, note: e.target.value })}
                       />
                       <div className="actions">
@@ -340,7 +409,7 @@ export default function TemplatesPage() {
                     </form>
                   ) : (
                     <div className="actions" style={{ marginTop: 12 }}>
-                      <button type="button" onClick={() => setCreating({ id: tp.id, note: '' })} disabled={busy}>
+                      <button type="button" onClick={() => setCreating({ id: tp.id, note: '', name: '' })} disabled={busy}>
                         {t('Maak nieuwe templateversie (v{n})', { n: (tp.versions[0]?.version ?? 0) + 1 })}
                       </button>
                       {tp.versions.length === 0 ? (

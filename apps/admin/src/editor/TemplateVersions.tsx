@@ -6,9 +6,18 @@
  */
 import { gameLanguageList } from '@/lib/game-languages';
 import Link from 'next/link';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import type { LayerRows } from '@/lib/game-model';
-import { createBaseVersion, loadBaseVersionSnapshot, setBaseVersionNote, type BaseVersion } from '@/lib/game-store';
+import {
+  createBaseVersion,
+  loadBaseVersionSnapshot,
+  setBaseVersionName,
+  setBaseVersionNote,
+  setCitiesBaseVersion,
+  versionLabel,
+  versionTitle,
+  type BaseVersion,
+} from '@/lib/game-store';
 import { versionContents, type VersionContents } from '@/lib/template-contents';
 import { useLanguage } from '@/lib/language';
 import { supabase } from '@/lib/supabase';
@@ -16,6 +25,8 @@ import { supabase } from '@/lib/supabase';
 interface City {
   id: string;
   slug: string;
+  /** Naam in de beheeromgeving; anders de slug. */
+  name?: string;
   layer: 'city' | 'client';
   base_version: number | null;
 }
@@ -34,13 +45,29 @@ export function TemplateVersions({ baseId, versions, cities, onChanged, onError 
   const [open, setOpen] = useState<number | null>(null);
   const [snapshots, setSnapshots] = useState<Record<number, LayerRows>>({});
   const [noteDraft, setNoteDraft] = useState<string | null>(null);
+  const [nameDraft, setNameDraft] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [newNote, setNewNote] = useState('');
+  const [newName, setNewName] = useState('');
+  /** Steden die op de geopende versie gezet worden. */
+  const [moving, setMoving] = useState<Set<string>>(new Set());
+  const [republish, setRepublish] = useState(true);
   const [busy, setBusy] = useState(false);
   const next = (versions[0]?.version ?? 0) + 1;
+  const byNumber = (n: number | null) => versions.find((v) => v.version === n);
+  const cityName = (c: City) => c.name || c.slug;
+
+  // Vanaf de templatepagina: ?versie=3 opent meteen die versie.
+  const wanted = typeof window === 'undefined' ? null : Number(new URLSearchParams(window.location.search).get('versie')) || null;
+  useEffect(() => {
+    if (wanted && open === null && versions.some((v) => v.version === wanted)) void toggle(wanted);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wanted, versions.length]);
 
   const toggle = async (version: number) => {
     setNoteDraft(null);
+    setNameDraft(null);
+    setMoving(new Set());
     if (open === version) {
       setOpen(null);
       return;
@@ -79,11 +106,42 @@ export function TemplateVersions({ baseId, versions, cities, onChanged, onError 
     });
   };
 
+  const saveName = (e: FormEvent, version: number) => {
+    e.preventDefault();
+    void run(async () => {
+      await setBaseVersionName(supabase(), baseId, version, nameDraft ?? '');
+      setNameDraft(null);
+      return t('Naam van versie {n} opgeslagen.', { n: version });
+    });
+  };
+
+  const moveCities = (v: BaseVersion) => {
+    const ids = [...moving];
+    void run(async () => {
+      const results = await setCitiesBaseVersion(supabase(), ids, v.version, republish);
+      setMoving(new Set());
+      const failed = results.filter((r) => r.error);
+      const ok = results.length - failed.length;
+      const done = republish
+        ? t('{n} steden overgezet naar {version} en opnieuw gepubliceerd.', { n: ok, version: versionLabel(v) })
+        : t('{n} steden overgezet naar {version}. Publiceer ze opnieuw om dit in nieuwe events te gebruiken.', { n: ok, version: versionLabel(v) });
+      if (failed.length) {
+        const names = failed.map((f) => {
+          const c = cities.find((x) => x.id === f.id);
+          return `${c ? cityName(c) : f.id}: ${f.error}`;
+        });
+        onError(t('Niet gelukt bij:') + ' ' + names.join('; '));
+      }
+      return done;
+    });
+  };
+
   const create = (e: FormEvent) => {
     e.preventDefault();
     void run(async () => {
-      const n = await createBaseVersion(supabase(), baseId, newNote);
+      const n = await createBaseVersion(supabase(), baseId, newNote, newName);
       setNewNote('');
+      setNewName('');
       setCreating(false);
       setOpen(n);
       return t('Template versie {n} gemaakt. Steden blijven op hun huidige versie tot je ze zelf overzet.', { n });
@@ -111,7 +169,8 @@ export function TemplateVersions({ baseId, versions, cities, onChanged, onError 
             <div key={v.version} className={`version${isOpen ? ' open' : ''}`}>
               <button type="button" className="version-head" onClick={() => void toggle(v.version)} aria-expanded={isOpen}>
                 <span className="version-title">
-                  {t('Template versie {n}', { n: v.version })}
+                  {versionTitle(v)}
+                  {v.name ? <span className="muted" style={{ marginLeft: 8, fontWeight: 'normal' }}>v{v.version}</span> : null}
                   {i === 0 ? <span className="badge open" style={{ marginLeft: 8 }}>{t('nieuwste')}</span> : null}
                 </span>
                 <span className="muted">
@@ -125,6 +184,37 @@ export function TemplateVersions({ baseId, versions, cities, onChanged, onError 
 
               {isOpen ? (
                 <div className="version-body">
+                  <h3>{t('Naam')}</h3>
+                  {nameDraft !== null ? (
+                    <form onSubmit={(e) => saveName(e, v.version)}>
+                      <input
+                        value={nameDraft}
+                        maxLength={80}
+                        autoFocus
+                        onChange={(e) => setNameDraft(e.target.value)}
+                        placeholder={t('Bijvoorbeeld: Nederland, of Internationaal – Spanje/Frankrijk')}
+                      />
+                      <p className="muted" style={{ marginTop: 4 }}>
+                        {t('Leeg laten = gewoon "Template v{n}". Het versienummer blijft altijd hetzelfde.', { n: v.version })}
+                      </p>
+                      <div className="actions">
+                        <button type="submit" disabled={busy}>
+                          {busy ? t('Bezig…') : t('Opslaan')}
+                        </button>
+                        <button type="button" className="secondary" onClick={() => setNameDraft(null)} disabled={busy}>
+                          {t('Annuleren')}
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <p style={{ marginTop: 0 }}>
+                      {v.name ? <strong>{v.name}</strong> : <span className="muted">{t('Nog geen eigen naam.')}</span>}{' '}
+                      <button type="button" className="link small" onClick={() => setNameDraft(v.name ?? '')}>
+                        {v.name ? t('Naam aanpassen') : t('Naam geven')}
+                      </button>
+                    </p>
+                  )}
+
                   <h3>{t('Omschrijving (alleen voor ons team)')}</h3>
                   {noteDraft !== null ? (
                     <form onSubmit={(e) => saveNote(e, v.version)}>
@@ -221,7 +311,7 @@ export function TemplateVersions({ baseId, versions, cities, onChanged, onError 
                       {used.map((c, j) => (
                         <span key={c.id}>
                           {j > 0 ? ', ' : ''}
-                          <Link href={`/spellen/${c.id}`}>{c.slug}</Link>
+                          <Link href={`/spellen/${c.id}`}>{cityName(c)}</Link>
                         </span>
                       ))}
                     </p>
@@ -231,6 +321,67 @@ export function TemplateVersions({ baseId, versions, cities, onChanged, onError 
                       <Link href={`/spellen/nieuw?basis=${baseId}&versie=${v.version}`}>{t('Nieuwe stad uitrollen')}</Link>
                     </p>
                   )}
+
+                  {(() => {
+                    const others = cities.filter((c) => c.layer === 'city' && c.base_version !== v.version);
+                    if (!others.length) return null;
+                    return (
+                      <>
+                        <h3>{t('Steden overzetten naar deze versie')}</h3>
+                        <p className="muted" style={{ marginTop: 0 }}>
+                          {t('Vink de steden aan die {version} moeten krijgen. Wat de stad zelf heeft ingericht (locaties, stadsvragen, puzzels) blijft staan.', { version: versionLabel(v) })}
+                        </p>
+                        <div className="actions" style={{ margin: '0 0 8px' }}>
+                          <button
+                            type="button"
+                            className="link small"
+                            onClick={() => setMoving(moving.size === others.length ? new Set() : new Set(others.map((c) => c.id)))}
+                          >
+                            {moving.size === others.length ? t('Niets aanvinken') : t('Alles aanvinken')}
+                          </button>
+                        </div>
+                        <ul style={{ listStyle: 'none', paddingLeft: 0, marginTop: 0 }}>
+                          {others.map((c) => {
+                            const current = byNumber(c.base_version);
+                            return (
+                              <li key={c.id}>
+                                <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center', fontWeight: 'normal' }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={moving.has(c.id)}
+                                    disabled={busy}
+                                    onChange={(e) => {
+                                      const s2 = new Set(moving);
+                                      if (e.target.checked) s2.add(c.id);
+                                      else s2.delete(c.id);
+                                      setMoving(s2);
+                                    }}
+                                  />
+                                  {cityName(c)}
+                                  <span className="muted">
+                                    ({c.base_version === null ? t('werkversie') : current ? versionLabel(current) : t('versie {n}', { n: c.base_version })})
+                                  </span>
+                                </label>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                        <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center', fontWeight: 'normal' }}>
+                          <input type="checkbox" checked={republish} disabled={busy} onChange={(e) => setRepublish(e.target.checked)} />
+                          {t('Meteen opnieuw publiceren (ook de klantvarianten eronder), zodat nieuwe events deze versie krijgen')}
+                        </label>
+                        <div className="actions">
+                          <button type="button" disabled={busy || moving.size === 0} onClick={() => moveCities(v)}>
+                            {busy
+                              ? t('Bezig…')
+                              : moving.size === 1
+                                ? t('1 stad overzetten')
+                                : t('{n} steden overzetten', { n: moving.size })}
+                          </button>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               ) : null}
             </div>
@@ -244,7 +395,7 @@ export function TemplateVersions({ baseId, versions, cities, onChanged, onError 
           {working.map((c, j) => (
             <span key={c.id}>
               {j > 0 ? ', ' : ''}
-              <Link href={`/spellen/${c.id}`}>{c.slug}</Link>
+              <Link href={`/spellen/${c.id}`}>{cityName(c)}</Link>
             </span>
           ))}
         </p>
@@ -256,13 +407,21 @@ export function TemplateVersions({ baseId, versions, cities, onChanged, onError 
           <p className="muted" style={{ marginTop: 0 }}>
             {t('Legt het basisspel zoals het nu is vast als template versie {n}. Bestaande steden blijven op hun eigen versie; nieuwe steden kunnen versie {n} kiezen.', { n: next })}
           </p>
+          <label htmlFor="new-version-name">{t('Naam (mag leeg)')}</label>
+          <input
+            id="new-version-name"
+            value={newName}
+            maxLength={80}
+            autoFocus
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder={t('Bijvoorbeeld: Nederland, of Internationaal – Spanje/Frankrijk')}
+          />
           <label htmlFor="new-version-note">{t('Wat zit erin, of wat is er anders?')}</label>
           <textarea
             id="new-version-note"
             value={newNote}
             maxLength={2000}
             rows={4}
-            autoFocus
             onChange={(e) => setNewNote(e.target.value)}
             placeholder={t('Bijvoorbeeld: nieuwe puzzel bij het extractiepunt')}
           />
