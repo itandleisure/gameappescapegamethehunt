@@ -11,7 +11,7 @@ import { useGame } from '../src/ui/GameProvider';
 import { colors, space, contentColumn } from '../src/ui/theme';
 import { msg, type MessageKey } from '../src/core/i18n';
 
-/** Aanmelden met de sessiecode, of verder spelen met een teamcode. */
+/** Aanmelden met de sessiecode, of verder spelen met de teamnaam. */
 export default function JoinScreen() {
   const { loading, controller, lang: deviceLang } = useGame();
   const [lang, setLang] = useState(deviceLang);
@@ -20,6 +20,7 @@ export default function JoinScreen() {
   const [phone, setPhone] = useState('');
   const [rejoinCode, setRejoinCode] = useState('');
   const [rejoinName, setRejoinName] = useState('');
+  const [askRejoinCode, setAskRejoinCode] = useState(false);
   const [busy, setBusy] = useState<'join' | 'rejoin' | null>(null);
   const [error, setError] = useState<MessageKey | null>(null);
   const [keyboard, setKeyboard] = useState(false);
@@ -49,6 +50,7 @@ export default function JoinScreen() {
       await action();
     } catch (e) {
       setError(e instanceof BackendError ? e.key : 'errorGeneric');
+      if (e instanceof BackendError && e.key === 'errorAmbiguousTeam') setAskRejoinCode(true);
     } finally {
       setBusy(null);
     }
@@ -108,22 +110,25 @@ export default function JoinScreen() {
 
           <View style={styles.divider} />
           <Title>{t('rejoinTitle')}</Title>
-          {/* Verder spelen met dezelfde hunt-code en de teamnaam waarmee het team zich aanmeldde. */}
-          <Field
-            label={t('joinCode')}
-            value={rejoinCode}
-            onChangeText={(v) => setRejoinCode(v.toUpperCase())}
-            autoCapitalize="characters"
-            autoCorrect={false}
-            maxLength={12}
-          />
+          {/* Verder spelen met alleen de teamnaam. De hunt-code komt er pas bij als
+              die naam in meerdere lopende hunts voorkomt. */}
           <Field label={t('teamName')} value={rejoinName} onChangeText={setRejoinName} maxLength={60} />
+          {askRejoinCode ? (
+            <Field
+              label={t('joinCode')}
+              value={rejoinCode}
+              onChangeText={(v) => setRejoinCode(v.toUpperCase())}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              maxLength={12}
+            />
+          ) : null}
           <Button
             kind="secondary"
             label={t('rejoin')}
             busy={busy === 'rejoin'}
-            disabled={rejoinCode.trim().length < 4 || rejoinName.trim().length === 0 || busy !== null}
-            onPress={() => run('rejoin', () => rejoinGame(rejoinCode.trim(), rejoinName.trim()))}
+            disabled={rejoinName.trim().length === 0 || (askRejoinCode && rejoinCode.trim().length < 4) || busy !== null}
+            onPress={() => run('rejoin', () => rejoinGame(rejoinName.trim(), askRejoinCode ? rejoinCode.trim() : ''))}
           />
         </ScrollView>
       </KeyboardAvoidingView>

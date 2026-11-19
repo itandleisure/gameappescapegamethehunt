@@ -76,8 +76,8 @@ export async function joinGame(joinCode: string, teamName: string, language: str
   return current!;
 }
 
-export async function rejoinGame(joinCode: string, teamName: string) {
-  setCurrent(await GameController.rejoin(deps, joinCode, teamName));
+export async function rejoinGame(teamName: string, joinCode = '') {
+  setCurrent(await GameController.rejoin(deps, teamName, joinCode));
   return current!;
 }
 

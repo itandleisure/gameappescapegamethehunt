@@ -17,7 +17,7 @@ insert into auth.users (id, is_anonymous) values
   ('e0000000-0000-0000-0000-000000000003', true);   -- team 2
 
 select tests.login('e0000000-0000-0000-0000-000000000001');
-select public.create_organization('Tel BV') as org \gset
+select stub.create_organization('Tel BV') as org \gset
 insert into public.games (id, org_id, layer, slug, languages, default_language)
 values ('6e000000-0000-0000-0000-000000000001', :'org', 'base', 'tel-spel', array['nl'], 'nl');
 reset role;
@@ -47,11 +47,11 @@ do $$ begin
   assert (select phone from public.team_contacts) = '+31 6 1234 5678', 'eigen team ziet zijn nummer';
 end $$;
 
--- Een ander team ziet de teams, maar niet elkaars telefoonnummer.
+-- Een ander team ziet alleen zijn eigen team en nooit elkaars telefoonnummer.
 select tests.login('e0000000-0000-0000-0000-000000000003');
 select public.join_session('HUNT1', 'Wolven', 'nl', '0612345678');
 do $$ begin
-  assert (select count(*) from public.teams) = 2, 'ziet beide teams';
+  assert (select count(*) from public.teams) = 1, 'ziet alleen het eigen team';
   assert (select count(*) from public.team_contacts) = 1, 'ziet alleen het eigen nummer';
 end $$;
 

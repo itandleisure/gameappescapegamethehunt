@@ -63,7 +63,8 @@ export interface Backend {
   ensureSignedIn(): Promise<void>;
   joinSession(joinCode: string, teamName: string, language: string, phone: string): Promise<TeamRecord>;
   /** Verder spelen met de hunt-code en de teamnaam. */
-  rejoinTeam(joinCode: string, teamName: string): Promise<TeamRecord>;
+  /** Verder spelen met de teamnaam; de hunt-code is alleen nodig als de naam in meerdere lopende hunts voorkomt. */
+  rejoinTeam(teamName: string, joinCode?: string): Promise<TeamRecord>;
   startTeam(teamId: string): Promise<TeamRecord>;
   /** Meldt dat het team de speluitleg heeft gelezen (centrale start). */
   loadTeam(teamId: string): Promise<TeamRecord>;

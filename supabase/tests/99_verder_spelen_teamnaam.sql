@@ -18,7 +18,7 @@ insert into auth.users (id, is_anonymous) values
   ('f2000000-0000-0000-0000-000000000004', true);   -- team in een andere hunt
 
 select tests.login('f2000000-0000-0000-0000-000000000001');
-select public.create_organization('Naam BV') as org \gset
+select stub.create_organization('Naam BV') as org \gset
 insert into public.games (id, org_id, layer, slug, languages, default_language)
 values ('6f200000-0000-0000-0000-000000000001', :'org', 'base', 'naam-spel', array['nl'], 'nl');
 reset role;
@@ -64,6 +64,36 @@ do $$ begin
   begin
     perform public.rejoin_team_by_name('XXXXX', 'De Vossen');
     raise exception 'verkeerde hunt-code geaccepteerd';
+  exception when sqlstate 'P0002' then null;
+  end;
+end $$;
+
+-- Alleen de teamnaam: De Vossen bestaat in twee lopende hunts, dus de hunt-code is nodig.
+do $$ begin
+  begin
+    perform public.rejoin_team_by_name('', 'De Vossen');
+    raise exception 'dubbele naam zonder hunt-code geaccepteerd';
+  exception when sqlstate 'P0005' then null;
+  end;
+end $$;
+-- Een unieke naam vindt het team zonder hunt-code.
+select tests.login('f2000000-0000-0000-0000-000000000004');
+select (public.join_session('NAAMB', 'Uniek Team', 'nl')).id as uniek \gset
+select tests.login('f2000000-0000-0000-0000-000000000003');
+select (public.rejoin_team_by_name(null, 'uniek TEAM')).id = :'uniek' as same2 \gset
+\if :same2
+\else
+  \echo 'verkeerd team bij verder spelen met alleen de naam'
+  select 1/0;
+\endif
+-- Een team uit een oude hunt (langer dan 2 dagen geleden) telt niet mee.
+reset role;
+update public.teams set created_at = now() - interval '3 days' where name = 'Uniek Team';
+select tests.login('f2000000-0000-0000-0000-000000000003');
+do $$ begin
+  begin
+    perform public.rejoin_team_by_name('', 'Uniek Team');
+    raise exception 'oud team gevonden zonder hunt-code';
   exception when sqlstate 'P0002' then null;
   end;
 end $$;

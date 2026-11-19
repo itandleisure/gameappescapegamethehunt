@@ -8,3 +8,6 @@ verify_jwt = false
 # Fotoboek via de geheime link: geen inlog nodig, de token is de sleutel.
 [functions.photobook]
 verify_jwt = false
+
+[functions.opruimen]
+verify_jwt = false

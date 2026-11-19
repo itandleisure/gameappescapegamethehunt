@@ -16,7 +16,7 @@ insert into auth.users (id, is_anonymous) values
   ('d0000000-0000-0000-0000-000000000002', false);  -- buitenstaander
 
 select tests.login('d0000000-0000-0000-0000-000000000001');
-select public.create_organization('Puzzel BV') as org \gset
+select stub.create_organization('Puzzel BV') as org \gset
 select set_config('tests.org', :'org', false);
 insert into public.puzzles (org_id, name, answer, hints)
 values (:'org', 'Tangram', '{"type":"text","accepted":["hunting"]}', '[{"cost":25,"text":{"nl":"Rood rechtsboven"}}]');
