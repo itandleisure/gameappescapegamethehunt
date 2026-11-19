@@ -44,7 +44,7 @@ export function LeaderLink({ sessionId }: { sessionId: string }) {
   return (
     <div className="card" style={{ flexBasis: '100%' }}>
       <p className="small muted" style={{ marginTop: 0 }}>
-        {t('Met deze link ziet een spelleider de kaart, de ranglijst en de antwoorden, en houdt hij "gepakt" bij. Zonder account. Deel hem alleen met de spelleiding.')}
+        {t('Met deze link ziet een spelleider de kaart, de ranglijst met telefoonnummers, de antwoorden en de teamchat, stuurt hij berichten als The Hunters en houdt hij "gepakt" bij. Zonder account. Deel hem alleen met de spelleiding.')}
       </p>
       <input readOnly value={url} onFocus={(e) => e.target.select()} aria-label={t('Spelleider-link')} />
       <div className="actions">

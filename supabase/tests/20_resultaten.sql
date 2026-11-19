@@ -175,7 +175,16 @@ begin
   assert d #>> '{session,name}' = 'Leeuwarden', 'sessie via de link';
   assert jsonb_array_length(d -> 'teams') = 2, 'alleen de teams van deze hunt';
   assert d #>> '{teams,0,team_code}' = '', 'geen teamcode via de link';
-  assert not (d #> '{teams,0}') ? 'phone', 'geen telefoonnummers via de link';
+  assert (d #> '{teams,0}') ? 'phone', 'telefoonnummers via de link';
+  assert jsonb_array_length(public.leader_messages(current_setting('tests.leader'))) = 0, 'nog geen chat';
+  assert public.leader_send_message(current_setting('tests.leader'), ' Nog 10 minuten! ') ->> 'sender_name' = 'The Hunters',
+    'bericht als The Hunters';
+  assert public.leader_messages(current_setting('tests.leader')) #>> '{0,body}' = 'Nog 10 minuten!', 'chat via de link';
+  begin
+    perform public.leader_send_message('verkeerd-verkeerd-verkeerd-verkeerd', 'x');
+    raise exception 'bericht met een verkeerde link';
+  exception when no_data_found then null;
+  end;
   assert jsonb_array_length(d -> 'positions') = 7, 'posities';
   assert jsonb_array_length(public.leader_session(current_setting('tests.leader'),
     ((d -> 'positions' -> 4 ->> 'id'))::bigint) -> 'positions') = 2, 'alleen nieuwe posities';

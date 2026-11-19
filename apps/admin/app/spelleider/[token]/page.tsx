@@ -12,11 +12,13 @@ import { supabase } from '@/lib/supabase';
 import { Answers } from '@/results/Answers';
 import { LiveMap } from '@/results/LiveMap';
 import { Standings, type BumpCaught } from '@/results/Standings';
+import { TeamChat, type ChatApi, type ChatRow } from '@/results/TeamChat';
 
 const TABS = [
   { id: 'kaart', label: tKey('Kaart') },
   { id: 'ranglijst', label: tKey('Ranglijst') },
   { id: 'antwoorden', label: tKey('Antwoorden') },
+  { id: 'chat', label: tKey('Teamchat') },
 ] as const;
 type Tab = (typeof TABS)[number]['id'];
 
@@ -84,6 +86,20 @@ export default function LeaderPage() {
     // lang: resultaten bevatten teksten in de gekozen taal.
   }, [data, now, updatedAt, lang]);
 
+  const chatApi = useMemo<ChatApi>(
+    () => ({
+      load: async () => {
+        const { data: d, error: e } = await supabase().rpc('leader_messages', { p_token: token });
+        return { rows: (d as ChatRow[] | null) ?? null, error: e?.message ?? null };
+      },
+      send: async (body) => {
+        const { data: d, error: e } = await supabase().rpc('leader_send_message', { p_token: token, p_body: body });
+        return { row: (d as ChatRow | null) ?? null, error: e?.message ?? null };
+      },
+    }),
+    [token],
+  );
+
   const bumpCaught: BumpCaught = async (teamId, delta) => {
     const { data: v, error: e } = await supabase().rpc('leader_bump_caught', { p_token: token, p_team: teamId, p_delta: delta });
     if (!e) void load();
@@ -126,8 +142,9 @@ export default function LeaderPage() {
         ))}
       </nav>
       {tab === 'kaart' ? <LiveMap data={liveData} colors={colors} /> : null}
-      {tab === 'ranglijst' ? <Standings view={view} colors={colors} startedAt={startedAt} phone={() => null} bumpCaught={bumpCaught} /> : null}
+      {tab === 'ranglijst' ? <Standings view={view} colors={colors} startedAt={startedAt} phone={(teamId) => data.teams.find((x) => x.id === teamId)?.phone ?? null} bumpCaught={bumpCaught} /> : null}
       {tab === 'antwoorden' ? <Answers view={view} game={game} colors={colors} /> : null}
+      {tab === 'chat' ? <TeamChat data={liveData} colors={colors} onChange={() => void load()} api={chatApi} /> : null}
     </>
   );
 }

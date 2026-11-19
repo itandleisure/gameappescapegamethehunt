@@ -105,7 +105,7 @@ delete from public.messages where body = 'Wij!';
 update public.sessions set team_chat = false where id = '5f100000-0000-0000-0000-000000000001';
 do $$ begin
   assert (select count(*) from public.messages) = 3, 'spelleiding ziet teamchat en privévraag';
-  assert (select sender_name from public.messages where sender = 'staff') is null, 'spelleiding zonder teamnaam';
+  assert (select sender_name from public.messages where sender = 'staff') = 'The Hunters', 'spelleiding heet The Hunters';
 end $$;
 
 -- Chat uit: teams lezen terug maar sturen niets meer.
