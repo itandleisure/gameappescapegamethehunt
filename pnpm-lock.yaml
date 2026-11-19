@@ -44,6 +44,9 @@ importers:
         specifier: 19.3.1
         version: 19.3.1(react@19.3.1)
     devDependencies:
+      '@hunt/player':
+        specifier: workspace:*
+        version: link:../player
       '@types/node':
         specifier: 22.20.5
         version: 22.20.5
