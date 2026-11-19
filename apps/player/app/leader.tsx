@@ -359,7 +359,7 @@ function LeaderTeams({
     <ScrollView contentContainerStyle={styles.list}>
       {error ? <Banner tone="danger">{t(error)}</Banner> : null}
       {data.teams.length === 0 ? <Body muted>{t('leaderNoTeams')}</Body> : null}
-      {standings(data.teams).map((tm, i) => {
+      {standings(data.teams, progress.scores).map((tm, i) => {
         const p = last.get(tm.id);
         const status = tm.ended_at ? t('leaderFinished') : tm.started_at ? t('leaderPlaying') : t('leaderWaiting');
         const caught = pending[tm.id] ?? tm.caught;
@@ -373,7 +373,7 @@ function LeaderTeams({
                   {tm.name}
                 </Text>
                 <Text style={styles.muted} numberOfLines={1}>
-                  {t('leaderPoints', { n: tm.score })} · {status} · {ago(p?.recorded_at ?? null, now) ?? t('leaderNoLocation')}
+                  {t('leaderPoints', { n: progress.scores.get(tm.id) ?? tm.score })} · {status} · {ago(p?.recorded_at ?? null, now) ?? t('leaderNoLocation')}
                 </Text>
               </View>
             </View>

@@ -47,6 +47,8 @@ describe('spelleider-modus', () => {
 
   it('zet de ranglijst op punten, dan op volgorde van inloggen', () => {
     expect(standings([team('x', 10, 1), team('y', 30, 2), team('z', 10, 0)]).map((t) => t.id)).toEqual(['y', 'z', 'x']);
+    // Uitgerekende punten gaan voor de (niet bijgehouden) score uit de database.
+    expect(standings([team('x', 0, 1), team('y', 0, 2)], new Map([['y', 50]])).map((t) => t.id)).toEqual(['y', 'x']);
   });
 
   it('vertaalt fouten van de database', () => {
@@ -151,6 +153,13 @@ describe('spelleider: puzzels per team', () => {
     expect([...progress.solved.get('a')!].sort()).toEqual(['puzzel-morse', 'puzzel-tangram']);
     expect(progress.solved.get('b')!.size).toBe(0);
     expect(progress.solved.get('c')!.size).toBe(0);
+    // Punten komen uit de gebeurtenissen; de score in de database blijft 0.
+    const a2 = progress.scores.get('a')!;
+    const b2 = progress.scores.get('b')!;
+    expect(a2).toBeGreaterThan(b2);
+    expect(progress.scores.has('c')).toBe(false);
+    const ranked = standings([started('b', T), started('c', null), started('a', T)], progress.scores);
+    expect(ranked[0]!.id).toBe('a');
   });
 
   it('zonder spel geen puzzels', () => {
