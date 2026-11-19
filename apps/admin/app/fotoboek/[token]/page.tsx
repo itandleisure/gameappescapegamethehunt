@@ -4,7 +4,19 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { LOCALES, isAdminLanguage, type AdminLanguage } from '@/lib/i18n';
 import { useLanguage } from '@/lib/language';
 import { buildPhotoZip, saveBlob } from '@/lib/photo-zip';
-import { bookText, displayUrl, formatNumber, href, huntStats, zipFileName, type BookLinks, type BookTextKey } from '@/lib/photobook';
+import {
+  bookText,
+  DEFAULT_GAMES_URL,
+  displayUrl,
+  footerText,
+  formatNumber,
+  href,
+  huntStats,
+  parseGames,
+  zipFileName,
+  type BookLinks,
+  type BookTextKey,
+} from '@/lib/photobook';
 import { supabase } from '@/lib/supabase';
 
 interface SharedBook {
@@ -19,6 +31,7 @@ interface SharedBook {
   teams: { rank: number; name: string; score: number; duration_seconds: number | null; distance_m: number }[];
   cover_url: string | null;
   links: BookLinks;
+  games: unknown;
   pdf_url: string | null;
   shared_until: string | null;
 }
@@ -126,6 +139,13 @@ export default function SharedPhotobookPage() {
   const num = (v: number, d = 0) => formatNumber(lang, v, d);
   const cover = book.cover_url ?? book.items[0]?.url ?? null;
   const { google_review, website_review, vacancy, video, website, email, phone } = book.links;
+  const imageUrls = new Map(
+    (Array.isArray(book.games) ? (book.games as { image_path?: string | null; image_url?: string | null }[]) : []).flatMap((g) =>
+      g.image_path && g.image_url ? [[g.image_path, g.image_url] as const] : [],
+    ),
+  );
+  const games = parseGames(book.games);
+  const allGames = book.links.games || DEFAULT_GAMES_URL;
 
   const zip = () => {
     setZipping(T('zipping', { n: 0, total: book.items.length }));
@@ -149,7 +169,7 @@ export default function SharedPhotobookPage() {
                 {T('huntIn')} <span className="accent">{book.city}</span>
               </>
             ) : (
-              <span className="accent">The Hunt</span>
+              <span className="accent">Escape Game The Hunt</span>
             )}
           </h1>
           <p className="muted-light">
@@ -287,8 +307,38 @@ export default function SharedPhotobookPage() {
         </section>
       ) : null}
 
+      <section className="book-section dark">
+        <span className="book-label">{T('missionDone')}</span>
+        <h2>{T('thanks')}</h2>
+        <p>{T('thanksText')}</p>
+        {games.length ? (
+          <>
+            <h3>{T('moreGames')}</h3>
+            <p className="muted-light">{T('moreGamesText')}</p>
+            <div className="book-games">
+              {games.map((g) => (
+                <a key={g.name} className="book-game" href={g.url ? href('url', g.url) : undefined} target="_blank" rel="noreferrer">
+                  {g.image_path && imageUrls.get(g.image_path) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={imageUrls.get(g.image_path)} alt="" loading="lazy" />
+                  ) : null}
+                  <strong>{g.name}</strong>
+                  <span>{g.text}</span>
+                  {g.url ? <span className="accent">{displayUrl(g.url)} →</span> : null}
+                </a>
+              ))}
+            </div>
+            <div className="book-actions">
+              <a className="book-btn orange" href={href('url', allGames)} target="_blank" rel="noreferrer">
+                {T('allGames')}: {displayUrl(allGames)}
+              </a>
+            </div>
+          </>
+        ) : null}
+      </section>
+
       <footer className="book-footer">
-        <span className="book-label">THE HUNT{book.city ? ` · ${book.city}` : ''}</span>
+        <span className="book-label">{footerText(book.city)}</span>
         <span>
           {website ? <a href={href('url', website)}>{displayUrl(website)}</a> : null}
           {email ? <a href={href('email', email)}>{email}</a> : null}

@@ -270,6 +270,9 @@ a.button.secondary { background: transparent; color: var(--text); border-color: 
 .photobook .pb-thumb { position: relative; }
 .photobook .pb-number { position: absolute; top: 8px; left: 8px; min-width: 26px; height: 26px; padding: 0 6px; border-radius: 13px; background: var(--accent); color: var(--accent-text); font: 700 13px/26px system-ui, sans-serif; text-align: center; }
 .photobook .pb-own { position: absolute; top: 8px; right: 8px; background: var(--surface); }
+.pb-games { display: grid; gap: 12px; }
+.pb-game-img img { width: 180px; aspect-ratio: 15 / 8; object-fit: cover; border-radius: 4px; display: block; }
+.photobook .pb-group { position: absolute; bottom: 8px; left: 8px; background: var(--orange, #f29222); color: #141e29; }
 .photobook figcaption input { padding: 6px 8px; font-size: 13px; }
 .pb-tools { display: flex; gap: 6px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
 .pb-tools button.secondary { padding: 4px 10px; }
@@ -336,6 +339,13 @@ a.button.secondary { background: transparent; color: var(--text); border-color: 
 .book-photos img { display: block; width: 100%; aspect-ratio: 3 / 4; object-fit: cover; }
 .book-photos figure.large img { aspect-ratio: auto; max-height: 85vh; object-fit: contain; background: var(--navy); }
 .book-photos figcaption { padding: 6px 0; font: 700 11px ui-monospace, Menlo, monospace; letter-spacing: 0.08em; text-transform: uppercase; color: #6b7280; }
+.book-games { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin: 16px 0 20px; }
+.book-game { display: flex; flex-direction: column; gap: 6px; background: #1f2b3a; border-top: 2px solid var(--orange); padding: 0 0 14px; text-decoration: none; color: #fff; }
+.book-game img { width: 100%; aspect-ratio: 15 / 8; object-fit: cover; }
+.book-game strong, .book-game span { padding: 0 14px; }
+.book-game strong { margin-top: 10px; }
+.book-game span { font-size: 0.9rem; color: #c9ced6; }
+.book-game span.accent { color: var(--orange); font-weight: 700; }
 .book-vacancy { background: var(--orange); color: var(--navy); padding: 24px; border-radius: 4px; margin-top: 32px; max-width: 640px; }
 .book-vacancy .book-label { color: var(--navy); }
 .book-vacancy h3 { margin: 0 0 8px; font-size: 20px; }

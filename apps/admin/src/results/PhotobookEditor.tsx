@@ -7,11 +7,13 @@ import { buildPhotoZip, saveBlob } from '@/lib/photo-zip';
 import {
   defaultItems,
   gameCaption,
+  groupPhotoIndex,
   huntStats,
   mailBody,
   moveItem,
   paginate,
   pdfFileName,
+  setGroupPhoto,
   TEAM_PHOTO_KEY,
   unusedGamePhotos,
   zipFileName,
@@ -184,9 +186,11 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
   const makePdf = () =>
     void run(t('PDF maken…'), async () => {
       const extra = settings?.stock_paths.slice(0, 2) ?? [];
+      const games = settings?.games ?? [];
       const signed = await signItems([
         ...items,
         ...extra.map((path) => ({ source: 'stock' as const, path })),
+        ...games.flatMap((g) => (g.image_path ? [{ source: 'stock' as const, path: g.image_path }] : [])),
         ...(settings?.cover_path ? [{ source: 'stock' as const, path: settings.cover_path }] : []),
       ]);
       const bytes = await buildPhotobookPdf({
@@ -199,6 +203,7 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
         extraUrls: extra.flatMap((p) => (signed.has(p) ? [signed.get(p)!] : [])),
         stats: draft.show_ranking ? huntStats(view.teams) : null,
         links: settings?.links ?? {},
+        games: games.map((g) => ({ ...g, imageUrl: g.image_path ? (signed.get(g.image_path) ?? null) : null })),
         onProgress: (done, total) => setBusy(t('Foto {n} van {total} verwerken…', { n: done, total })),
       });
       setBusy(t('PDF opslaan…'));
@@ -287,7 +292,15 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
             </select>
           </div>
         </div>
-        <p className="help">{t('Op de voorkant: "Bedankt voor het spelen van The Hunt in {city}". De titel is de naam van de PDF en de klantpagina.', { city: draft.city || '…' })}</p>
+        <p className="help">
+          {t('Op de voorkant: "Bedankt voor het spelen van Escape Game The Hunt in {city}". De titel is de naam van de PDF en de klantpagina.', { city: draft.city || '…' })}
+        </p>
+        {settings && !settings.cover_path ? (
+          <p className="help">
+            {t('Er is nog geen vaste foto voor de voorkant, dus nu komt de eerste foto hieronder op de voorkant.')}{' '}
+            <Link href="/instellingen/fotoboek">{t('Vaste foto voor de voorkant kiezen')}</Link>
+          </p>
+        ) : null}
         <label htmlFor="pb-intro">{t('Tekst op de voorkant')}</label>
         <textarea
           id="pb-intro"
@@ -318,7 +331,7 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
         {items.length === 0
           ? t("Nog geen foto's gekozen.")
           : t(
-              "Sleep de foto's in de goede volgorde. Grote foto's (zoals de groepsfoto) krijgen een eigen pagina, de andere komen met maximaal vier op een pagina ({n} fotopagina's).",
+              "Sleep de foto's in de goede volgorde. De groepsfoto staat vooraan, groot op een eigen pagina. Andere grote foto's krijgen ook een eigen pagina, de rest komt met maximaal vier op een pagina ({n} fotopagina's).",
               { n: pages },
             )}
       </p>
@@ -341,6 +354,7 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
               {thumb(item.path, item.caption)}
               <span className="pb-number">{i + 1}</span>
               {sourceBadge(item.source)}
+              {i === groupPhotoIndex(items) ? <span className="badge pb-group">{t('Groepsfoto')}</span> : null}
             </div>
             <figcaption>
               <input
@@ -366,6 +380,11 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
                   <input type="checkbox" checked={!!item.large} onChange={(e) => updateItem(i, { large: e.target.checked || undefined })} />
                   {t('Groot')}
                 </label>
+                {i !== groupPhotoIndex(items) ? (
+                  <button className="link" title={t('Vooraan en groot, op een eigen pagina')} onClick={() => setItems(setGroupPhoto(items, i))}>
+                    {t('Maak groepsfoto')}
+                  </button>
+                ) : null}
                 <button className="link" onClick={() => setItems(items.filter((_, j) => j !== i))}>
                   {t('Weghalen')}
                 </button>

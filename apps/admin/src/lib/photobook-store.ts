@@ -2,7 +2,7 @@
 // Fotoboek opslaan en ophalen (tabellen photobooks en photobook_settings,
 // bucket photobooks).
 import { isAdminLanguage } from './i18n';
-import { parseItems, parseLinks, type BookItem, type BookLinks, type Photobook, type PhotobookSettings } from './photobook';
+import { parseGames, parseItems, parseLinks, type BookItem, type BookLinks, type Photobook, type PhotobookSettings } from './photobook';
 import { loadAsJpeg } from './photobook-pdf';
 import { supabase } from './supabase';
 
@@ -133,16 +133,17 @@ export function shareLink(token: string): string {
 export async function loadSettings(orgId: string): Promise<PhotobookSettings> {
   const { data, error } = await supabase()
     .from('photobook_settings')
-    .select('org_id, cover_path, stock_paths, links')
+    .select('org_id, cover_path, stock_paths, links, games')
     .eq('org_id', orgId)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  const row = data as { org_id: string; cover_path: string | null; stock_paths: unknown; links: unknown } | null;
+  const row = data as { org_id: string; cover_path: string | null; stock_paths: unknown; links: unknown; games: unknown } | null;
   return {
     org_id: orgId,
     cover_path: row?.cover_path ?? null,
     stock_paths: Array.isArray(row?.stock_paths) ? (row!.stock_paths as unknown[]).filter((p): p is string => typeof p === 'string') : [],
     links: parseLinks(row?.links),
+    games: parseGames(row ? row.games : null),
   };
 }
 
@@ -153,6 +154,9 @@ export async function saveSettings(settings: PhotobookSettings): Promise<void> {
     cover_path: settings.cover_path,
     stock_paths: settings.stock_paths,
     links,
+    games: settings.games
+      .filter((g) => g.name.trim())
+      .map((g) => ({ name: g.name.trim(), text: g.text.trim(), url: g.url.trim(), image_path: g.image_path ?? null })),
     updated_at: new Date().toISOString(),
   });
   if (error) throw new Error(error.message);

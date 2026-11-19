@@ -4,12 +4,16 @@
 //   1. voorkant met grote foto: "Bedankt voor het spelen van The Hunt in <stad>"
 //   2. Jullie Hunt in cijfers (afstand, stappen, kcal, CO2) en de video
 //   3. de foto's: groot (eigen pagina) of met 2 tot 4 op een pagina
-//   4. review en vacature
-//   5. bedankt, met contactgegevens
+//   4. review (met QR-code naar Google) en vacature
+//   5. bedankt voor het spelen, met de andere spellen van Badass Games en de
+//      contactgegevens
 // Wordt in de browser gemaakt met pdf-lib.
 import type { PDFDocument, PDFFont, PDFImage, PDFPage, RGB } from 'pdf-lib';
+import qrcode from 'qrcode-generator';
 import {
   bookText,
+  DEFAULT_GAMES_URL,
+  footerText as makeFooter,
   coverCrop,
   displayUrl,
   formatNumber,
@@ -17,6 +21,7 @@ import {
   paginate,
   slots,
   wrapText,
+  type BookGame,
   type BookItem,
   type BookLinks,
   type BookTextKey,
@@ -38,6 +43,8 @@ export interface PdfInput {
   extraUrls: string[];
   stats: HuntStats | null;
   links: BookLinks;
+  /** Andere spellen voor de slotpagina, met een link naar hun foto. */
+  games: (BookGame & { imageUrl?: string | null })[];
   /** Voortgang: aantal verwerkte foto's van het totaal. */
   onProgress?: (done: number, total: number) => void;
 }
@@ -210,6 +217,21 @@ export async function buildPhotobookPdf(input: PdfInput): Promise<Uint8Array> {
     return w;
   };
 
+  /** QR-code (donker op wit) met linksonder op (x, y). */
+  const qr = (page: PDFPage, url: string, x: number, y: number, size: number) => {
+    const code = qrcode(0, 'M');
+    code.addData(url);
+    code.make();
+    const n = code.getModuleCount();
+    const quiet = 2;
+    const cell = size / (n + 2 * quiet);
+    page.drawRectangle({ x, y, width: size, height: size, color: C.white });
+    for (let r = 0; r < n; r++)
+      for (let c = 0; c < n; c++)
+        if (code.isDark(r, c))
+          page.drawRectangle({ x: x + (quiet + c) * cell, y: y + size - (quiet + r + 1) * cell, width: cell + 0.05, height: cell + 0.05, color: C.navy });
+  };
+
   // Foto's: per gebruik op maat bijgesneden en verkleind.
   const total = input.items.length;
   let done = 0;
@@ -225,7 +247,7 @@ export async function buildPhotobookPdf(input: PdfInput): Promise<Uint8Array> {
 
   // Kop en voet van de gewone pagina's.
   let pageNo = 0;
-  const footerText = `THE HUNT${input.city ? ` · ${input.city}` : ''}`;
+  const footerText = makeFooter(input.city);
   const newPage = (dark = false) => {
     const page = doc.addPage([W, H]);
     pageNo += 1;
@@ -264,9 +286,16 @@ export async function buildPhotobookPdf(input: PdfInput): Promise<Uint8Array> {
     draw(page, T('thanksFor'), M, y, 24, bold, C.white, { maxWidth: W - 2 * M });
     y -= 30;
     if (input.city) {
-      const pw = draw(page, `${T('huntIn')} `, M, y, 24, bold, C.white);
-      draw(page, input.city, M + pw, y, 24, bold, C.orange, { maxWidth: W - 2 * M - pw });
-    } else draw(page, 'The Hunt', M, y, 24, bold, C.orange);
+      const pre = `${T('huntIn')} `;
+      if (width(bold, pre + input.city, 24) <= W - 2 * M) {
+        const pw = draw(page, pre, M, y, 24, bold, C.white);
+        draw(page, input.city, M + pw, y, 24, bold, C.orange);
+      } else {
+        draw(page, pre.trim(), M, y, 24, bold, C.white, { maxWidth: W - 2 * M });
+        y -= 30;
+        draw(page, input.city, M, y, 24, bold, C.orange, { maxWidth: W - 2 * M });
+      }
+    } else draw(page, 'Escape Game The Hunt', M, y, 24, bold, C.orange);
     y -= 30;
     if (input.intro) paragraph(page, input.intro, M, y, 9, regular, C.light, W - 2 * M - 40);
     page.drawRectangle({ x: W - 200, y: 0, width: 200, height: 8, color: C.orange });
@@ -396,11 +425,23 @@ export async function buildPhotobookPdf(input: PdfInput): Promise<Uint8Array> {
           y -= ih + 22;
         }
       }
-      y = paragraph(page, T('reviewText'), M, y, 8.5, regular, C.light, W - 2 * M - 60) - 14;
+      const qrSize = google_review ? 74 : 0;
+      const textW = W - 2 * M - (qrSize ? qrSize + 24 : 60);
+      const top = y;
+      y = paragraph(page, T('reviewText'), M, y, 8.5, regular, C.light, textW) - 14;
       let bx = M;
       if (google_review) bx += button(page, T('googleReview'), bx, y - 22, href('url', google_review), 'orange') + 10;
       if (website_review) button(page, T('websiteReview'), bx, y - 22, href('url', website_review), 'outline');
-      y -= 60;
+      y -= 36;
+      if (google_review) {
+        const qx = W - M - qrSize;
+        const qy = top - qrSize + 6;
+        qr(page, href('url', google_review), qx, qy, qrSize);
+        link(page, { x: qx, y: qy, w: qrSize, h: qrSize }, href('url', google_review));
+        draw(page, T('scanReview'), W - M, qy - 11, 6, mono, C.light, { align: 'right' });
+        y = Math.min(y, qy - 24);
+      }
+      y -= 24;
     }
     if (vacancy) {
       const bh = 230;
@@ -432,18 +473,61 @@ export async function buildPhotobookPdf(input: PdfInput): Promise<Uint8Array> {
     }
   }
 
-  // --- 5. Bedankt -----------------------------------------------------------------
+  // --- 5. Bedankt voor het spelen, met de andere spellen ------------------------
   {
     const page = newPage(true);
-    const lw = 130;
-    const lh = (logo.height / logo.width) * lw;
-    page.drawImage(logo, { x: (W - lw) / 2, y: H / 2 + 10, width: lw, height: lh });
-    draw(page, T('thanks'), W / 2, H / 2 - 30, 22, bold, C.white, { align: 'center' });
-    let y = H / 2 - 56;
-    for (const l of lines(T('thanksText'), regular, 10, 360)) {
-      draw(page, l, W / 2, y, 10, regular, C.light, { align: 'center' });
-      y -= 15;
+    const games = input.games.slice(0, 4);
+    let y = heading(page, T('missionDone'), T('thanks'), true);
+    y = paragraph(page, T('thanksText'), M, y - 2, 9, regular, C.light, W - 2 * M - 60) - 18;
+    if (games.length) {
+      label(page, 'Badass Games', M, y);
+      y -= 22;
+      draw(page, T('moreGames'), M, y, 15, bold, C.white, { maxWidth: W - 2 * M });
+      y = paragraph(page, T('moreGamesText'), M, y - 16, 8, regular, C.light, W - 2 * M) - 8;
+      // Blokken van twee naast elkaar: foto, naam, tekst en link.
+      const gap = 12;
+      const cw = (W - 2 * M - gap) / 2;
+      const rows = Math.ceil(games.length / 2);
+      const bottom = 175;
+      const ch = Math.min(215, (y - bottom - (rows - 1) * gap) / rows);
+      const imgH = Math.min(ch * 0.5, cw * 0.53);
+      for (const [i, g] of games.entries()) {
+        const x = M + (i % 2) * (cw + gap);
+        const top = y - Math.floor(i / 2) * (ch + gap);
+        page.drawRectangle({ x, y: top - ch, width: cw, height: ch, color: C.navy2 });
+        page.drawRectangle({ x, y: top - 2, width: cw, height: 2, color: C.orange });
+        let ty = top - 2;
+        if (g.imageUrl) {
+          const img = await image(g.imageUrl, { w: cw, h: imgH }, 900);
+          if (img) {
+            page.drawImage(img, { x, y: top - 2 - imgH, width: cw, height: imgH });
+            ty -= imgH;
+          }
+        }
+        ty -= 20;
+        draw(page, g.name, x + 12, ty, 11, bold, C.white, { maxWidth: cw - 24 });
+        ty -= 14;
+        const textLines = lines(g.text, regular, 7.5, cw - 24);
+        const room = Math.max(1, Math.floor((ty - (top - ch + 28)) / 10.5));
+        for (const l of textLines.slice(0, room)) {
+          draw(page, l, x + 12, ty, 7.5, regular, C.light);
+          ty -= 10.5;
+        }
+        if (g.url) {
+          const u = displayUrl(g.url);
+          const uw = draw(page, u, x + 12, top - ch + 14, 7.5, bold, C.orange, { maxWidth: cw - 40 });
+          draw(page, ' →', x + 12 + uw, top - ch + 14, 7.5, mono, C.orange);
+          link(page, { x, y: top - ch, w: cw, h: ch }, href('url', g.url));
+        }
+      }
+      y -= rows * ch + (rows - 1) * gap + 18;
+      const all = input.links.games || DEFAULT_GAMES_URL;
+      button(page, `${T('allGames')}: ${displayUrl(all)}`, M, y - 22, href('url', all), 'orange');
     }
+    // Logo en contactgegevens onderaan.
+    const lw = 54;
+    const lh = (logo.height / logo.width) * lw;
+    page.drawImage(logo, { x: M, y: 64, width: lw, height: lh });
     const contact: [string, string][] = [];
     if (input.links.website) contact.push([displayUrl(input.links.website), href('url', input.links.website)]);
     if (input.links.email) contact.push([input.links.email, href('email', input.links.email)]);

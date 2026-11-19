@@ -50,9 +50,50 @@ export interface BookLinks {
   website?: string;
   email?: string;
   phone?: string;
+  /** Website met alle spellen van Badass Games (knop op de slotpagina). */
+  games?: string;
 }
 
-export const LINK_KEYS = ['video', 'google_review', 'website_review', 'vacancy', 'website', 'email', 'phone'] as const;
+export const LINK_KEYS = ['video', 'google_review', 'website_review', 'vacancy', 'website', 'email', 'phone', 'games'] as const;
+
+/** Zonder eigen link gaat de knop "Bekijk alle spellen" hierheen. */
+export const DEFAULT_GAMES_URL = 'https://badassgames.nl';
+
+/** Een ander spel van Badass Games, als blok op de slotpagina. */
+export interface BookGame {
+  name: string;
+  text: string;
+  url: string;
+  /** Foto in de bucket photobooks, onder huisstijl/<organisatie>/. */
+  image_path?: string | null;
+}
+
+/** De spellen zoals in het huidige fotoboek; aan te passen bij de vaste onderdelen. */
+export const DEFAULT_GAMES: readonly BookGame[] = [
+  {
+    name: 'The Hundred',
+    text: 'Verzamel als team precies 100 munten in 90 minuten. Te veel of te weinig is verliezen: strategie onder tijdsdruk.',
+    url: 'https://badassgames.nl/the-hundred',
+  },
+  {
+    name: 'Escapeboxen',
+    text: 'Een complete escape-ervaring in een kist, met echte sloten, puzzels en onze GameApp. Speel hem overal: thuis, op kantoor of op locatie.',
+    url: 'https://badassgames.nl/escapeboxen',
+  },
+  {
+    name: 'Detective Game',
+    text: 'Los als rechercheursteam drie mysteries op. Verzamel aanwijzingen, ondervraag vier verdachten en ontdek wie de waarheid spreekt.',
+    url: 'https://badassgames.nl/detective-game',
+  },
+  {
+    name: 'Boeven & Speurneuzen',
+    text: 'Speurtocht voor kinderen: los als onderzoeksteam een inbraak in het gemeentehuis op en ontmasker de échte boef.',
+    url: 'https://badassgames.nl/boeven-en-speurneuzen',
+  },
+];
+
+/** Hooguit zoveel spellen op de slotpagina. */
+export const MAX_GAMES = 4;
 
 /** Vaste onderdelen van elk fotoboek, per organisatie. */
 export interface PhotobookSettings {
@@ -60,13 +101,40 @@ export interface PhotobookSettings {
   cover_path: string | null;
   stock_paths: string[];
   links: BookLinks;
+  /** De andere spellen op de slotpagina. */
+  games: BookGame[];
+}
+
+/**
+ * Leest de spellen uit de database. Nog nooit ingesteld (null): de spellen van
+ * het huidige fotoboek. Een lege lijst: geen blokken met spellen.
+ */
+export function parseGames(value: unknown): BookGame[] {
+  if (value === null || value === undefined) return DEFAULT_GAMES.map((g) => ({ ...g }));
+  if (!Array.isArray(value)) return [];
+  return value
+    .flatMap((v): BookGame[] => {
+      if (!v || typeof v !== 'object') return [];
+      const o = v as Record<string, unknown>;
+      const name = typeof o.name === 'string' ? o.name.trim() : '';
+      if (!name) return [];
+      return [
+        {
+          name,
+          text: typeof o.text === 'string' ? o.text.trim() : '',
+          url: typeof o.url === 'string' ? o.url.trim() : '',
+          image_path: typeof o.image_path === 'string' && o.image_path ? o.image_path : null,
+        },
+      ];
+    })
+    .slice(0, MAX_GAMES);
 }
 
 /** Vaste teksten in de PDF en op de klantpagina; vertaald in de taal van het fotoboek. */
 export const BOOK_TEXT = {
   missionDone: tKey('Missie volbracht'),
   thanksFor: tKey('Bedankt voor het spelen van'),
-  huntIn: tKey('The Hunt in'),
+  huntIn: tKey('Escape Game The Hunt in'),
   statsTitle: tKey('Jullie Hunt in cijfers'),
   statsIntro: tKey(
     'Alle teams zijn de stad door gerend, op de vlucht voor de Hunters. Zo ver zijn jullie gekomen, helemaal te voet: goed voor de conditie en goed voor de lucht in de stad.',
@@ -83,7 +151,7 @@ export const BOOK_TEXT = {
   together: tKey('Samen'),
   footnote: tKey('Indicatief: 1.350 stappen en 55 kcal per km per persoon, 0,18 kg CO2 per autokilometer, één auto per team.'),
   videoTitle: tKey('Beleef het nog een keer'),
-  videoText: tKey('Bekijk de video van The Hunt.'),
+  videoText: tKey('Bekijk de video van Escape Game The Hunt.'),
   videoLink: tKey('Bekijk de video'),
   groupPhoto: tKey('Groepsfoto'),
   yourPhotos: tKey("Jullie foto's"),
@@ -92,6 +160,7 @@ export const BOOK_TEXT = {
     'Vonden jullie het een topdag? Laat dan een review achter, dat helpt ons enorm. Op Google of via onze website: het kost je een minuutje.',
   ),
   googleReview: tKey('Google-review'),
+  scanReview: tKey('Scan voor een Google-review'),
   websiteReview: tKey('Review via onze website'),
   vacancyLabel: tKey('Gezocht: Hunters'),
   vacancyTitle: tKey('Wij zijn op jacht naar nieuwe Hunters!'),
@@ -102,6 +171,9 @@ export const BOOK_TEXT = {
   vacancyLink: tKey('Stuur de vacature door'),
   thanks: tKey('Bedankt voor het spelen!'),
   thanksText: tKey('We hopen dat jullie een geweldige tijd hebben gehad. Graag tot de volgende hunt!'),
+  moreGames: tKey('Meer spellen van Badass Games'),
+  moreGamesText: tKey('Zin in meer? Badass Games maakt nog meer spellen voor groepen, teams en families.'),
+  allGames: tKey('Bekijk alle spellen'),
   download: tKey('Download het fotoboek (PDF)'),
   downloadZip: tKey("Download alle foto's (zip)"),
   zipping: tKey("Foto's verzamelen… {n} van {total}"),
@@ -126,10 +198,24 @@ export function gameCaption(photo: Pick<PhotoRow, 'task_key'>, teamName: string,
   return `${teamName} · ${taskTitle}`;
 }
 
+/** Merk voor de voettekst en de voorkant. */
+export const BRAND = 'Escape Game The Hunt';
+
+/** Voettekst van de pagina's: "ESCAPE GAME THE HUNT · AMSTERDAM". */
+export function footerText(city: string): string {
+  const c = city.trim();
+  return `${BRAND}${c ? ` · ${c}` : ''}`.toUpperCase();
+}
+
+/** Hebben de spelers minder foto's dan dit, dan vullen de vaste foto's aan tot dit aantal. */
+export const MIN_PHOTOS = 8;
+
 /**
- * Eerste opzet van het fotoboek, zoals jullie fotoboek nu is opgebouwd: eerst
- * de teamfoto's (in volgorde van de ranglijst), dan de opdrachtfoto's per
- * team op tijd, en tot slot de vaste algemene foto's.
+ * Eerste opzet van het fotoboek: eerst de groepsfoto (de teamfoto van het
+ * beste team, groot op een eigen pagina; een andere kies je in de
+ * beheerapp), dan de andere teamfoto's (in volgorde van de ranglijst) en de
+ * opdrachtfoto's per team op tijd. Hebben de spelers weinig foto's, dan vullen
+ * de vaste foto's van de organisatie aan tot MIN_PHOTOS.
  */
 export function defaultItems(
   photos: readonly PhotoRow[],
@@ -145,10 +231,36 @@ export function defaultItems(
       a.team_id.localeCompare(b.team_id) ||
       a.created_at.localeCompare(b.created_at),
   );
-  return [
-    ...sorted.map((p): BookItem => ({ source: 'game', path: p.path, caption: caption(p) })),
-    ...stockPaths.map((path): BookItem => ({ source: 'stock', path, caption: '' })),
-  ];
+  const game = sorted.map((p, i): BookItem => ({
+    source: 'game',
+    path: p.path,
+    caption: caption(p),
+    ...(i === 0 && p.task_key === TEAM_PHOTO_KEY ? { large: true } : {}),
+  }));
+  const fill = Math.max(0, MIN_PHOTOS - game.length);
+  return [...game, ...stockPaths.slice(0, fill).map((path): BookItem => ({ source: 'stock', path, caption: '' }))];
+}
+
+/** De groepsfoto: de eerste foto, als die groot is. */
+export function groupPhotoIndex(items: readonly BookItem[]): number {
+  return items[0]?.large ? 0 : -1;
+}
+
+/**
+ * Maakt een foto de groepsfoto: vooraan en groot. De vorige groepsfoto blijft
+ * in het fotoboek, als gewone foto op de plek waar de nieuwe stond.
+ */
+export function setGroupPhoto(items: readonly BookItem[], index: number): BookItem[] {
+  if (index < 0 || index >= items.length) return [...items];
+  const next = items.map((it) => ({ ...it }));
+  const chosen = { ...next[index]!, large: true };
+  if (index === 0) {
+    next[0] = chosen;
+    return next;
+  }
+  if (next[0]!.large) delete next[0]!.large;
+  next.splice(index, 1);
+  return [chosen, ...next];
 }
 
 /** Spelfoto's die (nog) niet in het fotoboek staan, bijvoorbeeld foto's die later binnenkwamen. */
