@@ -1,4 +1,5 @@
 "use client";
+import { GAME_LANGUAGES, gameLanguageList, gameLanguageName, gameLanguageShort, gameLanguageTag, languageName } from "@/lib/game-languages";
 import { CompositionError } from "@hunt/engine";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -21,7 +22,6 @@ import {
   variantName,
   type NameByLang,
 } from "@/lib/game-name";
-import { GAME_LANGUAGES, gameLanguageName } from "@/lib/game-languages";
 import { tKey } from "@/lib/i18n";
 import { useLanguage } from "@/lib/language";
 import { supabase } from "@/lib/supabase";
@@ -235,7 +235,7 @@ export default function GamePage() {
     const name = cleanName(nameDraft, self.game.languages);
     const main = self.game.default_language;
     if (!name[main]) {
-      setErrors([t("De naam in {lang} is verplicht.", { lang: main.toUpperCase() })]);
+      setErrors([t("De naam in {lang} is verplicht.", { lang: languageName(main) })]);
       return;
     }
     setBusy(true);
@@ -415,7 +415,7 @@ export default function GamePage() {
       <h1>{title}</h1>
       <p className="muted">
         {t(LAYER_LABEL[self.game.layer])} · {self.game.slug} · {t("talen")}{" "}
-        {self.game.languages.join(", ").toUpperCase()}
+        {gameLanguageList(self.game.languages)}
         {nameDraft ? null : (
           <>
             {" · "}
@@ -455,7 +455,7 @@ export default function GamePage() {
             {self.game.languages.map((lang) => (
               <div key={lang}>
                 <label htmlFor={`name-${lang}`}>
-                  {t("Naam")} ({lang.toUpperCase()})
+                  {t("Naam")} ({gameLanguageShort(lang)})
                 </label>
                 <input
                   id={`name-${lang}`}
@@ -671,7 +671,7 @@ export default function GamePage() {
               </button>
               <span className="muted small">
                 {t("Vult alleen lege vertalingen in ({langs}); wat er al staat blijft staan.", {
-                  langs: targets.map((l) => l.toUpperCase()).join(", "),
+                  langs: gameLanguageList(targets),
                 })}
               </span>
             </div>
@@ -735,13 +735,13 @@ export default function GamePage() {
                                 className={state}
                                 title={
                                   state === "done"
-                                    ? t("{lang}: vertaald", { lang: lang.toUpperCase() })
+                                    ? t("{lang}: vertaald", { lang: gameLanguageName(lang) })
                                     : state === "partial"
-                                      ? t("{lang}: deels vertaald", { lang: lang.toUpperCase() })
-                                      : t("{lang}: nog niet vertaald", { lang: lang.toUpperCase() })
+                                      ? t("{lang}: deels vertaald", { lang: gameLanguageName(lang) })
+                                      : t("{lang}: nog niet vertaald", { lang: gameLanguageName(lang) })
                                 }
                               >
-                                {state === "done" ? "✓" : state === "partial" ? "◐" : "○"} {lang.toUpperCase()}
+                                {state === "done" ? "✓" : state === "partial" ? "◐" : "○"} {gameLanguageTag(lang)}
                               </span>
                             ))}
                           </span>

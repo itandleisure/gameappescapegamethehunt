@@ -1,4 +1,5 @@
 'use client';
+import { gameLanguageShort } from '@/lib/game-languages';
 import {
   circlesGeoJson,
   DEFAULT_BOUNDARY_COLOR,
@@ -740,7 +741,7 @@ export default function MapPage() {
               {meeting
                 ? game.languages.map((lang) => (
                     <div key={lang}>
-                      <label htmlFor={`mp-${lang}`}>{t('Omschrijving ({lang})', { lang: lang.toUpperCase() })}</label>
+                      <label htmlFor={`mp-${lang}`}>{t('Omschrijving ({lang})', { lang: gameLanguageShort(lang) })}</label>
                       <input
                         id={`mp-${lang}`}
                         value={meetingText[lang] ?? ''}

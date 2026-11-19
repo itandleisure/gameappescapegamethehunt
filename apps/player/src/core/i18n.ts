@@ -626,6 +626,41 @@ export const LANGUAGE_NAMES: Record<string, string> = {
   mt: 'Malti',
 };
 
+/** Vlag van het land bij elke taal, zodat je een taal ook herkent als je het schrift niet kunt lezen. */
+export const LANGUAGE_FLAGS: Record<string, string> = {
+  nl: '🇳🇱',
+  en: '🇬🇧',
+  de: '🇩🇪',
+  fr: '🇫🇷',
+  es: '🇪🇸',
+  it: '🇮🇹',
+  pt: '🇵🇹',
+  da: '🇩🇰',
+  sv: '🇸🇪',
+  no: '🇳🇴',
+  fi: '🇫🇮',
+  pl: '🇵🇱',
+  cs: '🇨🇿',
+  sk: '🇸🇰',
+  hu: '🇭🇺',
+  ro: '🇷🇴',
+  bg: '🇧🇬',
+  el: '🇬🇷',
+  hr: '🇭🇷',
+  sl: '🇸🇮',
+  et: '🇪🇪',
+  lv: '🇱🇻',
+  lt: '🇱🇹',
+  ga: '🇮🇪',
+  mt: '🇲🇹',
+};
+
+/** Label voor de taalkeuze, bijvoorbeeld "🇬🇷 Ελληνικά". */
+export function languageLabel(code: string): string {
+  const name = LANGUAGE_NAMES[code] ?? code.toUpperCase();
+  return LANGUAGE_FLAGS[code] ? `${LANGUAGE_FLAGS[code]} ${name}` : name;
+}
+
 /** Telefoons melden Noors als nb (Bokmål) of nn (Nynorsk); het spel kent "no". */
 const LANGUAGE_ALIASES: Record<string, string> = { nb: 'no', nn: 'no' };
 

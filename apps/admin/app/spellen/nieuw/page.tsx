@@ -1,4 +1,5 @@
 'use client';
+import { gameLanguageShort, languageName } from '@/lib/game-languages';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useMemo, useState, type FormEvent } from 'react';
@@ -134,7 +135,7 @@ function NewCity() {
     if (!org || !base || !chosen || !place) return;
     const clean = cleanName(shownName, base.languages);
     if (!clean[base.default_language]) {
-      setErrors([t('De naam in {lang} is verplicht.', { lang: base.default_language.toUpperCase() })]);
+      setErrors([t('De naam in {lang} is verplicht.', { lang: languageName(base.default_language) })]);
       return;
     }
     setBusy(true);
@@ -281,7 +282,7 @@ function NewCity() {
               {(base?.languages ?? []).map((l) => (
                 <div key={l}>
                   <label htmlFor={`name-${l}`}>
-                    {t('Naam')} ({l.toUpperCase()})
+                    {t('Naam')} ({gameLanguageShort(l)})
                   </label>
                   <input
                     id={`name-${l}`}

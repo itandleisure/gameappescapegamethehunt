@@ -4,6 +4,7 @@
  * (omschrijving, opdrachten, regels, steden) en een nieuwe template maken
  * van de werkversie, die dan het volgende versienummer krijgt.
  */
+import { gameLanguageList } from '@/lib/game-languages';
 import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
 import type { LayerRows } from '@/lib/game-model';
@@ -156,7 +157,7 @@ export function TemplateVersions({ baseId, versions, cities, onChanged, onError 
                           tasks: contents.tasks.length,
                           rules: contents.rules,
                           locations: contents.locations,
-                          languages: contents.languages.join(', ').toUpperCase(),
+                          languages: gameLanguageList(contents.languages),
                         })}
                       </p>
                       {contents.compared ? (

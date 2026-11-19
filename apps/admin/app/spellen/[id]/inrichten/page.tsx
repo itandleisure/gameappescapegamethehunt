@@ -1,4 +1,5 @@
 'use client';
+import { gameLanguageShort } from '@/lib/game-languages';
 import { trackColor, type AnswerSpec, type GamePackage, type LatLng, type PlayBoundary, type TaskLocation } from '@hunt/engine';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -393,7 +394,7 @@ export default function SetupPage() {
           <p className="muted">
             {t('Teams krijgen deze vraag als ze bij het icoon van {title} komen. Een goed antwoord geeft bonuspunten.', { title: taskTitle(key) })}
           </p>
-          <label htmlFor="vraag">{t('Vraag')} ({lang.toUpperCase()})</label>
+          <label htmlFor="vraag">{t('Vraag')} ({gameLanguageShort(lang)})</label>
           <textarea id="vraag" rows={4} value={q.body} onChange={(e) => set({ body: e.target.value })} placeholder={t('Bijvoorbeeld: in welk jaar is deze kerk gebouwd?')} />
           <label>{t('Antwoorden (kies welke goed is)')}</label>
           {q.options.map((o, i) => (
