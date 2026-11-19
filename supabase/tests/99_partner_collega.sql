@@ -135,6 +135,10 @@ begin
     raise exception 'eigen account verwijderd';
   exception when insufficient_privilege then null;
   end;
+  perform public.set_account_note(' Collega@Partner.test ', '  Partner Lissabon, tot juni  ');
+  assert (select note from public.platform_accounts() where email = 'collega@partner.test') = 'Partner Lissabon, tot juni',
+    'omschrijving zichtbaar';
+  perform public.set_account_note('nog-geen-account@partner.test', 'Komt in januari');
   perform public.delete_account('f7000000-0000-0000-0000-000000000004');
   assert (select count(*) from public.platform_accounts()) = 2, 'account verwijderd';
 end $$;
@@ -147,6 +151,22 @@ do $$ begin
     raise exception 'partner verwijderde een account';
   exception when insufficient_privilege then null;
   end;
+  begin
+    perform public.set_account_note('frans@example.test', 'x');
+    raise exception 'partner zette een omschrijving';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    perform count(*) from public.account_notes;
+    raise exception 'partner las omschrijvingen';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+reset role;
+do $$ begin
+  assert (select count(*) from public.account_notes) = 1, 'omschrijving van het verwijderde account weg, die voor de uitnodiging blijft';
+  assert (select email from public.account_notes) = 'nog-geen-account@partner.test', 'omschrijving al bij het uitnodigen';
 end $$;
 
 \echo Alle tests voor partnercollegas en het accountoverzicht geslaagd

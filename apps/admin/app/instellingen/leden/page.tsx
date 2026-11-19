@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useAuth, type Org } from '@/lib/auth';
 import { displayName } from '@/lib/game-name';
 import type { GameRow } from '@/lib/game-model';
-import { tKey } from '@/lib/i18n';
+import { roleKey } from '@/lib/roles';
 import { useLanguage } from '@/lib/language';
 import { supabase } from '@/lib/supabase';
 
@@ -31,15 +31,10 @@ interface City {
   name: string;
 }
 
-const ROLES: { role: Org['role']; label: string }[] = [
-  { role: 'owner', label: tKey('Eigenaar') },
-  { role: 'admin', label: tKey('Beheerder') },
-  { role: 'editor', label: tKey('Redacteur') },
-  { role: 'instructor', label: tKey('Spelleider') },
-];
+const ROLES: Org['role'][] = ['owner', 'admin', 'editor', 'instructor'];
 
 /** Rollen die een partner kan hebben: nooit eigenaar of beheerder. */
-const PARTNER_ROLES = ROLES.filter((r) => r.role === 'editor' || r.role === 'instructor');
+const PARTNER_ROLES: Org['role'][] = ['editor', 'instructor'];
 
 /**
  * Toegang tot de beheeromgeving. Registreren kan alleen met een uitnodiging:
@@ -62,6 +57,9 @@ export default function AccessPage() {
   const [role, setRole] = useState<Org['role']>('instructor');
   const [partnerName, setPartnerName] = useState('');
   const [partnerEmail, setPartnerEmail] = useState('');
+  /** Omschrijving bij een uitnodiging of nieuwe partner (alleen voor het platform). */
+  const [note, setNote] = useState('');
+  const [partnerNote, setPartnerNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -128,7 +126,11 @@ export default function AccessPage() {
     }
     setBusy(false);
   };
-  const roleLabel = (r: Org['role']) => t(ROLES.find((x) => x.role === r)?.label ?? r);
+  /** Rolnaam in de eigen organisatie (bij een partner heet redacteur "Partner"). */
+  const roleLabel = (r: Org['role'], platformOrg = org.platform) => t(roleKey(r, platformOrg));
+  /** Omschrijving opslaan (alleen het platform); leeg laten slaat niets op. */
+  const saveNote = async (address: string, text: string) =>
+    text.trim() ? supabase().rpc('set_account_note', { p_email: address, p_note: text }) : { error: null };
   const loginUrl = typeof window === 'undefined' ? '' : `${window.location.origin}/login`;
 
   /** Na de uitnodiging: inloglink mailen (Supabase Auth). Lukt dat niet, dan kan de persoon zelf een account aanmaken. */
@@ -144,17 +146,28 @@ export default function AccessPage() {
     const address = email.trim();
     void run(async () => {
       const result = await supabase().rpc('invite_member', { p_org: org.id, p_email: address, p_role: org.platform ? role : org.role });
+      if (!result.error && platform) {
+        const saved = await saveNote(address, note);
+        if (saved.error) return saved;
+      }
       if (!result.error && !(await mailLink(address))) {
         return { error: { message: t('Uitgenodigd, maar de mail kon niet worden verstuurd. Laat {email} een account aanmaken op {url} met dit e-mailadres.', { email: address, url: loginUrl }) } };
       }
       return result;
-    }, t('Uitgenodigd. {email} krijgt een mail met een inloglink en kiest daarna zelf een wachtwoord.', { email: address })).then(() => setEmail(''));
+    }, t('Uitgenodigd. {email} krijgt een mail met een inloglink en kiest daarna zelf een wachtwoord.', { email: address })).then(() => {
+      setEmail('');
+      setNote('');
+    });
   };
   const addPartner = (e: FormEvent) => {
     e.preventDefault();
     const address = partnerEmail.trim();
     void run(async () => {
       const result = await supabase().rpc('create_partner', { p_name: partnerName, p_owner_email: address });
+      if (!result.error) {
+        const saved = await saveNote(address, partnerNote);
+        if (saved.error) return saved;
+      }
       if (!result.error && !(await mailLink(address))) {
         return { error: { message: t('Partner aangemaakt, maar de mail kon niet worden verstuurd. Laat {email} een account aanmaken op {url} met dit e-mailadres.', { email: address, url: loginUrl }) } };
       }
@@ -162,6 +175,7 @@ export default function AccessPage() {
     }, t('Partner aangemaakt. {email} krijgt een mail met een inloglink en kiest daarna zelf een wachtwoord.', { email: address })).then(() => {
       setPartnerName('');
       setPartnerEmail('');
+      setPartnerNote('');
     });
   };
   const changeRole = (member: Member, next: Org['role'], target = org.id) =>
@@ -213,9 +227,9 @@ export default function AccessPage() {
                 {canManage && m.user_id !== user?.id && (m.role !== 'owner' || org.role === 'owner') ? (
                   <>
                     <select aria-label={t('Rol')} value={m.role} disabled={busy} onChange={(e) => changeRole(m, e.target.value as Org['role'])}>
-                      {ROLES.filter((r) => r.role !== 'owner' || org.role === 'owner').map((r) => (
-                        <option key={r.role} value={r.role}>
-                          {t(r.label)}
+                      {ROLES.filter((r) => r !== 'owner' || org.role === 'owner').map((r) => (
+                        <option key={r} value={r}>
+                          {roleLabel(r)}
                         </option>
                       ))}
                     </select>{' '}
@@ -253,13 +267,19 @@ export default function AccessPage() {
           <h2>{t('Collega uitnodigen')}</h2>
           <label htmlFor="invite-email">{t('E-mail')}</label>
           <input id="invite-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+          {platform ? (
+            <>
+              <label htmlFor="invite-note">{t('Omschrijving (alleen voor beheerders van het platform)')}</label>
+              <textarea id="invite-note" rows={2} maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} />
+            </>
+          ) : null}
           {org.platform ? (
             <>
               <label htmlFor="invite-role">{t('Rol')}</label>
               <select id="invite-role" value={role} onChange={(e) => setRole(e.target.value as Org['role'])}>
-                {ROLES.filter((r) => r.role !== 'owner' || org.role === 'owner').map((r) => (
-                  <option key={r.role} value={r.role}>
-                    {t(r.label)}
+                {ROLES.filter((r) => r !== 'owner' || org.role === 'owner').map((r) => (
+                  <option key={r} value={r}>
+                    {roleLabel(r)}
                   </option>
                 ))}
               </select>
@@ -308,8 +328,8 @@ export default function AccessPage() {
                                   onChange={(e) => changeRole(m, e.target.value as Org['role'], p.id)}
                                 >
                                   {PARTNER_ROLES.map((r) => (
-                                    <option key={r.role} value={r.role}>
-                                      {t(r.label)}
+                                    <option key={r} value={r}>
+                                      {roleLabel(r, false)}
                                     </option>
                                   ))}
                                 </select>{' '}
@@ -318,7 +338,7 @@ export default function AccessPage() {
                                 </button>
                               </>
                             ) : (
-                              roleLabel(m.role)
+                              roleLabel(m.role, false)
                             )}
                           </li>
                         ))}
@@ -349,6 +369,15 @@ export default function AccessPage() {
             <input id="partner-name" required minLength={2} maxLength={80} value={partnerName} onChange={(e) => setPartnerName(e.target.value)} />
             <label htmlFor="partner-email">{t('E-mail van de contactpersoon')}</label>
             <input id="partner-email" type="email" required value={partnerEmail} onChange={(e) => setPartnerEmail(e.target.value)} />
+            <label htmlFor="partner-note">{t('Omschrijving (alleen voor beheerders van het platform)')}</label>
+            <textarea
+              id="partner-note"
+              rows={2}
+              maxLength={1000}
+              placeholder={t('Bijvoorbeeld: wie het is, welke afspraken, tot wanneer')}
+              value={partnerNote}
+              onChange={(e) => setPartnerNote(e.target.value)}
+            />
             <div className="actions">
               <button type="submit" disabled={busy}>
                 {t('Partner toevoegen')}
