@@ -438,9 +438,11 @@
           "nl": "Blokjespuzzel - Geef Oplossing"
         },
         "answer": {
-          "type": "number",
-          "value": 363.5,
-          "tolerance": 49.5
+          "type": "text",
+          "accepted": [
+            "314",
+            "413"
+          ]
         },
         "points": 200,
         "tags": [
