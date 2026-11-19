@@ -471,7 +471,7 @@ export default function MapPage() {
         const ins = await db.from('task_locations').insert({ game_id: id, task_id: taskId, track: tk, ...loc });
         if (ins.error) throw new Error(ins.error.message);
       }
-      setNotice(t('Opgeslagen. Publiceer het spel om het in de app te gebruiken.'));
+      setNotice(isBase ? t('Opgeslagen in de template. Steden krijgen dit pas als je bij Templateversies "Opslaan als nieuwe versie" kiest en de steden overzet.') : t('Opgeslagen. Publiceer het spel om het in de app te gebruiken.'));
       setDrawing(false);
       await load();
     } catch (err) {

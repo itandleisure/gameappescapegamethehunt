@@ -376,7 +376,7 @@ export default function TemplatesPage() {
                   {creating?.id === tp.id ? (
                     <form className="version-new" onSubmit={createVersion}>
                       <h3 style={{ marginTop: 0 }}>
-                        {t('Nieuwe templateversie: v{n}', { n: (tp.versions[0]?.version ?? 0) + 1 })}
+                        {t('Opslaan als nieuwe templateversie: v{n}', { n: (tp.versions[0]?.version ?? 0) + 1 })}
                       </h3>
                       <p className="muted" style={{ marginTop: 0 }}>
                         {t('Maakt een volledige, op zichzelf staande kopie van de template zoals die nu is. Bestaande steden blijven op hun versie; een oude versie zonder steden kun je daarna verwijderen.')}
@@ -400,7 +400,7 @@ export default function TemplatesPage() {
                       />
                       <div className="actions">
                         <button type="submit" disabled={busy}>
-                          {busy ? t('Bezig…') : t('Template v{n} maken', { n: (tp.versions[0]?.version ?? 0) + 1 })}
+                          {busy ? t('Bezig…') : t('Opslaan als v{n}', { n: (tp.versions[0]?.version ?? 0) + 1 })}
                         </button>
                         <button type="button" className="secondary" onClick={() => setCreating(null)} disabled={busy}>
                           {t('Annuleren')}
@@ -410,7 +410,7 @@ export default function TemplatesPage() {
                   ) : (
                     <div className="actions" style={{ marginTop: 12 }}>
                       <button type="button" onClick={() => setCreating({ id: tp.id, note: '', name: '' })} disabled={busy}>
-                        {t('Maak nieuwe templateversie (v{n})', { n: (tp.versions[0]?.version ?? 0) + 1 })}
+                        {t('Opslaan als nieuwe versie (v{n})', { n: (tp.versions[0]?.version ?? 0) + 1 })}
                       </button>
                       {tp.versions.length === 0 ? (
                         <Link href={`/spellen/${tp.id}#versies`}>{t('Template bewerken')}</Link>

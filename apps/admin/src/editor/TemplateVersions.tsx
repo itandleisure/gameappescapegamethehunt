@@ -403,7 +403,7 @@ export function TemplateVersions({ baseId, versions, cities, onChanged, onError 
 
       {creating ? (
         <form className="version-new" onSubmit={create}>
-          <h3 style={{ marginTop: 0 }}>{t('Nieuwe template maken: versie {n}', { n: next })}</h3>
+          <h3 style={{ marginTop: 0 }}>{t('Opslaan als nieuwe templateversie: v{n}', { n: next })}</h3>
           <p className="muted" style={{ marginTop: 0 }}>
             {t('Legt het basisspel zoals het nu is vast als template versie {n}. Bestaande steden blijven op hun eigen versie; nieuwe steden kunnen versie {n} kiezen.', { n: next })}
           </p>
@@ -427,7 +427,7 @@ export function TemplateVersions({ baseId, versions, cities, onChanged, onError 
           />
           <div className="actions">
             <button type="submit" disabled={busy}>
-              {busy ? t('Bezig…') : t('Template versie {n} maken', { n: next })}
+              {busy ? t('Bezig…') : t('Opslaan als v{n}', { n: next })}
             </button>
             <button type="button" className="secondary" onClick={() => setCreating(false)} disabled={busy}>
               {t('Annuleren')}
@@ -437,7 +437,7 @@ export function TemplateVersions({ baseId, versions, cities, onChanged, onError 
       ) : (
         <div className="actions" style={{ marginTop: 12 }}>
           <button type="button" onClick={() => setCreating(true)}>
-            {t('Nieuwe template maken (versie {n})', { n: next })}
+            {t('Opslaan als nieuwe versie (v{n})', { n: next })}
           </button>
         </div>
       )}
