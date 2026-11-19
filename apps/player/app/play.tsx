@@ -302,6 +302,10 @@ export default function PlayScreen() {
 
       <SafeAreaView edges={["top"]} style={styles.top}>
         <View style={styles.header}>
+          <View>
+            <Text style={styles.headerLabel}>{t("score")}</Text>
+            <Text style={styles.headerValue}>{state.score}</Text>
+          </View>
           <Pressable
             accessibilityRole="button"
             style={styles.styleButton}
@@ -455,7 +459,7 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
   },
   headerRight: { alignItems: "flex-end" },
-  styleButton: { alignItems: "flex-start", flexShrink: 1 },
+  styleButton: { alignItems: "center", paddingHorizontal: space.sm, flexShrink: 1 },
   styleName: { color: colors.accent, fontSize: 15, fontWeight: "700" },
   headerLabel: { color: colors.textMuted, fontSize: 13 },
   headerValue: {
