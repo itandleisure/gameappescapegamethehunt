@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
 import { LeaderApi, type LeaderLogin } from '../core/leader';
+import { logError, logIssue, setLogContext } from './diagnostics';
 import { supabase } from './supabase';
 
 /**
@@ -19,6 +20,8 @@ const watchers = new Set<(login: LeaderLogin | null) => void>();
 
 function setCurrent(login: LeaderLogin | null) {
   current = login;
+  if (login) setLogContext({ leader: true, sessionId: login.sessionId });
+  else if (loaded) setLogContext({});
   loaded = true;
   for (const watch of watchers) watch(login);
 }
@@ -40,9 +43,16 @@ export async function resumeLeader(): Promise<LeaderLogin | null> {
 }
 
 export async function joinAsLeader(code: string, name: string): Promise<LeaderLogin> {
-  const login = await leaderApi.join(code, name);
+  let login: LeaderLogin;
+  try {
+    login = await leaderApi.join(code, name);
+  } catch (error) {
+    logError('spelleider_inloggen_mislukt', error, undefined, 'warn');
+    throw error;
+  }
   await AsyncStorage.setItem(KEY, JSON.stringify(login));
   setCurrent(login);
+  logIssue('info', 'aangemeld', 'Spelleider ingelogd op dit toestel');
   return login;
 }
 
@@ -65,8 +75,9 @@ export async function shareLeaderPosition(fix: { lat: number; lng: number; accur
   try {
     await leaderApi.position(login.sessionId, fix);
     lastSent = fix.at;
-  } catch {
+  } catch (error) {
     // Geen bereik: de volgende meting probeert het opnieuw.
+    logError('positie_delen_mislukt', error, undefined, 'warn');
   } finally {
     sending = false;
   }

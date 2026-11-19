@@ -6,9 +6,10 @@
 import { checkAnswer, computeState, t, type GameEvent, type GamePackage, type Lang } from '@hunt/engine';
 import { currentLanguage, t as tr } from './i18n';
 import { describeAnswer, fromEventRow, type EventRow, type PhotoRow, type TeamRow } from './results';
+import { deviceSummary, kindLabel, type AppLogRow } from './app-logs';
 import { describeAction, describeRule } from './rules';
 
-export type LogCategory = 'spel' | 'opdracht' | 'regel' | 'foto' | 'chat';
+export type LogCategory = 'spel' | 'opdracht' | 'regel' | 'foto' | 'chat' | 'techniek';
 
 export interface LogEntry {
   /** Uniek binnen het logboek (voor React). */
@@ -56,13 +57,15 @@ export interface LogInput {
   photos?: readonly PhotoRow[];
   chat?: readonly LogChat[];
   leaders?: readonly LogLeader[];
+  /** Technische meldingen van de telefoons (tabel app_logs). */
+  issues?: readonly AppLogRow[];
   now: number;
 }
 
 const ms = (iso: string | null | undefined) => (iso ? Date.parse(iso) : null);
 
 /** Alle gebeurtenissen van een event, nieuwste eerst. */
-export function buildSessionLog({ game, teams, events, photos = [], chat = [], leaders = [], now }: LogInput): LogEntry[] {
+export function buildSessionLog({ game, teams, events, photos = [], chat = [], leaders = [], issues = [], now }: LogInput): LogEntry[] {
   const display: Lang = (game.languages as string[]).includes(currentLanguage())
     ? (currentLanguage() as Lang)
     : (game.languages as string[]).includes('nl')
@@ -229,6 +232,19 @@ export function buildSessionLog({ game, teams, events, photos = [], chat = [], l
     });
   }
 
+  for (const r of issues) {
+    const device = deviceSummary(r.device);
+    push({
+      id: `techniek:${r.id}`,
+      at: Date.parse(r.client_time ?? r.created_at),
+      teamId: r.team_id,
+      category: 'techniek',
+      text: `${kindLabel(r.kind)}${r.repeat_count > 1 ? ` (×${r.repeat_count})` : ''}`,
+      detail: [r.message, device].filter(Boolean).join(' · ') || undefined,
+      tone: r.level === 'error' ? 'bad' : undefined,
+    });
+  }
+
   return out.sort((a, b) => b.at - a.at || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0));
 }
 
@@ -257,5 +273,7 @@ export function categoryLabel(c: LogCategory): string {
       return tr("Foto's");
     case 'chat':
       return tr('Chat');
+    case 'techniek':
+      return tr('Techniek');
   }
 }

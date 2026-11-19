@@ -1,3 +1,4 @@
+import { gpsQuality, logIssue } from './diagnostics';
 import { gpsChanged, gpsMonitor } from './gps-monitor';
 import { handleFixes, onFix, type Fix } from './location-handler';
 
@@ -52,7 +53,11 @@ export function requestLocationPermission(): Promise<PermissionResult> {
         resolve('foreground');
       },
       (error) => {
-        if (error.code !== error.PERMISSION_DENIED) return resolve('foreground');
+        if (error.code !== error.PERMISSION_DENIED) {
+          logIssue('warn', 'gps_fout', `Eerste GPS-meting mislukt: ${error.message || error.code}`, { code: error.code });
+          return resolve('foreground');
+        }
+        logIssue('warn', 'locatie_geweigerd', 'Locatietoestemming geweigerd in de browser');
         // Ook in de meldingen tijdens het spel tonen hoe je het toestaat.
         gpsMonitor.start(Date.now());
         gpsMonitor.deny();
@@ -71,6 +76,7 @@ export async function locationPermission(): Promise<PermissionResult> {
 
 let watchId: number | null = null;
 let tracking = false;
+let hiddenAt: number | null = null;
 
 function watch() {
   const g = geo();
@@ -83,8 +89,11 @@ function watch() {
     },
     (error) => {
       if (error.code === error.PERMISSION_DENIED) {
+        logIssue('warn', 'locatie_geweigerd', 'Browser stopte de locatie (toestemming ingetrokken)');
         gpsMonitor.deny();
         gpsChanged();
+      } else {
+        logIssue('warn', 'gps_fout', error.code === error.TIMEOUT ? 'Geen GPS-meting binnen 30 s' : `GPS niet beschikbaar: ${error.message || error.code}`, { code: error.code });
       }
       // Geen signaal of te lang gewacht: de browser blijft zoeken; de melding komt vanzelf na 30 seconden.
     },
@@ -101,8 +110,15 @@ function unwatch() {
 function onVisibility() {
   if (!tracking) return;
   if (document.visibilityState === 'hidden') {
+    hiddenAt ??= Date.now();
     gpsMonitor.hide(Date.now());
   } else {
+    // Langer uit beeld (scherm uit of andere app): de browser stopte de GPS zolang.
+    if (hiddenAt !== null && Date.now() - hiddenAt >= 30_000) {
+      const seconds = Math.round((Date.now() - hiddenAt) / 1000);
+      logIssue('info', 'uit_beeld', `Webapp ${seconds} s uit beeld (scherm uit of andere app), GPS stond zolang stil`, { seconden: seconds });
+    }
+    hiddenAt = null;
     gpsMonitor.show(Date.now());
     unwatch();
     watch();
@@ -113,6 +129,7 @@ function onVisibility() {
 export async function startTracking(_title?: string, _body?: string): Promise<PermissionResult> {
   if (!geo()) return 'denied';
   if ((await browserPermission()) === 'denied') {
+    logIssue('warn', 'locatie_geweigerd', 'GPS kan niet starten: locatie geblokkeerd in de browser');
     gpsMonitor.start(Date.now());
     gpsMonitor.deny();
     gpsChanged();
@@ -132,6 +149,8 @@ export async function startTracking(_title?: string, _body?: string): Promise<Pe
 
 export async function stopTracking(): Promise<void> {
   tracking = false;
+  hiddenAt = null;
+  gpsQuality.reset();
   unwatch();
   document.removeEventListener('visibilitychange', onVisibility);
   window.removeEventListener('pageshow', onVisibility);

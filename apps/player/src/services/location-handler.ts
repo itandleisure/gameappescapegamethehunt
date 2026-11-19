@@ -1,3 +1,4 @@
+import { gpsQuality } from './diagnostics';
 import { currentGame, resumeGame } from './game';
 import { currentLeader, resumeLeader, shareLeaderPosition } from './leader';
 
@@ -30,6 +31,7 @@ export async function handleFixes(fixes: Fix[], onOpened: () => void): Promise<v
   if (leader) {
     const latest = [...fixes].sort((a, b) => a.at - b.at).pop();
     if (!latest) return;
+    gpsQuality.fix(latest.accuracy, latest.at, 50);
     publish(latest);
     await shareLeaderPosition(latest);
     return;
@@ -37,7 +39,10 @@ export async function handleFixes(fixes: Fix[], onOpened: () => void): Promise<v
   const game = currentGame() ?? (await resumeGame());
   if (!game) return;
   const sorted = [...fixes].sort((a, b) => a.at - b.at);
+  const limit = game.game.gps?.maxAccuracy ?? 30;
   for (const fix of sorted) {
+    // Zwak of weggevallen GPS komt in het logboek (tabblad Logging).
+    gpsQuality.fix(fix.accuracy, fix.at, limit);
     publish(fix);
     const opened = await game.onLocation(fix);
     if (opened.length > 0) onOpened();

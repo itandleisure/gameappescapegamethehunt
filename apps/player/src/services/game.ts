@@ -1,7 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import { GameController, type ControllerDeps } from '../core/game-controller';
+import { withIssueLog } from '../core/logged-backend';
 import { SupabaseBackend } from '../core/supabase-backend';
+import { logIssue, setLogContext } from './diagnostics';
 import { readFile } from './read-file';
 import { supabase } from './supabase';
 
@@ -10,7 +12,8 @@ import { supabase } from './supabase';
  * gebruiken dezelfde controller.
  */
 const deps: ControllerDeps = {
-  backend: new SupabaseBackend(supabase, readFile),
+  // Mislukte verzoeken komen in het logboek (tabblad Logging in het beheer).
+  backend: withIssueLog(new SupabaseBackend(supabase, readFile), logIssue),
   store: AsyncStorage,
   newId: () => Crypto.randomUUID(),
 };
@@ -21,6 +24,8 @@ const watchers = new Set<(controller: GameController | null) => void>();
 
 function setCurrent(controller: GameController | null) {
   current = controller;
+  if (controller) setLogContext({ teamId: controller.team.id, sessionId: controller.team.sessionId });
+  else setLogContext({});
   for (const watch of watchers) watch(controller);
 }
 
@@ -40,17 +45,23 @@ export async function resumeGame(): Promise<GameController | null> {
     resuming = null;
   });
   const controller = await resuming;
-  if (controller && !current) setCurrent(controller);
+  if (controller && !current) {
+    setCurrent(controller);
+    // Herstart midden in het spel: helpt om crashes of een gestopte app te herkennen.
+    logIssue('info', 'app_herstart', 'Spel hervat na (her)starten van de app');
+  }
   return current;
 }
 
 export async function joinGame(joinCode: string, teamName: string, language: string, phone: string) {
   setCurrent(await GameController.join(deps, joinCode, teamName, language, phone));
+  logIssue('info', 'aangemeld', 'Team aangemeld op dit toestel');
   return current!;
 }
 
 export async function rejoinGame(teamName: string, joinCode = '') {
   setCurrent(await GameController.rejoin(deps, teamName, joinCode));
+  logIssue('info', 'aangemeld', 'Verder gespeeld op dit toestel (teamnaam)');
   return current!;
 }
 

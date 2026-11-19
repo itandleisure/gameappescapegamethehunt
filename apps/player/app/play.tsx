@@ -33,6 +33,7 @@ import { takePhoto } from "../src/ui/camera";
 import { playSiren } from "../src/services/siren";
 import { useScreenOn } from "../src/services/screen-on";
 import { useGame } from "../src/ui/GameProvider";
+import { logError } from "../src/services/diagnostics";
 import GameMap from "../src/ui/map/GameMap";
 import { colors, contentColumn, radius, space } from "../src/ui/theme";
 
@@ -80,7 +81,7 @@ export default function PlayScreen() {
       snapshot.game,
       (p) => !cancelled && setDownload(p),
     )
-      .catch(() => undefined)
+      .catch((error) => logError('kaart_downloaden_mislukt', error, undefined, 'warn'))
       .finally(() => !cancelled && setDownload(null));
     return () => {
       cancelled = true;
