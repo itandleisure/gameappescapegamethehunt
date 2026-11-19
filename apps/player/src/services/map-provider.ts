@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { chooseMapRewrites, type UrlRewrite } from '@hunt/engine';
 import { MAPTILER_KEY } from '../config';
 import { IN_EXPO_GO } from './runtime';
@@ -14,7 +15,9 @@ let current: UrlRewrite[] = [];
 export function prepareMapProvider(): Promise<UrlRewrite[]> {
   ready ??= chooseMapRewrites(MAPTILER_KEY).then((rewrites) => {
     current = rewrites;
-    if (rewrites.length && !IN_EXPO_GO) {
+    // Alleen in de echte app: in een browser (en in Expo Go) bestaat de
+    // kaartmodule niet; daar zet WebMap de adressen zelf om via mapRewrites().
+    if (rewrites.length && !IN_EXPO_GO && Platform.OS !== 'web') {
       const { TransformRequestManager } = require('@maplibre/maplibre-react-native') as typeof import('@maplibre/maplibre-react-native');
       rewrites.forEach((r, i) => TransformRequestManager.addUrlTransform({ id: `kaartdienst-${i}`, match: r.find, find: r.find, replace: r.replace }));
     }

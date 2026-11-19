@@ -15,6 +15,7 @@ import {
   type TaskRow,
 } from './game-model';
 import { withCurrentName } from './game-name';
+import { PUZZLE_COLUMNS, applyPuzzles, puzzleChoice, type PuzzleRow } from './puzzles';
 import { centredLocations, centredMeetingPoint, citySlug, newTodoState, type Place } from './city-rollout';
 import { mediaPath } from './map-settings';
 import { t as tr } from './i18n';
@@ -165,9 +166,24 @@ export function composeChain(chain: LayerRows[], version = 0): GamePackage {
 }
 
 export async function publish(db: SupabaseClient, gameId: string): Promise<number> {
-  const pkg = composeChain(await loadChain(db, gameId));
+  const chain = await loadChain(db, gameId);
+  const pkg = await withChosenPuzzles(db, chain, composeChain(chain));
   const row = check<{ version: number }>(await db.rpc('publish_game_version', { p_game: gameId, p_package: pkg }));
   return row.version;
+}
+
+/**
+ * De fysieke puzzels die de stad per puzzelplek heeft gekozen (stap 8 van
+ * "Stad inrichten") in het spelpakket zetten. Een klant erft de keuze van zijn stad.
+ */
+export async function withChosenPuzzles(db: SupabaseClient, chain: LayerRows[], pkg: GamePackage): Promise<GamePackage> {
+  const city = chain.find((c) => c.game.layer === 'city');
+  if (!city) return pkg;
+  const choice = puzzleChoice(city.game.settings, pkg);
+  const ids = [...new Set(Object.values(choice).filter((v): v is string => !!v))];
+  if (!ids.length) return pkg;
+  const rows = check<PuzzleRow[]>((await db.from('puzzles').select(PUZZLE_COLUMNS).in('id', ids)) as never);
+  return applyPuzzles(pkg, choice, rows);
 }
 
 // ---------------------------------------------------------------------------
