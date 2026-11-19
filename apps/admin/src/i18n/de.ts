@@ -920,4 +920,12 @@ export const de: Record<string, string> = {
   "Omschrijving (alleen voor beheerders van het platform)": "Beschreibung (nur für Administratoren der Plattform)",
   "Bijvoorbeeld: wie het is, welke afspraken, tot wanneer": "Zum Beispiel: wer es ist, welche Absprachen, bis wann",
   "Partner": "Partner",
+  "Link werkt niet": "Link funktioniert nicht",
+  "Deze spelleider-link bestaat niet (meer). Vraag de organisator om een nieuwe link.": "Dieser Spielleiter-Link existiert nicht (mehr). Bitte den Veranstalter um einen neuen Link.",
+  "Nieuwe link maken? De oude link werkt dan niet meer.": "Neuen Link erstellen? Der alte Link funktioniert dann nicht mehr.",
+  "Spelleider-link": "Spielleiter-Link",
+  "Met deze link ziet een spelleider de kaart, de ranglijst en de antwoorden, en houdt hij \"gepakt\" bij. Zonder account. Deel hem alleen met de spelleiding.": "Mit diesem Link sieht ein Spielleiter die Karte, die Rangliste und die Antworten und zählt \"gefangen\". Ohne Konto. Nur mit der Spielleitung teilen.",
+  "Gekopieerd": "Kopiert",
+  "Kopiëren": "Kopieren",
+  "Nieuwe link (oude werkt niet meer)": "Neuer Link (alter funktioniert nicht mehr)",
 };

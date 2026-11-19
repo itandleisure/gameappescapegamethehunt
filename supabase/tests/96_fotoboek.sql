@@ -19,7 +19,7 @@ grant usage on schema tests to authenticated, anon;
 grant execute on all functions in schema tests to authenticated, anon;
 
 insert into auth.users (id) values
-  ('a1000000-0000-0000-0000-000000000001'),  -- spelleiding (instructeur)
+  ('a1000000-0000-0000-0000-000000000001'),  -- spelleider
   ('a1000000-0000-0000-0000-000000000002'),  -- redacteur
   ('b1000000-0000-0000-0000-000000000001'),  -- andere organisatie
   ('c1000000-0000-0000-0000-000000000001'),  -- speler
@@ -68,8 +68,16 @@ do $$ begin
 exception when insufficient_privilege then null;
 end $$;
 
+-- Een spelleider maakt geen fotoboek (hij ziet alleen live en resultaten).
+do $$ begin
+  insert into public.photobooks (session_id, title) values ('5a100000-0000-0000-0000-000000000001', 'x');
+  raise exception 'spelleider maakte een fotoboek';
+exception when insufficient_privilege then null;
+end $$;
+select tests.login('a1000000-0000-0000-0000-000000000002');
+
 -- ---------------------------------------------------------------------------
--- Spelleiding maakt het fotoboek en uploadt eigen foto's
+-- Redacteur/partner maakt het fotoboek en uploadt eigen foto's
 -- ---------------------------------------------------------------------------
 insert into public.photobooks (session_id, title, city, items) values (
   '5a100000-0000-0000-0000-000000000001', 'Fotoboek Bedrijfsuitje', 'Leeuwarden',
@@ -145,7 +153,7 @@ do $$ begin
 exception when no_data_found then null;
 end $$;
 
-select tests.login('a1000000-0000-0000-0000-000000000001');
+select tests.login('a1000000-0000-0000-0000-000000000002');
 do $$ begin
   assert public.share_photobook('5a100000-0000-0000-0000-000000000001', true) between now() + interval '27 days' and now() + interval '29 days',
     '28 dagen beschikbaar';
@@ -183,7 +191,7 @@ end $$;
 
 -- Nieuwe link: de oude link werkt niet meer en er is een nieuw wachtwoord.
 select share_password as oldpw from public.photobooks \gset
-select tests.login('a1000000-0000-0000-0000-000000000001');
+select tests.login('a1000000-0000-0000-0000-000000000002');
 select public.share_photobook('5a100000-0000-0000-0000-000000000001', true);
 select public.rotate_photobook_token('5a100000-0000-0000-0000-000000000001');
 select tests.logout();

@@ -200,7 +200,7 @@ do $$ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
--- Spelleiding: live monitor, handmatig openen, berichten aan iedereen
+-- Spelleider: alleen kijken (live monitor en resultaten)
 -- ---------------------------------------------------------------------------
 select tests.login(:instructor);
 do $$
@@ -208,8 +208,37 @@ declare
   own uuid;
 begin
   select id into own from public.teams where session_id = '5a000000-0000-0000-0000-000000000001' and login_order = 1;
-  assert (select count(*) from public.events) = 1, 'spelleiding ziet de gebeurtenissen';
-  assert (select count(*) from public.positions) = 1, 'spelleiding ziet de posities';
+  assert own is not null, 'spelleider ziet de teams';
+  assert (select count(*) from public.events) = 1, 'spelleider ziet de gebeurtenissen';
+  assert (select count(*) from public.positions) = 1, 'spelleider ziet de posities';
+  assert public.session_results('5a000000-0000-0000-0000-000000000001') is not null, 'spelleider ziet de resultaten';
+  begin
+    insert into public.events (team_id, type, task_key, client_time) values (own, 'manualOpen', 'lokaal-1', now());
+    raise exception 'spelleider opende een opdracht';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    insert into public.messages (session_id, sender, sender_user, body)
+    values ('5a000000-0000-0000-0000-000000000001', 'staff', auth.uid(), 'x');
+    raise exception 'spelleider stuurde een bericht';
+  exception when insufficient_privilege then null;
+  end;
+  update public.sessions set status = 'closed' where id = '5a000000-0000-0000-0000-000000000001';
+  assert (select status from public.sessions where id = '5a000000-0000-0000-0000-000000000001') <> 'closed',
+    'spelleider sluit geen hunt';
+  update public.teams set name = 'Gehackt' where id = own;
+  assert (select name from public.teams where id = own) <> 'Gehackt', 'spelleider wijzigt geen team';
+  delete from public.sessions where id = '5a000000-0000-0000-0000-000000000001';
+  assert exists (select 1 from public.sessions where id = '5a000000-0000-0000-0000-000000000001'), 'spelleider verwijdert geen hunt';
+end $$;
+
+-- Spelleiding (redacteur/partner): handmatig openen, berichten aan iedereen
+select tests.login(:editor);
+do $$
+declare
+  own uuid;
+begin
+  select id into own from public.teams where session_id = '5a000000-0000-0000-0000-000000000001' and login_order = 1;
   insert into public.events (id, team_id, type, task_key, client_time)
   values ('e0000000-0000-0000-0000-000000000003', own, 'manualOpen', 'lokaal-1', now());
   insert into public.messages (session_id, sender, sender_user, body)

@@ -13,10 +13,14 @@ export const ROLE_LABELS: Record<Org['role'], string> = {
   instructor: tKey('Spelleider'),
 };
 
-/** Rollen die het platform aan eigen collega's geeft. */
-export const PLATFORM_ROLES: Org['role'][] = ['owner', 'admin', 'instructor'];
+/**
+ * Rollen die het platform aan eigen collega's geeft. Een spelleider krijgt geen
+ * account maar de spelleider-link van een hunt; bestaande spelleider-accounts
+ * kunnen alleen nog kijken.
+ */
+export const PLATFORM_ROLES: Org['role'][] = ['owner', 'admin'];
 /** Rollen bij een partner: nooit eigenaar of beheerder. */
-export const PARTNER_ROLES: Org['role'][] = ['editor', 'instructor'];
+export const PARTNER_ROLES: Org['role'][] = ['editor'];
 
 export function roleKey(role: Org['role']): string {
   return ROLE_LABELS[role];

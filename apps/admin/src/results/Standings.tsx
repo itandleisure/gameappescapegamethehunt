@@ -35,8 +35,16 @@ function BriefingProgress({ team }: { team: TeamResult }) {
   );
 }
 
+/** Optellen of aftrekken van "gepakt"; geeft de nieuwe stand of een foutmelding. */
+export type BumpCaught = (teamId: string, delta: 1 | -1) => Promise<{ value: number | null; error: string | null }>;
+
+const bumpViaAccount: BumpCaught = async (teamId, delta) => {
+  const { data, error } = await supabase().rpc('bump_team_caught', { p_team: teamId, p_delta: delta });
+  return { value: typeof data === 'number' ? data : null, error: error?.message ?? null };
+};
+
 /** Teller "gepakt" met een min en een plus. Telt direct in de database, zodat meerdere spelleiders tegelijk kunnen tikken. */
-function CaughtCounter({ team }: { team: TeamResult }) {
+function CaughtCounter({ team, bumpCaught }: { team: TeamResult; bumpCaught: BumpCaught }) {
   const t = useT();
   const [pending, setPending] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -45,12 +53,12 @@ function CaughtCounter({ team }: { team: TeamResult }) {
     if (value + delta < 0) return;
     setPending(value + delta);
     setError(null);
-    const { data, error: e } = await supabase().rpc('bump_team_caught', { p_team: team.id, p_delta: delta });
+    const { value: next, error: e } = await bumpCaught(team.id, delta);
     if (e) {
-      setError(e.message);
+      setError(e);
       setPending(null);
     } else {
-      setPending(typeof data === 'number' ? data : null);
+      setPending(next);
     }
   };
   // Zodra de live update binnen is, die waarde volgen.
@@ -117,11 +125,14 @@ export function Standings({
   colors,
   startedAt,
   phone,
+  bumpCaught = bumpViaAccount,
 }: {
   view: SessionResultsView;
   colors: Map<string, string>;
   startedAt: (id: string) => string;
   phone: (id: string) => string | null;
+  /** Anders tellen dan met het account, bijvoorbeeld via de spelleider-link. */
+  bumpCaught?: BumpCaught;
 }) {
   const t = useT();
   const [search, setSearch] = useState('');
@@ -178,7 +189,7 @@ export function Standings({
                     </td>
                   ) : null}
                   <td className="num">
-                    <CaughtCounter team={tm} />
+                    <CaughtCounter team={tm} bumpCaught={bumpCaught} />
                   </td>
                   <td className="num">{tm.answers.length}</td>
                   <td className="num">{tm.correct}</td>

@@ -83,20 +83,28 @@ do $$ begin
   assert (select count(*) from public.platform_accounts()) = 0, 'partner ziet het accountoverzicht niet';
 end $$;
 
--- Spelleider bij de partner nodigt alleen een spelleider uit.
+-- Een spelleider bij de partner nodigt niemand uit en trekt niets in.
 select tests.login('f7000000-0000-0000-0000-000000000003');
 do $$ begin
   begin
     perform public.invite_member('0f700000-0000-0000-0000-000000000002', 'y@partner.test', 'editor');
-    raise exception 'spelleider nodigde een redacteur uit';
+    raise exception 'spelleider nodigde een partner uit';
   exception when insufficient_privilege then null;
   end;
-  perform public.invite_member('0f700000-0000-0000-0000-000000000002', 'y@partner.test', 'instructor');
-  -- Uitnodiging van een ander intrekken kan niet, die van jezelf wel.
+  begin
+    perform public.invite_member('0f700000-0000-0000-0000-000000000002', 'y@partner.test', 'instructor');
+    raise exception 'spelleider nodigde een spelleider uit';
+  exception when insufficient_privilege then null;
+  end;
   delete from public.invitations where email = 'nieuw@partner.test';
   assert (select count(*) from public.invitations where email = 'nieuw@partner.test') = 1, 'andermans uitnodiging blijft';
-  delete from public.invitations where email = 'y@partner.test';
-  assert (select count(*) from public.invitations where email = 'y@partner.test') = 0, 'eigen uitnodiging ingetrokken';
+end $$;
+
+-- De partner trekt zijn eigen uitnodiging in.
+select tests.login('f7000000-0000-0000-0000-000000000002');
+do $$ begin
+  delete from public.invitations where email = 'nieuw@partner.test';
+  assert (select count(*) from public.invitations where email = 'nieuw@partner.test') = 0, 'eigen uitnodiging ingetrokken';
 end $$;
 
 -- Het platform beheert de leden van de partner.

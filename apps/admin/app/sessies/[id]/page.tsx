@@ -11,6 +11,7 @@ import { useSessionLive } from '@/lib/session-live';
 import { Answers } from '@/results/Answers';
 import { LiveMap } from '@/results/LiveMap';
 import { DeleteSession } from '@/results/DeleteSession';
+import { LeaderLink } from '@/results/LeaderLink';
 import { OpenToggle } from '@/results/OpenToggle';
 import { PhotobookEditor } from '@/results/PhotobookEditor';
 import { Photowall } from '@/results/Photowall';
@@ -96,6 +97,9 @@ export default function SessionLivePage() {
           </button>
           <DeleteSession id={session.id} name={session.name} photoPaths={data.photos.map((p) => p.path)} />
         </div>
+      </div>
+      <div className="actions">
+        <LeaderLink sessionId={session.id} />
       </div>
       <p className="muted">
         <OpenToggle id={session.id} status={session.status} onChange={() => void reload()} />{' '}

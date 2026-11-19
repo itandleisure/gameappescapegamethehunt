@@ -146,9 +146,75 @@ do $$ begin
 end $$;
 reset role;
 
+-- Een spelleider maakt geen nieuwe link; een partner/beheerder wel.
+select tests.login('a0000000-0000-0000-0000-000000000001');
+do $$ begin
+  begin
+    perform public.rotate_results_token('5a000000-0000-0000-0000-000000000001');
+    raise exception 'spelleider maakte een nieuwe link';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+reset role;
+update public.memberships set role = 'admin' where user_id = 'a0000000-0000-0000-0000-000000000001';
 select tests.login('a0000000-0000-0000-0000-000000000001');
 do $$ begin
   assert public.rotate_results_token('5a000000-0000-0000-0000-000000000001') <> current_setting('tests.token'), 'nieuwe link';
+end $$;
+
+-- Spelleider-link: de beheerder maakt een link, een spelleider zonder account opent hem.
+select public.leader_link('5a000000-0000-0000-0000-000000000001') as leader \gset
+select tests.logout();
+set role anon;
+select set_config('tests.leader', :'leader', false);
+do $$
+declare
+  d jsonb := public.leader_session(current_setting('tests.leader'));
+  team uuid;
+begin
+  assert d #>> '{session,name}' = 'Leeuwarden', 'sessie via de link';
+  assert jsonb_array_length(d -> 'teams') = 2, 'alleen de teams van deze hunt';
+  assert d #>> '{teams,0,team_code}' = '', 'geen teamcode via de link';
+  assert not (d #> '{teams,0}') ? 'phone', 'geen telefoonnummers via de link';
+  assert jsonb_array_length(d -> 'positions') = 7, 'posities';
+  assert jsonb_array_length(public.leader_session(current_setting('tests.leader'),
+    ((d -> 'positions' -> 4 ->> 'id'))::bigint) -> 'positions') = 2, 'alleen nieuwe posities';
+  team := (d #>> '{teams,0,id}')::uuid;
+  assert public.leader_bump_caught(current_setting('tests.leader'), team, 1) = 1, 'gepakt tellen via de link';
+  begin
+    perform public.leader_session('verkeerd-verkeerd-verkeerd-verkeerd');
+    raise exception 'verkeerde link werkte';
+  exception when no_data_found then null;
+  end;
+  begin
+    perform public.leader_bump_caught('verkeerd-verkeerd-verkeerd-verkeerd', team, 1);
+    raise exception 'gepakt met een verkeerde link';
+  exception when no_data_found then null;
+  end;
+  begin
+    perform public.leader_link('5a000000-0000-0000-0000-000000000001');
+    raise exception 'anon maakte een link';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+reset role;
+-- Een nieuwe link zet de oude uit; opruimen na 28 dagen ook.
+select tests.login('a0000000-0000-0000-0000-000000000001');
+select public.leader_link('5a000000-0000-0000-0000-000000000001', true) as leader2 \gset
+reset role;
+select set_config('tests.leader2', :'leader2', false);
+do $$ begin
+  begin
+    perform public.leader_session(current_setting('tests.leader'));
+    raise exception 'oude link werkt nog';
+  exception when no_data_found then null;
+  end;
+  update public.sessions set anonymized_at = now() where id = '5a000000-0000-0000-0000-000000000001';
+  begin
+    perform public.leader_session(current_setting('tests.leader2'));
+    raise exception 'link werkt na het opruimen';
+  exception when no_data_found then null;
+  end;
 end $$;
 
 select tests.logout();

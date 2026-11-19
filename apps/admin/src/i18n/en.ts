@@ -920,4 +920,12 @@ export const en: Record<string, string> = {
   "Omschrijving (alleen voor beheerders van het platform)": "Description (only for platform administrators)",
   "Bijvoorbeeld: wie het is, welke afspraken, tot wanneer": "For example: who it is, what was agreed, until when",
   "Partner": "Partner",
+  "Link werkt niet": "Link doesn't work",
+  "Deze spelleider-link bestaat niet (meer). Vraag de organisator om een nieuwe link.": "This game leader link doesn't exist (anymore). Ask the organiser for a new link.",
+  "Nieuwe link maken? De oude link werkt dan niet meer.": "Create a new link? The old link will stop working.",
+  "Spelleider-link": "Game leader link",
+  "Met deze link ziet een spelleider de kaart, de ranglijst en de antwoorden, en houdt hij \"gepakt\" bij. Zonder account. Deel hem alleen met de spelleiding.": "With this link a game leader sees the map, the standings and the answers, and keeps track of \"caught\". No account needed. Only share it with the game leaders.",
+  "Gekopieerd": "Copied",
+  "Kopiëren": "Copy",
+  "Nieuwe link (oude werkt niet meer)": "New link (old one stops working)",
 };
