@@ -28,7 +28,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/pw" && cd "$RUNNER_TEMP/pw"
           npm init -y >/dev/null && npm i playwright@1.49.1
           npx playwright install --with-deps chromium
-          cp "$GITHUB_WORKSPACE"/scripts/kaartvoorbeelden/** .
+          cp "$GITHUB_WORKSPACE"/scripts/kaartvoorbeelden/*.mjs .
       - name: Plaatjes maken
         run: cd "$RUNNER_TEMP/pw" && node maak.mjs "$GITHUB_WORKSPACE/scripts/kaartvoorbeelden/uitvoer" "$GITHUB_WORKSPACE/scripts/kaartvoorbeelden/proefkaart-leeuwarden.html"
       - name: Op de branch zetten

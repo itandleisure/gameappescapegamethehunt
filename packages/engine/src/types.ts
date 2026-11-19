@@ -293,35 +293,54 @@ export interface MapSource {
   styleUrl: string;
   /** Bronvermelding op de kaart. */
   attribution?: string;
+  /**
+   * Andere stijl binnen het speelveld (zoals kleur binnen, Toner buiten).
+   * Alleen in de webkaart (webapp en Expo Go); elders blijft het `styleUrl`.
+   */
+  insideStyleUrl?: string;
 }
 
-/**
- * Standaard kaartbron: de eigen zwart-witte stijl van Escape Game The Hunt
- * (apps/admin/public/kaart/stijl.json) op OpenStreetMap-data via OpenFreeMap
- * (open source, geen sleutel nodig). De stijl staat in de openbare repository
- * en wordt na elke merge vanzelf bijgewerkt. Voor productie verhuizen naar een
- * eigen domein of kaartbestand, zie docs/ontwerp.md §2.1.
- */
+const STYLE_BASE = 'https://raw.githubusercontent.com/itandleisure/gameappescapegamethehunt/main/apps/admin/public/kaart';
+const OSM_ATTRIBUTION = '© OpenStreetMap-bijdragers, OpenFreeMap';
+
 export const OPENFREEMAP_LIBERTY = 'https://tiles.openfreemap.org/styles/liberty';
 export const MAPTILER_TONER = 'https://api.maptiler.com/maps/toner-v2/style.json';
-export const DEFAULT_MAP_SOURCE: MapSource = {
-  styleUrl: 'https://raw.githubusercontent.com/itandleisure/gameappescapegamethehunt/main/apps/admin/public/kaart/stijl.json',
-  attribution: '© OpenStreetMap-bijdragers, OpenFreeMap',
-};
 
-const STYLE_BASE = 'https://raw.githubusercontent.com/itandleisure/gameappescapegamethehunt/main/apps/admin/public/kaart';
+/** De eigen zwart-witte stijl (apps/admin/public/kaart/stijl.json). */
+export const ZWART_WIT_SOURCE: MapSource = { styleUrl: `${STYLE_BASE}/stijl.json`, attribution: OSM_ATTRIBUTION };
+
+/**
+ * Standaard kaartbron: Toner met kleur. Buiten het speelveld zwart-wit in
+ * Toner-stijl, erbinnen groene parken, blauw water en herkenningspunten
+ * (kerken, stadhuis, musea). Eigen stijlen in apps/admin/public/kaart op
+ * OpenStreetMap-data via OpenFreeMap (geen sleutel nodig), gemaakt met
+ * scripts/kaartvoorbeelden/stijlbestanden.mjs. De stijlen staan in de openbare
+ * repository en worden na elke merge vanzelf bijgewerkt. Voor productie
+ * verhuizen naar een eigen domein of kaartbestand, zie docs/ontwerp.md §2.1.
+ */
+export const DEFAULT_MAP_SOURCE: MapSource = {
+  styleUrl: `${STYLE_BASE}/toner.json`,
+  insideStyleUrl: `${STYLE_BASE}/toner-kleur.json`,
+  attribution: OSM_ATTRIBUTION,
+};
 
 /** Kaartstijlen om uit te kiezen in de beheerapp (per spel, stad of klant). */
 export const MAP_STYLES: readonly { id: string; name: string; source: MapSource }[] = [
-  { id: 'zwart-wit', name: 'Zwart-wit (standaard)', source: DEFAULT_MAP_SOURCE },
-  { id: 'nacht', name: 'Nacht', source: { styleUrl: `${STYLE_BASE}/nacht.json`, attribution: DEFAULT_MAP_SOURCE.attribution! } },
-  { id: 'schatkaart', name: 'Schatkaart', source: { styleUrl: `${STYLE_BASE}/schatkaart.json`, attribution: DEFAULT_MAP_SOURCE.attribution! } },
+  { id: 'toner-kleur', name: 'Toner met kleur (standaard)', source: DEFAULT_MAP_SOURCE },
+  { id: 'zwart-wit', name: 'Zwart-wit', source: ZWART_WIT_SOURCE },
+  { id: 'nacht', name: 'Nacht', source: { styleUrl: `${STYLE_BASE}/nacht.json`, attribution: OSM_ATTRIBUTION } },
+  { id: 'schatkaart', name: 'Schatkaart', source: { styleUrl: `${STYLE_BASE}/schatkaart.json`, attribution: OSM_ATTRIBUTION } },
   // Kant-en-klare stijl van MapTiler. Het adres staat hier zonder sleutel; die
   // zet de app er onderweg bij (zie map-provider.ts). Zonder MapTiler valt hij
-  // terug op zwart-wit.
+  // terug op onze eigen Toner-stijl.
   { id: 'toner', name: 'Toner (MapTiler)', source: { styleUrl: MAPTILER_TONER, attribution: '© MapTiler © OpenStreetMap-bijdragers' } },
-  { id: 'kleur', name: 'Gewone kleurenkaart', source: { styleUrl: OPENFREEMAP_LIBERTY, attribution: DEFAULT_MAP_SOURCE.attribution! } },
+  { id: 'kleur', name: 'Gewone kleurenkaart', source: { styleUrl: OPENFREEMAP_LIBERTY, attribution: OSM_ATTRIBUTION } },
 ];
+
+/** Stijl binnen het speelveld bij deze kaartstijl, of undefined als die er niet is. */
+export function insideStyleUrl(styleUrl: string): string | undefined {
+  return MAP_STYLES.find((s) => s.source.styleUrl === styleUrl)?.source.insideStyleUrl;
+}
 
 /** Kleur per track (index 0 = vaste locatie, voor alle tracks), goed te onderscheiden op een grijze kaart. */
 export const TRACK_COLORS = ['#ea580c', '#2563eb', '#16a34a', '#db2777', '#ca8a04', '#7c3aed', '#0891b2', '#dc2626', '#4b5563', '#65a30d'] as const;

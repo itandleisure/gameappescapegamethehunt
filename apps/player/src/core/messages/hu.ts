@@ -11,6 +11,7 @@ export const hu: Messages = {
   style_nacht: 'Éjszaka',
   style_schatkaart: 'Kincses térkép',
   style_toner: 'Toner',
+  'style_toner-kleur': 'Toner színekkel',
   style_kleur: 'Színes',
   style_spel: 'Játéktérkép',
   phone: 'Telefonszám',

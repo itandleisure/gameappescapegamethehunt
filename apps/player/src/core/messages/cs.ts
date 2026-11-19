@@ -11,6 +11,7 @@ export const cs: Messages = {
   style_nacht: 'Noc',
   style_schatkaart: 'Mapa pokladu',
   style_toner: 'Toner',
+  'style_toner-kleur': 'Toner s barvou',
   style_kleur: 'Barevná',
   style_spel: 'Herní mapa',
   phone: 'Telefonní číslo',

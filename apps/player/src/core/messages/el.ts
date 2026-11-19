@@ -11,6 +11,7 @@ export const el: Messages = {
   style_nacht: 'Νύχτα',
   style_schatkaart: 'Χάρτης θησαυρού',
   style_toner: 'Toner',
+  'style_toner-kleur': 'Toner με χρώμα',
   style_kleur: 'Έγχρωμος',
   style_spel: 'Χάρτης παιχνιδιού',
   phone: 'Αριθμός τηλεφώνου',

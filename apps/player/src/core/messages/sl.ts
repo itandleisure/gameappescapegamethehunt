@@ -11,6 +11,7 @@ export const sl: Messages = {
   style_nacht: 'Noč',
   style_schatkaart: 'Zemljevid zaklada',
   style_toner: 'Toner',
+  'style_toner-kleur': 'Toner z barvo',
   style_kleur: 'Barvni',
   style_spel: 'Zemljevid igre',
   phone: 'Telefonska številka',

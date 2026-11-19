@@ -11,6 +11,7 @@ export const mt: Messages = {
   style_nacht: 'Lejl',
   style_schatkaart: 'Mappa tat-teżor',
   style_toner: 'Toner',
+  'style_toner-kleur': 'Toner bil-kulur',
   style_kleur: 'Bil-kulur',
   style_spel: 'Mappa tal-logħba',
   phone: 'Numru tat-telefon',

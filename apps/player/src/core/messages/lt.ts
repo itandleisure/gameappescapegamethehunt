@@ -11,6 +11,7 @@ export const lt: Messages = {
   style_nacht: 'Naktis',
   style_schatkaart: 'Lobio žemėlapis',
   style_toner: 'Toner',
+  'style_toner-kleur': 'Toner su spalvomis',
   style_kleur: 'Spalvotas',
   style_spel: 'Žaidimo žemėlapis',
   phone: 'Telefono numeris',

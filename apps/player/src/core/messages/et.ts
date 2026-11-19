@@ -11,6 +11,7 @@ export const et: Messages = {
   style_nacht: 'Öö',
   style_schatkaart: 'Aardekaart',
   style_toner: 'Toner',
+  'style_toner-kleur': 'Toner värviga',
   style_kleur: 'Värviline',
   style_spel: 'Mängukaart',
   phone: 'Telefoninumber',

@@ -11,6 +11,7 @@ export const hr: Messages = {
   style_nacht: 'Noć',
   style_schatkaart: 'Karta blaga',
   style_toner: 'Toner',
+  'style_toner-kleur': 'Toner u boji',
   style_kleur: 'U boji',
   style_spel: 'Karta igre',
   phone: 'Broj telefona',

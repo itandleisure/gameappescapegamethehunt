@@ -11,6 +11,7 @@ export const pl: Messages = {
   style_nacht: 'Noc',
   style_schatkaart: 'Mapa skarbów',
   style_toner: 'Toner',
+  'style_toner-kleur': 'Toner z kolorem',
   style_kleur: 'Kolorowa',
   style_spel: 'Mapa gry',
   phone: 'Numer telefonu',

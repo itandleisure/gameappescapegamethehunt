@@ -11,6 +11,7 @@ export const lv: Messages = {
   style_nacht: 'Nakts',
   style_schatkaart: 'Dārgumu karte',
   style_toner: 'Toner',
+  'style_toner-kleur': 'Toner ar krāsām',
   style_kleur: 'Krāsaina',
   style_spel: 'Spēles karte',
   phone: 'Tālruņa numurs',
