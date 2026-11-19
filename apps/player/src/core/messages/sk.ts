@@ -81,6 +81,7 @@ export const sk: Messages = {
   chatPlaceholder: 'Napíšte správu',
   chatSend: 'Odoslať',
   chatStaff: 'Vedúci hry',
+  chatCaught: "{team} bol chytený tímom The Hunters!",
   chatYou: 'Vy',
   chatPending: 'Odošle sa, hneď ako bude pripojenie',
   chatClosed: 'Vedúci hry uzavrel chat.',

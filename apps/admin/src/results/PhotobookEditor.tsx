@@ -12,6 +12,7 @@ import {
   moveItem,
   paginate,
   pdfFileName,
+  CAUGHT_PHOTO_KEY,
   TEAM_PHOTO_KEY,
   unusedGamePhotos,
   zipFileName,
@@ -64,8 +65,16 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
   const teamName = useCallback((id: string) => data.teams.find((x) => x.id === id)?.name ?? t('Onbekend team'), [data.teams, t]);
   const caption = useCallback(
     (p: { team_id: string; task_key: string }) =>
-      gameCaption(p, teamName(p.team_id), p.task_key === TEAM_PHOTO_KEY ? '' : tx(data.game.tasks.find((x) => x.id === p.task_key)?.title)),
-    [data.game.tasks, teamName],
+      gameCaption(
+        p,
+        teamName(p.team_id),
+        p.task_key === TEAM_PHOTO_KEY
+          ? ''
+          : p.task_key === CAUGHT_PHOTO_KEY
+            ? t('Gepakt door The Hunters!')
+            : tx(data.game.tasks.find((x) => x.id === p.task_key)?.title),
+      ),
+    [data.game.tasks, teamName, t],
   );
 
   // Laden: bestaand fotoboek, of een eerste opzet met alle spelfoto's en de vaste foto's.

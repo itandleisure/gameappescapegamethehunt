@@ -6,6 +6,8 @@ import type { PhotoRow } from './results';
 
 /** Opdrachtsleutel van de teamfoto (zie Photowall). */
 export const TEAM_PHOTO_KEY = '_teamfoto';
+/** Opdrachtsleutel van de foto die een hunter maakt van een team dat hij heeft gepakt. */
+export const CAUGHT_PHOTO_KEY = '_gepakt';
 
 /** Hoe lang de klant het fotoboek kan bekijken na het delen. */
 export const SHARE_DAYS = 28;

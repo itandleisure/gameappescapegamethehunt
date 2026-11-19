@@ -81,6 +81,7 @@ export const fr: Messages = {
   chatPlaceholder: 'Écrivez un message',
   chatSend: 'Envoyer',
   chatStaff: 'Maître du jeu',
+  chatCaught: "{team} a été attrapé par The Hunters !",
   chatYou: 'Vous',
   chatPending: 'Sera envoyé dès que la connexion revient',
   chatClosed: 'Le maître du jeu a fermé le chat.',

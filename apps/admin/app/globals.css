@@ -352,6 +352,9 @@ a.button.secondary { background: transparent; color: var(--text); border-color: 
 .teamchat .chatmsg.staff .chatmeta { justify-content: flex-end; }
 .teamchat .chatmeta button.link { font-size: 12px; }
 .teamchat .chatbody { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--line); border-radius: 8px; padding: 6px 10px; margin-top: 2px; display: inline-block; text-align: left; }
+.teamchat .chatphoto { display: block; margin-top: 4px; }
+.teamchat .chatphoto img { display: block; max-width: min(260px, 100%); max-height: 260px; border-radius: 8px; }
+.teamchat .chatmsg.staff .chatphoto img { margin-left: auto; }
 .teamchat .chatform { display: flex; gap: 8px; margin-top: 12px; }
 .teamchat .chatform input { flex: 1 1 auto; }
 

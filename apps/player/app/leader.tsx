@@ -1,5 +1,6 @@
 import { boundaryPath, DEFAULT_BOUNDARY_COLOR, outsideShade } from '@hunt/engine';
 import * as Clipboard from 'expo-clipboard';
+import * as Crypto from 'expo-crypto';
 import { Redirect, router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -37,6 +38,9 @@ import { leaderMsg, type LeaderKey } from '../src/core/leader-i18n';
 import { playAreaBounds } from '../src/core/play-area';
 import { mapStyleChoice } from '../src/core/view';
 import { leaderApi, leaveLeader, useLeader } from '../src/services/leader';
+import { readFile } from '../src/services/read-file';
+import { takePhoto } from '../src/ui/camera';
+import { ChatPhoto } from '../src/ui/ChatPhoto';
 import { onFix, requestLocationPermission, startTracking, stopTracking, type PermissionResult } from '../src/services/location';
 import { Banner, Body, Button } from '../src/ui/components';
 import { useGame } from '../src/ui/GameProvider';
@@ -318,7 +322,38 @@ function LeaderTeams({
   const [pending, setPending] = useState<Record<string, number>>({});
   const [error, setError] = useState<LeaderKey | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  // Na "+" bij gepakt: vraag om een foto van het team (ask), bezig met versturen (sending), gelukt (sent).
+  const [photo, setPhoto] = useState<Record<string, 'ask' | 'sending' | 'sent'>>({});
   if (!data) return <View style={styles.flex} />;
+  const setPhotoState = (teamId: string, state: 'ask' | 'sending' | 'sent' | null) =>
+    setPhoto((p) => {
+      const { [teamId]: _, ...rest } = p;
+      return state ? { ...rest, [teamId]: state } : rest;
+    });
+
+  // Foto van het gepakte team: in de teamchat (alle teams zien hem) en bij de foto's van het team voor het fotoboek.
+  const shootCaught = async (team: LeaderTeam) => {
+    setError(null);
+    try {
+      const shot = await takePhoto();
+      if (!shot) return; // geannuleerd of geen toestemming: de vraag blijft staan
+      setPhotoState(team.id, 'sending');
+      await leaderApi.shareCaughtPhoto(data.session.id, team.id, Crypto.randomUUID(), await readFile(shot.uri));
+      setPhotoState(team.id, 'sent');
+      setTimeout(
+        () =>
+          setPhoto((p) => {
+            if (p[team.id] !== 'sent') return p;
+            const { [team.id]: _, ...rest } = p;
+            return rest;
+          }),
+        3000,
+      );
+    } catch (e) {
+      setError(e instanceof LeaderError ? e.key : 'errorGeneric');
+      setPhotoState(team.id, 'ask');
+    }
+  };
   const colorOf = teamColors(data.teams);
   // Tikken kopieert het nummer in plaats van te bellen, zodat een spelleider niet per ongeluk belt.
   const copyPhone = async (teamId: string, phone: string) => {
@@ -341,6 +376,8 @@ function LeaderTeams({
     try {
       const next = await leaderApi.bumpCaught(data.session.id, team.id, delta);
       setPending((p) => ({ ...p, [team.id]: next }));
+      if (delta === 1) setPhotoState(team.id, 'ask');
+      else if (photo[team.id] === 'ask') setPhotoState(team.id, null);
       await onChange();
     } catch (e) {
       setError(e instanceof LeaderError ? e.key : 'errorGeneric');
@@ -398,6 +435,21 @@ function LeaderTeams({
                 <Text style={styles.stepText}>+</Text>
               </Pressable>
             </View>
+            {photo[tm.id] === 'ask' ? (
+              <View style={styles.caughtPhoto}>
+                <Text style={styles.caughtPhotoText}>{t('leaderCaughtPhotoAsk')}</Text>
+                <View style={styles.cardRow}>
+                  <View style={styles.flex}>
+                    <Button label={`📷 ${t('leaderCaughtPhoto')}`} onPress={() => void shootCaught(tm)} />
+                  </View>
+                  <Pressable accessibilityRole="button" style={styles.later} onPress={() => setPhotoState(tm.id, null)}>
+                    <Text style={styles.laterText}>{t('leaderLater')}</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : photo[tm.id] ? (
+              <Text style={styles.muted}>{photo[tm.id] === 'sending' ? t('leaderCaughtPhotoSending') : `${t('leaderCaughtPhotoSent')} ✓`}</Text>
+            ) : null}
           </View>
         );
       })}
@@ -427,7 +479,7 @@ function LeaderChat({
   channel: LeaderChannel;
   sessionId: string;
   data: LeaderData;
-  t: (key: LeaderKey) => string;
+  t: (key: LeaderKey, vars?: Record<string, string | number>) => string;
   lang: string;
 }) {
   const hunters = channel === 'hunters';
@@ -495,7 +547,10 @@ function LeaderChat({
                 {'  '}
                 <Text style={[styles.bubbleTime, staff && styles.ownTime]}>{time.format(new Date(m.created_at))}</Text>
               </Text>
-              <Text style={[styles.bubbleBody, staff && styles.ownBody]}>{m.body}</Text>
+              <Text style={[styles.bubbleBody, staff && styles.ownBody]}>
+                {m.caught_team ? `📸 ${t('leaderCaughtMessage', { team: m.caught_team })}` : m.body}
+              </Text>
+              {m.photo_path ? <ChatPhoto path={m.photo_path} label={m.caught_team ?? m.body} /> : null}
             </View>
           );
         })}
@@ -571,6 +626,10 @@ const styles = StyleSheet.create({
   puzzleDone: { backgroundColor: colors.success, borderColor: colors.success },
   puzzleText: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
   puzzleTextDone: { color: '#ffffff', fontWeight: '800' },
+  caughtPhoto: { gap: space.sm, padding: space.sm, borderRadius: radius.sm, borderWidth: 2, borderColor: colors.accent },
+  caughtPhotoText: { color: colors.text, fontSize: 15, fontWeight: '600' },
+  later: { minHeight: 44, justifyContent: 'center', paddingHorizontal: space.sm },
+  laterText: { color: colors.textMuted, fontSize: 15, fontWeight: '700' },
   caught: { color: colors.text, fontSize: 18, fontWeight: '700', minWidth: 28, textAlign: 'center' },
   section: { color: colors.textMuted, fontSize: 14, fontWeight: '700', marginTop: space.md, textTransform: 'uppercase' },
   bubble: { maxWidth: '85%', borderRadius: radius.md, paddingVertical: space.sm, paddingHorizontal: space.md },

@@ -11,9 +11,35 @@ export interface ChatRow {
   sender_name: string | null;
   body: string;
   created_at: string;
+  /** Foto bij het bericht, bijvoorbeeld van een gepakt team. */
+  photo_path?: string | null;
+  /** Naam van het team dat de hunters hebben gepakt. */
+  caught_team?: string | null;
 }
 
-const COLUMNS = 'id, team_id, sender, sender_name, body, created_at';
+const COLUMNS = 'id, team_id, sender, sender_name, body, created_at, photo_path, caught_team';
+
+/** Foto in een chatbericht; klikken opent hem groot. */
+function ChatPhoto({ path, alt }: { path: string; alt: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void supabase()
+      .storage.from('photos')
+      .createSignedUrl(path, 60 * 60)
+      .then(({ data }) => alive && setUrl(data?.signedUrl ?? null));
+    return () => {
+      alive = false;
+    };
+  }, [path]);
+  if (!url) return null;
+  return (
+    <a href={url} target="_blank" rel="noreferrer" className="chatphoto">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={url} alt={alt} loading="lazy" />
+    </a>
+  );
+}
 const MAX_LENGTH = 500;
 
 /**
@@ -152,7 +178,8 @@ export function TeamChat({
                 {t('Verwijderen')}
               </button>
             </div>
-            <div className="chatbody">{m.body}</div>
+            <div className="chatbody">{m.caught_team ? `📸 ${t('{team} is gepakt door The Hunters!', { team: m.caught_team })}` : m.body}</div>
+            {m.photo_path ? <ChatPhoto path={m.photo_path} alt={m.caught_team ?? m.body} /> : null}
           </div>
         ))}
       </div>

@@ -81,6 +81,7 @@ export const hr: Messages = {
   chatPlaceholder: 'Napišite poruku',
   chatSend: 'Pošalji',
   chatStaff: 'Voditelj igre',
+  chatCaught: "The Hunters su uhvatili tim {team}!",
   chatYou: 'Vi',
   chatPending: 'Bit će poslano čim bude veze',
   chatClosed: 'Voditelj igre zatvorio je chat.',

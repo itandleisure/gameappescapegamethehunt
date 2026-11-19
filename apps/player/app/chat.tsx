@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CHAT_MAX_LENGTH } from "../src/core/game-controller";
+import { ChatPhoto } from "../src/ui/ChatPhoto";
 import { Banner, Body, Title } from "../src/ui/components";
 import { useGame } from "../src/ui/GameProvider";
 import { colors, contentColumn, radius, space } from "../src/ui/theme";
@@ -94,7 +95,10 @@ export default function ChatScreen() {
                   {"  "}
                   <Text style={[styles.time, own && styles.ownTime]}>{time.format(m.createdAt)}</Text>
                 </Text>
-                <Text style={[styles.body, own && styles.ownBody]}>{m.body}</Text>
+                <Text style={[styles.body, own && styles.ownBody]}>
+                  {m.caughtTeam ? `📸 ${t("chatCaught", { team: m.caughtTeam })}` : m.body}
+                </Text>
+                {m.photoPath ? <ChatPhoto path={m.photoPath} label={m.caughtTeam ?? t("chatStaff")} /> : null}
                 {m.pending ? (
                   <Text style={[styles.time, own && styles.ownTime]}>
                     {t("chatPending")}

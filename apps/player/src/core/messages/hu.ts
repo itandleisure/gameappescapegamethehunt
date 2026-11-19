@@ -81,6 +81,7 @@ export const hu: Messages = {
   chatPlaceholder: 'Írjatok üzenetet',
   chatSend: 'Küldés',
   chatStaff: 'Játékvezető',
+  chatCaught: "A The Hunters elkapta: {team}!",
   chatYou: 'Ti',
   chatPending: 'Elküldjük, amint lesz kapcsolat',
   chatClosed: 'A játékvezető lezárta a chatet.',

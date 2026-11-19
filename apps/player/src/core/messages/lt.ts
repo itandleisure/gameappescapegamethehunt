@@ -81,6 +81,7 @@ export const lt: Messages = {
   chatPlaceholder: 'Rašykite žinutę',
   chatSend: 'Siųsti',
   chatStaff: 'Žaidimo vedėjas',
+  chatCaught: "The Hunters pagavo komandą {team}!",
   chatYou: 'Jūs',
   chatPending: 'Bus išsiųsta, kai tik atsiras ryšys',
   chatClosed: 'Žaidimo vedėjas uždarė pokalbį.',

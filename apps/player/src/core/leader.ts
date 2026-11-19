@@ -70,6 +70,10 @@ export interface LeaderMessage {
   created_at: string;
   /** Alleen in de hunters-chat: eigen bericht. */
   own?: boolean;
+  /** Foto bij het bericht (pad in de bucket photos). */
+  photo_path?: string | null;
+  /** Naam van het gepakte team bij een gepakt-foto. */
+  caught_team?: string | null;
 }
 
 /** Teamchat (alle teams en de hunters) of de onderlinge chat van de hunters. */
@@ -180,6 +184,11 @@ export function puzzleProgress(data: LeaderData, now: number): PuzzleProgress {
   return { puzzles, solved };
 }
 
+/** Pad van de foto van een gepakt team in de bucket photos (zelfde als in de database). */
+export function caughtPhotoPath(teamId: string, photoId: string): string {
+  return `${teamId}/_gepakt/${photoId}.jpg`;
+}
+
 /** Toegang tot de database voor de spelleider. */
 export class LeaderApi {
   constructor(private readonly client: SupabaseClient) {}
@@ -231,6 +240,21 @@ export class LeaderApi {
   async send(sessionId: string, body: string, channel: LeaderChannel = 'teams'): Promise<LeaderMessage> {
     const fn = channel === 'hunters' ? 'leader_send_hunter_message' : 'leader_send_message';
     const { data, error } = await this.client.rpc(fn, { p_session: sessionId, p_body: body });
+    if (error) throw leaderError(error);
+    return data as LeaderMessage;
+  }
+
+  /**
+   * Foto van een gepakt team delen: eerst naar de opslag, dan in de teamchat
+   * en bij de foto's van het team (fotowall en fotoboek). Opnieuw proberen
+   * met hetzelfde id geeft geen dubbele foto.
+   */
+  async shareCaughtPhoto(sessionId: string, teamId: string, photoId: string, body: ArrayBuffer): Promise<LeaderMessage> {
+    const path = caughtPhotoPath(teamId, photoId);
+    const upload = await this.client.storage.from('photos').upload(path, body, { contentType: 'image/jpeg', upsert: false });
+    // Bestaat het bestand al, dan was een eerdere poging gelukt maar het antwoord kwijt.
+    if (upload.error && !/exists|Duplicate/i.test(upload.error.message)) throw leaderError(upload.error);
+    const { data, error } = await this.client.rpc('leader_caught_photo', { p_session: sessionId, p_team: teamId, p_photo: photoId });
     if (error) throw leaderError(error);
     return data as LeaderMessage;
   }

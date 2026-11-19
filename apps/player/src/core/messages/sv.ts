@@ -81,6 +81,7 @@ export const sv: Messages = {
   chatPlaceholder: 'Skriv ett meddelande',
   chatSend: 'Skicka',
   chatStaff: 'Spelledare',
+  chatCaught: "{team} har fångats av The Hunters!",
   chatYou: 'Ni',
   chatPending: 'Skickas så snart det finns anslutning',
   chatClosed: 'Spelledaren har stängt chatten.',

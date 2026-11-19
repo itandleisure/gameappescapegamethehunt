@@ -81,6 +81,7 @@ export const lv: Messages = {
   chatPlaceholder: 'Rakstiet ziņu',
   chatSend: 'Sūtīt',
   chatStaff: 'Spēles vadītājs',
+  chatCaught: "The Hunters noķēra komandu {team}!",
   chatYou: 'Jūs',
   chatPending: 'Tiks nosūtīts, tiklīdz būs savienojums',
   chatClosed: 'Spēles vadītājs slēdza tērzēšanu.',

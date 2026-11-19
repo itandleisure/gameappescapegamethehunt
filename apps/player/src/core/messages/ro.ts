@@ -81,6 +81,7 @@ export const ro: Messages = {
   chatPlaceholder: 'Scrieți un mesaj',
   chatSend: 'Trimite',
   chatStaff: 'Organizator',
+  chatCaught: "{team} a fost prins de The Hunters!",
   chatYou: 'Voi',
   chatPending: 'Va fi trimis imediat ce există conexiune',
   chatClosed: 'Organizatorul a închis chatul.',

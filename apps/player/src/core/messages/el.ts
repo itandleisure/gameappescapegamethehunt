@@ -81,6 +81,7 @@ export const el: Messages = {
   chatPlaceholder: 'Γράψτε ένα μήνυμα',
   chatSend: 'Αποστολή',
   chatStaff: 'Υπεύθυνος παιχνιδιού',
+  chatCaught: "Η ομάδα {team} πιάστηκε από τους The Hunters!",
   chatYou: 'Εσείς',
   chatPending: 'Θα σταλεί μόλις υπάρξει σύνδεση',
   chatClosed: 'Ο υπεύθυνος του παιχνιδιού έκλεισε τη συνομιλία.',

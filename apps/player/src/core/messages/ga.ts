@@ -81,6 +81,7 @@ export const ga: Messages = {
   chatPlaceholder: 'Clóscríobh teachtaireacht',
   chatSend: 'Seol',
   chatStaff: 'Máistir cluiche',
+  chatCaught: "Rug The Hunters ar {team}!",
   chatYou: 'Sibhse',
   chatPending: 'Seolfar é a luaithe a bhíonn ceangal ann',
   chatClosed: 'Dhún an máistir cluiche an comhrá.',

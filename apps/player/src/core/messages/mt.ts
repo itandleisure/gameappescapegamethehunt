@@ -81,6 +81,7 @@ export const mt: Messages = {
   chatPlaceholder: 'Ikteb messaġġ',
   chatSend: 'Ibgħat',
   chatStaff: 'Kap tal-logħba',
+  chatCaught: "{team} inqabad minn The Hunters!",
   chatYou: 'Intom',
   chatPending: 'Jintbagħat malli jkun hemm konnessjoni',
   chatClosed: 'Il-kap tal-logħba għalaq iċ-chat.',

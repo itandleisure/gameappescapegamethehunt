@@ -81,6 +81,7 @@ export const da: Messages = {
   chatPlaceholder: 'Skriv en besked',
   chatSend: 'Send',
   chatStaff: 'Spilleder',
+  chatCaught: "{team} er blevet fanget af The Hunters!",
   chatYou: 'I',
   chatPending: 'Sendes, så snart der er forbindelse',
   chatClosed: 'Spillederen har lukket chatten.',
