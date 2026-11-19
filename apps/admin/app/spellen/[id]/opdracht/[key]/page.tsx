@@ -655,6 +655,19 @@ export default function TaskPage() {
             </div>
             <label htmlFor="image">{t('Of een adres (https)')}</label>
             <input id="image" className="wide" value={form.image} placeholder="https://…" onChange={(e) => set({ image: e.target.value })} />
+            {isVariant ? (
+              form.playfieldImage ? (
+                <p className="help">{t('In de app staat hier het kaartje van het speelveld van deze stad. Het wordt bij publiceren vanzelf gemaakt van de getekende grens op de kaartpagina.')}</p>
+              ) : null
+            ) : (
+              <>
+                <label className="check">
+                  <input type="checkbox" checked={form.playfieldImage} onChange={(e) => set({ playfieldImage: e.target.checked })} />
+                  {t('Kaartje van het speelveld tonen')}
+                </label>
+                <p className="help">{t('Bij publiceren maakt de beheeromgeving per stad een kaartje van het getekende speelveld (kaart met de grens erop) en toont dat in plaats van de foto hierboven. Zonder getekend speelveld blijft de foto staan.')}</p>
+              </>
+            )}
           </Panel>
         ) : null}
 

@@ -18,6 +18,8 @@ import { withCurrentName } from './game-name';
 import { PUZZLE_COLUMNS, applyPuzzles, puzzleChoice, type PuzzleRow } from './puzzles';
 import { centredLocations, centredMeetingPoint, citySlug, newTodoState, type Place } from './city-rollout';
 import { mediaPath } from './map-settings';
+import { loadMaplibre } from './maplibre';
+import { withPlayfieldImage } from './playfield-image';
 import { t as tr } from './i18n';
 
 const GAME_COLUMNS = 'id, layer, slug, parent_id, languages, default_language, settings, base_version';
@@ -226,7 +228,7 @@ export function composeChain(chain: LayerRows[], version = 0): GamePackage {
 
 export async function publish(db: SupabaseClient, gameId: string): Promise<number> {
   const chain = await loadChain(db, gameId);
-  const pkg = await withChosenPuzzles(db, chain, composeChain(chain));
+  const pkg = await withPlayfieldImage(db, gameId, await withChosenPuzzles(db, chain, composeChain(chain)), loadMaplibre);
   const row = check<{ version: number }>(await db.rpc('publish_game_version', { p_game: gameId, p_package: pkg }));
   return row.version;
 }

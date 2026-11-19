@@ -989,4 +989,10 @@ export const en: Record<string, string> = {
   "Meteen opnieuw publiceren (ook de klantvarianten eronder), zodat nieuwe events deze versie krijgen": "Republish right away (including the client variants below), so new events get this version",
   "1 stad overzetten": "Switch 1 city",
   "{n} steden overzetten": "Switch {n} cities",
+  "Bij publiceren wordt van het speelveld een kaartje gemaakt. Dat staat als foto bij de uitleg “Speelveld” (en elke opdracht met “Kaartje van het speelveld tonen”).": "When publishing, a map image of the play area is made. It is shown as the photo on the “Play area” explanation (and on every task with “Show map image of the play area”).",
+  "Voorbeeld van het kaartje": "Preview of the map image",
+  "Kaartje van het speelveld": "Map image of the play area",
+  "In de app staat hier het kaartje van het speelveld van deze stad. Het wordt bij publiceren vanzelf gemaakt van de getekende grens op de kaartpagina.": "In the app, this shows the map image of this city's play area. It is made automatically when publishing, from the boundary drawn on the map page.",
+  "Kaartje van het speelveld tonen": "Show map image of the play area",
+  "Bij publiceren maakt de beheeromgeving per stad een kaartje van het getekende speelveld (kaart met de grens erop) en toont dat in plaats van de foto hierboven. Zonder getekend speelveld blijft de foto staan.": "When publishing, the admin makes a map image of each city's drawn play area (the map with the boundary on it) and shows it instead of the photo above. Without a drawn play area the photo stays.",
 };

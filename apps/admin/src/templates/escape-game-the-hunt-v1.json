@@ -171,7 +171,8 @@
         "points": 0,
         "tags": [],
         "hints": [],
-        "image": "https://loquiz-live.s3.amazonaws.com/resized/optimized/question~JwjcGcDok~speelveld_leeuwarden.jpeg"
+        "image": "https://loquiz-live.s3.amazonaws.com/resized/optimized/question~JwjcGcDok~speelveld_leeuwarden.jpeg",
+        "playfieldImage": true
       },
       {
         "id": "uitleg-03",
