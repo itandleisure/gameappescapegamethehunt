@@ -1,4 +1,4 @@
--- Tests voor een foto in de teamchat (migratie 20261120070000).
+-- Tests voor een foto in de teamchat (migratie 20261120130000).
 \set ON_ERROR_STOP on
 begin;
 
