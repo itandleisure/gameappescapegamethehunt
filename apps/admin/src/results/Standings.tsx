@@ -22,6 +22,19 @@ function PuzzleChecks({ team, puzzles }: { team: TeamResult; puzzles: SessionRes
   );
 }
 
+/** Hoe ver het team is met de speluitleg, bijvoorbeeld "Uitleg 5/12". Helemaal gelezen: groen. */
+function BriefingProgress({ team }: { team: TeamResult }) {
+  const t = useT();
+  const { read, total } = team.briefing;
+  if (total === 0) return null;
+  const done = read >= total;
+  return (
+    <span className={done ? 'badge open' : 'badge'} title={t('Gelezen schermen van de speluitleg')}>
+      {done ? t('Uitleg gelezen ✓') : t('Uitleg {n}/{m}', { n: read, m: total })}
+    </span>
+  );
+}
+
 /** Teller "gepakt" met een min en een plus. Telt direct in de database, zodat meerdere spelleiders tegelijk kunnen tikken. */
 function CaughtCounter({ team }: { team: TeamResult }) {
   const t = useT();
@@ -146,7 +159,7 @@ export function Standings({
                 <tr className="clickable" onClick={() => setOpen(open === tm.id ? null : tm.id)}>
                   <td>{tm.rank}</td>
                   <td>
-                    <span className="dot" style={{ background: colors.get(tm.id) }} /> <strong>{tm.name}</strong>
+                    <span className="dot" style={{ background: colors.get(tm.id) }} /> <strong>{tm.name}</strong> <BriefingProgress team={tm} />
                     <div className="muted small">
                       {phone(tm.id) ? (
                         <a href={`tel:${phone(tm.id)}`} onClick={(e) => e.stopPropagation()}>

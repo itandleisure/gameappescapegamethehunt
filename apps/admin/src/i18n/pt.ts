@@ -818,4 +818,7 @@ export const pt: Record<string, string> = {
   "Punten verdwijnen uit beeld bij het team": "Os pontos desaparecem do ecrã da equipa",
   "(de spelleiding ziet ze gewoon in de ranglijst)": "(a organização continua a vê-los na classificação)",
   "Punten verbergen": "Ocultar pontos",
+  "Gelezen schermen van de speluitleg": "Ecrãs da explicação lidos",
+  "Uitleg gelezen ✓": "Explicação lida ✓",
+  "Uitleg {n}/{m}": "Explicação {n}/{m}",
 };

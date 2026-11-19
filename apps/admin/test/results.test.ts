@@ -81,6 +81,20 @@ describe('resultatenpagina', () => {
     expect(view.teams[2]!.solvedPuzzles).toEqual([]);
   });
 
+  it('telt hoeveel schermen van de speluitleg elk team heeft gelezen', () => {
+    // Alfa en Bravo lazen alle 12 introschermen, Charlie is nog niet gestart.
+    expect(view.teams.map((t) => t.briefing)).toEqual([
+      { read: INTRO.length, total: INTRO.length },
+      { read: INTRO.length, total: INTRO.length },
+      { read: 0, total: INTRO.length },
+    ]);
+    const halfway = new Script();
+    halfway.reach(0.5, 'start', P.start).ok(0.7, 'start');
+    INTRO.slice(0, 5).forEach((id, i) => halfway.ok(1 + i * 0.5, id));
+    const v = buildResults(game, [team('d', 'Delta', 4)], rows('d', halfway.events), min(5));
+    expect(v.teams[0]!.briefing).toEqual({ read: 5, total: INTRO.length });
+  });
+
   it('neemt het aantal keren gepakt over, standaard 0', () => {
     const v = buildResults(game, [{ ...team('a', 'Alfa', 1), caught: 2 }, team('b', 'Bravo', 2)], [], min(5));
     expect(v.teams.find((t) => t.id === 'a')!.caught).toBe(2);

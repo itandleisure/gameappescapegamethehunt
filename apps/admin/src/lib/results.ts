@@ -3,6 +3,7 @@
 // Punten en antwoorden worden opnieuw uitgerekend met de spelregel-engine,
 // uit dezelfde gebeurtenissen als de app; zo kloppen ze altijd met het spel.
 import {
+  briefingTasks,
   computeState,
   t,
   type AnswerSpec,
@@ -27,6 +28,8 @@ export interface TeamRow {
   distance_m?: number;
   /** Aantal keren gepakt door de hunters, bijgehouden door de spelleider. */
   caught?: number;
+  /** Speluitleg vóór een centrale start gelezen (dan telt die als gelezen). */
+  ready_at?: string | null;
 }
 
 export interface EventRow {
@@ -88,6 +91,8 @@ export interface TeamResult {
   caught: number;
   /** Ids van de puzzels (zie `puzzleTasks`) die het team goed heeft. */
   solvedPuzzles: string[];
+  /** Hoeveel schermen van de speluitleg (zoals de 12 introschermen) het team heeft gelezen. */
+  briefing: { read: number; total: number };
 }
 
 /** Een puzzel in de ranglijst: één vakje per puzzel, groen als hij is opgelost. */
@@ -209,6 +214,7 @@ export function buildResults(
   }
   const tasks = scoredTasks(game);
   const puzzles = puzzleTasks(game);
+  const briefing = briefingTasks(game);
   // Spelteksten in de taal van de beheerder als het spel die heeft, anders Nederlands of de standaardtaal.
   const display: Lang = (game.languages as string[]).includes(currentLanguage())
     ? (currentLanguage() as Lang)
@@ -244,11 +250,12 @@ export function buildResults(
         playing: false,
         answers: [],
         solvedPuzzles: [],
+        briefing: { read: team.ready_at ? briefing.length : 0, total: briefing.length },
       };
     }
     const evs = (byTeam.get(team.id) ?? []).sort((a, b) => a.at - b.at);
     const until = endedAt ?? now;
-    const state = computeState(game, { track: team.track, startedAt }, evs, until);
+    const state = computeState(game, { track: team.track, startedAt, briefingRead: Boolean(team.ready_at) }, evs, until);
     const end = state.ended?.at ?? endedAt ?? now;
 
     const pointsPerTask = new Map<string, number>();
@@ -302,6 +309,7 @@ export function buildResults(
       playing: !state.ended && endedAt === null,
       answers,
       solvedPuzzles: puzzles.filter((p) => state.tasks[p.id]?.correct === true).map((p) => p.id),
+      briefing: { read: briefing.filter((id) => state.tasks[id]?.status === 'done').length, total: briefing.length },
     };
   });
 
