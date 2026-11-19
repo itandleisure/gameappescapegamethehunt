@@ -11,13 +11,11 @@ export interface ChatRow {
   sender_name: string | null;
   body: string;
   created_at: string;
-  /** Foto bij het bericht, bijvoorbeeld van een gepakt team. */
+  /** Foto van een spelleider (bucket photobooks, bij de eigen foto's van het fotoboek). */
   photo_path?: string | null;
-  /** Naam van het team dat de hunters hebben gepakt. */
-  caught_team?: string | null;
 }
 
-const COLUMNS = 'id, team_id, sender, sender_name, body, created_at, photo_path, caught_team';
+const COLUMNS = 'id, team_id, sender, sender_name, body, created_at, photo_path';
 
 /** Foto in een chatbericht; klikken opent hem groot. */
 function ChatPhoto({ path, alt }: { path: string; alt: string }) {
@@ -25,7 +23,7 @@ function ChatPhoto({ path, alt }: { path: string; alt: string }) {
   useEffect(() => {
     let alive = true;
     void supabase()
-      .storage.from('photos')
+      .storage.from('photobooks')
       .createSignedUrl(path, 60 * 60)
       .then(({ data }) => alive && setUrl(data?.signedUrl ?? null));
     return () => {
@@ -178,8 +176,8 @@ export function TeamChat({
                 {t('Verwijderen')}
               </button>
             </div>
-            <div className="chatbody">{m.caught_team ? `📸 ${t('{team} is gepakt door The Hunters!', { team: m.caught_team })}` : m.body}</div>
-            {m.photo_path ? <ChatPhoto path={m.photo_path} alt={m.caught_team ?? m.body} /> : null}
+            {m.photo_path ? <ChatPhoto path={m.photo_path} alt={m.body} /> : null}
+            {m.photo_path && m.body === '📷' ? null : <div className="chatbody">{m.body}</div>}
           </div>
         ))}
       </div>

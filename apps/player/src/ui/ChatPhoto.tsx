@@ -10,14 +10,14 @@ const cache = new Map<string, { url: string; until: number }>();
 async function signedUrl(path: string): Promise<string> {
   const hit = cache.get(path);
   if (hit && hit.until > Date.now()) return hit.url;
-  const { data, error } = await supabase.storage.from('photos').createSignedUrl(path, URL_SECONDS);
+  const { data, error } = await supabase.storage.from('photobooks').createSignedUrl(path, URL_SECONDS);
   if (error || !data?.signedUrl) throw error ?? new Error('geen link');
   cache.set(path, { url: data.signedUrl, until: Date.now() + (URL_SECONDS - 300) * 1000 });
   return data.signedUrl;
 }
 
 /**
- * Foto in een chatbericht (bijvoorbeeld van een gepakt team), in de eigen
+ * Foto van de spelleiding in een chatbericht, in de eigen
  * verhouding. Tikken opent hem groot. Zonder bereik blijft het vak leeg tot
  * de foto wel te laden is.
  */

@@ -17,7 +17,19 @@ export interface Photo {
 export async function takePhoto(): Promise<Photo | null> {
   const permission = await ImagePicker.requestCameraPermissionsAsync();
   if (!permission.granted) return null;
-  const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 });
+  return shrink(await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 }));
+}
+
+/**
+ * Een foto kiezen die al op de telefoon staat (fotobibliotheek), op dezelfde
+ * manier verkleind. Null bij annuleren. Voor de spelleider, die een eerder
+ * gemaakte foto in de teamchat zet.
+ */
+export async function pickPhoto(): Promise<Photo | null> {
+  return shrink(await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 }));
+}
+
+async function shrink(result: ImagePicker.ImagePickerResult): Promise<Photo | null> {
   const asset = result.canceled ? undefined : result.assets[0];
   if (!asset) return null;
   const resize = photoResize(asset.width, asset.height);

@@ -8,8 +8,6 @@ import { tx } from '@/lib/text';
 
 /** Opdrachtsleutel van de teamfoto die een team bij het aanmelden maakt. */
 export const TEAM_PHOTO = '_teamfoto';
-/** Opdrachtsleutel van de foto van een team dat de hunters hebben gepakt. */
-export const CAUGHT_PHOTO = '_gepakt';
 
 /** Alle foto's van de sessie (teamfoto's en foto-opdrachten), nieuwste eerst, met team en opdracht. */
 export function Photowall({
@@ -99,12 +97,7 @@ export function Photowall({
             <figcaption>
               <span className="dot" style={{ background: colors.get(p.team_id) }} /> <strong>{teamName(p.team_id)}</strong>
               <div className="muted small">
-                {p.task_key === TEAM_PHOTO
-                  ? t('Teamfoto')
-                  : p.task_key === CAUGHT_PHOTO
-                    ? t('Gepakt door The Hunters!')
-                    : tx(game.tasks.find((x) => x.id === p.task_key)?.title) || p.task_key}{' '}
-                ·{' '}
+                {p.task_key === TEAM_PHOTO ? t('Teamfoto') : tx(game.tasks.find((x) => x.id === p.task_key)?.title) || p.task_key} ·{' '}
                 {time(p.created_at)}
               </div>
             </figcaption>

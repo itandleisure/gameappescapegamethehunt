@@ -81,7 +81,6 @@ export const et: Messages = {
   chatPlaceholder: 'Kirjutage sõnum',
   chatSend: 'Saada',
   chatStaff: 'Mängujuht',
-  chatCaught: "The Hunters püüdis kinni võistkonna {team}!",
   chatYou: 'Teie',
   chatPending: 'Saadetakse kohe, kui ühendus on olemas',
   chatClosed: 'Mängujuht sulges vestluse.',

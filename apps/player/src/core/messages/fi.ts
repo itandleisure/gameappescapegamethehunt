@@ -81,7 +81,6 @@ export const fi: Messages = {
   chatPlaceholder: 'Kirjoita viesti',
   chatSend: 'Lähetä',
   chatStaff: 'Pelinjohtaja',
-  chatCaught: "The Hunters sai kiinni joukkueen {team}!",
   chatYou: 'Te',
   chatPending: 'Lähetetään heti, kun yhteys on',
   chatClosed: 'Pelinjohtaja on sulkenut chatin.',

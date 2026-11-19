@@ -39,7 +39,7 @@ import { playAreaBounds } from '../src/core/play-area';
 import { mapStyleChoice } from '../src/core/view';
 import { leaderApi, leaveLeader, useLeader } from '../src/services/leader';
 import { readFile } from '../src/services/read-file';
-import { takePhoto } from '../src/ui/camera';
+import { pickPhoto } from '../src/ui/camera';
 import { ChatPhoto } from '../src/ui/ChatPhoto';
 import { onFix, requestLocationPermission, startTracking, stopTracking, type PermissionResult } from '../src/services/location';
 import { Banner, Body, Button } from '../src/ui/components';
@@ -322,38 +322,7 @@ function LeaderTeams({
   const [pending, setPending] = useState<Record<string, number>>({});
   const [error, setError] = useState<LeaderKey | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
-  // Na "+" bij gepakt: vraag om een foto van het team (ask), bezig met versturen (sending), gelukt (sent).
-  const [photo, setPhoto] = useState<Record<string, 'ask' | 'sending' | 'sent'>>({});
   if (!data) return <View style={styles.flex} />;
-  const setPhotoState = (teamId: string, state: 'ask' | 'sending' | 'sent' | null) =>
-    setPhoto((p) => {
-      const { [teamId]: _, ...rest } = p;
-      return state ? { ...rest, [teamId]: state } : rest;
-    });
-
-  // Foto van het gepakte team: in de teamchat (alle teams zien hem) en bij de foto's van het team voor het fotoboek.
-  const shootCaught = async (team: LeaderTeam) => {
-    setError(null);
-    try {
-      const shot = await takePhoto();
-      if (!shot) return; // geannuleerd of geen toestemming: de vraag blijft staan
-      setPhotoState(team.id, 'sending');
-      await leaderApi.shareCaughtPhoto(data.session.id, team.id, Crypto.randomUUID(), await readFile(shot.uri));
-      setPhotoState(team.id, 'sent');
-      setTimeout(
-        () =>
-          setPhoto((p) => {
-            if (p[team.id] !== 'sent') return p;
-            const { [team.id]: _, ...rest } = p;
-            return rest;
-          }),
-        3000,
-      );
-    } catch (e) {
-      setError(e instanceof LeaderError ? e.key : 'errorGeneric');
-      setPhotoState(team.id, 'ask');
-    }
-  };
   const colorOf = teamColors(data.teams);
   // Tikken kopieert het nummer in plaats van te bellen, zodat een spelleider niet per ongeluk belt.
   const copyPhone = async (teamId: string, phone: string) => {
@@ -376,8 +345,6 @@ function LeaderTeams({
     try {
       const next = await leaderApi.bumpCaught(data.session.id, team.id, delta);
       setPending((p) => ({ ...p, [team.id]: next }));
-      if (delta === 1) setPhotoState(team.id, 'ask');
-      else if (photo[team.id] === 'ask') setPhotoState(team.id, null);
       await onChange();
     } catch (e) {
       setError(e instanceof LeaderError ? e.key : 'errorGeneric');
@@ -435,21 +402,6 @@ function LeaderTeams({
                 <Text style={styles.stepText}>+</Text>
               </Pressable>
             </View>
-            {photo[tm.id] === 'ask' ? (
-              <View style={styles.caughtPhoto}>
-                <Text style={styles.caughtPhotoText}>{t('leaderCaughtPhotoAsk')}</Text>
-                <View style={styles.cardRow}>
-                  <View style={styles.flex}>
-                    <Button label={`📷 ${t('leaderCaughtPhoto')}`} onPress={() => void shootCaught(tm)} />
-                  </View>
-                  <Pressable accessibilityRole="button" style={styles.later} onPress={() => setPhotoState(tm.id, null)}>
-                    <Text style={styles.laterText}>{t('leaderLater')}</Text>
-                  </Pressable>
-                </View>
-              </View>
-            ) : photo[tm.id] ? (
-              <Text style={styles.muted}>{photo[tm.id] === 'sending' ? t('leaderCaughtPhotoSending') : `${t('leaderCaughtPhotoSent')} ✓`}</Text>
-            ) : null}
           </View>
         );
       })}
@@ -479,13 +431,14 @@ function LeaderChat({
   channel: LeaderChannel;
   sessionId: string;
   data: LeaderData;
-  t: (key: LeaderKey, vars?: Record<string, string | number>) => string;
+  t: (key: LeaderKey) => string;
   lang: string;
 }) {
   const hunters = channel === 'hunters';
   const [rows, setRows] = useState<LeaderMessage[] | null>(null);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
+  const [sendingPhoto, setSendingPhoto] = useState(false);
   const [error, setError] = useState<LeaderKey | null>(null);
   const scroll = useRef<ScrollViewInstance>(null);
   const colorOf = teamColors(data.teams);
@@ -524,6 +477,23 @@ function LeaderChat({
     }
   };
 
+  // Foto die al op de telefoon staat in de teamchat zetten; wat er in het tekstvak staat gaat mee als tekst.
+  const sendPhoto = async () => {
+    setError(null);
+    try {
+      const photo = await pickPhoto();
+      if (!photo) return;
+      setSendingPhoto(true);
+      const row = await leaderApi.sendPhoto(sessionId, Crypto.randomUUID(), await readFile(photo.uri), text.trim());
+      setRows((r) => [...(r ?? []), row]);
+      setText('');
+    } catch (e) {
+      setError(e instanceof LeaderError ? e.key : 'errorGeneric');
+    } finally {
+      setSendingPhoto(false);
+    }
+  };
+
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
@@ -547,15 +517,26 @@ function LeaderChat({
                 {'  '}
                 <Text style={[styles.bubbleTime, staff && styles.ownTime]}>{time.format(new Date(m.created_at))}</Text>
               </Text>
-              <Text style={[styles.bubbleBody, staff && styles.ownBody]}>
-                {m.caught_team ? `📸 ${t('leaderCaughtMessage', { team: m.caught_team })}` : m.body}
-              </Text>
-              {m.photo_path ? <ChatPhoto path={m.photo_path} label={m.caught_team ?? m.body} /> : null}
+              {m.photo_path ? <ChatPhoto path={m.photo_path} label={m.sender_name ?? 'The Hunters'} /> : null}
+              {/* Een foto zonder tekst heeft als tekst alleen 📷. */}
+              {m.photo_path && m.body === '📷' ? null : <Text style={[styles.bubbleBody, staff && styles.ownBody]}>{m.body}</Text>}
             </View>
           );
         })}
+        {sendingPhoto ? <Body muted>{t('leaderChatPhotoSending')}</Body> : null}
       </ScrollView>
       <View style={styles.inputRow}>
+        {hunters ? null : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('leaderChatPhoto')}
+            disabled={sendingPhoto || busy}
+            style={[styles.photoButton, (sendingPhoto || busy) && styles.sendOff]}
+            onPress={() => void sendPhoto()}
+          >
+            <Text style={styles.photoButtonText}>📷</Text>
+          </Pressable>
+        )}
         <TextInput
           style={styles.input}
           value={text}
@@ -626,10 +607,6 @@ const styles = StyleSheet.create({
   puzzleDone: { backgroundColor: colors.success, borderColor: colors.success },
   puzzleText: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
   puzzleTextDone: { color: '#ffffff', fontWeight: '800' },
-  caughtPhoto: { gap: space.sm, padding: space.sm, borderRadius: radius.sm, borderWidth: 2, borderColor: colors.accent },
-  caughtPhotoText: { color: colors.text, fontSize: 15, fontWeight: '600' },
-  later: { minHeight: 44, justifyContent: 'center', paddingHorizontal: space.sm },
-  laterText: { color: colors.textMuted, fontSize: 15, fontWeight: '700' },
   caught: { color: colors.text, fontSize: 18, fontWeight: '700', minWidth: 28, textAlign: 'center' },
   section: { color: colors.textMuted, fontSize: 14, fontWeight: '700', marginTop: space.md, textTransform: 'uppercase' },
   bubble: { maxWidth: '85%', borderRadius: radius.md, paddingVertical: space.sm, paddingHorizontal: space.md },
@@ -670,5 +647,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sendOff: { opacity: 0.5 },
+  photoButton: {
+    minHeight: 48,
+    minWidth: 48,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surfaceRaised,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoButtonText: { fontSize: 22 },
   sendText: { color: colors.accentText, fontSize: 17, fontWeight: '700' },
 });

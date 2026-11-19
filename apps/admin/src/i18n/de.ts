@@ -412,8 +412,6 @@ export const de: Record<string, string> = {
   "Nog geen foto's.": "Noch keine Fotos.",
   "Foto van {team}": "Foto von {team}",
   "Teamfoto": "Teamfoto",
-  "Gepakt door The Hunters!": "Von The Hunters gefangen!",
-  "{team} is gepakt door The Hunters!": "{team} wurde von The Hunters gefangen!",
   "Nog geen antwoorden.": "Noch keine Antworten.",
   "Tijd": "Zeit",
   "Pogingen": "Versuche",

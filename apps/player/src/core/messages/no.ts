@@ -81,7 +81,6 @@ export const no: Messages = {
   chatPlaceholder: 'Skriv en melding',
   chatSend: 'Send',
   chatStaff: 'Spilleder',
-  chatCaught: "{team} er tatt av The Hunters!",
   chatYou: 'Dere',
   chatPending: 'Sendes så snart det er forbindelse',
   chatClosed: 'Spillederen har stengt chatten.',

@@ -95,10 +95,11 @@ export default function ChatScreen() {
                   {"  "}
                   <Text style={[styles.time, own && styles.ownTime]}>{time.format(m.createdAt)}</Text>
                 </Text>
-                <Text style={[styles.body, own && styles.ownBody]}>
-                  {m.caughtTeam ? `📸 ${t("chatCaught", { team: m.caughtTeam })}` : m.body}
-                </Text>
-                {m.photoPath ? <ChatPhoto path={m.photoPath} label={m.caughtTeam ?? t("chatStaff")} /> : null}
+                {m.photoPath ? <ChatPhoto path={m.photoPath} label={m.name ?? t("chatStaff")} /> : null}
+                {/* Een foto zonder tekst heeft als tekst alleen 📷. */}
+                {m.photoPath && m.body === "📷" ? null : (
+                  <Text style={[styles.body, own && styles.ownBody]}>{m.body}</Text>
+                )}
                 {m.pending ? (
                   <Text style={[styles.time, own && styles.ownTime]}>
                     {t("chatPending")}

@@ -81,7 +81,6 @@ export const bg: Messages = {
   chatPlaceholder: 'Напишете съобщение',
   chatSend: 'Изпрати',
   chatStaff: 'Водещ',
-  chatCaught: "{team} беше хванат от The Hunters!",
   chatYou: 'Вие',
   chatPending: 'Ще бъде изпратено веднага щом има връзка',
   chatClosed: 'Водещият затвори чата.',

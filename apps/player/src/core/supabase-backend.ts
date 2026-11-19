@@ -41,7 +41,6 @@ interface MessageRow {
   body: string;
   created_at: string;
   photo_path?: string | null;
-  caught_team?: string | null;
 }
 
 /** Zoveel berichten van de teamchat haalt de app hooguit op. */
@@ -55,7 +54,6 @@ export function toChatMessage(row: MessageRow): ChatMessage {
     body: row.body,
     createdAt: Date.parse(row.created_at),
     ...(row.photo_path ? { photoPath: row.photo_path } : {}),
-    ...(row.caught_team ? { caughtTeam: row.caught_team } : {}),
   };
 }
 
@@ -231,7 +229,7 @@ export class SupabaseBackend implements Backend {
   async loadChat(sessionId: string, since?: number) {
     let query = this.client
       .from('messages')
-      .select('id, team_id, sender_name, body, created_at, photo_path, caught_team')
+      .select('id, team_id, sender_name, body, created_at, photo_path')
       .eq('session_id', sessionId)
       .eq('channel', 'teams');
     if (since !== undefined) query = query.gt('created_at', new Date(since).toISOString());

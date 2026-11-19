@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { composeGame, type GameEvent } from '@hunt/engine';
 import { INTRO, leeuwarden, leeuwardenPoints as P, theHuntBase } from '../../../packages/engine/test/fixtures/the-hunt.js';
 import { min, Script, T0 } from '../../../packages/engine/test/helpers.js';
-import { LeaderApi, caughtPhotoPath, lastPositions, leaderError, mergePositions, puzzleProgress, standings, type LeaderPosition, type LeaderTeam } from '../src/core/leader.js';
+import { LeaderApi, chatPhotoPath, lastPositions, leaderError, mergePositions, puzzleProgress, standings, type LeaderPosition, type LeaderTeam } from '../src/core/leader.js';
 import { LEADER_MESSAGES, leaderMsg } from '../src/core/leader-i18n.js';
 
 const pos = (id: number, team: string, at: string, accuracy = 5): LeaderPosition => ({
@@ -80,7 +80,7 @@ describe('spelleider-modus', () => {
     expect(calls.map(([fn]) => fn)).toEqual(['leader_messages', 'leader_hunter_messages', 'leader_send_message', 'leader_send_hunter_message']);
   });
 
-  it('foto van een gepakt team: eerst naar de opslag in <team>/_gepakt/, dan in de teamchat', async () => {
+  it('foto in de teamchat: eerst naar de eigen foto\'s van het fotoboek, dan het bericht', async () => {
     const steps: string[] = [];
     let exists = false;
     const client = {
@@ -96,19 +96,19 @@ describe('spelleider-modus', () => {
         }),
       },
       rpc: async (fn: string, args: Record<string, unknown>) => {
-        steps.push(`${fn} ${String(args.p_team)} ${String(args.p_photo)}`);
-        return { data: { id: args.p_photo, caught_team: 'Vossen', photo_path: caughtPhotoPath('t1', 'f1') }, error: null };
+        steps.push(`${fn} ${String(args.p_photo)} ${String(args.p_body)}`);
+        return { data: { id: args.p_photo, body: args.p_body, photo_path: chatPhotoPath('s1', 'f1') }, error: null };
       },
     };
     const api = new LeaderApi(client as unknown as ConstructorParameters<typeof LeaderApi>[0]);
-    const row = await api.shareCaughtPhoto('s', 't1', 'f1', new ArrayBuffer(4));
-    await api.shareCaughtPhoto('s', 't1', 'f1', new ArrayBuffer(4));
-    expect(row.caught_team).toBe('Vossen');
+    const row = await api.sendPhoto('s1', 'f1', new ArrayBuffer(4), 'Vossen gepakt!');
+    await api.sendPhoto('s1', 'f1', new ArrayBuffer(4));
+    expect(row.photo_path).toBe('s1/eigen/chat-f1.jpg');
     expect(steps).toEqual([
-      'upload photos/t1/_gepakt/f1.jpg',
-      'leader_caught_photo t1 f1',
-      'upload photos/t1/_gepakt/f1.jpg',
-      'leader_caught_photo t1 f1',
+      'upload photobooks/s1/eigen/chat-f1.jpg',
+      'leader_send_photo f1 Vossen gepakt!',
+      'upload photobooks/s1/eigen/chat-f1.jpg',
+      'leader_send_photo f1 ',
     ]);
   });
 });

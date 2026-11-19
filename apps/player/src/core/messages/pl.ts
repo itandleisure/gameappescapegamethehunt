@@ -81,7 +81,6 @@ export const pl: Messages = {
   chatPlaceholder: 'Napisz wiadomość',
   chatSend: 'Wyślij',
   chatStaff: 'Prowadzący',
-  chatCaught: "{team} został złapany przez The Hunters!",
   chatYou: 'Wy',
   chatPending: 'Zostanie wysłane, gdy będzie połączenie',
   chatClosed: 'Prowadzący zamknął czat.',

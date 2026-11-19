@@ -70,10 +70,8 @@ export interface LeaderMessage {
   created_at: string;
   /** Alleen in de hunters-chat: eigen bericht. */
   own?: boolean;
-  /** Foto bij het bericht (pad in de bucket photos). */
+  /** Foto bij het bericht (pad in de bucket photobooks). */
   photo_path?: string | null;
-  /** Naam van het gepakte team bij een gepakt-foto. */
-  caught_team?: string | null;
 }
 
 /** Teamchat (alle teams en de hunters) of de onderlinge chat van de hunters. */
@@ -184,9 +182,12 @@ export function puzzleProgress(data: LeaderData, now: number): PuzzleProgress {
   return { puzzles, solved };
 }
 
-/** Pad van de foto van een gepakt team in de bucket photos (zelfde als in de database). */
-export function caughtPhotoPath(teamId: string, photoId: string): string {
-  return `${teamId}/_gepakt/${photoId}.jpg`;
+/**
+ * Pad van een foto in de teamchat: bij de eigen foto's van het fotoboek van
+ * de hunt (bucket photobooks), zelfde als in de database.
+ */
+export function chatPhotoPath(sessionId: string, photoId: string): string {
+  return `${sessionId}/eigen/chat-${photoId}.jpg`;
 }
 
 /** Toegang tot de database voor de spelleider. */
@@ -245,16 +246,16 @@ export class LeaderApi {
   }
 
   /**
-   * Foto van een gepakt team delen: eerst naar de opslag, dan in de teamchat
-   * en bij de foto's van het team (fotowall en fotoboek). Opnieuw proberen
-   * met hetzelfde id geeft geen dubbele foto.
+   * Foto van de telefoon in de teamchat zetten, eventueel met tekst: eerst
+   * naar de opslag (bij de eigen foto's van het fotoboek), dan het bericht.
+   * Opnieuw proberen met hetzelfde id geeft geen dubbel bericht.
    */
-  async shareCaughtPhoto(sessionId: string, teamId: string, photoId: string, body: ArrayBuffer): Promise<LeaderMessage> {
-    const path = caughtPhotoPath(teamId, photoId);
-    const upload = await this.client.storage.from('photos').upload(path, body, { contentType: 'image/jpeg', upsert: false });
+  async sendPhoto(sessionId: string, photoId: string, photo: ArrayBuffer, text = ''): Promise<LeaderMessage> {
+    const path = chatPhotoPath(sessionId, photoId);
+    const upload = await this.client.storage.from('photobooks').upload(path, photo, { contentType: 'image/jpeg', upsert: false });
     // Bestaat het bestand al, dan was een eerdere poging gelukt maar het antwoord kwijt.
     if (upload.error && !/exists|Duplicate/i.test(upload.error.message)) throw leaderError(upload.error);
-    const { data, error } = await this.client.rpc('leader_caught_photo', { p_session: sessionId, p_team: teamId, p_photo: photoId });
+    const { data, error } = await this.client.rpc('leader_send_photo', { p_session: sessionId, p_photo: photoId, p_body: text });
     if (error) throw leaderError(error);
     return data as LeaderMessage;
   }

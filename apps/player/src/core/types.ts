@@ -38,10 +38,8 @@ export interface ChatMessage {
   createdAt: number;
   /** Nog niet bij de server (geen bereik). */
   pending?: boolean;
-  /** Foto bij het bericht (pad in de bucket photos), bijvoorbeeld van een gepakt team. */
+  /** Foto van de spelleiding bij het bericht (pad in de bucket photobooks). */
   photoPath?: string;
-  /** Naam van het team dat de hunters hebben gepakt: de app toont dan "<team> is gepakt!" in de eigen taal. */
-  caughtTeam?: string;
 }
 
 export interface LoadedGame {
