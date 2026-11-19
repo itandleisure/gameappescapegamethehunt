@@ -76,6 +76,12 @@ export interface Task {
    * speelveld blijft de gewone foto staan.
    */
   playfieldImage?: boolean;
+  /**
+   * Toon als foto een vaste tekening van de beheeromgeving, bijvoorbeeld
+   * 'extractiepunt' bij het uitlegscherm "Extractiepunt". De beheeromgeving zet
+   * die bij het publiceren in `image`.
+   */
+  illustration?: string;
   /** Kort nummer of teken in het kaarticoon (bijvoorbeeld 1, 2, 3) in plaats van de titel. */
   mapLabel?: string;
   /**

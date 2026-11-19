@@ -1105,4 +1105,6 @@ export const pt: Record<string, string> = {
   "Ook lopende spelers bijwerken ({sessions} open tickets, {teams} teams spelen nu)": "Atualizar também os jogadores em curso ({sessions} tickets abertos, {teams} equipas a jogar agora)",
   "{count} lopende tickets zijn live bijgewerkt.": "{count} tickets em curso foram atualizados em direto.",
   "Ook lopende spelers bijwerken: open tickets van deze steden krijgen meteen de nieuwe versie, met behoud van hun voortgang": "Atualizar também os jogadores em curso: os tickets abertos destas cidades recebem logo a nova versão, mantendo o progresso",
+  "Tekening van het extractiepunt tonen": "Mostrar desenho do ponto de extração",
+  "Een tekening zonder tekst: alle puzzels opgelost geeft één finishvlag, niet alles opgelost geeft drie mogelijke extractiepunten. Spelers zien die in plaats van de foto hierboven.": "Um desenho sem texto: todos os enigmas resolvidos dão uma bandeira de chegada; se não, aparecem três possíveis pontos de extração. Os jogadores veem-no em vez da foto acima.",
 };

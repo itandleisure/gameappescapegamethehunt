@@ -20,6 +20,7 @@ import { centredLocations, centredMeetingPoint, citySlug, newTodoState, type Pla
 import { mediaPath } from './map-settings';
 import { loadMaplibre } from './maplibre';
 import { withPlayfieldImage } from './playfield-image';
+import { withIllustrations } from './illustrations';
 import { t as tr } from './i18n';
 
 const GAME_COLUMNS = 'id, layer, slug, parent_id, languages, default_language, settings, base_version';
@@ -235,7 +236,11 @@ export async function publish(db: SupabaseClient, gameId: string): Promise<numbe
 /** Publiceert het spel; geeft het id en nummer van de nieuwe versie. */
 export async function publishVersion(db: SupabaseClient, gameId: string): Promise<{ id: string; version: number }> {
   const chain = await loadChain(db, gameId);
-  const pkg = await withPlayfieldImage(db, gameId, await withChosenPuzzles(db, chain, composeChain(chain)), loadMaplibre);
+  const pkg = await withIllustrations(
+    db,
+    gameId,
+    await withPlayfieldImage(db, gameId, await withChosenPuzzles(db, chain, composeChain(chain)), loadMaplibre),
+  );
   const row = check<{ id: string; version: number }>(await db.rpc('publish_game_version', { p_game: gameId, p_package: pkg }));
   return { id: row.id, version: row.version };
 }
