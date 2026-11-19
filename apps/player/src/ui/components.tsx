@@ -162,11 +162,11 @@ const styles = StyleSheet.create({
   buttonSecondary: { backgroundColor: colors.surfaceRaised },
   buttonDanger: { backgroundColor: colors.danger },
   buttonDim: { opacity: 0.6 },
-  buttonLabel: { color: colors.accentText, fontSize: 17, fontWeight: '700' },
+  buttonLabel: { color: colors.accentText, fontSize: 17, fontWeight: '700', textAlign: 'center' },
   buttonLabelLight: { color: colors.text },
   field: { marginBottom: space.md },
   fieldCompact: { marginBottom: 12 },
-  label: { color: colors.textMuted, fontSize: 14, marginBottom: space.xs },
+  label: { color: colors.textMuted, fontSize: 14, fontWeight: '700', marginBottom: space.xs },
   input: {
     backgroundColor: colors.surface,
     color: colors.text,

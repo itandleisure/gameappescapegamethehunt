@@ -42,7 +42,7 @@ export const SCENES = [
   { id: 'opstartlogo', url: '/?scene=join', wait: 600 },
   { id: 'aanmelden', url: '/?scene=join', wait: 2800 },
   { id: 'aanmelden-taal', url: '/?scene=join', wait: 2800, clicks: [/^Taal/] },
-  { id: 'aanmelden-verder-spelen', url: '/?scene=join', wait: 2800, clicks: [/^Al een team/] },
+  { id: 'aanmelden-verder-spelen', url: '/?scene=join', wait: 2800, clicks: [/^Ons team speelt al/] },
   { id: 'teamfoto', url: '/?scene=teamphoto' },
   { id: 'teamcode', url: '/?scene=teamcode' },
   { id: 'teamcode-lang', url: '/?scene=teamcode&long=1' },

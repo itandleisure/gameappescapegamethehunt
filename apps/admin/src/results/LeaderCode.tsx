@@ -86,7 +86,7 @@ export function LeaderCode({
         </button>
       </div>
       <p className="small muted">
-        {t('Spelleiders openen de game-app, kiezen "Ik ben spelleider" en vullen deze code en hun eigen naam in. Ze zien de teams en elkaar op de kaart, bellen teams, houden "gepakt" bij en chatten als The Hunters. Teams zien de spelleiders niet.')}
+        {t('Spelleiders openen de game-app, kiezen "Inloggen als spelleider" en vullen deze code en hun eigen naam in. Ze zien de teams en elkaar op de kaart, bellen teams, houden "gepakt" bij en chatten als The Hunters. Teams zien de spelleiders niet.')}
       </p>
       {code ? (
         <p>
