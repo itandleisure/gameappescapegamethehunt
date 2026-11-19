@@ -12,7 +12,7 @@ grant usage on schema tests to authenticated;
 grant execute on all functions in schema tests to authenticated;
 
 insert into auth.users (id) values ('c0000000-0000-0000-0000-000000000001'), ('c0000000-0000-0000-0000-000000000002');
-insert into public.organizations (id, name) values ('0a000000-0000-0000-0000-00000000000a', 'Badass Games');
+insert into public.organizations (id, name, is_platform) values ('0a000000-0000-0000-0000-00000000000a', 'Badass Games', true);
 insert into public.games (id, org_id, layer, slug) values ('6a000000-0000-0000-0000-000000000001', '0a000000-0000-0000-0000-00000000000a', 'base', 'the-hunt');
 insert into public.game_versions (id, game_id, version, package) values
   ('7a000000-0000-0000-0000-000000000001', '6a000000-0000-0000-0000-000000000001', 1, '{"languages":["nl"]}');

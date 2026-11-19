@@ -7,12 +7,13 @@ import { ADMIN_LANGUAGES, ADMIN_LANGUAGE_NAMES, isAdminLanguage, tKey } from '@/
 import { LanguageProvider, useLanguage, useT } from '@/lib/language';
 import { supabase } from '@/lib/supabase';
 
-const NAV = [
+const NAV: { href: string; label: string; platformAdmin?: boolean }[] = [
   { href: '/sessies', label: tKey('Hunts') },
   { href: '/spellen', label: tKey('Spellen') },
   { href: '/templates', label: tKey('Templates') },
   { href: '/puzzels', label: tKey('Puzzels') },
   { href: '/instellingen/leden', label: tKey('Toegang') },
+  { href: '/instellingen/accounts', label: tKey('Accounts'), platformAdmin: true },
 ];
 
 /** Taalkeuze van de beheerapp; wordt per gebruiker onthouden. */
@@ -53,7 +54,7 @@ function Header() {
         Escape Game The Hunt
       </span>
       <nav>
-        {NAV.map((n) => (
+        {NAV.filter((n) => !n.platformAdmin || (org.platform && ['owner', 'admin'].includes(org.role))).map((n) => (
           <Link key={n.href} href={n.href} className={path.startsWith(n.href) ? 'active' : ''}>
             {t(n.label)}
           </Link>
