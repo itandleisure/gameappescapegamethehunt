@@ -372,7 +372,7 @@
    "type": "symbol",
    "source": "omt",
    "source-layer": "transportation_name",
-   "minzoom": 14,
+   "minzoom": 13,
    "layout": {
     "symbol-placement": "line",
     "text-field": [
@@ -390,12 +390,16 @@
      [
       "zoom"
      ],
-     14,
-     10,
+     13,
+     10.5,
+     15,
+     12.5,
      18,
-     14
+     16
     ],
-    "text-max-angle": 30
+    "text-max-angle": 30,
+    "symbol-spacing": 180,
+    "text-padding": 1
    },
    "paint": {
     "text-color": "#111111",

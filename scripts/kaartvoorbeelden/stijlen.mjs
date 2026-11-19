@@ -46,7 +46,7 @@ export function makeStyle(p, { labels = true, landmarks = false } = {}) {
   if (labels) {
     layers.push(
       { id: 'water-naam', type: 'symbol', source: 'omt', 'source-layer': 'water_name', layout: { 'text-field': ['get', 'name'], 'text-font': ['Noto Sans Italic'], 'text-size': 13 }, paint: { 'text-color': p.waterText ?? p.text, 'text-halo-color': p.halo, 'text-halo-width': 1.5 } },
-      { id: 'straatnaam', type: 'symbol', source: 'omt', 'source-layer': 'transportation_name', minzoom: 14, layout: { 'symbol-placement': 'line', 'text-field': ['get', 'name'], 'text-font': ['Noto Sans Regular'], 'text-size': ['interpolate', ['linear'], ['zoom'], 14, 10, 18, 14], 'text-max-angle': 30 }, paint: { 'text-color': p.text, 'text-halo-color': p.halo, 'text-halo-width': 2 } },
+      { id: 'straatnaam', type: 'symbol', source: 'omt', 'source-layer': 'transportation_name', minzoom: 13, layout: { 'symbol-placement': 'line', 'text-field': ['get', 'name'], 'text-font': ['Noto Sans Regular'], 'text-size': ['interpolate', ['linear'], ['zoom'], 13, 10.5, 15, 12.5, 18, 16], 'text-max-angle': 30, 'symbol-spacing': 180, 'text-padding': 1 }, paint: { 'text-color': p.text, 'text-halo-color': p.halo, 'text-halo-width': 2 } },
     );
   }
   if (landmarks) {
