@@ -2,7 +2,7 @@ import { codeView, hiddenPieces, t as tx } from "@hunt/engine";
 import { Redirect, router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { isAnswerable, listGroups } from "../src/core/view";
+import { isAnswerable, listGroups, puzzleProgress } from "../src/core/view";
 import { Body, Button, Title } from "../src/ui/components";
 import { LeaveGame } from "../src/ui/LeaveGame";
 import { CodeBoxes } from "../src/ui/CodeBoxes";
@@ -20,11 +20,27 @@ export default function TasksScreen() {
   const tr = (value: Parameters<typeof tx>[0]) =>
     tx(value, lang, game.defaultLanguage);
   const groups = listGroups(game, state);
+  const puzzles = puzzleProgress(game, state);
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content}>
         <Title>{t("tasks")}</Title>
+        {/* Puzzel 1 t/m 6 als blokjes: een opgeloste puzzel krijgt een groen vinkje en verdwijnt uit de lijst. */}
+        {puzzles.length ? (
+          <View style={styles.puzzles}>
+            {puzzles.map((p, i) => (
+              <View
+                key={p.task}
+                style={[styles.puzzle, p.solved && styles.puzzleSolved]}
+                accessibilityLabel={`${i + 1}${p.solved ? " ✓" : ""}`}
+              >
+                <Text style={[styles.puzzleNumber, p.solved && styles.puzzleNumberSolved]}>{i + 1}</Text>
+                {p.solved ? <Text style={styles.puzzleCheck}>✓</Text> : null}
+              </View>
+            ))}
+          </View>
+        ) : null}
         {groups.length === 0 ? <Body muted>{t("noTasks")}</Body> : null}
         {groups.map((group) => {
           const pg = game.playgrounds.find((p) => p.id === group.playground);
@@ -95,6 +111,21 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   content: { padding: space.md, paddingBottom: space.xl, ...contentColumn },
   group: { marginBottom: space.xl },
+  puzzles: { flexDirection: "row", gap: space.sm, marginBottom: space.lg },
+  puzzle: {
+    flex: 1,
+    height: 52,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+  },
+  puzzleSolved: { backgroundColor: "rgba(63, 185, 80, 0.15)", borderColor: colors.success },
+  puzzleNumber: { color: colors.textMuted, fontSize: 15, fontWeight: "700" },
+  puzzleNumberSolved: { color: colors.text, fontSize: 12 },
+  puzzleCheck: { color: colors.success, fontSize: 20, fontWeight: "800", lineHeight: 22 },
   groupTitle: {
     color: colors.accent,
     fontSize: 15,

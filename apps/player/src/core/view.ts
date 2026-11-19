@@ -41,12 +41,15 @@ export interface ListGroup {
 /** Opdrachten voor het lijstscherm, gegroepeerd per playground. */
 export function listGroups(game: GamePackage, state: TeamState): ListGroup[] {
   const groups = new Map<string | undefined, Task[]>();
+  const puzzles = new Set(puzzleProgress(game, state).map((p) => p.task));
   for (const task of game.tasks) {
     const ts = state.tasks[task.id];
     if (!ts || ts.status === 'hidden' || ts.status === 'deactivated') continue;
     if (!ts.inList && ts.playground === undefined) continue;
     // Gelezen uitleg (info) staat voortaan alleen nog op het tabblad met naslag, niet meer tussen de opdrachten.
     if (ts.status === 'done' && task.answer.type === 'info') continue;
+    // Een opgeloste puzzel (met een codevakje) staat als vinkje in de blokjes bovenaan, niet meer als regel.
+    if (ts.status === 'done' && puzzles.has(task.id)) continue;
     const key = ts.playground;
     groups.set(key, [...(groups.get(key) ?? []), task]);
   }
@@ -55,6 +58,16 @@ export function listGroups(game: GamePackage, state: TeamState): ListGroup[] {
   for (const p of game.playgrounds) if ((p.reveal || p.code) && !groups.has(p.id)) groups.set(p.id, []);
   const order = [undefined, ...game.playgrounds.map((p) => p.id)];
   return order.filter((k) => groups.has(k)).map((k) => ({ ...(k === undefined ? {} : { playground: k }), tasks: groups.get(k)! }));
+}
+
+/**
+ * De puzzels achter de codevakjes (zoals puzzel 1 t/m 6), in de volgorde van
+ * de vakjes, met of ze al opgelost zijn. Voor de blokjes bovenaan het
+ * opdrachtenscherm. Leeg als het spel geen codevakjes heeft.
+ */
+export function puzzleProgress(game: GamePackage, state: TeamState): { task: string; solved: boolean }[] {
+  const code = game.playgrounds.find((p) => p.code)?.code;
+  return (code?.boxes ?? []).map((b) => ({ task: b.task, solved: state.tasks[b.task]?.status === 'done' }));
 }
 
 /** Uitkomst van het laatste antwoord op een opdracht, voor de melding na versturen. */
