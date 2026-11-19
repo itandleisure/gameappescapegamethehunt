@@ -77,6 +77,8 @@ async function fromFile(picked: Promise<File | null>): Promise<Photo | null> {
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.8));
   if (!blob) return null;
   const uri = URL.createObjectURL(blob);
-  await savePhoto(uri, blob);
+  // Bewaren voor als er geen bereik is. Lukt dat niet (bijv. privémodus), dan
+  // gaat de foto toch mee zolang de pagina open blijft (readFile haalt het blob:-adres op).
+  await savePhoto(uri, blob).catch(() => undefined);
   return { uri, width, height };
 }
