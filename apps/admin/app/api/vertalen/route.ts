@@ -2,7 +2,7 @@
  * POST /api/vertalen: vertaalt de teksten van een opdracht met Claude.
  *
  * De API-sleutel (ANTHROPIC_API_KEY) staat alleen op de server (Vercel) en
- * komt nooit in de browser. Alleen ingelogde redacteuren, beheerders en
+ * komt nooit in de browser. Alleen ingelogde partners, beheerders en
  * eigenaren van een organisatie mogen vertalen.
  *
  * Invoer:  { source: "nl", targets: ["en", "de"], texts: { title: "…", "hint.0": "…" } }
@@ -71,7 +71,7 @@ function outputSchema(targets: string[]) {
 }
 
 export async function POST(request: Request) {
-  // 1. Wie vraagt dit? Alleen redacteur of hoger.
+  // 1. Wie vraagt dit? Alleen partner (editor) of hoger.
   const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
   if (!token) return json(401, { error: 'Log opnieuw in om te vertalen.' });
   const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
   if (authError || !who.user || who.user.is_anonymous) return json(401, { error: 'Log opnieuw in om te vertalen.' });
   const { data: roles } = await db.from('memberships').select('role').eq('user_id', who.user.id);
   if (!(roles ?? []).some((r: { role: string }) => ['owner', 'admin', 'editor'].includes(r.role))) {
-    return json(403, { error: 'Alleen redacteuren en beheerders kunnen vertalen.' });
+    return json(403, { error: 'Alleen beheerders en partners kunnen vertalen.' });
   }
 
   // 2. Invoer controleren.

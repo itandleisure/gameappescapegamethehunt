@@ -93,7 +93,7 @@ export default function PhotobookSettingsPage() {
       <p className="muted">
         {t("Deze foto's en links komen in elk fotoboek van {org}. De vaste foto's staan achteraan, en je kunt ze per fotoboek weghalen of verplaatsen.", { org: org.name })}
       </p>
-      {!canEdit ? <p className="muted">{t('Alleen beheerders en redacteuren kunnen dit wijzigen.')}</p> : null}
+      {!canEdit ? <p className="muted">{t('Alleen eigenaren, beheerders en partners kunnen dit wijzigen.')}</p> : null}
 
       <h2>{t('Omslagfoto')}</h2>
       <p className="muted small">{t('Grote foto op de voorkant en bij de video. Zonder omslagfoto komt de eerste foto van het fotoboek op de voorkant.')}</p>

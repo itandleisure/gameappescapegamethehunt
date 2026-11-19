@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useAuth, type Org } from '@/lib/auth';
 import { displayName } from '@/lib/game-name';
 import type { GameRow } from '@/lib/game-model';
-import { roleKey } from '@/lib/roles';
+import { PARTNER_ROLES, PLATFORM_ROLES, roleKey } from '@/lib/roles';
 import { useLanguage } from '@/lib/language';
 import { supabase } from '@/lib/supabase';
 
@@ -31,10 +31,8 @@ interface City {
   name: string;
 }
 
-const ROLES: Org['role'][] = ['owner', 'admin', 'editor', 'instructor'];
 
 /** Rollen die een partner kan hebben: nooit eigenaar of beheerder. */
-const PARTNER_ROLES: Org['role'][] = ['editor', 'instructor'];
 
 /**
  * Toegang tot de beheeromgeving. Registreren kan alleen met een uitnodiging:
@@ -126,8 +124,7 @@ export default function AccessPage() {
     }
     setBusy(false);
   };
-  /** Rolnaam in de eigen organisatie (bij een partner heet redacteur "Partner"). */
-  const roleLabel = (r: Org['role'], platformOrg = org.platform) => t(roleKey(r, platformOrg));
+  const roleLabel = (r: Org['role']) => t(roleKey(r));
   /** Omschrijving opslaan (alleen het platform); leeg laten slaat niets op. */
   const saveNote = async (address: string, text: string) =>
     text.trim() ? supabase().rpc('set_account_note', { p_email: address, p_note: text }) : { error: null };
@@ -227,7 +224,7 @@ export default function AccessPage() {
                 {canManage && m.user_id !== user?.id && (m.role !== 'owner' || org.role === 'owner') ? (
                   <>
                     <select aria-label={t('Rol')} value={m.role} disabled={busy} onChange={(e) => changeRole(m, e.target.value as Org['role'])}>
-                      {ROLES.filter((r) => r !== 'owner' || org.role === 'owner').map((r) => (
+                      {PLATFORM_ROLES.filter((r) => r !== 'owner' || org.role === 'owner').map((r) => (
                         <option key={r} value={r}>
                           {roleLabel(r)}
                         </option>
@@ -277,7 +274,7 @@ export default function AccessPage() {
             <>
               <label htmlFor="invite-role">{t('Rol')}</label>
               <select id="invite-role" value={role} onChange={(e) => setRole(e.target.value as Org['role'])}>
-                {ROLES.filter((r) => r !== 'owner' || org.role === 'owner').map((r) => (
+                {PLATFORM_ROLES.filter((r) => r !== 'owner' || org.role === 'owner').map((r) => (
                   <option key={r} value={r}>
                     {roleLabel(r)}
                   </option>
@@ -329,7 +326,7 @@ export default function AccessPage() {
                                 >
                                   {PARTNER_ROLES.map((r) => (
                                     <option key={r} value={r}>
-                                      {roleLabel(r, false)}
+                                      {roleLabel(r)}
                                     </option>
                                   ))}
                                 </select>{' '}
@@ -338,7 +335,7 @@ export default function AccessPage() {
                                 </button>
                               </>
                             ) : (
-                              roleLabel(m.role, false)
+                              roleLabel(m.role)
                             )}
                           </li>
                         ))}
