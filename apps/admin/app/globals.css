@@ -396,3 +396,11 @@ a.button.secondary { background: transparent; color: var(--text); border-color: 
   .flow-moment { grid-template-columns: 56px 1fr; gap: 8px; }
   .flow-when { font-size: 12px; padding: 3px 8px; }
 }
+
+/* Ranglijst: puzzelvakjes en de teller "gepakt" */
+.puzzles { display: inline-flex; gap: 3px; white-space: nowrap; }
+.puzzle { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 4px; font-size: 11px; border: 1px solid var(--line); color: var(--muted, #6b7280); }
+.puzzle.done { background: var(--ok); border-color: var(--ok); color: #fff; font-weight: 700; }
+.counter { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.counter button.small { padding: 0 8px; min-width: 26px; line-height: 22px; }
+.counter strong { min-width: 1.2em; text-align: center; }

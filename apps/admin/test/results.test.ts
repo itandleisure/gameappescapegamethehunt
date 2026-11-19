@@ -71,6 +71,22 @@ describe('resultatenpagina', () => {
     expect(tangram.expected).not.toBe('');
   });
 
+  it('toont per team welke puzzels zijn opgelost, in de volgorde van de codevakjes', () => {
+    expect(view.puzzles.length).toBeGreaterThanOrEqual(2);
+    const ids = view.puzzles.map((p) => p.id);
+    expect(ids).toContain('puzzel-tangram');
+    expect(ids).toContain('puzzel-morse');
+    expect(view.teams[0]!.solvedPuzzles.sort()).toEqual(['puzzel-morse', 'puzzel-tangram']);
+    expect(view.teams[1]!.solvedPuzzles).toEqual([]);
+    expect(view.teams[2]!.solvedPuzzles).toEqual([]);
+  });
+
+  it('neemt het aantal keren gepakt over, standaard 0', () => {
+    const v = buildResults(game, [{ ...team('a', 'Alfa', 1), caught: 2 }, team('b', 'Bravo', 2)], [], min(5));
+    expect(v.teams.find((t) => t.id === 'a')!.caught).toBe(2);
+    expect(v.teams.find((t) => t.id === 'b')!.caught).toBe(0);
+  });
+
   it('telt per opdracht hoeveel teams hem goed hadden', () => {
     const tangram = view.tasks.find((x) => x.id === 'puzzel-tangram')!;
     expect(tangram).toMatchObject({ answered: 2, correct: 1 });

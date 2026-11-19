@@ -807,4 +807,11 @@ export const en: Record<string, string> = {
   "Naslagtekst ({lang})": "Reference text ({lang})",
   "Teksten in": "Texts in",
   "Vaste tekst bovenaan dit tabblad, zoals de tijdlijn van het spel. Mag leeg blijven.": "Fixed text at the top of this tab, such as the game timeline. May be left empty.",
+  "{n} van {m} puzzels opgelost": "{n} of {m} puzzles solved",
+  "opgelost": "solved",
+  "nog niet opgelost": "not solved yet",
+  "Eén keer minder gepakt": "Caught one time less",
+  "Eén keer meer gepakt": "Caught one more time",
+  "Puzzels": "Puzzles",
+  "Gepakt": "Caught",
 };

@@ -248,6 +248,36 @@ begin
   end;
 end $$;
 
+-- ---------------------------------------------------------------------------
+-- Teller "gepakt": alleen de spelleiding telt, nooit onder nul
+-- ---------------------------------------------------------------------------
+select tests.login('c0000000-0000-0000-0000-000000000001');
+do $$
+declare
+  own uuid;
+begin
+  select id into own from public.teams where login_order = 1;
+  begin
+    perform public.bump_team_caught(own, 1);
+    raise exception 'speler kon de teller gepakt aanpassen';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+select tests.login('a0000000-0000-0000-0000-000000000003');
+do $$
+declare
+  team uuid;
+begin
+  select t.id into team from public.teams t join public.sessions s on s.id = t.session_id
+   where s.join_code = 'HUNT01' and t.login_order = 1;
+  assert public.bump_team_caught(team, 1) = 1, 'instructeur telt een keer gepakt';
+  assert public.bump_team_caught(team, 1) = 2, 'en nog een keer';
+  assert public.bump_team_caught(team, -1) = 1, 'en weer een eraf';
+  assert public.bump_team_caught(team, -1) = 0, 'terug naar nul';
+  assert public.bump_team_caught(team, -1) = 0, 'nooit onder nul';
+end $$;
+
 select tests.logout();
 \echo 'Alle RLS-tests geslaagd'
 rollback;
