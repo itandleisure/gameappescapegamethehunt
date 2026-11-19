@@ -1,4 +1,4 @@
-import { Redirect, router } from 'expo-router';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Animated, Image, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -37,6 +37,12 @@ export default function JoinScreen() {
   const { loading: leaderLoading, leader } = useLeader();
   const [lang, setLang] = useState(deviceLang);
   const [joinCode, setJoinCode] = useState('');
+  // Spellink of QR-code (/<game-ID>:<spelcode>): de spelcode staat al ingevuld.
+  const { code: linkCode } = useLocalSearchParams<{ code?: string; game?: string }>();
+  useEffect(() => {
+    const code = typeof linkCode === 'string' ? linkCode.toUpperCase().replace(/[^A-Z0-9]/g, '') : '';
+    if (code) setJoinCode(code);
+  }, [linkCode]);
   const [teamName, setTeamName] = useState('');
   const [phone, setPhone] = useState('');
   const [rejoinCode, setRejoinCode] = useState('');

@@ -1,4 +1,5 @@
 "use client";
+import { GameIdField } from "@/editor/GameIdField";
 import { GAME_LANGUAGES, gameLanguageList, gameLanguageName, gameLanguageShort, gameLanguageTag, languageName } from "@/lib/game-languages";
 import { CompositionError } from "@hunt/engine";
 import Link from "next/link";
@@ -444,6 +445,7 @@ export default function GamePage() {
           </>
         ) : null}
       </p>
+      {isBase ? null : <GameIdField gameId={self.game.id} />}
       {nameDraft ? (
         <form className="card" onSubmit={doSaveName} style={{ marginBottom: 16 }}>
           <p className="muted" style={{ marginTop: 0 }}>

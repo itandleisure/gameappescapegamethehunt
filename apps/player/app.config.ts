@@ -5,6 +5,15 @@ import type { ExpoConfig } from 'expo/config';
  * openbaar (ze zitten in elke app); de toegangsregels in de database bepalen
  * wat een speler mag. Geheime sleutels horen hier nooit.
  */
+/**
+ * Domein van de spellinks (https://<domein>/<game-ID>:<spelcode>). Links op
+ * dit domein openen de app direct (iPhone: universal link, Android: app link).
+ * Moet gelijk zijn aan NEXT_PUBLIC_SPEL_DOMEIN in de beheeromgeving. Werkt pas
+ * na een nieuwe app-build (niet via een update), en alleen als het domein de
+ * bestanden in /.well-known/ laat zien (zie docs/spellinks.md).
+ */
+const APP_LINK_HOST = process.env.APP_LINK_HOST ?? 'app.escapegamethehunt.nl';
+
 const config: ExpoConfig = {
   name: 'Escape Game The Hunt',
   slug: 'gameappescapegamethehunt',
@@ -17,6 +26,7 @@ const config: ExpoConfig = {
   ios: {
     bundleIdentifier: 'com.thebadassgroup.thehunt',
     supportsTablet: false,
+    associatedDomains: [`applinks:${APP_LINK_HOST}`],
     infoPlist: {
       // Korte naam onder het icoon op het beginscherm; App Store-naam blijft Escape Game The Hunt.
       CFBundleDisplayName: 'The Hunt',
@@ -26,6 +36,16 @@ const config: ExpoConfig = {
   },
   android: {
     package: 'com.thebadassgroup.thehunt',
+    // Spellinks /<game-ID>:<spelcode> openen de app. Resultatenlinks staan op
+    // het domein van de beheeromgeving en blijven dus in de browser.
+    intentFilters: [
+      {
+        action: 'VIEW',
+        autoVerify: true,
+        data: [{ scheme: 'https', host: APP_LINK_HOST, pathPattern: '/.*:.*' }],
+        category: ['BROWSABLE', 'DEFAULT'],
+      },
+    ],
     adaptiveIcon: { foregroundImage: './assets/adaptive-icon.png', backgroundColor: '#101214' },
     permissions: [
       'ACCESS_FINE_LOCATION',

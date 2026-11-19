@@ -2,6 +2,7 @@
 import type { User } from '@supabase/supabase-js';
 import { usePathname, useRouter } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { isEventLinkPath } from './event-links';
 import { supabase } from './supabase';
 
 export interface Org {
@@ -24,6 +25,26 @@ const AuthContext = createContext<AuthState>({ loading: true, user: null, org: n
 const PUBLIC_PATHS = ['/login'];
 /** Pagina's die zonder inloggen werken, zoals het fotoboek voor de klant. */
 const PUBLIC_PREFIXES = ['/fotoboek/'];
+/** Waar je heen wilde voordat je moest inloggen, zoals een resultatenlink. */
+const RETURN_KEY = 'hunt-na-inloggen';
+
+function remember(path: string) {
+  try {
+    if (path.startsWith('/resultaten/')) sessionStorage.setItem(RETURN_KEY, path);
+  } catch {
+    // geen opslag: dan na het inloggen naar het overzicht
+  }
+}
+
+function takeRemembered(): string | null {
+  try {
+    const path = sessionStorage.getItem(RETURN_KEY);
+    sessionStorage.removeItem(RETURN_KEY);
+    return path && path.startsWith('/') ? path : null;
+  } catch {
+    return null;
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<Omit<AuthState, 'reload'>>({ loading: true, user: null, org: null });
@@ -55,10 +76,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Doorsturen: niet ingelogd → inloggen; nog geen organisatie → aanmaken.
   useEffect(() => {
     if (state.loading) return;
-    if (PUBLIC_PREFIXES.some((p) => path.startsWith(p))) return;
-    if (!state.user && !PUBLIC_PATHS.includes(path)) router.replace('/login');
-    else if (state.user && !state.org && path !== '/start') router.replace('/start');
-    else if (state.user && state.org && (path === '/login' || path === '/start')) router.replace('/sessies');
+    if (PUBLIC_PREFIXES.some((p) => path.startsWith(p)) || isEventLinkPath(path)) return;
+    if (!state.user && !PUBLIC_PATHS.includes(path)) {
+      remember(path);
+      router.replace('/login');
+    } else if (state.user && !state.org && path !== '/start') router.replace('/start');
+    else if (state.user && state.org && (path === '/login' || path === '/start')) router.replace(takeRemembered() ?? '/sessies');
   }, [state, path, router]);
 
   return <AuthContext.Provider value={{ ...state, reload }}>{children}</AuthContext.Provider>;
