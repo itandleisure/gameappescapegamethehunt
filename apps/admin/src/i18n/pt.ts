@@ -1100,4 +1100,6 @@ export const pt: Record<string, string> = {
   "Aantal": "Quantidade",
   "Toestel": "Dispositivo",
   "Techniek": "Técnico",
+  "Tekening van het extractiepunt tonen": "Mostrar desenho do ponto de extração",
+  "Een tekening zonder tekst: alle puzzels opgelost geeft één finishvlag, niet alles opgelost geeft drie mogelijke extractiepunten. Spelers zien die in plaats van de foto hierboven.": "Um desenho sem texto: todos os enigmas resolvidos dão uma bandeira de chegada; se não, aparecem três possíveis pontos de extração. Os jogadores veem-no em vez da foto acima.",
 };
