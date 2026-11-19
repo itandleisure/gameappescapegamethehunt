@@ -124,7 +124,7 @@ export function TemplateVersions({ baseId, versions, cities, onChanged, onError 
       const ok = results.length - failed.length;
       const done = republish
         ? t('{n} steden overgezet naar {version} en opnieuw gepubliceerd.', { n: ok, version: versionLabel(v) })
-        : t('{n} steden overgezet naar {version}. Publiceer ze opnieuw om dit in nieuwe hunts te gebruiken.', { n: ok, version: versionLabel(v) });
+        : t('{n} steden overgezet naar {version}. Publiceer ze opnieuw om dit in nieuwe events te gebruiken.', { n: ok, version: versionLabel(v) });
       if (failed.length) {
         const names = failed.map((f) => {
           const c = cities.find((x) => x.id === f.id);
@@ -368,7 +368,7 @@ export function TemplateVersions({ baseId, versions, cities, onChanged, onError 
                         </ul>
                         <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center', fontWeight: 'normal' }}>
                           <input type="checkbox" checked={republish} disabled={busy} onChange={(e) => setRepublish(e.target.checked)} />
-                          {t('Meteen opnieuw publiceren (ook de klantvarianten eronder), zodat nieuwe hunts deze versie krijgen')}
+                          {t('Meteen opnieuw publiceren (ook de klantvarianten eronder), zodat nieuwe events deze versie krijgen')}
                         </label>
                         <div className="actions">
                           <button type="button" disabled={busy || moving.size === 0} onClick={() => moveCities(v)}>

@@ -19,7 +19,7 @@ export function DeleteSession({ id, name, photoPaths }: { id: string; name: stri
   const [error, setError] = useState<string | null>(null);
 
   const remove = async () => {
-    if (!window.confirm(t('Hunt "{name}" helemaal verwijderen, met alle teams, foto\'s, routes, telefoonnummers en chat? Dit kan niet ongedaan worden.', { name }))) return;
+    if (!window.confirm(t('Event "{name}" helemaal verwijderen, met alle teams, foto\'s, routes, telefoonnummers en chat? Dit kan niet ongedaan worden.', { name }))) return;
     setBusy(true);
     setError(null);
     try {
@@ -36,7 +36,7 @@ export function DeleteSession({ id, name, photoPaths }: { id: string; name: stri
       }
       const { error: e, count } = await db.from('sessions').delete({ count: 'exact' }).eq('id', id);
       if (e) throw new Error(e.message);
-      if (!count) throw new Error(t('Alleen de spelleiding van deze hunt kan hem verwijderen.'));
+      if (!count) throw new Error(t('Alleen de spelleiding van dit event kan het verwijderen.'));
       router.replace('/sessies');
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -47,7 +47,7 @@ export function DeleteSession({ id, name, photoPaths }: { id: string; name: stri
   return (
     <>
       <button className="danger" disabled={busy} onClick={() => void remove()}>
-        {busy ? t('Verwijderen…') : t('Hunt verwijderen')}
+        {busy ? t('Verwijderen…') : t('Event verwijderen')}
       </button>
       {error ? <span className="error"> {error}</span> : null}
     </>
