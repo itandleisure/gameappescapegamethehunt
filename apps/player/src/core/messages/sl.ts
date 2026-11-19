@@ -35,6 +35,7 @@ export const sl: Messages = {
   map: 'Zemljevid',
   noTasks: 'Trenutno ni na voljo nobene naloge.',
   codeTitle: 'GPS koda točke umika',
+  codeHintTitle: 'Namig za točko umika',
   answerPlaceholder: 'Vaš odgovor',
   submit: 'Pošlji',
   correct: 'Pravilno!',

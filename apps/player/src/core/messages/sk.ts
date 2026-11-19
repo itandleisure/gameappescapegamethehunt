@@ -35,6 +35,7 @@ export const sk: Messages = {
   map: 'Mapa',
   noTasks: 'Momentálne nie sú k dispozícii žiadne úlohy.',
   codeTitle: 'GPS kód miesta evakuácie',
+  codeHintTitle: 'Nápoveda k miestu evakuácie',
   answerPlaceholder: 'Vaša odpoveď',
   submit: 'Odoslať',
   correct: 'Správne!',

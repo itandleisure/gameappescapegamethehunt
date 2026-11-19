@@ -35,6 +35,7 @@ export const hu: Messages = {
   map: 'Térkép',
   noTasks: 'Jelenleg nincs elérhető feladat.',
   codeTitle: 'A kimenekítési pont GPS-kódja',
+  codeHintTitle: 'Tipp a kimenekítési ponthoz',
   answerPlaceholder: 'A válaszotok',
   submit: 'Küldés',
   correct: 'Helyes!',

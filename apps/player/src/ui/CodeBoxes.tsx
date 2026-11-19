@@ -11,10 +11,13 @@ import { colors, radius, space } from "./theme";
 export function CodeBoxes({
   view,
   hintText,
+  hintTitle,
 }: {
   view: CodeView;
   /** De hinttekst in de taal van het team, als het hintveld open is. */
   hintText?: string;
+  /** Kopje boven het hintveld, zoals "Hint extractiepunt". */
+  hintTitle?: string;
 }) {
   return (
     <View style={styles.wrap}>
@@ -36,6 +39,9 @@ export function CodeBoxes({
           </View>
         ))}
       </View>
+      {view.hint && hintTitle ? (
+        <Text style={styles.hintTitle}>{hintTitle}</Text>
+      ) : null}
       {view.hint ? (
         <View style={[styles.hint, view.hint.open && styles.boxOpen]}>
           {view.hint.open && hintText ? (
@@ -68,6 +74,14 @@ const styles = StyleSheet.create({
   boxOpen: { backgroundColor: colors.surfaceRaised },
   value: { color: colors.text, fontSize: 30, fontWeight: "800" },
   mark: { color: colors.accent, fontSize: 24, fontWeight: "800" },
+  hintTitle: {
+    color: colors.accent,
+    fontSize: 15,
+    fontWeight: "700",
+    marginTop: space.sm,
+    marginBottom: space.md,
+    textTransform: "uppercase",
+  },
   hint: {
     minHeight: 72,
     padding: space.md,

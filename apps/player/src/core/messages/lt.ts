@@ -35,6 +35,7 @@ export const lt: Messages = {
   map: 'Žemėlapis',
   noTasks: 'Šiuo metu užduočių nėra.',
   codeTitle: 'Evakuacijos taško GPS kodas',
+  codeHintTitle: 'Užuomina apie evakuacijos tašką',
   answerPlaceholder: 'Jūsų atsakymas',
   submit: 'Siųsti',
   correct: 'Teisingai!',
