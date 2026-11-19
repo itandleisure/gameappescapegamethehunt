@@ -10,12 +10,12 @@ import type { Photo } from './camera';
  */
 export type { Photo };
 
-function pickFile(): Promise<File | null> {
+function pickFile(camera: boolean): Promise<File | null> {
   return new Promise((resolve) => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    input.setAttribute('capture', 'environment');
+    if (camera) input.setAttribute('capture', 'environment');
     input.style.display = 'none';
     let done = false;
     const finish = (file: File | null) => {
@@ -52,8 +52,17 @@ async function decode(file: File): Promise<{ source: CanvasImageSource; width: n
   return { source: img, width: img.naturalWidth, height: img.naturalHeight, close: () => URL.revokeObjectURL(url) };
 }
 
-export async function takePhoto(): Promise<Photo | null> {
-  const file = await pickFile();
+export function takePhoto(): Promise<Photo | null> {
+  return fromFile(pickFile(true));
+}
+
+/** Een foto kiezen die al op de telefoon staat (zonder "capture" toont de telefoon de fotobibliotheek). */
+export function pickPhoto(): Promise<Photo | null> {
+  return fromFile(pickFile(false));
+}
+
+async function fromFile(picked: Promise<File | null>): Promise<Photo | null> {
+  const file = await picked;
   if (!file) return null;
   const image = await decode(file);
   const resize = photoResize(image.width, image.height);

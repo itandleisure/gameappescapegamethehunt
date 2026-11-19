@@ -38,6 +38,8 @@ export interface ChatMessage {
   createdAt: number;
   /** Nog niet bij de server (geen bereik). */
   pending?: boolean;
+  /** Foto van de spelleiding bij het bericht (pad in de bucket photobooks). */
+  photoPath?: string;
 }
 
 export interface LoadedGame {

@@ -40,13 +40,21 @@ interface MessageRow {
   sender_name: string | null;
   body: string;
   created_at: string;
+  photo_path?: string | null;
 }
 
 /** Zoveel berichten van de teamchat haalt de app hooguit op. */
 export const CHAT_LIMIT = 200;
 
 export function toChatMessage(row: MessageRow): ChatMessage {
-  return { id: row.id, teamId: row.team_id, name: row.sender_name, body: row.body, createdAt: Date.parse(row.created_at) };
+  return {
+    id: row.id,
+    teamId: row.team_id,
+    name: row.sender_name,
+    body: row.body,
+    createdAt: Date.parse(row.created_at),
+    ...(row.photo_path ? { photoPath: row.photo_path } : {}),
+  };
 }
 
 const ms = (iso: string | null) => (iso === null ? null : Date.parse(iso));
@@ -221,7 +229,7 @@ export class SupabaseBackend implements Backend {
   async loadChat(sessionId: string, since?: number) {
     let query = this.client
       .from('messages')
-      .select('id, team_id, sender_name, body, created_at')
+      .select('id, team_id, sender_name, body, created_at, photo_path')
       .eq('session_id', sessionId)
       .eq('channel', 'teams');
     if (since !== undefined) query = query.gt('created_at', new Date(since).toISOString());

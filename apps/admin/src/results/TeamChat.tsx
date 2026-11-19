@@ -11,9 +11,33 @@ export interface ChatRow {
   sender_name: string | null;
   body: string;
   created_at: string;
+  /** Foto van een spelleider (bucket photobooks, bij de eigen foto's van het fotoboek). */
+  photo_path?: string | null;
 }
 
-const COLUMNS = 'id, team_id, sender, sender_name, body, created_at';
+const COLUMNS = 'id, team_id, sender, sender_name, body, created_at, photo_path';
+
+/** Foto in een chatbericht; klikken opent hem groot. */
+function ChatPhoto({ path, alt }: { path: string; alt: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void supabase()
+      .storage.from('photobooks')
+      .createSignedUrl(path, 60 * 60)
+      .then(({ data }) => alive && setUrl(data?.signedUrl ?? null));
+    return () => {
+      alive = false;
+    };
+  }, [path]);
+  if (!url) return null;
+  return (
+    <a href={url} target="_blank" rel="noreferrer" className="chatphoto">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={url} alt={alt} loading="lazy" />
+    </a>
+  );
+}
 const MAX_LENGTH = 500;
 
 /**
@@ -152,7 +176,8 @@ export function TeamChat({
                 {t('Verwijderen')}
               </button>
             </div>
-            <div className="chatbody">{m.body}</div>
+            {m.photo_path ? <ChatPhoto path={m.photo_path} alt={m.body} /> : null}
+            {m.photo_path && m.body === '📷' ? null : <div className="chatbody">{m.body}</div>}
           </div>
         ))}
       </div>

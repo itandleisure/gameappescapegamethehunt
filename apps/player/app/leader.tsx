@@ -1,5 +1,6 @@
 import { boundaryPath, DEFAULT_BOUNDARY_COLOR, outsideShade } from '@hunt/engine';
 import * as Clipboard from 'expo-clipboard';
+import * as Crypto from 'expo-crypto';
 import { Redirect, router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -37,6 +38,9 @@ import { leaderMsg, type LeaderKey } from '../src/core/leader-i18n';
 import { playAreaBounds } from '../src/core/play-area';
 import { mapStyleChoice } from '../src/core/view';
 import { leaderApi, leaveLeader, useLeader } from '../src/services/leader';
+import { readFile } from '../src/services/read-file';
+import { pickPhoto } from '../src/ui/camera';
+import { ChatPhoto } from '../src/ui/ChatPhoto';
 import { onFix, requestLocationPermission, startTracking, stopTracking, type PermissionResult } from '../src/services/location';
 import { Banner, Body, Button } from '../src/ui/components';
 import { useGame } from '../src/ui/GameProvider';
@@ -434,6 +438,7 @@ function LeaderChat({
   const [rows, setRows] = useState<LeaderMessage[] | null>(null);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
+  const [sendingPhoto, setSendingPhoto] = useState(false);
   const [error, setError] = useState<LeaderKey | null>(null);
   const scroll = useRef<ScrollViewInstance>(null);
   const colorOf = teamColors(data.teams);
@@ -472,6 +477,23 @@ function LeaderChat({
     }
   };
 
+  // Foto die al op de telefoon staat in de teamchat zetten; wat er in het tekstvak staat gaat mee als tekst.
+  const sendPhoto = async () => {
+    setError(null);
+    try {
+      const photo = await pickPhoto();
+      if (!photo) return;
+      setSendingPhoto(true);
+      const row = await leaderApi.sendPhoto(sessionId, Crypto.randomUUID(), await readFile(photo.uri), text.trim());
+      setRows((r) => [...(r ?? []), row]);
+      setText('');
+    } catch (e) {
+      setError(e instanceof LeaderError ? e.key : 'errorGeneric');
+    } finally {
+      setSendingPhoto(false);
+    }
+  };
+
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
@@ -495,12 +517,26 @@ function LeaderChat({
                 {'  '}
                 <Text style={[styles.bubbleTime, staff && styles.ownTime]}>{time.format(new Date(m.created_at))}</Text>
               </Text>
-              <Text style={[styles.bubbleBody, staff && styles.ownBody]}>{m.body}</Text>
+              {m.photo_path ? <ChatPhoto path={m.photo_path} label={m.sender_name ?? 'The Hunters'} /> : null}
+              {/* Een foto zonder tekst heeft als tekst alleen 📷. */}
+              {m.photo_path && m.body === '📷' ? null : <Text style={[styles.bubbleBody, staff && styles.ownBody]}>{m.body}</Text>}
             </View>
           );
         })}
+        {sendingPhoto ? <Body muted>{t('leaderChatPhotoSending')}</Body> : null}
       </ScrollView>
       <View style={styles.inputRow}>
+        {hunters ? null : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('leaderChatPhoto')}
+            disabled={sendingPhoto || busy}
+            style={[styles.photoButton, (sendingPhoto || busy) && styles.sendOff]}
+            onPress={() => void sendPhoto()}
+          >
+            <Text style={styles.photoButtonText}>📷</Text>
+          </Pressable>
+        )}
         <TextInput
           style={styles.input}
           value={text}
@@ -611,5 +647,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sendOff: { opacity: 0.5 },
+  photoButton: {
+    minHeight: 48,
+    minWidth: 48,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surfaceRaised,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoButtonText: { fontSize: 22 },
   sendText: { color: colors.accentText, fontSize: 17, fontWeight: '700' },
 });
