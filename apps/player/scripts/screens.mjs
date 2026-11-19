@@ -38,7 +38,11 @@ export const DEVICES = [
 const tasksButton = /^Opdrachten/;
 /** Scènes: start-URL en daarna eventueel knoppen om naar het scherm te gaan. */
 export const SCENES = [
-  { id: 'aanmelden', url: '/?scene=join' },
+  // Bij het opstarten staat eerst 2 seconden het logo in beeld, daarna het aanmeldformulier.
+  { id: 'opstartlogo', url: '/?scene=join', wait: 600 },
+  { id: 'aanmelden', url: '/?scene=join', wait: 2800 },
+  { id: 'aanmelden-taal', url: '/?scene=join', wait: 2800, clicks: [/^Taal/] },
+  { id: 'aanmelden-verder-spelen', url: '/?scene=join', wait: 2800, clicks: [/^Al een team/] },
   { id: 'teamfoto', url: '/?scene=teamphoto' },
   { id: 'teamcode', url: '/?scene=teamcode' },
   { id: 'teamcode-lang', url: '/?scene=teamcode&long=1' },
@@ -187,7 +191,7 @@ async function main() {
       const problems = [];
       try {
         await page.goto(base + scene.url);
-        await page.waitForTimeout(1200);
+        await page.waitForTimeout(scene.wait ?? 1200);
         for (const label of scene.clicks ?? []) {
           const target = page.getByRole('button', { name: label }).or(page.getByText(label)).first();
           await target.scrollIntoViewIfNeeded({ timeout: 5000 });
