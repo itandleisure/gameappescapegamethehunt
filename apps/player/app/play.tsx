@@ -302,10 +302,15 @@ export default function PlayScreen() {
 
       <SafeAreaView edges={["top"]} style={styles.top}>
         <View style={styles.header}>
-          <View>
-            <Text style={styles.headerLabel}>{t("score")}</Text>
-            <Text style={styles.headerValue}>{state.score}</Text>
-          </View>
+          {/* Punten verdwijnen als het spelverloop dat zegt (actie "Punten verbergen", bijvoorbeeld na 60 minuten). */}
+          {state.scoreHiddenAt === undefined ? (
+            <View>
+              <Text style={styles.headerLabel}>{t("score")}</Text>
+              <Text style={styles.headerValue}>{state.score}</Text>
+            </View>
+          ) : (
+            <View />
+          )}
           <Pressable
             accessibilityRole="button"
             style={styles.styleButton}

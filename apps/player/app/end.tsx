@@ -4,7 +4,6 @@ import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Linking, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { formatDuration } from '../src/core/i18n';
 import { mapStyleChoice } from '../src/core/view';
 import { onFix, startTracking, stopTracking } from '../src/services/location';
 import { removePlayAreas } from '../src/services/map-download';
@@ -119,10 +118,6 @@ export default function EndScreen() {
                 <Body>{tr(meeting.text)}</Body>
               </View>
             ) : null}
-            <Text style={styles.label}>{t('finalScore')}</Text>
-            <Text style={styles.score}>{state.score}</Text>
-            <Text style={styles.label}>{t('time')}</Text>
-            <Text style={styles.time}>{formatDuration(ended.at - controller.context!.startedAt)}</Text>
             <LeaveGame showCode={false} />
           </>
         )}
@@ -137,7 +132,4 @@ const styles = StyleSheet.create({
   kicker: { color: colors.accent, fontWeight: '700', textTransform: 'uppercase', marginBottom: space.sm },
   meeting: { marginTop: space.lg, gap: space.sm },
   map: { height: 280, borderRadius: radius.md, overflow: 'hidden', borderWidth: 1, borderColor: colors.border },
-  label: { color: colors.textMuted, fontSize: 14, marginTop: space.lg },
-  score: { color: colors.text, fontSize: 56, fontWeight: '800' },
-  time: { color: colors.text, fontSize: 28, fontWeight: '700' },
 });

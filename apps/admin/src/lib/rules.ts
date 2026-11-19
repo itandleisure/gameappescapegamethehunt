@@ -64,6 +64,8 @@ export function describeAction(a: Action): string {
       return t('start reeks {name}', { name: a.sequence });
     case 'end':
       return t('einde: {name}', { name: a.ending });
+    case 'hideScore':
+      return t('punten verbergen voor het team');
     default:
       return JSON.stringify(a);
   }

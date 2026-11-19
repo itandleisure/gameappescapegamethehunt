@@ -64,7 +64,7 @@ function mergeById<T extends { id: string | number }>(list: T[], rows: T[]): T[]
   return fresh.length ? [...list, ...fresh] : list;
 }
 
-const TEAM_COLUMNS = 'id, name, track, language, score, outcome, started_at, ended_at, login_order, team_code';
+const TEAM_COLUMNS = 'id, name, track, language, score, outcome, started_at, ended_at, login_order, team_code, caught, ready_at';
 
 export function useSessionLive(id: string) {
   const [data, setData] = useState<SessionLive | null>(null);

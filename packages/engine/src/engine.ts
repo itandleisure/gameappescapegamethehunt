@@ -294,6 +294,9 @@ class Run {
         this.open(seq.tasks[0]!);
         break;
       }
+      case 'hideScore':
+        this.state.scoreHiddenAt ??= at;
+        break;
       case 'end': {
         const ending = this.game.endings.find((e) => e.id === action.ending);
         if (ending && ending.bonus !== 0) this.addPoints(at, ending.bonus, 'ending', undefined, ending.id);
