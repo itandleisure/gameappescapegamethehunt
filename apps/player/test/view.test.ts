@@ -2,7 +2,7 @@ import { composeGame, computeState } from '@hunt/engine';
 import { describe, expect, it } from 'vitest';
 import { INTRO, leeuwarden, leeuwardenPoints, PUZZLES, theHuntBase } from '../../../packages/engine/test/fixtures/the-hunt.js';
 import { answerFeedback, isAnswerable, isValidPhone, listGroups, mapStyleChoice, puzzleProgress, taskToShow } from '../src/core/view.js';
-import { MAP_STYLES } from '@hunt/engine';
+import { insideStyleUrl, MAP_STYLES } from '@hunt/engine';
 
 const game = composeGame(theHuntBase, [leeuwarden], { id: 'lwd', version: 1 });
 const T0 = Date.UTC(2026, 10, 21, 13, 0, 0);
@@ -80,7 +80,10 @@ describe('schermen', () => {
 
   it('wisselt de kaartstijl, met de stijl van het spel als begin', () => {
     const first = mapStyleChoice(game, null);
-    expect(first.id).toBe('zwart-wit');
+    expect(first.id).toBe('toner-kleur');
+    // Standaard: kleur binnen het speelveld, Toner erbuiten.
+    expect(insideStyleUrl(first.url)).toMatch(/toner-kleur\.json$/);
+    expect(insideStyleUrl(MAP_STYLES[1]!.source.styleUrl)).toBeUndefined();
     const second = mapStyleChoice(game, first.next);
     expect(second.id).toBe(MAP_STYLES[1]!.id);
     // Een onbekende bewaarde stijl valt terug op die van het spel.

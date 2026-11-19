@@ -11,6 +11,7 @@ export const no: Messages = {
   style_nacht: 'Natt',
   style_schatkaart: 'Skattekart',
   style_toner: 'Toner',
+  'style_toner-kleur': 'Toner med farge',
   style_kleur: 'Farger',
   style_spel: 'Spillkart',
   phone: 'Telefonnummer',

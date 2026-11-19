@@ -11,6 +11,7 @@ export const fr: Messages = {
   style_nacht: 'Nuit',
   style_schatkaart: 'Carte au trésor',
   style_toner: 'Toner',
+  'style_toner-kleur': 'Toner en couleur',
   style_kleur: 'Couleur',
   style_spel: 'Carte du jeu',
   phone: 'Numéro de téléphone',

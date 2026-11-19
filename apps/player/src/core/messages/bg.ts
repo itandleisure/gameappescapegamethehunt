@@ -11,6 +11,7 @@ export const bg: Messages = {
   style_nacht: 'Нощ',
   style_schatkaart: 'Карта на съкровище',
   style_toner: 'Toner',
+  'style_toner-kleur': 'Тонер с цвят',
   style_kleur: 'Цветна',
   style_spel: 'Карта на играта',
   phone: 'Телефонен номер',

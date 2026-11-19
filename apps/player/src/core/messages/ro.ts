@@ -11,6 +11,7 @@ export const ro: Messages = {
   style_nacht: 'Noapte',
   style_schatkaart: 'Harta comorii',
   style_toner: 'Toner',
+  'style_toner-kleur': 'Toner color',
   style_kleur: 'Color',
   style_spel: 'Harta jocului',
   phone: 'Număr de telefon',

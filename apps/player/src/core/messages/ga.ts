@@ -11,6 +11,7 @@ export const ga: Messages = {
   style_nacht: 'Oíche',
   style_schatkaart: 'Léarscáil stórais',
   style_toner: 'Toner',
+  'style_toner-kleur': 'Toner le dath',
   style_kleur: 'Daite',
   style_spel: 'Léarscáil an chluiche',
   phone: 'Uimhir theileafóin',

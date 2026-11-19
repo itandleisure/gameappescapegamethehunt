@@ -1,0 +1,32 @@
+name: Kaartvoorbeelden
+
+# Maakt voorbeeldplaatjes van de kaartstijlen (Leeuwarden) en een proefkaart met de
+# kaartcode van de app. Met de hand te starten via Actions; de plaatjes staan daarna
+# bij de run onder Artifacts.
+on:
+  workflow_dispatch:
+
+jobs:
+  plaatjes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Playwright
+        run: |
+          mkdir -p "$RUNNER_TEMP/pw" && cd "$RUNNER_TEMP/pw"
+          npm init -y >/dev/null && npm i playwright@1.49.1
+          npx playwright install --with-deps chromium
+          cp "$GITHUB_WORKSPACE"/scripts/kaartvoorbeelden/*.mjs .
+          node "$GITHUB_WORKSPACE/scripts/kaartvoorbeelden/proefkaart.mjs" "$RUNNER_TEMP/proefkaart-leeuwarden.html"
+      - name: Plaatjes maken
+        run: cd "$RUNNER_TEMP/pw" && node maak.mjs "$RUNNER_TEMP/uitvoer" "$RUNNER_TEMP/proefkaart-leeuwarden.html"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kaartvoorbeelden
+          path: |
+            ${{ runner.temp }}/uitvoer/
+            ${{ runner.temp }}/proefkaart-leeuwarden.html

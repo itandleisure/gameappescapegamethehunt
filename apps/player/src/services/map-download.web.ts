@@ -1,4 +1,4 @@
-import { DEFAULT_MAP_SOURCE, rewriteMapUrl, type GamePackage } from '@hunt/engine';
+import { DEFAULT_MAP_SOURCE, insideStyleUrl, rewriteMapUrl, type GamePackage } from '@hunt/engine';
 import { styleAssetUrls, tileUrls, type MapStyleJson } from '../core/offline-map';
 import { playAreaBounds } from '../core/play-area';
 import { prepareMapProvider } from './map-provider';
@@ -34,6 +34,13 @@ export async function downloadPlayArea(_sessionId: string, game: GamePackage, on
   const styleUrl = rw(mapStyleUrl(game));
   const style = await getJson<MapStyleJson>(styleUrl);
   const urls = [styleUrl, ...styleAssetUrls(style, styleUrl).map(rw)];
+  // Stijl binnen het speelveld (zoals Toner met kleur): zelfde kaartdelen, eigen stijl en letters.
+  const inside = insideStyleUrl(mapStyleUrl(game));
+  if (inside) {
+    const insideUrl = rw(inside);
+    const insideStyle = await getJson<MapStyleJson>(insideUrl).catch(() => null);
+    if (insideStyle) urls.push(insideUrl, ...styleAssetUrls(insideStyle, insideUrl).map(rw));
+  }
   for (const source of Object.values(style.sources ?? {})) {
     if (source.type !== 'vector' && source.type !== 'raster') continue;
     let tiles = source.tiles;

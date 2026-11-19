@@ -11,6 +11,7 @@ export const fi: Messages = {
   style_nacht: 'Yö',
   style_schatkaart: 'Aarrekartta',
   style_toner: 'Toner',
+  'style_toner-kleur': 'Toner värillä',
   style_kleur: 'Värillinen',
   style_spel: 'Pelikartta',
   phone: 'Puhelinnumero',

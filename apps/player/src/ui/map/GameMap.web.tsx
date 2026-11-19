@@ -1,4 +1,4 @@
-import { boundaryMaskGeoJson, circlesGeoJson } from '@hunt/engine';
+import { boundaryMaskGeoJson, circlesGeoJson, insideStyleUrl } from '@hunt/engine';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { prepareMapProvider } from '../../services/map-provider';
@@ -47,7 +47,7 @@ export default function GameMap({ styleUrl, bounds, markers, overlay, boundary, 
   const hunt = useRef<Hunt | null>(null);
   const [error, setError] = useState<string | null>(null);
   const mask = boundary && boundary.outside.opacity > 0 ? boundaryMaskGeoJson(boundary) : null;
-  const payload = JSON.stringify({ bounds, markers, overlay, boundary, mask, circles: circles?.length ? circlesGeoJson(circles) : null, position, style: styleUrl });
+  const payload = JSON.stringify({ bounds, markers, overlay, boundary, mask, circles: circles?.length ? circlesGeoJson(circles) : null, position, style: styleUrl, inside: insideStyleUrl(styleUrl) ?? null });
   const latest = useRef(payload);
   latest.current = payload;
   const [firstStyle] = useState(styleUrl);
