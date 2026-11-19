@@ -4,9 +4,14 @@
  *
  * - De app zelf (pagina, scripts, plaatjes) staat na de eerste keer op de
  *   telefoon, zodat hij ook zonder bereik opstart.
- * - Kaartdelen (stijl, tegels, letters) komen eerst uit de opslag: die zet de
- *   app er bij het aanmelden in voor het speelveld (map-download.web.ts), en
- *   alles wat de kaart onderweg laadt komt er ook bij.
+ * - Kaartdelen (tegels, letters, plaatjes) komen eerst uit de opslag: die zet
+ *   de app er bij het aanmelden in voor het speelveld (map-download.web.ts),
+ *   en alles wat de kaart onderweg laadt komt er ook bij.
+ * - Beschrijvingen van de kaart (stijl en tegelbeschrijving, .json) komen
+ *   eerst van het netwerk. OpenFreeMap zet elke week nieuwe tegels online in
+ *   een nieuwe map en haalt oude weg; een bewaarde tegelbeschrijving wijst dan
+ *   naar tegels die niet meer bestaan en de kaart blijft leeg. Zonder bereik
+ *   komt de bewaarde versie.
  * - De server (Supabase) gaat altijd rechtstreeks; zonder bereik bewaart het
  *   spel zelf wat er nog verstuurd moet worden.
  */
@@ -52,6 +57,29 @@ async function cacheFirst(request, cacheName) {
   return res;
 }
 
+/** Kaartdelen die niet veranderen: tegels, letters en plaatjes. */
+function isMapAsset(url) {
+  return /\.(pbf|mvt|png|jpe?g|webp|js|css)$/i.test(url.pathname) || url.pathname.startsWith('/fonts/');
+}
+
+/** Eerst het netwerk (met een korte wachttijd), zonder bereik de bewaarde versie. */
+async function networkFirst(request, cacheName) {
+  try {
+    const res = await Promise.race([
+      fetch(request),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('traag')), 4000)),
+    ]);
+    if (res.ok) {
+      const cache = await caches.open(cacheName);
+      await cache.put(request, res.clone()).catch(() => undefined);
+      return res;
+    }
+  } catch {
+    // geen bereik of te traag
+  }
+  return (await caches.match(request, { ignoreVary: true })) || fetch(request);
+}
+
 /** De pagina: eerst het netwerk (nieuwste versie), zonder bereik de bewaarde pagina. */
 async function page(request) {
   try {
@@ -77,6 +105,7 @@ self.addEventListener('fetch', (event) => {
     return event.respondWith(cacheFirst(request, APP_CACHE));
   }
   if (MAP_HOSTS.includes(url.hostname)) {
-    event.respondWith(cacheFirst(request, url.hostname === 'unpkg.com' ? APP_CACHE : MAP_CACHE));
+    if (url.hostname === 'unpkg.com') return event.respondWith(cacheFirst(request, APP_CACHE));
+    event.respondWith(isMapAsset(url) ? cacheFirst(request, MAP_CACHE) : networkFirst(request, MAP_CACHE));
   }
 });
