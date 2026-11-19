@@ -9,7 +9,13 @@ const config: NextConfig = {
   // gewoon geserveerd; elk ander adres onder /speel is een scherm van de app.
   async rewrites() {
     return {
-      beforeFiles: [],
+      // App-links: de iPhone en Android lezen deze vaste adressen om te weten dat
+      // spellinks (/<game-ID>:<spelcode>) de app mogen openen.
+      beforeFiles: [
+        { source: '/.well-known/apple-app-site-association', destination: '/api/app-links/apple' },
+        { source: '/apple-app-site-association', destination: '/api/app-links/apple' },
+        { source: '/.well-known/assetlinks.json', destination: '/api/app-links/android' },
+      ],
       afterFiles: [
         { source: '/speel', destination: '/speel/index.html' },
         { source: '/speel/:path*', destination: '/speel/index.html' },

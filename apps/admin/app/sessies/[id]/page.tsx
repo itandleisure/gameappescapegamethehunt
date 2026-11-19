@@ -12,6 +12,7 @@ import { useSessionLive } from '@/lib/session-live';
 import { Answers } from '@/results/Answers';
 import { LiveMap } from '@/results/LiveMap';
 import { DeleteSession } from '@/results/DeleteSession';
+import { EventLinks } from '@/results/EventLinks';
 import { LeaderCode } from '@/results/LeaderCode';
 import { OpenToggle } from '@/results/OpenToggle';
 import { PhotobookEditor } from '@/results/PhotobookEditor';
@@ -102,6 +103,7 @@ export default function SessionLivePage() {
         </div>
       </div>
       <div className="actions">
+        <EventLinks joinCode={session.join_code} />
         <LeaderCode
           sessionId={session.id}
           maxLeaders={session.max_leaders ?? 20}
