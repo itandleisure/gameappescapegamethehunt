@@ -23,9 +23,21 @@ insert into public.memberships (org_id, user_id, role) values
 
 -- Beheerder: rol van een spelleider wijzigen mag, eigenaar aanpassen niet.
 select tests.login('f6000000-0000-0000-0000-000000000002');
-select public.set_member_role('0f600000-0000-0000-0000-000000000001', 'f6000000-0000-0000-0000-000000000003', 'editor');
+select public.set_member_role('0f600000-0000-0000-0000-000000000001', 'f6000000-0000-0000-0000-000000000003', 'admin');
+select public.set_member_role('0f600000-0000-0000-0000-000000000001', 'f6000000-0000-0000-0000-000000000003', 'instructor');
 do $$ begin
-  assert (select role from public.memberships where user_id = 'f6000000-0000-0000-0000-000000000003') = 'editor', 'rol gewijzigd';
+  assert (select role from public.memberships where user_id = 'f6000000-0000-0000-0000-000000000003') = 'instructor', 'rol gewijzigd';
+  -- Redacteur bestaat bij het platform niet meer.
+  begin
+    perform public.set_member_role('0f600000-0000-0000-0000-000000000001', 'f6000000-0000-0000-0000-000000000003', 'editor');
+    raise exception 'platformlid werd redacteur';
+  exception when invalid_parameter_value then null;
+  end;
+  begin
+    perform public.invite_member('0f600000-0000-0000-0000-000000000001', 'r@example.test', 'editor');
+    raise exception 'redacteur uitgenodigd bij het platform';
+  exception when invalid_parameter_value then null;
+  end;
   begin
     perform public.set_member_role('0f600000-0000-0000-0000-000000000001', 'f6000000-0000-0000-0000-000000000003', 'owner');
     raise exception 'beheerder maakte een eigenaar';
@@ -41,12 +53,12 @@ do $$ begin
   assert (select role from public.memberships where user_id = auth.uid()) = 'admin', 'zichzelf eigenaar maken lukt niet';
 end $$;
 
--- Spelleider (nu redacteur) mag niets beheren.
+-- Spelleider mag niets beheren.
 select tests.login('f6000000-0000-0000-0000-000000000003');
 do $$ begin
   begin
     perform public.remove_member('0f600000-0000-0000-0000-000000000001', 'f6000000-0000-0000-0000-000000000002');
-    raise exception 'redacteur verwijderde een lid';
+    raise exception 'spelleider verwijderde een lid';
   exception when insufficient_privilege then null;
   end;
 end $$;

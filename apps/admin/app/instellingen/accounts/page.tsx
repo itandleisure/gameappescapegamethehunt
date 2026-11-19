@@ -217,7 +217,7 @@ export default function AccountsPage() {
                       {a.rights.length === 0 ? <span className="muted">{t('geen')}</span> : null}
                       {a.rights.map((r) => (
                         <div key={r.org_id}>
-                          {r.org}: {t(roleKey(r.role, r.platform))}
+                          {r.org}: {t(roleKey(r.role))}
                           {r.platform || r.role === 'editor' ? null : <span className="muted"> · {t('partner')}</span>}
                         </div>
                       ))}
