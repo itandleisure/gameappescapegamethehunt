@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth';
 import { composeChain, loadChain } from '@/lib/game-store';
 import { mediaPath } from '@/lib/map-settings';
 import { shrinkImage } from '@/lib/shrink-image';
-import { GAME_LANGUAGES, gameLanguageName } from '@/lib/game-languages';
+import { GAME_LANGUAGES, gameLanguageName, gameLanguageTag } from '@/lib/game-languages';
 import { useT } from '@/lib/language';
 import { PUZZLE_COLUMNS, puzzleFromTask, puzzleSlots, type PuzzleRow } from '@/lib/puzzles';
 import { supabase } from '@/lib/supabase';
@@ -276,7 +276,7 @@ export default function PuzzlesPage() {
               </div>
               {langs.map((l) => (
                 <div key={l} style={{ flex: 1 }}>
-                  <label htmlFor={`pz-hint-${i}-${l}`}>{l.toUpperCase()}</label>
+                  <label htmlFor={`pz-hint-${i}-${l}`}>{gameLanguageTag(l)}</label>
                   <input id={`pz-hint-${i}-${l}`} value={h.text[l] ?? ''} onChange={(e) => setHint(i, { text: { ...h.text, [l]: e.target.value } })} />
                 </div>
               ))}
@@ -370,7 +370,7 @@ export default function PuzzlesPage() {
                   {p.hints.length}
                   {p.hints.some((h) => h.image) ? <span className="muted small"> · {t('{n} met foto', { n: p.hints.filter((h) => h.image).length })}</span> : null}
                 </td>
-                <td>{languagesOf({ ...p }).join(', ').toUpperCase()}</td>
+                <td>{languagesOf({ ...p }).map(gameLanguageTag).join(' ')}</td>
                 <td>
                   <button className="link small" onClick={() => remove(p)} disabled={busy}>
                     {t('Verwijderen')}

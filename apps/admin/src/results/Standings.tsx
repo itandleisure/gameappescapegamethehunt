@@ -1,4 +1,5 @@
 'use client';
+import { gameLanguageTag } from '@/lib/game-languages';
 import { Fragment, useEffect, useState } from 'react';
 import { useT } from '@/lib/language';
 import { formatDistance, formatDuration, type SessionResultsView, type TeamResult } from '@/lib/results';
@@ -177,7 +178,7 @@ export function Standings({
                           {phone(tm.id)}
                         </a>
                       ) : null}
-                      {phone(tm.id) ? ' · ' : ''}{t('track {n}', { n: tm.track })} · {tm.language.toUpperCase()}
+                      {phone(tm.id) ? ' · ' : ''}{t('track {n}', { n: tm.track })} · {gameLanguageTag(tm.language)}
                     </div>
                   </td>
                   <td className="num">

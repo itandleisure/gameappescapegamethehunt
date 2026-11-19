@@ -1,4 +1,5 @@
 'use client';
+import { gameLanguageList, gameLanguageName, gameLanguageTag, languageName } from '@/lib/game-languages';
 import { composeGame, richToPlain, type Task, type TaskField } from '@hunt/engine';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -23,16 +24,6 @@ const ANSWER_TYPES: { value: AnswerType; label: string }[] = [
   { value: 'number', label: tKey('Getal') },
   { value: 'photo', label: tKey('Foto') },
 ];
-
-const LANG_NAME: Record<string, string> = {
-  nl: tKey('Nederlands'),
-  en: tKey('Engels'),
-  de: tKey('Duits'),
-  es: tKey('Spaans'),
-  pt: tKey('Portugees'),
-  it: tKey('Italiaans'),
-  fr: tKey('Frans'),
-};
 
 /** Velden die een stad of klant mag aanpassen, met wat het formulier dan toont. */
 type Editable = 'title' | 'body' | 'image' | 'confirm' | 'correctComment' | 'wrongComment' | 'answer' | 'points' | 'hints' | 'location';
@@ -314,7 +305,7 @@ export default function TaskPage() {
       // Het formulier kan intussen zijn aangepast; vertalingen op de nieuwste versie zetten.
       setForm((current) => (current ? applyTranslations(current, result, emptyOnly) : current));
       setLang(targets[0]!);
-      setNotice(t('Vertaald naar {langs}. Controleer de teksten en klik op Wijzigingen opslaan.', { langs: targets.map((c) => c.toUpperCase()).join(', ') }));
+      setNotice(t('Vertaald naar {langs}. Controleer de teksten en klik op Wijzigingen opslaan.', { langs: gameLanguageList(targets) }));
     } catch (err) {
       if (err instanceof PartialTranslation) {
         // Wat wel gelukt is alvast invullen.
@@ -358,8 +349,8 @@ export default function TaskPage() {
     languages.length > 1 ? (
       <div className="langs" role="tablist" aria-label={t('Taal')}>
         {languages.map((code) => (
-          <button key={code} type="button" role="tab" aria-selected={code === l} className={code === l ? 'active' : ''} onClick={() => setLang(code)} title={LANG_NAME[code] ? t(LANG_NAME[code]!) : code}>
-            {code.toUpperCase()}
+          <button key={code} type="button" role="tab" aria-selected={code === l} className={code === l ? 'active' : ''} onClick={() => setLang(code)} title={gameLanguageName(code)}>
+            {gameLanguageTag(code)}
             {missing(code) ? <span className="todo" title={t('Nog niet vertaald')} /> : null}
           </button>
         ))}
@@ -415,10 +406,10 @@ export default function TaskPage() {
                   ? t('Bezig met vertalen…')
                   : source === 'nl'
                     ? t('Vertaal vanuit het Nederlands')
-                    : t('Vertaal vanuit {lang}', { lang: LANG_NAME[source] ? t(LANG_NAME[source]!) : source.toUpperCase() })}
+                    : t('Vertaal vanuit {lang}', { lang: languageName(source) })}
               </button>
               <span className="muted small">
-                {t('Vult {langs} automatisch in. Je kunt alles daarna nog aanpassen.', { langs: targets.map((c) => c.toUpperCase()).join(', ') })}
+                {t('Vult {langs} automatisch in. Je kunt alles daarna nog aanpassen.', { langs: gameLanguageList(targets) })}
               </span>
             </>
           )}

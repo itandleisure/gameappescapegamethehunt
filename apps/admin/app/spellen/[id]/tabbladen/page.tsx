@@ -1,4 +1,5 @@
 "use client";
+import { gameLanguageName, gameLanguageShort, gameLanguageTag } from '@/lib/game-languages';
 import {
   composeGame,
   type BaseGame,
@@ -270,8 +271,9 @@ export default function TabbladenPage() {
                     aria-selected={code === (lang || base.defaultLanguage)}
                     className={code === (lang || base.defaultLanguage) ? "active" : ""}
                     onClick={() => setLang(code)}
+                    title={gameLanguageName(code)}
                   >
-                    {code.toUpperCase()}
+                    {gameLanguageTag(code)}
                   </button>
                 ))}
               </div>
@@ -373,7 +375,7 @@ function PlaygroundCard({
         <span className="muted">({p.id})</span>
       </h2>
       <label htmlFor={`${p.id}-name`}>
-        {t("Naam in de app ({lang})", { lang: lang.toUpperCase() })}
+        {t("Naam in de app ({lang})", { lang: gameLanguageShort(lang) })}
       </label>
       <input
         id={`${p.id}-name`}
@@ -383,7 +385,7 @@ function PlaygroundCard({
       />
 
       <label htmlFor={`${p.id}-body`}>
-        {t("Naslagtekst ({lang})", { lang: lang.toUpperCase() })}
+        {t("Naslagtekst ({lang})", { lang: gameLanguageShort(lang) })}
       </label>
       <p className="muted" style={{ marginTop: 0 }}>
         {t("Vaste tekst bovenaan dit tabblad, zoals de tijdlijn van het spel. Mag leeg blijven.")}

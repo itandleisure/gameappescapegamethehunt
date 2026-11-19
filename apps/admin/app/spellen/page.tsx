@@ -1,4 +1,5 @@
 'use client';
+import { gameLanguageTag } from '@/lib/game-languages';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth';
@@ -145,7 +146,7 @@ export default function GamesPage() {
                         );
                       })()}
                     </td>
-                    <td>{g.languages.join(', ').toUpperCase()}</td>
+                    <td>{g.languages.map(gameLanguageTag).join(' ')}</td>
                     <td>
                       {latest
                         ? `v${latest.version} · ${new Date(latest.published_at).toLocaleDateString(locale)}`
