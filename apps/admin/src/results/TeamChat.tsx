@@ -19,18 +19,23 @@ const MAX_LENGTH = 500;
 /**
  * Teamchat van een hunt: alle teams en de spelleiding in één gesprek. De
  * spelleider zet de chat aan of uit, praat mee en haalt berichten weg.
+ * Met channel="hunters" de onderlinge chat van de spelleiders in de app, die
+ * teams nooit zien; daarin staat ieder met zijn eigen naam.
  */
 export function TeamChat({
+  channel = 'teams',
   data,
   colors,
   onChange,
 }: {
+  channel?: 'teams' | 'hunters';
   data: SessionLive;
   colors: Map<string, string>;
   onChange: () => void;
 }) {
   const { session } = data;
   const { t, locale } = useLanguage();
+  const hunters = channel === 'hunters';
   const [rows, setRows] = useState<ChatRow[] | null>(null);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -42,20 +47,20 @@ export function TeamChat({
       .from('messages')
       .select(COLUMNS)
       .eq('session_id', session.id)
-      .eq('channel', 'teams')
+      .eq('channel', channel)
       .order('created_at');
     if (e) setError(e.message);
     else setRows(d as ChatRow[]);
-  }, [session.id]);
+  }, [session.id, channel]);
 
   useEffect(() => {
     void load();
     const db = supabase();
-    const channel = db
-      .channel(`teamchat-beheer-${session.id}`)
+    const live = db
+      .channel(`${channel}-beheer-${session.id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `session_id=eq.${session.id}` }, (p) => {
         const row = p.new as ChatRow & { channel?: string };
-        if (row.channel !== 'teams') return;
+        if (row.channel !== channel) return;
         setRows((r) => (r && !r.some((x) => x.id === row.id) ? [...r, row] : r));
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, (p) => {
@@ -67,9 +72,9 @@ export function TeamChat({
     const timer = setInterval(() => !document.hidden && void load(), 20_000);
     return () => {
       clearInterval(timer);
-      void db.removeChannel(channel);
+      void db.removeChannel(live);
     };
-  }, [session.id, load]);
+  }, [session.id, channel, load]);
 
   useEffect(() => {
     list.current?.scrollTo({ top: list.current.scrollHeight });
@@ -91,7 +96,7 @@ export function TeamChat({
     // Afzender, naam ("The Hunters") en tijd vult de database in.
     const { data: row, error: err } = await supabase()
       .from('messages')
-      .insert({ session_id: session.id, sender: 'staff', channel: 'teams', body })
+      .insert({ session_id: session.id, sender: 'staff', channel, body })
       .select(COLUMNS)
       .single();
     setBusy(false);
@@ -104,7 +109,8 @@ export function TeamChat({
   };
 
   const remove = async (row: ChatRow) => {
-    if (!window.confirm(t('Dit bericht verwijderen? De teams zien het dan niet meer.'))) return;
+    const ask = hunters ? t('Dit bericht verwijderen?') : t('Dit bericht verwijderen? De teams zien het dan niet meer.');
+    if (!window.confirm(ask)) return;
     const { error: e } = await supabase().from('messages').delete().eq('id', row.id);
     if (e) setError(e.message);
     else setRows((r) => (r ? r.filter((x) => x.id !== row.id) : r));
@@ -114,18 +120,24 @@ export function TeamChat({
 
   return (
     <div className="teamchat">
-      <p>
-        <label className="switch">
-          <input type="checkbox" role="switch" checked={session.team_chat} onChange={() => void toggle()} />
-          <span className="slider" aria-hidden="true" />
-          <span className={session.team_chat ? 'on' : 'off'}>{session.team_chat ? t('Teamchat aan') : t('Teamchat uit')}</span>
-        </label>{' '}
-        <span className="muted">
-          {session.team_chat
-            ? t('Alle teams van dit event kunnen elkaar berichten sturen. Jij leest mee en kunt berichten verwijderen.')
-            : t('Zet de teamchat aan om teams elkaar berichten te laten sturen. Eerdere berichten blijven zichtbaar.')}
-        </span>
-      </p>
+      {hunters ? (
+        <p className="muted">
+          {t('De onderlinge chat van de spelleiders in de app. Teams zien deze chat niet. Spelleiders staan erin met hun eigen naam, jij als Organisatie.')}
+        </p>
+      ) : (
+        <p>
+          <label className="switch">
+            <input type="checkbox" role="switch" checked={session.team_chat} onChange={() => void toggle()} />
+            <span className="slider" aria-hidden="true" />
+            <span className={session.team_chat ? 'on' : 'off'}>{session.team_chat ? t('Teamchat aan') : t('Teamchat uit')}</span>
+          </label>{' '}
+          <span className="muted">
+            {session.team_chat
+              ? t('Alle teams van dit event kunnen elkaar berichten sturen. Jij leest mee en kunt berichten verwijderen.')
+              : t('Zet de teamchat aan om teams elkaar berichten te laten sturen. Eerdere berichten blijven zichtbaar.')}
+          </span>
+        </p>
+      )}
       {error ? <ul className="errors"><li>{error}</li></ul> : null}
       <div className="chatlist" ref={list}>
         {rows === null ? <p className="muted">{t('Laden…')}</p> : null}
@@ -134,7 +146,7 @@ export function TeamChat({
           <div key={m.id} className={m.sender === 'staff' ? 'chatmsg staff' : 'chatmsg'}>
             <div className="chatmeta">
               {m.team_id ? <span className="dot" style={{ background: colors.get(m.team_id) ?? 'var(--muted)' }} /> : null}
-              <strong>{m.sender === 'staff' ? (m.sender_name ?? t('Spelleiding')) : (m.sender_name ?? t('Onbekend team'))}</strong>
+              <strong>{m.sender === 'staff' ? (m.sender_name ?? (hunters ? t('Organisatie') : t('Spelleiding'))) : (m.sender_name ?? t('Onbekend team'))}</strong>
               <span className="muted">{time.format(new Date(m.created_at))}</span>
               <button className="link" title={t('Verwijderen')} onClick={() => void remove(m)}>
                 {t('Verwijderen')}
@@ -149,8 +161,8 @@ export function TeamChat({
           value={text}
           maxLength={MAX_LENGTH}
           onChange={(e) => setText(e.target.value)}
-          placeholder={t('Bericht aan alle teams')}
-          aria-label={t('Bericht aan alle teams')}
+          placeholder={hunters ? t('Bericht aan de spelleiders') : t('Bericht aan alle teams')}
+          aria-label={hunters ? t('Bericht aan de spelleiders') : t('Bericht aan alle teams')}
         />
         <button type="submit" disabled={busy || !text.trim()}>
           {t('Versturen')}
