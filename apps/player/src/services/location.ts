@@ -2,6 +2,7 @@ import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import { LOCATION_TASK } from '../config';
+import { gpsQuality, logError, logIssue } from './diagnostics';
 import { handleFixes, onFix, type Fix } from './location-handler';
 import { IN_EXPO_GO } from './runtime';
 
@@ -28,6 +29,7 @@ const handle = (locations: Location.LocationObject[]) =>
 // Moet bovenaan in de bundel gedefinieerd zijn, ook als de app op de
 // achtergrond wordt gestart door het besturingssysteem.
 TaskManager.defineTask<{ locations: Location.LocationObject[] }>(LOCATION_TASK, async ({ data, error }) => {
+  if (error) logError('gps_achtergrond_fout', error, undefined, 'warn');
   if (error || !data) return;
   await handle(data.locations);
 });
@@ -37,10 +39,16 @@ export type PermissionResult = 'always' | 'foreground' | 'denied';
 /** Vraagt eerst "tijdens gebruik" en daarna "altijd". */
 export async function requestLocationPermission(): Promise<PermissionResult> {
   const foreground = await Location.requestForegroundPermissionsAsync();
-  if (foreground.status !== 'granted') return 'denied';
+  if (foreground.status !== 'granted') {
+    logIssue('warn', 'locatie_geweigerd', 'Locatietoestemming geweigerd', { status: foreground.status, opnieuw_vragen: foreground.canAskAgain });
+    return 'denied';
+  }
   // Expo Go kan niet op de achtergrond volgen; daar alleen "tijdens gebruik".
   if (IN_EXPO_GO) return 'foreground';
   const background = await Location.requestBackgroundPermissionsAsync();
+  if (background.status !== 'granted') {
+    logIssue('info', 'locatie_alleen_voorgrond', 'Locatie alleen met de app open (niet "altijd"); GPS stopt met scherm uit');
+  }
   return background.status === 'granted' ? 'always' : 'foreground';
 }
 
@@ -57,7 +65,13 @@ let foregroundWatch: Location.LocationSubscription | null = null;
 /** Start GPS: op de achtergrond als dat mag, anders alleen met de app open. */
 export async function startTracking(notificationTitle: string, notificationBody: string): Promise<PermissionResult> {
   const permission = await locationPermission();
-  if (permission === 'denied') return permission;
+  if (permission === 'denied') {
+    logIssue('warn', 'locatie_geweigerd', 'GPS kan niet starten: geen locatietoestemming');
+    return permission;
+  }
+  if (!(await Location.hasServicesEnabledAsync().catch(() => true))) {
+    logIssue('warn', 'gps_uit', 'Locatievoorzieningen staan uit op de telefoon');
+  }
 
   const options: Location.LocationOptions = {
     accuracy: Location.Accuracy.BestForNavigation,
@@ -82,6 +96,7 @@ export async function startTracking(notificationTitle: string, notificationBody:
 }
 
 export async function stopTracking(): Promise<void> {
+  gpsQuality.reset();
   foregroundWatch?.remove();
   foregroundWatch = null;
   if (await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK).catch(() => false)) {

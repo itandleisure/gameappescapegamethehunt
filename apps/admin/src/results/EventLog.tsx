@@ -1,11 +1,12 @@
 'use client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { APP_LOG_COLUMNS, type AppLogRow } from '@/lib/app-logs';
 import { useLanguage } from '@/lib/language';
 import { buildSessionLog, categoryLabel, logToCsv, type LogCategory, type LogChat } from '@/lib/session-log';
 import type { SessionLive } from '@/lib/session-live';
 import { supabase } from '@/lib/supabase';
 
-const CATEGORIES: LogCategory[] = ['opdracht', 'regel', 'spel', 'foto', 'chat'];
+const CATEGORIES: LogCategory[] = ['opdracht', 'regel', 'spel', 'foto', 'chat', 'techniek'];
 const STEP = 300;
 
 /**
@@ -16,6 +17,7 @@ export function EventLog({ data, colors, updatedAt }: { data: SessionLive; color
   const { t, locale } = useLanguage();
   const { session } = data;
   const [chat, setChat] = useState<LogChat[]>([]);
+  const [issues, setIssues] = useState<AppLogRow[]>([]);
   const [team, setTeam] = useState('');
   const [category, setCategory] = useState<LogCategory | ''>('');
   const [query, setQuery] = useState('');
@@ -29,6 +31,14 @@ export function EventLog({ data, colors, updatedAt }: { data: SessionLive; color
       .eq('session_id', session.id)
       .order('created_at');
     if (rows) setChat(rows as LogChat[]);
+    // Technische meldingen van de telefoons (zwak GPS, fouten). Leeg als de tabel er (nog) niet is.
+    const { data: logs } = await supabase()
+      .from('app_logs')
+      .select(APP_LOG_COLUMNS)
+      .eq('session_id', session.id)
+      .order('created_at', { ascending: false })
+      .limit(1000);
+    if (logs) setIssues(logs as unknown as AppLogRow[]);
   }, [session.id]);
   useEffect(() => {
     void loadChat();
@@ -47,10 +57,11 @@ export function EventLog({ data, colors, updatedAt }: { data: SessionLive; color
         photos: data.photos,
         chat,
         leaders: data.leaders,
+        issues,
         now: Math.max(Date.now(), updatedAt),
       }),
     // updatedAt: tijdregels lopen door, ook zonder nieuwe gebeurtenissen.
-    [data, chat, updatedAt],
+    [data, chat, issues, updatedAt],
   );
 
   const time = useMemo(

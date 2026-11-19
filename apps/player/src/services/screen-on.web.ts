@@ -1,3 +1,4 @@
+import { logError } from './diagnostics';
 import { useEffect, useState } from 'react';
 import type { ScreenOn } from './screen-on';
 
@@ -32,7 +33,8 @@ export function useScreenOn(): ScreenOn {
         }
         setState('on');
         sentinel.addEventListener('release', () => alive && setState('pending'));
-      } catch {
+      } catch (error) {
+        logError('scherm_aan_mislukt', error, undefined, 'warn');
         if (alive) setState('pending');
       } finally {
         asking = false;

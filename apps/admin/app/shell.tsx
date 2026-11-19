@@ -1,10 +1,11 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { ADMIN_LANGUAGES, ADMIN_LANGUAGE_NAMES, isAdminLanguage, tKey } from '@/lib/i18n';
 import { LanguageProvider, useLanguage, useT } from '@/lib/language';
+import { installAdminErrorReporting } from '@/lib/report-errors';
 import { supabase } from '@/lib/supabase';
 
 const NAV: { href: string; label: string; platformAdmin?: boolean }[] = [
@@ -12,6 +13,7 @@ const NAV: { href: string; label: string; platformAdmin?: boolean }[] = [
   { href: '/spellen', label: tKey('Spellen') },
   { href: '/templates', label: tKey('Templates') },
   { href: '/puzzels', label: tKey('Puzzels') },
+  { href: '/logging', label: tKey('Logging') },
   { href: '/instellingen/leden', label: tKey('Toegang') },
   { href: '/instellingen/accounts', label: tKey('Accounts'), platformAdmin: true },
 ];
@@ -81,6 +83,8 @@ function Gate({ children }: { children: ReactNode }) {
 }
 
 export function Shell({ children }: { children: ReactNode }) {
+  // Fouten in het beheer zelf komen ook in het logboek.
+  useEffect(() => installAdminErrorReporting(), []);
   return (
     <LanguageProvider>
       <AuthProvider>

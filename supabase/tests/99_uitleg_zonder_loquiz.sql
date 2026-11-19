@@ -17,8 +17,8 @@ insert into public.translations (game_id, entity, entity_id, field, lang, text) 
 insert into public.base_versions (game_id, version, snapshot)
 values ('f3000000-0000-0000-0000-000000000001', 7, public.layer_snapshot('f3000000-0000-0000-0000-000000000001'));
 
-\i supabase/migrations/20261120150000_uitleg_zonder_loquiz.sql
-\i supabase/migrations/20261120150000_uitleg_zonder_loquiz.sql
+\i supabase/migrations/20261120155000_uitleg_zonder_loquiz.sql
+\i supabase/migrations/20261120155000_uitleg_zonder_loquiz.sql
 
 do $$
 declare v_g uuid := 'f3000000-0000-0000-0000-000000000001';

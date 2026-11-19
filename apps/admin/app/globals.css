@@ -494,6 +494,12 @@ table.eventlog tr.bad td.logpoints { color: var(--danger); }
 table.eventlog tr.ok .logkind { border-color: var(--ok); color: var(--ok); }
 table.eventlog tr.bad .logkind { border-color: var(--danger); color: var(--danger); }
 table.eventlog tr.logday td { background: var(--bg); font-weight: 600; }
+table.eventlog tr.warn .logkind:first-child { border-color: #b45309; color: #b45309; }
+table.eventlog tr.bad .logkind:first-child { border-color: var(--danger); color: var(--danger); }
+table.eventlog tr.clickable { cursor: pointer; }
+table.eventlog tr.clickable:hover td { background: var(--bg); }
+table.eventlog tr.details > td { background: var(--bg); }
+pre.logjson { font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; max-height: 360px; overflow: auto; }
 .logkind { display: inline-block; font-size: 11px; padding: 0 6px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); margin-right: 4px; }
 .logdetail { font-size: 13px; margin-top: 2px; overflow-wrap: anywhere; }
 @media (max-width: 700px) {
@@ -503,6 +509,7 @@ table.eventlog tr.logday td { background: var(--bg); font-weight: 600; }
   table.eventlog td { border: none; padding: 2px 12px; }
   table.eventlog td.logteam { white-space: normal; padding: 2px 0; }
   table.eventlog td.logtext { grid-column: 1 / -1; grid-row: 2; }
-  table.eventlog tr.logday { display: block; }
+  table.eventlog tr.logday, table.eventlog tr.details { display: block; }
+  table.eventlog tr.details > td { display: block; }
   table.eventlog tr.logday td { display: block; }
 }
