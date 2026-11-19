@@ -179,7 +179,7 @@ export default function RulesPage() {
             .insert(texts.map((tk) => ({ ...tk, game_id: id }))),
         );
       setEditing(null);
-    }, t("Opgeslagen. Publiceer het spel om het in de app te gebruiken."));
+    }, rows?.game.layer === "base" ? t('Opgeslagen in de template. Steden krijgen dit pas als je bij Templateversies "Opslaan als nieuwe versie" kiest en de steden overzet.') : t("Opgeslagen. Publiceer het spel om het in de app te gebruiken."));
 
   const remove = (rule: Rule) => {
     if (!window.confirm(t("{name} verwijderen?", { name: rule.label || rule.id }))) return;
@@ -279,7 +279,9 @@ export default function RulesPage() {
       <h1>{t('Spelverloop')}</h1>
       <GameNav id={id} layer={rows.game.layer} active="regels" />
       <p className="muted">
-        {t('Wat er tijdens het spel gebeurt en wanneer. Elk moment gaat één keer per team. Wijzig een moment met Wijzigen en publiceer het spel om het in de app te gebruiken. In een testevent kun je in de app de tijd vooruitzetten, zodat je niet hoeft te wachten.')}
+        {rows.game.layer === 'base'
+          ? t('Wat er tijdens het spel gebeurt en wanneer. Elk moment gaat één keer per team. Wijzig een moment met Wijzigen. Steden krijgen het pas als je de template opslaat als nieuwe versie en de steden overzet. In een testevent kun je in de app de tijd vooruitzetten, zodat je niet hoeft te wachten.')
+          : t('Wat er tijdens het spel gebeurt en wanneer. Elk moment gaat één keer per team. Wijzig een moment met Wijzigen en publiceer het spel om het in de app te gebruiken. In een testevent kun je in de app de tijd vooruitzetten, zodat je niet hoeft te wachten.')}
       </p>
       {notice ? <p className="notice">{notice}</p> : null}
       {errors.length > 0 ? (

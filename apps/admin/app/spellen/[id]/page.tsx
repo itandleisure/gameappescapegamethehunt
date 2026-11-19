@@ -286,7 +286,7 @@ export default function GamePage() {
       setNameDraft(null);
       setNotice(
         isBase
-          ? t("Naam opgeslagen. Publiceer het spel opnieuw, en ook de steden en klantvarianten eronder, om de nieuwe naam in nieuwe events te zien. Events die al bestaan, houden hun oude naam.")
+          ? t("Naam opgeslagen. Sla de template op als nieuwe versie en zet de steden over om de nieuwe naam in nieuwe events te zien. Events die al bestaan, houden hun oude naam.")
           : t("Naam opgeslagen."),
       );
       await load();
@@ -328,9 +328,11 @@ export default function GamePage() {
       return;
     }
     setNotice(
-      t("{lang} toegevoegd. Vertaal nu de opdrachten (knop bij Opdrachten) en publiceer daarna het spel.", {
+      (isBase ? t("{lang} toegevoegd. Vertaal nu de opdrachten (knop bij Opdrachten) en sla de template daarna op als nieuwe versie.", {
         lang: gameLanguageName(lang),
-      }),
+      }) : t("{lang} toegevoegd. Vertaal nu de opdrachten (knop bij Opdrachten) en publiceer daarna het spel.", {
+        lang: gameLanguageName(lang),
+      })),
     );
     await load();
   };
@@ -393,10 +395,13 @@ export default function GamePage() {
         setBulk({ done: i + 1, total: order.length });
       }
       setNotice(
-        t("{n} opdrachten vertaald ({rows} teksten). Controleer ze in de opdrachten en publiceer daarna het spel.", {
+        (isBase ? t("{n} opdrachten vertaald ({rows} teksten). Controleer ze in de opdrachten en sla de template daarna op als nieuwe versie.", {
           n: order.length,
           rows: added,
-        }),
+        }) : t("{n} opdrachten vertaald ({rows} teksten). Controleer ze in de opdrachten en publiceer daarna het spel.", {
+          n: order.length,
+          rows: added,
+        })),
       );
     } catch (err) {
       setErrors([err instanceof Error ? err.message : String(err)]);

@@ -181,7 +181,7 @@ export default function TabbladenPage() {
           }),
         );
       must(await db.from("games").update({ settings }).eq("id", id));
-      setNotice(t("Opgeslagen. Publiceer het spel om het in de app te zien."));
+      setNotice(isBase ? t('Opgeslagen in de template. Steden krijgen dit pas als je bij Templateversies "Opslaan als nieuwe versie" kiest en de steden overzet.') : t("Opgeslagen. Publiceer het spel om het in de app te zien."));
       await load();
     } catch (err) {
       setErrors([err instanceof Error ? err.message : String(err)]);
