@@ -86,7 +86,7 @@ export default function SessionLivePage() {
   return (
     <>
       <p className="muted">
-        <Link href="/sessies">{t('Hunts')}</Link> › {session.name}
+        <Link href="/sessies">{t('Events')}</Link> › {session.name}
       </p>
       <div className="row livehead" style={{ alignItems: 'center' }}>
         <h1 style={{ margin: 0, flex: '1 1 auto' }}>{session.name}</h1>

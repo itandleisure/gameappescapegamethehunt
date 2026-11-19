@@ -30,7 +30,7 @@ export function OpenToggle({
   };
 
   return (
-    <label className="switch" title={open ? t('Teams kunnen aanmelden. Klik om te sluiten.') : t('Klik om de hunt te openen.')}>
+    <label className="switch" title={open ? t('Teams kunnen aanmelden. Klik om te sluiten.') : t('Klik om het event te openen.')}>
       <input type="checkbox" role="switch" checked={open} disabled={busy} onChange={() => void toggle()} />
       <span className="slider" aria-hidden="true" />
       <span className={open ? 'on' : 'off'}>{open ? t('Open') : t('Dicht')}</span>

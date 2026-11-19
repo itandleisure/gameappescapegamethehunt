@@ -245,7 +245,7 @@ export default function AccessPage() {
         <>
           <h2>{t('Partners')}</h2>
           <p className="muted small">
-            {t('Een partner krijgt een eigen organisatie met eigen hunts en resultaten. Bij Bewerken wijzig je de naam en omschrijving, vink je de steden aan die de partner mag spelen en voeg je accounts toe.')}{' '}
+            {t('Een partner krijgt een eigen organisatie met eigen events en resultaten. Bij Bewerken wijzig je de naam en omschrijving, vink je de steden aan die de partner mag spelen en voeg je accounts toe.')}{' '}
             {t('Een partner kan zelf collega\'s uitnodigen met dezelfde rechten, maar nooit als eigenaar of beheerder.')}
           </p>
           <table className="stack">

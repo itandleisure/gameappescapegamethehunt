@@ -183,7 +183,7 @@ export default function TaskPage() {
     try {
       if (isVariant) await saveVariant(task);
       else await saveBase(task);
-      setNotice(t('Opgeslagen. Publiceer het spel om het in nieuwe hunts te gebruiken.'));
+      setNotice(t('Opgeslagen. Publiceer het spel om het in nieuwe events te gebruiken.'));
       await load();
     } catch (err) {
       setErrors([err instanceof Error ? err.message : String(err)]);
