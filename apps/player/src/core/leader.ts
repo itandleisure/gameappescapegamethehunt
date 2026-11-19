@@ -133,9 +133,14 @@ export function mergePositions(list: LeaderPosition[], fresh: LeaderPosition[], 
   return merged.length > keep ? merged.slice(merged.length - keep) : merged;
 }
 
-/** Ranglijst: meeste punten eerst, bij gelijke stand wie het eerst inlogde. */
-export function standings(teams: LeaderTeam[]): LeaderTeam[] {
-  return [...teams].sort((a, b) => b.score - a.score || a.login_order - b.login_order);
+/**
+ * Ranglijst: meeste punten eerst, bij gelijke stand wie het eerst inlogde.
+ * Met `scores` (uitgerekend uit de gebeurtenissen, zie `puzzleProgress`)
+ * tellen die punten; de kolom score in de database wordt niet bijgehouden.
+ */
+export function standings(teams: LeaderTeam[], scores?: Map<string, number>): LeaderTeam[] {
+  const score = (tm: LeaderTeam) => scores?.get(tm.id) ?? tm.score;
+  return [...teams].sort((a, b) => score(b) - score(a) || a.login_order - b.login_order);
 }
 
 export interface PuzzleProgress {
@@ -143,21 +148,25 @@ export interface PuzzleProgress {
   puzzles: { id: string; title: string }[];
   /** Per team de ids van de opgeloste puzzels. */
   solved: Map<string, Set<string>>;
+  /** Per team de punten tot nu toe, zoals de app van het team ze toont. */
+  scores: Map<string, number>;
 }
 
 /**
- * Welke puzzels elk team heeft opgelost, uitgerekend met de spelregel-engine
- * uit dezelfde gebeurtenissen als de app en de resultatenpagina in het beheer.
+ * Welke puzzels elk team heeft opgelost en hoeveel punten het heeft,
+ * uitgerekend met de spelregel-engine uit dezelfde gebeurtenissen als de app
+ * en de resultatenpagina in het beheer. (De app schrijft geen punten naar de
+ * database; alleen de gebeurtenissen gaan mee.)
  */
 export function puzzleProgress(data: LeaderData, now: number): PuzzleProgress {
   const game = data.game;
-  if (!game) return { puzzles: [], solved: new Map() };
+  if (!game) return { puzzles: [], solved: new Map(), scores: new Map() };
   const puzzles = puzzleTasks(game).map((task) => ({
     id: task.id,
     title: t(task.title, game.defaultLanguage) || task.id,
   }));
   const solved = new Map<string, Set<string>>();
-  if (puzzles.length === 0) return { puzzles, solved };
+  const scores = new Map<string, number>();
   const byTeam = new Map<string, EventRow[]>();
   for (const row of data.events ?? []) {
     const list = byTeam.get(row.team_id) ?? [];
@@ -175,11 +184,12 @@ export function puzzleProgress(data: LeaderData, now: number): PuzzleProgress {
     try {
       const state = computeState(game, { track: team.track, startedAt, briefingRead: Boolean(team.ready_at) }, events, until);
       solved.set(team.id, new Set(puzzles.filter((p) => state.tasks[p.id]?.correct === true).map((p) => p.id)));
+      scores.set(team.id, state.score);
     } catch {
       solved.set(team.id, new Set());
     }
   }
-  return { puzzles, solved };
+  return { puzzles, solved, scores };
 }
 
 /**
