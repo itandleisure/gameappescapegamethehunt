@@ -7,7 +7,7 @@
  * vastzitten; de gekozen puzzel vult alleen titel, tekst, antwoord, hints en
  * reacties van de plek in.
  */
-import type { AnswerSpec, GamePackage, Hint, Task, Text } from '@hunt/engine';
+import type { Action, AnswerSpec, GamePackage, Hint, Task, Text } from '@hunt/engine';
 
 export interface PuzzleRow {
   id: string;
@@ -57,15 +57,70 @@ export function applyPuzzle(task: Task, puzzle: PuzzleRow): Task {
   };
 }
 
-/** Alle gekozen puzzels in het spelpakket zetten. Een puzzel die niet (meer) bestaat, laat de plek zoals hij is. */
+/**
+ * Alle gekozen puzzels in het spelpakket zetten. Een puzzel die niet (meer)
+ * bestaat, laat de plek zoals hij is. Teksten die de oude puzzel bij naam
+ * noemen (de tijdlijnberichten, de uitleg) krijgen de naam van de nieuwe.
+ */
 export function applyPuzzles(game: GamePackage, choice: PuzzleChoice, puzzles: PuzzleRow[]): GamePackage {
   const byId = new Map(puzzles.map((p) => [p.id, p]));
+  let out: GamePackage = game;
+  for (const slot of puzzleSlots(game)) {
+    const id = choice[slot.id];
+    const puzzle = id ? byId.get(id) : undefined;
+    if (!puzzle) continue;
+    const next = applyPuzzle(slot, puzzle);
+    out = renameMentions({ ...out, tasks: out.tasks.map((t) => (t.id === slot.id ? next : t)) }, slot, next);
+  }
+  return out;
+}
+
+const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** Vervangt per taal de oude naam door de nieuwe. `loose`: overal; anders alleen "naam puzzel", "naam-puzzel" of "naampuzzel". */
+function renameText(text: Text, from: Text, to: Text, loose: boolean): Text {
+  let changed = false;
+  const result: Text = {};
+  for (const [lang, value] of Object.entries(text)) {
+    const old = from[lang]?.trim() || from.nl?.trim();
+    const name = to[lang]?.trim() || to.nl?.trim();
+    if (typeof value !== 'string' || !old || !name || old === name) {
+      result[lang] = value;
+      continue;
+    }
+    const pattern = new RegExp(`(?<![\\p{L}\\p{N}])${escape(old)}${loose ? '' : '(?=[ -]?puzzel)'}`, 'giu');
+    const next = value.replace(pattern, () => name);
+    if (next !== value) changed = true;
+    result[lang] = next;
+  }
+  return changed ? result : text;
+}
+
+/** Waar de oude puzzel bij naam genoemd wordt, de naam van de nieuwe zetten. */
+function renameMentions(game: GamePackage, before: Task, after: Task): GamePackage {
+  const from = before.title ?? {};
+  const to = after.title ?? {};
+  // Regels die deze puzzel vrijgeven: hun bericht gaat over deze puzzel.
+  const showsSlot = (a: Action) =>
+    a.kind === 'show' && (('task' in a.select && a.select.task === before.id) || ('tasks' in a.select && a.select.tasks.includes(before.id)));
   return {
     ...game,
+    rules: game.rules.map((r) => {
+      const loose = r.then.some(showsSlot);
+      let changed = false;
+      const then = r.then.map((a) => {
+        if (a.kind !== 'message') return a;
+        const text = renameText(a.text, from, to, loose);
+        if (text === a.text) return a;
+        changed = true;
+        return { ...a, text };
+      });
+      return changed ? { ...r, then } : r;
+    }),
     tasks: game.tasks.map((t) => {
-      const id = choice[t.id];
-      const puzzle = id ? byId.get(id) : undefined;
-      return puzzle && t.tags.includes('puzzel') ? applyPuzzle(t, puzzle) : t;
+      const own = t.id === before.id;
+      const body = renameText(t.body, from, to, own);
+      return body === t.body ? t : { ...t, body };
     }),
   };
 }
