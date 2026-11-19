@@ -44,7 +44,7 @@ describe('schermen', () => {
     for (const g of groups) for (const t of g.tasks) expect(state.tasks[t.id]!.status).not.toBe('hidden');
   });
 
-  it('toont tabbladen met naslag of foto ook zonder opdrachten, en verbergt gelezen uitleg', () => {
+  it('toont geen tabblad met alleen naslag (speluitleg) tussen de opdrachten, en verbergt gelezen uitleg', () => {
     const base = JSON.parse(JSON.stringify(theHuntBase)) as typeof theHuntBase;
     const uitleg = base.playgrounds.find((p) => p.id === 'speluitleg')!;
     uitleg.body = { nl: 'Tijdlijn van het spel' };
@@ -55,7 +55,7 @@ describe('schermen', () => {
     ];
     const state = computeState(g, team, events, at(25));
     const groups = listGroups(g, state);
-    expect(groups.some((gr) => gr.playground === 'speluitleg')).toBe(true);
+    expect(groups.some((gr) => gr.playground === 'speluitleg')).toBe(false);
     expect(groups.flatMap((gr) => gr.tasks).map((t) => t.id)).not.toContain('start');
   });
 

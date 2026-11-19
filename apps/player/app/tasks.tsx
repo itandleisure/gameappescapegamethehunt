@@ -32,7 +32,6 @@ export default function TasksScreen() {
           return (
             <View key={group.playground ?? "lijst"} style={styles.group}>
               {pg ? <Text style={styles.groupTitle}>{tr(pg.name)}</Text> : null}
-              {pg?.body ? <Body>{tr(pg.body)}</Body> : null}
               {pg?.reveal ? (
                 <RevealImage
                   reveal={pg.reveal}
