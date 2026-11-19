@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/lib/auth';
 import { tKey } from '@/lib/i18n';
@@ -38,6 +38,7 @@ export default function SessionLivePage() {
   const { data, error, updatedAt, reload } = useSessionLive(id);
   const { t, lang, locale } = useLanguage();
   const { org } = useAuth();
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>('kaart');
   const [now, setNow] = useState(() => Date.now());
 
@@ -101,7 +102,15 @@ export default function SessionLivePage() {
           <button className="secondary" onClick={download} disabled={view.teams.length === 0}>
             {t('Excel-export')}
           </button>
-          <DeleteSession id={session.id} name={session.name} photoPaths={data.photos.map((p) => p.path)} />
+          {org?.role !== 'instructor' ? (
+            <DeleteSession
+              id={session.id}
+              name={session.name}
+              teamCount={data.teams.length}
+              photoPaths={data.photos.map((p) => p.path)}
+              onDeleted={() => router.replace('/sessies')}
+            />
+          ) : null}
         </div>
       </div>
       <div className="actions">
