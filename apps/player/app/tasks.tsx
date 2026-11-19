@@ -31,7 +31,12 @@ export default function TasksScreen() {
           const code = pg ? codeView(game, state, pg.id) : null;
           return (
             <View key={group.playground ?? "lijst"} style={styles.group}>
-              {pg ? <Text style={styles.groupTitle}>{tr(pg.name)}</Text> : null}
+              {/* De codevakjes zijn altijd de GPS-code van het extractiepunt, ook als het tabblad anders heet. */}
+              {pg ? (
+                <Text style={styles.groupTitle}>
+                  {code ? t("codeTitle") : tr(pg.name)}
+                </Text>
+              ) : null}
               {pg?.reveal ? (
                 <RevealImage
                   reveal={pg.reveal}
@@ -88,12 +93,12 @@ export default function TasksScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   content: { padding: space.md, paddingBottom: space.xl, ...contentColumn },
-  group: { marginBottom: space.lg },
+  group: { marginBottom: space.xl },
   groupTitle: {
     color: colors.accent,
     fontSize: 15,
     fontWeight: "700",
-    marginBottom: space.sm,
+    marginBottom: space.md,
     textTransform: "uppercase",
   },
   row: {
@@ -103,7 +108,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: radius.sm,
     padding: space.md,
-    marginBottom: space.sm,
+    marginBottom: 12,
   },
   rowDone: { opacity: 0.55 },
   rowTitle: { color: colors.text, fontSize: 17, flex: 1 },

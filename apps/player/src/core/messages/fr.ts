@@ -34,6 +34,7 @@ export const fr: Messages = {
   tasks: 'Missions',
   map: 'Carte',
   noTasks: "Aucune mission n'est disponible pour le moment.",
+  codeTitle: "Code GPS du point d'extraction",
   answerPlaceholder: 'Votre réponse',
   submit: 'Envoyer',
   correct: 'Bravo !',

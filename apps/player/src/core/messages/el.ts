@@ -34,6 +34,7 @@ export const el: Messages = {
   tasks: 'Αποστολές',
   map: 'Χάρτης',
   noTasks: 'Δεν υπάρχουν διαθέσιμες αποστολές αυτή τη στιγμή.',
+  codeTitle: 'Κωδικός GPS σημείου διαφυγής',
   answerPlaceholder: 'Η απάντησή σας',
   submit: 'Αποστολή',
   correct: 'Σωστά!',

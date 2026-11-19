@@ -34,6 +34,7 @@ export const da: Messages = {
   tasks: 'Opgaver',
   map: 'Kort',
   noTasks: 'Der er ingen opgaver klar lige nu.',
+  codeTitle: 'GPS-kode til ekstraktionspunktet',
   answerPlaceholder: 'Jeres svar',
   submit: 'Send',
   correct: 'Rigtigt!',

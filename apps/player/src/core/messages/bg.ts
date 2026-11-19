@@ -34,6 +34,7 @@ export const bg: Messages = {
   tasks: 'Задачи',
   map: 'Карта',
   noTasks: 'В момента няма налични задачи.',
+  codeTitle: 'GPS код на точката за евакуация',
   answerPlaceholder: 'Вашият отговор',
   submit: 'Изпрати',
   correct: 'Вярно!',
