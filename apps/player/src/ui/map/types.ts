@@ -36,6 +36,13 @@ export interface GameMapProps {
   };
   /** Cirkels op de kaart, bijvoorbeeld om het verzamelpunt. */
   circles?: { lat: number; lng: number; radius: number; color: string }[];
+  /**
+   * Houd deze punten in beeld (bijvoorbeeld de eigen positie en het
+   * verzamelpunt). De kaart schuift mee tot de speler hem zelf verschuift.
+   */
+  follow?: { lat: number; lng: number }[];
+  /** Stippellijn, bijvoorbeeld hemelsbreed van de eigen positie naar het verzamelpunt. */
+  line?: { from: { lat: number; lng: number }; to: { lat: number; lng: number }; color: string };
   /** Eigen positie (voor de webkaart; de native kaart toont hem zelf). */
   position?: { lat: number; lng: number; accuracy: number } | null;
 }

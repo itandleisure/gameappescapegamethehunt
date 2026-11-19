@@ -42,12 +42,12 @@ function loadMaplibre(accent: string, dark: string): Promise<unknown> {
   return library;
 }
 
-export default function GameMap({ styleUrl, bounds, markers, overlay, boundary, circles, position }: GameMapProps) {
+export default function GameMap({ styleUrl, bounds, markers, overlay, boundary, circles, position, follow, line }: GameMapProps) {
   const container = useRef<HTMLDivElement>(null);
   const hunt = useRef<Hunt | null>(null);
   const [error, setError] = useState<string | null>(null);
   const mask = boundary && boundary.outside.opacity > 0 ? boundaryMaskGeoJson(boundary) : null;
-  const payload = JSON.stringify({ bounds, markers, overlay, boundary, mask, circles: circles?.length ? circlesGeoJson(circles) : null, position, style: styleUrl, inside: insideStyleUrl(styleUrl) ?? null });
+  const payload = JSON.stringify({ bounds, markers, overlay, boundary, mask, circles: circles?.length ? circlesGeoJson(circles) : null, position, follow: follow?.length ? follow : null, line: line ?? null, style: styleUrl, inside: insideStyleUrl(styleUrl) ?? null });
   const latest = useRef(payload);
   latest.current = payload;
   const [firstStyle] = useState(styleUrl);
