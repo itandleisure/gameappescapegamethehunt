@@ -34,6 +34,9 @@ interface City {
 
 /** Rollen die een partner kan hebben: nooit eigenaar of beheerder. */
 
+/** Keuzelijst met de huidige rol erbij, ook als die niet meer te kiezen is (oude spelleider-accounts). */
+const withCurrent = (roles: Org['role'][], current: Org['role']) => (roles.includes(current) ? roles : [...roles, current]);
+
 /**
  * Toegang tot de beheeromgeving. Registreren kan alleen met een uitnodiging:
  * eigenaren en beheerders van het platform nodigen collega's uit en maken
@@ -52,7 +55,7 @@ export default function AccessPage() {
   /** Gedeelde steden per partner (game_shares). */
   const [shares, setShares] = useState<Map<string, Set<string>>>(new Map());
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<Org['role']>('instructor');
+  const [role, setRole] = useState<Org['role']>('admin');
   const [partnerName, setPartnerName] = useState('');
   const [partnerEmail, setPartnerEmail] = useState('');
   /** Omschrijving bij een uitnodiging of nieuwe partner (alleen voor het platform). */
@@ -224,7 +227,7 @@ export default function AccessPage() {
                 {canManage && m.user_id !== user?.id && (m.role !== 'owner' || org.role === 'owner') ? (
                   <>
                     <select aria-label={t('Rol')} value={m.role} disabled={busy} onChange={(e) => changeRole(m, e.target.value as Org['role'])}>
-                      {PLATFORM_ROLES.filter((r) => r !== 'owner' || org.role === 'owner').map((r) => (
+                      {withCurrent(PLATFORM_ROLES, m.role).filter((r) => r !== 'owner' || org.role === 'owner').map((r) => (
                         <option key={r} value={r}>
                           {roleLabel(r)}
                         </option>
@@ -324,7 +327,7 @@ export default function AccessPage() {
                                   disabled={busy}
                                   onChange={(e) => changeRole(m, e.target.value as Org['role'], p.id)}
                                 >
-                                  {PARTNER_ROLES.map((r) => (
+                                  {withCurrent(PARTNER_ROLES, m.role).map((r) => (
                                     <option key={r} value={r}>
                                       {roleLabel(r)}
                                     </option>

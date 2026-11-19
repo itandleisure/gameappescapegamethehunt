@@ -22,8 +22,8 @@ interface AuthState {
 const AuthContext = createContext<AuthState>({ loading: true, user: null, org: null, reload: async () => {} });
 
 const PUBLIC_PATHS = ['/login'];
-/** Pagina's die zonder inloggen werken, zoals het fotoboek voor de klant. */
-const PUBLIC_PREFIXES = ['/fotoboek/'];
+/** Pagina's die zonder inloggen werken, zoals het fotoboek voor de klant en de spelleider-link. */
+const PUBLIC_PREFIXES = ['/fotoboek/', '/spelleider/'];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<Omit<AuthState, 'reload'>>({ loading: true, user: null, org: null });

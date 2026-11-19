@@ -919,4 +919,12 @@ export const es: Record<string, string> = {
   "Omschrijving (alleen voor beheerders van het platform)": "Descripción (solo para administradores de la plataforma)",
   "Bijvoorbeeld: wie het is, welke afspraken, tot wanneer": "Por ejemplo: quién es, qué se acordó, hasta cuándo",
   "Partner": "Socio",
+  "Link werkt niet": "El enlace no funciona",
+  "Deze spelleider-link bestaat niet (meer). Vraag de organisator om een nieuwe link.": "Este enlace de director de juego no existe (ya). Pide al organizador un enlace nuevo.",
+  "Nieuwe link maken? De oude link werkt dan niet meer.": "¿Crear un enlace nuevo? El enlace anterior dejará de funcionar.",
+  "Spelleider-link": "Enlace del director de juego",
+  "Met deze link ziet een spelleider de kaart, de ranglijst en de antwoorden, en houdt hij \"gepakt\" bij. Zonder account. Deel hem alleen met de spelleiding.": "Con este enlace un director de juego ve el mapa, la clasificación y las respuestas, y lleva la cuenta de \"atrapado\". Sin cuenta. Compártelo solo con la dirección del juego.",
+  "Gekopieerd": "Copiado",
+  "Kopiëren": "Copiar",
+  "Nieuwe link (oude werkt niet meer)": "Enlace nuevo (el anterior deja de funcionar)",
 };
