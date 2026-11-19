@@ -88,9 +88,9 @@ export default function SessionLivePage() {
       <p className="muted">
         <Link href="/sessies">{t('Hunts')}</Link> › {session.name}
       </p>
-      <div className="row" style={{ alignItems: 'center' }}>
+      <div className="row livehead" style={{ alignItems: 'center' }}>
         <h1 style={{ margin: 0, flex: '1 1 auto' }}>{session.name}</h1>
-        <div className="actions" style={{ marginTop: 0, flex: '0 0 auto' }}>
+        <div className="actions" style={{ marginTop: 0 }}>
           <button className="secondary" onClick={() => void reload()}>
             {t('Vernieuwen')}
           </button>

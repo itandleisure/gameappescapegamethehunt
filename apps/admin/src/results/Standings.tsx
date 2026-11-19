@@ -136,7 +136,7 @@ export function Standings({
     <>
       <input className="search" placeholder={t('Zoek team')} value={search} onChange={(e) => setSearch(e.target.value)} />
       <div className="table-wrap">
-        <table className="standings">
+        <table className="standings stack">
           <thead>
             <tr>
               <th>#</th>
@@ -158,8 +158,8 @@ export function Standings({
             {teams.map((tm) => (
               <Fragment key={tm.id}>
                 <tr className="clickable" onClick={() => setOpen(open === tm.id ? null : tm.id)}>
-                  <td>{tm.rank}</td>
-                  <td>
+                  <td className="rank">{tm.rank}</td>
+                  <td className="team">
                     <span className="dot" style={{ background: colors.get(tm.id) }} /> <strong>{tm.name}</strong> <BriefingProgress team={tm} />
                     <div className="muted small">
                       {phone(tm.id) ? (
@@ -170,27 +170,27 @@ export function Standings({
                       {phone(tm.id) ? ' · ' : ''}{t('track {n}', { n: tm.track })} · {gameLanguageTag(tm.language)}
                     </div>
                   </td>
-                  <td className="num">
+                  <td className="num" data-label={t('Punten')}>
                     <strong>{tm.score}</strong>
                   </td>
                   {view.puzzles.length ? (
-                    <td>
+                    <td className="puzzles" data-label={t('Puzzels')}>
                       <PuzzleChecks team={tm} puzzles={view.puzzles} />
                     </td>
                   ) : null}
-                  <td className="num">
+                  <td className="num" data-label={t('Gepakt')}>
                     <CaughtCounter team={tm} />
                   </td>
-                  <td className="num">{tm.answers.length}</td>
-                  <td className="num">{tm.correct}</td>
-                  <td className="num">{tm.wrong}</td>
-                  <td className="num">{tm.hintsUsed}</td>
-                  <td className="num">{formatDistance(tm.distanceM)}</td>
-                  <td>{startedAt(tm.id)}</td>
-                  <td>
+                  <td className="num minor" data-label={t('Antwoorden')}>{tm.answers.length}</td>
+                  <td className="num minor" data-label={t('Goed')}>{tm.correct}</td>
+                  <td className="num minor" data-label={t('Fout')}>{tm.wrong}</td>
+                  <td className="num minor" data-label={t('Hints')}>{tm.hintsUsed}</td>
+                  <td className="num minor" data-label={t('Afstand')}>{formatDistance(tm.distanceM)}</td>
+                  <td className="minor" data-label={t('Gestart')}>{startedAt(tm.id)}</td>
+                  <td data-label={t('Speeltijd')}>
                     {formatDuration(tm.durationSeconds)} {tm.playing ? <span className="badge open">{t('speelt')}</span> : null}
                   </td>
-                  <td>{tm.outcomeLabel}</td>
+                  <td data-label={t('Uitkomst')}>{tm.outcomeLabel}</td>
                 </tr>
                 {open === tm.id ? (
                   <tr className="details">
@@ -206,17 +206,17 @@ export function Standings({
             <tfoot>
               <tr>
                 <td></td>
-                <td>{t('Totaal ({n} teams)', { n: teams.length })}</td>
-                <td className="num">{sum((t) => t.score)}</td>
+                <td className="team">{t('Totaal ({n} teams)', { n: teams.length })}</td>
+                <td className="num" data-label={t('Punten')}>{sum((t) => t.score)}</td>
                 {view.puzzles.length ? <td></td> : null}
-                <td className="num">{sum((t) => t.caught)}</td>
-                <td className="num">{sum((t) => t.answers.length)}</td>
-                <td className="num">{sum((t) => t.correct)}</td>
-                <td className="num">{sum((t) => t.wrong)}</td>
-                <td className="num">{sum((t) => t.hintsUsed)}</td>
-                <td className="num">{formatDistance(sum((t) => t.distanceM ?? 0))}</td>
+                <td className="num" data-label={t('Gepakt')}>{sum((t) => t.caught)}</td>
+                <td className="num minor" data-label={t('Antwoorden')}>{sum((t) => t.answers.length)}</td>
+                <td className="num minor" data-label={t('Goed')}>{sum((t) => t.correct)}</td>
+                <td className="num minor" data-label={t('Fout')}>{sum((t) => t.wrong)}</td>
+                <td className="num minor" data-label={t('Hints')}>{sum((t) => t.hintsUsed)}</td>
+                <td className="num minor" data-label={t('Afstand')}>{formatDistance(sum((t) => t.distanceM ?? 0))}</td>
                 <td></td>
-                <td>{formatDuration(sum((t) => t.durationSeconds ?? 0))}</td>
+                <td data-label={t('Speeltijd')}>{formatDuration(sum((t) => t.durationSeconds ?? 0))}</td>
                 <td></td>
               </tr>
             </tfoot>

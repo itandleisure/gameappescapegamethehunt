@@ -61,7 +61,9 @@ function Header() {
         ))}
       </nav>
       <span className="who">
-        {org.name} · {user.email}
+        <span className="email">
+          {org.name} · {user.email}
+        </span>
         <LanguagePicker />
         <button className="link" onClick={() => void supabase().auth.signOut()}>
           {t('Uitloggen')}
