@@ -4,7 +4,7 @@ Net als bij Loquiz heeft elk event een vaste link:
 
 | Link | Voorbeeld | Voor wie |
 |---|---|---|
-| Spellink | `https://thehunt.badassgames.nl/the-hunt-leeuwarden:ABC12` | Spelers (ticket, QR-code, uitnodiging) |
+| Spellink | `https://escapegamethehunt.badassgames.nl/the-hunt-leeuwarden:ABC12` | Spelers (ticket, QR-code, uitnodiging) |
 | Resultatenlink | `https://<beheer-domein>/resultaten/the-hunt-leeuwarden:ABC12` | Spelleiding (inloggen nodig) |
 
 - **Game-ID** (vóór de dubbele punt): uniek en leesbaar per spel. Bestaande spellen kregen er een uit hun sleutel
@@ -27,12 +27,12 @@ In de beheeromgeving staat bij elk event de knop **Spellink en QR-code**: kopië
 ## Zelf instellen
 
 ### 1. Domein voor de spellinks
-Het domein is voorlopig `thehunt.badassgames.nl`, alleen voor Escape Game The Hunt (dat staat als standaard in de app). Een andere naam kan: zie hieronder en stap 2.
+Het domein is `escapegamethehunt.badassgames.nl`, alleen voor Escape Game The Hunt (dat staat als standaard in de app). Een andere naam kan: zie hieronder en stap 2.
 
 - Vercel → project van de beheeromgeving → Settings → Domains → domein toevoegen, en de DNS-regel (CNAME) bij je
   domeinbeheerder zetten zoals Vercel aangeeft.
 - Vercel → Settings → Environment Variables:
-  - `NEXT_PUBLIC_SPEL_DOMEIN` = `https://thehunt.badassgames.nl`
+  - `NEXT_PUBLIC_SPEL_DOMEIN` = `https://escapegamethehunt.badassgames.nl`
   - `NEXT_PUBLIC_APP_STORE_URL` = link naar de app in de App Store (bijv. `https://apps.apple.com/app/id1234567890`),
     zodra de app daar staat. Zonder deze waarde staat er op een iPhone geen App Store-knop.
   - `NEXT_PUBLIC_PLAY_STORE_URL` = alleen nodig als de Google Play-link afwijkt van
@@ -41,8 +41,8 @@ Het domein is voorlopig `thehunt.badassgames.nl`, alleen voor Escape Game The Hu
   - `ANDROID_SHA256_FINGERPRINTS` = SHA-256-vingerafdruk uit Google Play Console → Test and release → App integrity →
     App signing key certificate. Meerdere (bijv. ook die van de testbuild uit `eas credentials`) scheiden met een komma.
   - Daarna opnieuw deployen.
-- Controle: `https://thehunt.badassgames.nl/.well-known/apple-app-site-association` en
-  `https://thehunt.badassgames.nl/.well-known/assetlinks.json` moeten je Team ID en vingerafdruk laten zien.
+- Controle: `https://escapegamethehunt.badassgames.nl/.well-known/apple-app-site-association` en
+  `https://escapegamethehunt.badassgames.nl/.well-known/assetlinks.json` moeten je Team ID en vingerafdruk laten zien.
 
 Zolang `NEXT_PUBLIC_SPEL_DOMEIN` niet is ingesteld, gebruiken de spellinks het adres van de beheeromgeving zelf. Die
 werken dan als webpagina, maar openen de app niet direct. Druk dus pas QR-codes op tickets als het domein klaar is.
@@ -50,7 +50,7 @@ werken dan als webpagina, maar openen de app niet direct. Druk dus pas QR-codes 
 ### 2. Nieuwe app-build
 Dat links de app openen, zit in de app zelf (iPhone: Associated Domains, Android: app links). Dat werkt pas na een
 **nieuwe build** (`eas build`) die via TestFlight/App Store en Google Play is geïnstalleerd, niet via een update
-(`eas update`) en niet in Expo Go. Een ander domein dan `thehunt.badassgames.nl`? Zet dan bij de build
+(`eas update`) en niet in Expo Go. Een ander domein dan `escapegamethehunt.badassgames.nl`? Zet dan bij de build
 `APP_LINK_HOST=<domein>` (in `eas.json` onder `env`), en hetzelfde domein in `NEXT_PUBLIC_SPEL_DOMEIN`.
 
 Bij Apple: in het Apple Developer-account staat “Associated Domains” bij de App ID aan; EAS doet dat normaal vanzelf bij
@@ -61,7 +61,7 @@ Het invullen van de spelcode vanuit de link werkt na een gewone update al wel, m
 
 ## Andere spellen
 
-Elk spel (of webapp) krijgt een eigen domein, bijvoorbeeld `thehunt.badassgames.nl` voor Escape Game The Hunt.
+Elk spel (of webapp) krijgt een eigen domein, bijvoorbeeld `escapegamethehunt.badassgames.nl` voor Escape Game The Hunt.
 Het domein is een instelling (`NEXT_PUBLIC_SPEL_DOMEIN` in Vercel en `APP_LINK_HOST` bij de app-build), dus een ander
 domein vraagt geen codewijziging.
 
@@ -71,7 +71,7 @@ Per boeking:
 
 1. Maak een event aan (nu met de hand in de beheeromgeving; een API om events automatisch aan te maken volgt later) en
    noteer de spelcode, of kies zelf een spelcode (4 tot 12 letters/cijfers, bijv. het ordernummer).
-2. Bouw de link: `https://thehunt.badassgames.nl/<game-ID>:<spelcode>`, bijv.
-   `https://thehunt.badassgames.nl/the-hunt-leeuwarden:ORDER4711`. Het game-ID staat op de pagina van de stad.
+2. Bouw de link: `https://escapegamethehunt.badassgames.nl/<game-ID>:<spelcode>`, bijv.
+   `https://escapegamethehunt.badassgames.nl/the-hunt-leeuwarden:ORDER4711`. Het game-ID staat op de pagina van de stad.
 3. Zet die link in een QR-code op het ticket (elke QR-bibliotheek, foutcorrectie M is genoeg), en zet de spelcode er
    ook leesbaar bij voor wie niet kan scannen.
