@@ -924,7 +924,7 @@ export const pt: Record<string, string> = {
   "Deze spelleider-link bestaat niet (meer). Vraag de organisator om een nieuwe link.": "Este link de líder de jogo não existe (já). Pede ao organizador um link novo.",
   "Nieuwe link maken? De oude link werkt dan niet meer.": "Criar um link novo? O link antigo deixa de funcionar.",
   "Spelleider-link": "Link do líder de jogo",
-  "Met deze link ziet een spelleider de kaart, de ranglijst en de antwoorden, en houdt hij \"gepakt\" bij. Zonder account. Deel hem alleen met de spelleiding.": "Com este link um líder de jogo vê o mapa, a classificação e as respostas, e conta os \"apanhados\". Sem conta. Partilha-o apenas com a liderança do jogo.",
+  "Met deze link ziet een spelleider de kaart, de ranglijst met telefoonnummers, de antwoorden en de teamchat, stuurt hij berichten als The Hunters en houdt hij \"gepakt\" bij. Zonder account. Deel hem alleen met de spelleiding.": "Com este link um líder de jogo vê o mapa, a classificação com números de telefone, as respostas e o chat das equipas, envia mensagens como The Hunters e conta os \"apanhados\". Sem conta. Partilha-o apenas com a liderança do jogo.",
   "Gekopieerd": "Copiado",
   "Kopiëren": "Copiar",
   "Nieuwe link (oude werkt niet meer)": "Link novo (o antigo deixa de funcionar)",

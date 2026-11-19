@@ -90,7 +90,7 @@ export default function ChatScreen() {
                 ]}
               >
                 <Text style={[styles.name, own && styles.ownName]} numberOfLines={1}>
-                  {own ? t("chatYou") : staff ? t("chatStaff") : m.name}
+                  {own ? t("chatYou") : staff ? (m.name ?? t("chatStaff")) : m.name}
                   {"  "}
                   <Text style={[styles.time, own && styles.ownTime]}>{time.format(m.createdAt)}</Text>
                 </Text>
