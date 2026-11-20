@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth';
 import { useT } from '@/lib/language';
 import {
   formatInZone,
-  TIMEZONES,
+  timezoneOptions,
   toJoinCode,
   validateSession,
   zonedToUtc,
@@ -17,6 +17,8 @@ import { DeleteSession } from '@/results/DeleteSession';
 import { OpenToggle } from '@/results/OpenToggle';
 import { tx } from '@/lib/text';
 import { displayName } from '@/lib/game-name';
+import { DEFAULT_SETTINGS, type OrgSettings } from '@/lib/org-settings';
+import { useOrgSettings } from '@/lib/org-settings-store';
 
 type GameRef = { layer: 'base' | 'city' | 'client'; slug: string; settings: Record<string, unknown> } | null;
 
@@ -46,6 +48,25 @@ interface SessionRow {
 interface VersionOption {
   id: string;
   label: string;
+  /** Land van de stad waar het spel speelt (bij een klant: van zijn stad). */
+  country: string | null;
+}
+
+/** Een nieuw ticket met de standaard uit Instellingen; de tijdzone volgt het land van het spel. */
+function freshForm(settings: OrgSettings, versions: VersionOption[], versionId: string): SessionInput {
+  return {
+    ...EMPTY,
+    gameVersionId: versionId,
+    timezone: zoneFor(settings, versions, versionId),
+    trackCount: settings.tickets.track_count,
+    testMode: settings.tickets.test_mode,
+    teamChat: settings.tickets.team_chat,
+  };
+}
+
+function zoneFor(settings: OrgSettings, versions: VersionOption[], versionId: string): string {
+  const country = versions.find((v) => v.id === versionId)?.country;
+  return settings.countries.find((c) => c.country === country)?.timezone ?? settings.tickets.timezone;
 }
 
 const EMPTY: SessionInput = {
@@ -68,22 +89,34 @@ export default function SessionsPage() {
   const [showForm, setShowForm] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const general = useOrgSettings(org?.id) ?? DEFAULT_SETTINGS;
 
   const load = useCallback(async () => {
     if (!org) return;
     const db = supabase();
-    const [s, v] = await Promise.all([
+    const [s, v, g] = await Promise.all([
       db
         .from('sessions')
         .select('id, name, join_code, status, test_mode, track_count, starts_at, timezone, teams(count), game_versions(version, name:package->name, games(layer, slug, settings))')
         .eq('org_id', org.id)
         .order('created_at', { ascending: false }),
       db.from('game_versions').select('id, game_id, version, name:package->name, games(layer, slug, settings)').order('version', { ascending: false }),
+      db.from('games').select('id, parent_id, place:settings->place').eq('org_id', org.id),
     ]);
     if (s.error || v.error) {
       setErrors([(s.error ?? v.error)!.message]);
       return;
     }
+    // Land per spel: de stad zelf, of bij een klant de stad erboven.
+    const games = new Map(
+      ((g.data ?? []) as { id: string; parent_id: string | null; place: { country?: unknown } | null }[]).map((x) => [x.id, x]),
+    );
+    const countryOf = (id: string): string | null => {
+      for (let x = games.get(id), n = 0; x && n < 5; x = x.parent_id ? games.get(x.parent_id) : undefined, n++) {
+        if (typeof x.place?.country === 'string') return x.place.country;
+      }
+      return null;
+    };
     setSessions(s.data as unknown as SessionRow[]);
     // Per spel alleen de nieuwste versie aanbieden.
     const seen = new Set<string>();
@@ -93,7 +126,7 @@ export default function SessionsPage() {
       // Hunts spelen met een stad of klantspel; een template heeft templateversies.
       if (row.games?.layer === 'base') continue;
       seen.add(row.game_id);
-      options.push({ id: row.id, label: versionLabel(row) });
+      options.push({ id: row.id, label: versionLabel(row), country: countryOf(row.game_id) });
     }
     setVersions(options);
     setForm((f) => (f.gameVersionId || !options[0] ? f : { ...f, gameVersionId: options[0].id }));
@@ -129,7 +162,7 @@ export default function SessionsPage() {
       setErrors([/join_code/.test(error.message) ? t('Deze ticketcode is al in gebruik. Kies een andere.') : error.message]);
       return;
     }
-    setForm({ ...EMPTY, gameVersionId: form.gameVersionId });
+    setForm(freshForm(general, versions, form.gameVersionId));
     setShowForm(false);
     await load();
   };
@@ -143,7 +176,13 @@ export default function SessionsPage() {
 
       {!showForm ? (
         <div className="actions">
-          <button onClick={() => setShowForm(true)} disabled={versions.length === 0}>
+          <button
+            onClick={() => {
+              setForm(freshForm(general, versions, form.gameVersionId || versions[0]?.id || ''));
+              setShowForm(true);
+            }}
+            disabled={versions.length === 0}
+          >
             {t('Nieuw ticket')}
           </button>
           {versions.length === 0 && sessions !== null ? (
@@ -174,7 +213,7 @@ export default function SessionsPage() {
             </div>
             <div>
               <label htmlFor="game">{t('Spel')}</label>
-              <select id="game" value={form.gameVersionId} onChange={(e) => setForm({ ...form, gameVersionId: e.target.value })}>
+              <select id="game" value={form.gameVersionId} onChange={(e) => setForm({ ...form, gameVersionId: e.target.value, timezone: zoneFor(general, versions, e.target.value) })}>
                 {versions.map((v) => (
                   <option key={v.id} value={v.id}>
                     {v.label}
@@ -191,7 +230,7 @@ export default function SessionsPage() {
             <div>
               <label htmlFor="tz">{t('Tijdzone')}</label>
               <select id="tz" value={form.timezone} onChange={(e) => setForm({ ...form, timezone: e.target.value })}>
-                {TIMEZONES.map((z) => (
+                {timezoneOptions(form.timezone).map((z) => (
                   <option key={z}>{z}</option>
                 ))}
               </select>

@@ -3,7 +3,6 @@ import { gameLanguageShort } from '@/lib/game-languages';
 import {
   circlesGeoJson,
   DEFAULT_BOUNDARY_COLOR,
-  DEFAULT_MAP_SOURCE,
   DEFAULT_MEETING_RADIUS,
   MAP_STYLES,
   outsideShade,
@@ -26,6 +25,9 @@ import type { LayerRows } from '@/lib/game-model';
 import { composeChain, loadChain } from '@/lib/game-store';
 import { t as tr, tKey } from '@/lib/i18n';
 import { useT } from '@/lib/language';
+import { useAuth } from '@/lib/auth';
+import { DEFAULT_SETTINGS, defaultMapSource } from '@/lib/org-settings';
+import { useOrgSettings } from '@/lib/org-settings-store';
 import { allPins, circle, pinsFor, trackColor, trackCount, type Pin, type TrackChoice } from '@/lib/map-edit';
 import { gameFieldEditable, imageCorners, ownGameField, type MapGameField } from '@/lib/map-settings';
 import { loadMaplibre } from '@/lib/maplibre';
@@ -48,6 +50,12 @@ const trackName = (tk: TrackChoice) => (tk === null ? tr('alle tracks') : tr('tr
 export default function MapPage() {
   const { id } = useParams<{ id: string }>();
   const t = useT();
+  const { org } = useAuth();
+  /** Standaard uit Instellingen › Spellen en landen, voor wat het spel zelf niet kiest. */
+  const gs = (useOrgSettings(org?.id) ?? DEFAULT_SETTINGS).games;
+  const fallbackStyle = defaultMapSource(gs).styleUrl;
+  const shadeOf = (b: PlayBoundary | null) =>
+    outsideShade({ outsideColor: b?.outsideColor ?? gs.outside_color, outsideOpacity: b?.outsideOpacity ?? gs.outside_opacity });
   const [chain, setChain] = useState<LayerRows[] | null>(null);
   const [game, setGame] = useState<GamePackage | null>(null);
   const [view, setView] = useState<View>('all');
@@ -115,6 +123,12 @@ export default function MapPage() {
     void load();
   }, [load]);
 
+  // Zonder eigen cirkel om het verzamelpunt: de standaard uit Instellingen.
+  useEffect(() => {
+    if (game && game.meetingPoint?.radius === undefined && !fieldsDirty.has('meetingPoint')) setMeetingRadius(gs.meeting_radius);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game, gs]);
+
   const pins: Pin[] = useMemo(() => {
     if (!chain || !game) return [];
     const title = (key: string) => tx(game.tasks.find((tk) => tk.id === key)?.title) || key;
@@ -146,11 +160,11 @@ export default function MapPage() {
       const first = located[0] ?? game.meetingPoint ?? { lat: 52.37, lng: 4.89 };
       const m = new Map({
         container: container.current,
-        style: game.map?.styleUrl ?? DEFAULT_MAP_SOURCE.styleUrl,
+        style: game.map?.styleUrl ?? fallbackStyle,
         center: [first.lng, first.lat],
         zoom: 14,
       });
-      shownStyle.current = game.map?.styleUrl ?? DEFAULT_MAP_SOURCE.styleUrl;
+      shownStyle.current = game.map?.styleUrl ?? fallbackStyle;
       m.on('load', () => {
         if (located.length > 1) {
           const lats = located.map((l) => l.lat);
@@ -179,7 +193,7 @@ export default function MapPage() {
   // Andere kaartstijl gekozen: stijl wisselen, daarna de eigen lagen er weer op.
   useEffect(() => {
     const m = map.current;
-    const url = mapSource?.styleUrl ?? DEFAULT_MAP_SOURCE.styleUrl;
+    const url = mapSource?.styleUrl ?? fallbackStyle;
     if (!m || !ready || shownStyle.current === url) return;
     shownStyle.current = url;
     m.setStyle(url, { diff: false });
@@ -187,7 +201,7 @@ export default function MapPage() {
       addLayers(m);
       setReady((n) => n + 1);
     });
-  }, [mapSource, ready]);
+  }, [mapSource, ready, fallbackStyle]);
 
   // Oude overlay-afbeelding tonen, of weghalen.
   useEffect(() => {
@@ -315,10 +329,10 @@ export default function MapPage() {
     const m = map.current;
     if (!m || !ready) return;
     (m.getSource('boundary') as GeoJSONSource | undefined)?.setData(boundaryGeoJson(boundary) as never);
-    if (m.getLayer('boundary')) m.setPaintProperty('boundary', 'line-color', boundary?.color ?? DEFAULT_BOUNDARY_COLOR);
+    if (m.getLayer('boundary')) m.setPaintProperty('boundary', 'line-color', boundary?.color ?? gs.boundary_color);
     (m.getSource('outside') as GeoJSONSource | undefined)?.setData(boundaryMaskGeoJson(boundary) as never);
     if (m.getLayer('outside')) {
-      const shade = outsideShade(boundary);
+      const shade = shadeOf(boundary);
       m.setPaintProperty('outside', 'fill-color', shade.color);
       m.setPaintProperty('outside', 'fill-opacity', shade.opacity);
       // Tijdens het tekenen weg, zodat je de hele kaart ziet.
@@ -380,7 +394,8 @@ export default function MapPage() {
         vertexMarkers.current.push(marker);
       }
     });
-  }, [boundary, drawing, ready, showOverlay, t]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boundary, drawing, ready, showOverlay, t, gs]);
 
   if (!chain || !game) return errors.length ? <ul className="errors">{errors.map((e, i) => <li key={i}>{e}</li>)}</ul> : <p className="muted">{t('Laden…')}</p>;
 
@@ -548,11 +563,11 @@ export default function MapPage() {
             <label htmlFor="style">{t('Kaartstijl')}</label>
             <select
               id="style"
-              value={MAP_STYLES.find((s) => s.source.styleUrl === (mapSource?.styleUrl ?? DEFAULT_MAP_SOURCE.styleUrl))?.id ?? 'eigen'}
+              value={MAP_STYLES.find((s) => s.source.styleUrl === (mapSource?.styleUrl ?? fallbackStyle))?.id ?? 'eigen'}
               onChange={(e) => {
                 const style = MAP_STYLES.find((s) => s.id === e.target.value);
                 if (!style) return;
-                setMapSource(style.id === MAP_STYLES[0]!.id ? null : style.source);
+                setMapSource(style.id === gs.map_style ? null : style.source);
                 touchField('map');
               }}
             >
@@ -661,7 +676,7 @@ export default function MapPage() {
                   {t('Kleur')}{' '}
                   <input
                     type="color"
-                    value={boundary.color ?? DEFAULT_BOUNDARY_COLOR}
+                    value={boundary.color ?? gs.boundary_color}
                     onChange={(e) => {
                       setBoundary({ ...boundary, color: e.target.value });
                       setBoundaryDirty(true);
@@ -676,7 +691,7 @@ export default function MapPage() {
                     {t('Kleur')}{' '}
                     <input
                       type="color"
-                      value={outsideShade(boundary).color}
+                      value={shadeOf(boundary).color}
                       onChange={(e) => {
                         setBoundary({ ...boundary, outsideColor: e.target.value });
                         setBoundaryDirty(true);
@@ -690,13 +705,13 @@ export default function MapPage() {
                       min={0}
                       max={90}
                       step={5}
-                      value={Math.round(outsideShade(boundary).opacity * 100)}
+                      value={Math.round(shadeOf(boundary).opacity * 100)}
                       onChange={(e) => {
                         setBoundary({ ...boundary, outsideOpacity: Number(e.target.value) / 100 });
                         setBoundaryDirty(true);
                       }}
                     />{' '}
-                    {Math.round(outsideShade(boundary).opacity * 100)}%
+                    {Math.round(shadeOf(boundary).opacity * 100)}%
                   </label>
                 </>
               ) : null}

@@ -42,6 +42,13 @@ export const TIMEZONES = [
   'Europe/Sofia',
 ];
 
+/** De tijdzones uit de lijst, met de gegeven zones erbij (bijvoorbeeld die van een land of de huidige keuze). */
+export function timezoneOptions(...extra: (string | null | undefined)[]): string[] {
+  const out = [...TIMEZONES];
+  for (const z of extra) if (z && !out.includes(z)) out.push(z);
+  return out;
+}
+
 /**
  * Sessiecode uit vrije tekst, zoals een bedrijfsnaam: hoofdletters, zonder
  * accenten, spaties of leestekens, hooguit 12 tekens. "Van Dijk B.V." wordt VANDIJKBV.
