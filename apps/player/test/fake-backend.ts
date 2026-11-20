@@ -1,5 +1,6 @@
 import type { GameEvent, GamePackage, GpsFix } from '@hunt/engine';
 import type { Backend, ChatMessage, PendingPhoto, TeamRecord } from '../src/core/types.js';
+import { mediaExtension } from '../src/core/supabase-backend.js';
 
 /** Nep-server voor tests: houdt alles in het geheugen en kan "offline" gaan. */
 export class FakeBackend implements Backend {
@@ -112,7 +113,7 @@ export class FakeBackend implements Backend {
 
   async uploadPhoto(teamId: string, photo: PendingPhoto) {
     this.guard();
-    const path = `${teamId}/${photo.task}/${photo.photoId}.jpg`;
+    const path = `${teamId}/${photo.task}/${photo.photoId}.${mediaExtension(photo)}`;
     this.photos.push({ teamId, photo, path });
     return path;
   }

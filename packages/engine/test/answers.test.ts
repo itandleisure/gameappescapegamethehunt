@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkAnswer, matchesAccepted, normalizeText, parseNumber } from '../src/answers.js';
+import { checkAnswer, isVideoPath, matchesAccepted, normalizeText, parseNumber, videoSeconds } from '../src/answers.js';
 import type { AnswerSpec } from '../src/types.js';
 
 describe('antwoorden', () => {
@@ -35,6 +35,19 @@ describe('antwoorden', () => {
     expect(checkAnswer({ type: 'info' }, { type: 'info' })).toEqual({ valid: true, correct: true });
     expect(checkAnswer({ type: 'photo' }, { type: 'photo', photoId: 'p1' })).toEqual({ valid: true, correct: true });
     expect(checkAnswer({ type: 'photo' }, { type: 'info' })).toMatchObject({ valid: false });
+    expect(checkAnswer({ type: 'video' }, { type: 'video', videoId: 'v1' })).toEqual({ valid: true, correct: true });
+    expect(checkAnswer({ type: 'video' }, { type: 'video', videoId: '' })).toMatchObject({ valid: false });
+    expect(checkAnswer({ type: 'video' }, { type: 'photo', photoId: 'p1' })).toMatchObject({ valid: false });
+  });
+
+  it('begrenst de lengte van een video-opdracht en herkent video-bestanden', () => {
+    expect(videoSeconds({ type: 'video' })).toBe(30);
+    expect(videoSeconds({ type: 'video', maxSeconds: 15 })).toBe(15);
+    expect(videoSeconds({ type: 'video', maxSeconds: 600 })).toBe(60);
+    expect(videoSeconds({ type: 'video', maxSeconds: 1 })).toBe(5);
+    expect(isVideoPath('team/opdracht/id.mp4')).toBe(true);
+    expect(isVideoPath('team/opdracht/id.MOV')).toBe(true);
+    expect(isVideoPath('team/opdracht/id.jpg')).toBe(false);
   });
 
   it('kent een jokerteken in goedgekeurde antwoorden, zoals Loquiz', () => {

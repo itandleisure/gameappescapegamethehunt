@@ -1,5 +1,5 @@
 'use client';
-import type { GamePackage } from '@hunt/engine';
+import { isVideoPath, type GamePackage } from '@hunt/engine';
 import { useEffect, useState } from 'react';
 import type { PhotoRow } from '@/lib/results';
 import { useLanguage } from '@/lib/language';
@@ -86,7 +86,9 @@ export function Photowall({
       <div className="photowall">
         {shown.map((p) => (
           <figure key={p.id}>
-            {urls[p.path] ? (
+            {urls[p.path] && isVideoPath(p.path) ? (
+              <video src={urls[p.path]} controls preload="metadata" playsInline aria-label={t('Video van {team}', { team: teamName(p.team_id) })} />
+            ) : urls[p.path] ? (
               <a href={urls[p.path]} target="_blank" rel="noreferrer">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={urls[p.path]} alt={t('Foto van {team}', { team: teamName(p.team_id) })} loading="lazy" />

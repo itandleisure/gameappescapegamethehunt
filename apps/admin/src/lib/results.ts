@@ -160,6 +160,8 @@ export function describeAnswer(spec: AnswerSpec, value: AnswerValue | undefined,
       return String(value.value);
     case 'photo':
       return tr('Foto');
+    case 'video':
+      return tr('Video');
   }
 }
 
@@ -264,7 +266,7 @@ export function buildResults(
       const answered = ts.lastAnswer !== undefined || ts.status === 'done';
       if (!answered) continue;
       const result: AnswerResult =
-        task.answer.type === 'photo' ? 'done' : ts.correct === true ? 'correct' : 'wrong';
+        task.answer.type === 'photo' || task.answer.type === 'video' ? 'done' : ts.correct === true ? 'correct' : 'wrong';
       if (result === 'correct') correct += 1;
       if (result === 'wrong') wrong += 1;
       const answer: TaskAnswer = {

@@ -28,6 +28,7 @@ import {
 import { downloadPlayArea } from "../src/services/map-download";
 import { Banner, Body, Button, Screen, Title } from "../src/ui/components";
 import { LeaveGame } from "../src/ui/LeaveGame";
+import { askStep, pendingSteps, PermissionStepScreen, type PermissionStep } from "../src/ui/PermissionSteps";
 import { WebPlayBanners, WebStartInfo, webLocationHelp } from "../src/ui/WebNotices";
 import { takePhoto } from "../src/ui/camera";
 import { playSiren } from "../src/services/siren";
@@ -52,6 +53,8 @@ export default function PlayScreen() {
   } | null>(null);
   const [download, setDownload] = useState<number | null>(null);
   const [starting, setStarting] = useState(false);
+  // Toestemmingen die nog gevraagd worden, elk met een eigen uitlegscherm (niet in de webapp).
+  const [steps, setSteps] = useState<PermissionStep[] | null>(null);
   const [teamPhoto, setTeamPhoto] = useState<string | null>(null);
   const [photoBusy, setPhotoBusy] = useState(false);
   // Foutmelding bij teamfoto of starten, zodat het team niet zonder uitleg blijft hangen.
@@ -143,6 +146,34 @@ export default function PlayScreen() {
   if (!controller || !snapshot || !game) return <Redirect href="/" />;
   if (state?.ended) return <Redirect href="/end" />;
 
+  /** Het spel starten (de toestemmingen zijn dan al gevraagd). */
+  const begin = async () => {
+    setStarting(true);
+    setSetupError(null);
+    try {
+      await controller.start();
+    } catch (e) {
+      setSetupError(e instanceof BackendError ? e.key : "errorGeneric");
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  /** Start: eerst de uitlegschermen met de vragen van de telefoon, dan het spel. */
+  const onStart = async () => {
+    if (Platform.OS === "web") return withLocation(() => controller.start());
+    const pending = await pendingSteps().catch(() => [] as PermissionStep[]);
+    if (pending.length === 0) return begin();
+    setSteps(pending);
+  };
+
+  /** Volgende uitlegscherm, of starten als alles gevraagd is. */
+  const nextStep = async (rest: PermissionStep[]) => {
+    if (rest.length > 0) return setSteps(rest);
+    setSteps(null);
+    await begin();
+  };
+
   /** Locatie vragen en daarna starten. */
   const withLocation = async (next: () => Promise<void>) => {
     setStarting(true);
@@ -157,6 +188,34 @@ export default function PlayScreen() {
       setStarting(false);
     }
   };
+
+  if (!started && steps && steps.length > 0) {
+    const step = steps[0]!;
+    return (
+      <PermissionStepScreen
+        step={step}
+        t={t}
+        busy={starting}
+        onSkip={() => void nextStep(steps.slice(1))}
+        onContinue={async () => {
+          setStarting(true);
+          let result: PermissionResult | null = null;
+          try {
+            result = await askStep(step);
+          } catch (e) {
+            logError("toestemming_vragen_mislukt", e, { stap: step }, "warn");
+          } finally {
+            setStarting(false);
+          }
+          if (result) setPermission(result);
+          // Zonder locatie kan het spel niet: terug naar het startscherm met uitleg.
+          if (step === "location" && (result === null || result === "denied")) return setSteps(null);
+          const rest = steps.slice(1).filter((s) => !(s === "always" && result === "always"));
+          await nextStep(rest);
+        }}
+      />
+    );
+  }
 
   // Eerst de teamfoto, als eigen scherm vóór de teamcode.
   if (!started && snapshot.teamPhotoNeeded && !teamPhoto) {
@@ -238,7 +297,7 @@ export default function PlayScreen() {
             label={t("start")}
             disabled={snapshot.teamPhotoNeeded}
             busy={starting}
-            onPress={() => void withLocation(() => controller.start())}
+            onPress={() => void onStart()}
           />
           <LeaveGame showCode={false} />
         </Screen>

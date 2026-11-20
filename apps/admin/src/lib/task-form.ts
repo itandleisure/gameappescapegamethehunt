@@ -2,7 +2,7 @@
  * Formuliergegevens voor één opdracht, en terug naar een engine-opdracht.
  * Puur (zonder database), zodat het te testen is.
  */
-import type { AnswerSpec, Hint, MapIcon, Task, TaskLocation, Text } from '@hunt/engine';
+import { VIDEO_SECONDS, type AnswerSpec, type Hint, type MapIcon, type Task, type TaskLocation, type Text } from '@hunt/engine';
 import { t } from './i18n';
 
 export type AnswerType = AnswerSpec['type'];
@@ -26,6 +26,8 @@ export interface TaskForm {
   accepted: string;
   numberValue: string;
   tolerance: string;
+  /** Video: maximale lengte in seconden. */
+  videoSeconds: string;
   points: string;
   wrongPoints: string;
   tags: string;
@@ -63,6 +65,7 @@ export function taskToForm(task: Task): TaskForm {
     accepted: a.type === 'text' ? a.accepted.join('\n') : '',
     numberValue: a.type === 'number' ? String(a.value) : '',
     tolerance: a.type === 'number' && a.tolerance !== undefined ? String(a.tolerance) : '',
+    videoSeconds: a.type === 'video' && a.maxSeconds !== undefined ? String(a.maxSeconds) : '',
     points: String(task.points),
     wrongPoints: String(task.wrongPoints ?? 0),
     tags: task.tags.join(', '),
@@ -111,6 +114,13 @@ export function formAnswer(form: TaskForm, errors: string[]): AnswerSpec {
       if (Number.isNaN(value)) errors.push(t('Het goede getal ontbreekt.'));
       const tolerance = num(form.tolerance);
       return Number.isNaN(tolerance) ? { type: 'number', value } : { type: 'number', value, tolerance };
+    }
+    case 'video': {
+      const seconds = num(form.videoSeconds);
+      if (Number.isNaN(seconds)) return { type: 'video' };
+      if (!(seconds >= VIDEO_SECONDS.min && seconds <= VIDEO_SECONDS.max))
+        errors.push(t('Een video duurt tussen {min} en {max} seconden.', { min: VIDEO_SECONDS.min, max: VIDEO_SECONDS.max }));
+      return { type: 'video', maxSeconds: Math.round(seconds) };
     }
     default:
       return { type: form.answerType } as AnswerSpec;

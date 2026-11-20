@@ -54,6 +54,11 @@ const config: ExpoConfig = {
       'FOREGROUND_SERVICE',
       'FOREGROUND_SERVICE_LOCATION',
       'CAMERA',
+      // Video-opdracht (alleen gevraagd als een team er een opent).
+      'RECORD_AUDIO',
+      // Trillen bij een opdracht, en meldingen met het scherm uit (Android 13+ vraagt dit bij de start).
+      'VIBRATE',
+      'POST_NOTIFICATIONS',
     ],
   },
   plugins: [
@@ -66,6 +71,8 @@ const config: ExpoConfig = {
         locationAlwaysAndWhenInUsePermission:
           'Escape Game The Hunt gebruikt je locatie tijdens het spel om opdrachten te openen als je ter plekke bent, ook als het scherm uit is.',
         locationWhenInUsePermission: 'Escape Game The Hunt gebruikt je locatie om opdrachten te openen als je ter plekke bent.',
+        locationAlwaysPermission:
+          'Escape Game The Hunt gebruikt je locatie tijdens het spel om opdrachten te openen als je ter plekke bent, ook als het scherm uit is.',
         isIosBackgroundLocationEnabled: true,
         isAndroidBackgroundLocationEnabled: true,
         isAndroidForegroundServiceEnabled: true,
@@ -74,10 +81,28 @@ const config: ExpoConfig = {
     [
       'expo-image-picker',
       {
-        cameraPermission: 'Escape Game The Hunt gebruikt de camera voor de fotomissies.',
+        cameraPermission: 'Escape Game The Hunt gebruikt de camera voor de foto- en video-opdrachten.',
+        microphonePermission: 'Escape Game The Hunt gebruikt de microfoon alleen om geluid op te nemen bij een video-opdracht.',
         photosPermission: false,
       },
     ],
+    // Foto's en video's uit het spel ook in de galerij van de telefoon bewaren
+    // (alleen opslaan, de app leest de galerij niet).
+    [
+      'expo-media-library',
+      {
+        photosPermission: false,
+        savePhotosPermission: "Escape Game The Hunt bewaart de foto's en video's die je in het spel maakt ook in je fotogalerij.",
+        isAccessMediaLocationEnabled: false,
+        // Geen leestoegang tot de galerij (READ_MEDIA_*): Google Play staat
+        // die alleen toe voor apps die de galerij echt doorzoeken. Opslaan
+        // vraagt alleen op Android 12 en ouder om toestemming.
+        granularPermissions: [],
+      },
+    ],
+    // Alleen meldingen vanaf de telefoon zelf (trillen als een opdracht opengaat
+    // met het scherm uit); geen pushberichten via een server.
+    ['expo-notifications', { enableRemoteNotifications: false, color: '#e5963f' }],
     '@maplibre/maplibre-react-native',
   ],
   // Webapp (speler-app in de browser, zie scripts/web-build.mjs): staat onder

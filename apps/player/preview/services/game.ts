@@ -7,7 +7,7 @@ import { currentScene, previewGame, testImage } from '../scenes';
  * Schermvoorbeeld: vervangt src/services/game.ts. Zelfde functies, maar met
  * een nepserver in het geheugen en een spel in de toestand van de scène.
  */
-const { scene, img, long, code } = currentScene();
+const { scene, img, long, code, video } = currentScene();
 
 class PreviewBackend extends FakeBackend {
   override async serverTime() {
@@ -15,7 +15,7 @@ class PreviewBackend extends FakeBackend {
   }
 }
 
-const backend = new PreviewBackend(previewGame(scene, img, long, code), Date.now());
+const backend = new PreviewBackend(previewGame(scene, img, long, code, video), Date.now());
 backend.testMode = scene === 'play';
 backend.teamChat = scene === 'chat' || scene === 'play';
 let n = 0;

@@ -1,3 +1,7 @@
+import { t as tx } from '@hunt/engine';
+import { msg } from '../core/i18n';
+import type { GameController } from '../core/game-controller';
+import { alertNear, alertOpened } from './alerts';
 import { gpsQuality } from './diagnostics';
 import { currentGame, resumeGame } from './game';
 import { currentLeader, resumeLeader, shareLeaderPosition } from './leader';
@@ -24,8 +28,19 @@ function publish(fix: Fix) {
   for (const watch of fixWatchers) watch(fix);
 }
 
-/** Verwerkt metingen; `onOpened` als er daardoor een opdracht openging (trillen). */
-export async function handleFixes(fixes: Fix[], onOpened: () => void): Promise<void> {
+/** Titels van opdrachten in de taal van het team, voor een melding. */
+function titles(game: GameController, ids: string[]): string {
+  const lang = game.team.language;
+  return ids
+    .map((id) => tx(game.game.tasks.find((task) => task.id === id)?.title, lang, game.game.defaultLanguage) || id)
+    .join(', ');
+}
+
+/**
+ * Verwerkt metingen. Opent er een opdracht, dan trilt de telefoon (met het
+ * scherm uit via een melding); nadert het team een opdracht, dan ook.
+ */
+export async function handleFixes(fixes: Fix[]): Promise<void> {
   // Spelleider: geen spel, alleen de positie delen met de andere spelleiders.
   const leader = currentLeader() ?? (currentGame() ? null : await resumeLeader());
   if (leader) {
@@ -45,7 +60,13 @@ export async function handleFixes(fixes: Fix[], onOpened: () => void): Promise<v
     gpsQuality.fix(fix.accuracy, fix.at, limit);
     publish(fix);
     const opened = await game.onLocation(fix);
-    if (opened.length > 0) onOpened();
+    const lang = game.team.language;
+    if (opened.length > 0) {
+      void alertOpened(msg(lang, 'taskOpenedNotice'), titles(game, opened));
+      continue;
+    }
+    const near = game.approaching(fix);
+    if (near.length > 0) void alertNear(msg(lang, 'nearTaskNotice'), titles(game, near));
   }
   void game.tick();
 }

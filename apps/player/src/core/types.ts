@@ -56,6 +56,8 @@ export interface PendingPhoto {
   /** Lokaal bestand op de telefoon. */
   uri: string;
   takenAt: number;
+  /** Video (video-opdracht); zonder dit veld is het een JPEG-foto. */
+  contentType?: 'video/mp4' | 'video/quicktime';
 }
 
 /**

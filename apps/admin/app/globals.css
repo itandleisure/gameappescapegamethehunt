@@ -141,7 +141,8 @@ td.wrong, li.wrong { color: var(--danger); }
 .answercard .given li { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
 .photowall { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
 .photowall figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
-.photowall img, .photowall .placeholder { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.photowall img, .photowall video, .photowall .placeholder { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.photowall video { background: #000; object-fit: contain; }
 .photowall .placeholder { display: grid; place-items: center; }
 .photowall figcaption { padding: 8px 10px; }
 .buttonlink { display: inline-block; font-weight: 600; padding: 9px 16px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-text); text-decoration: none; }

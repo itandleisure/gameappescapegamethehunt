@@ -1,6 +1,6 @@
 import { photoResize } from '../core/photo';
 import { savePhoto } from '../web/photo-store';
-import type { Photo } from './camera';
+import type { Photo, Video } from './camera';
 
 /**
  * Webapp: foto maken via de camera van de telefoon (het bestandsveld met
@@ -8,13 +8,13 @@ import type { Photo } from './camera';
  * de app, verkleind tot maximaal 2048 px als JPEG en bewaard in de browser tot
  * hij verstuurd is.
  */
-export type { Photo };
+export type { Photo, Video };
 
-function pickFile(camera: boolean): Promise<File | null> {
+function pickFile(camera: boolean, accept = 'image/*'): Promise<File | null> {
   return new Promise((resolve) => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'image/*';
+    input.accept = accept;
     if (camera) input.setAttribute('capture', 'environment');
     input.style.display = 'none';
     let done = false;
@@ -81,4 +81,36 @@ async function fromFile(picked: Promise<File | null>): Promise<Photo | null> {
   // gaat de foto toch mee zolang de pagina open blijft (readFile haalt het blob:-adres op).
   await savePhoto(uri, blob).catch(() => undefined);
   return { uri, width, height };
+}
+
+/** Lengte van een video in seconden, of 0 als de browser hem niet kan lezen. */
+function duration(file: File): Promise<number> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    const done = (seconds: number) => {
+      URL.revokeObjectURL(url);
+      resolve(Number.isFinite(seconds) ? seconds : 0);
+    };
+    video.onloadedmetadata = () => done(video.duration);
+    video.onerror = () => done(0);
+    video.src = url;
+  });
+}
+
+/**
+ * Webapp: video filmen met de camera van de telefoon. De browser kan de
+ * lengte niet begrenzen; een te lange video geeft `tooLong` terug.
+ */
+export async function recordVideo(maxSeconds: number): Promise<Video | 'tooLong' | null> {
+  const file = await pickFile(true, 'video/*');
+  if (!file) return null;
+  const seconds = Math.round(await duration(file));
+  if (seconds > maxSeconds + 1) return 'tooLong';
+  const contentType = file.type === 'video/quicktime' ? 'video/quicktime' : 'video/mp4';
+  const blob = new Blob([await file.arrayBuffer()], { type: contentType });
+  const uri = URL.createObjectURL(blob);
+  await savePhoto(uri, blob).catch(() => undefined);
+  return { uri, seconds, contentType };
 }

@@ -24,14 +24,6 @@ function toFix(position: GeolocationPosition): Fix {
   };
 }
 
-function vibrate() {
-  try {
-    navigator.vibrate?.([120, 60, 120]);
-  } catch {
-    // iPhone kent trillen in de browser niet
-  }
-}
-
 /** Toestemming zoals de browser hem nu kent, zonder te vragen. */
 async function browserPermission(): Promise<PermissionState | 'unknown'> {
   try {
@@ -49,7 +41,7 @@ export function requestLocationPermission(): Promise<PermissionResult> {
   return new Promise((resolve) => {
     g.getCurrentPosition(
       (position) => {
-        void handleFixes([toFix(position)], vibrate);
+        void handleFixes([toFix(position)]);
         resolve('foreground');
       },
       (error) => {
@@ -85,7 +77,7 @@ function watch() {
     (position) => {
       gpsMonitor.fix(Date.now());
       gpsChanged();
-      void handleFixes([toFix(position)], vibrate);
+      void handleFixes([toFix(position)]);
     },
     (error) => {
       if (error.code === error.PERMISSION_DENIED) {
@@ -157,3 +149,8 @@ export async function stopTracking(): Promise<void> {
   gpsMonitor.stop();
   gpsChanged();
 }
+
+/** De webapp kan niet volgen met het scherm uit; er is geen tweede vraag. */
+export const BACKGROUND_LOCATION = false;
+export const requestForegroundLocation = requestLocationPermission;
+export const requestAlwaysLocation = locationPermission;

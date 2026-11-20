@@ -1,6 +1,6 @@
 'use client';
 import { gameLanguageList, gameLanguageName, gameLanguageTag, languageName } from '@/lib/game-languages';
-import { composeGame, richToPlain, type Task, type TaskField } from '@hunt/engine';
+import { composeGame, richToPlain, VIDEO_SECONDS, type Task, type TaskField } from '@hunt/engine';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useState, type ChangeEvent, type ReactNode } from 'react';
@@ -24,6 +24,7 @@ const ANSWER_TYPES: { value: AnswerType; label: string }[] = [
   { value: 'text', label: tKey('Tekst') },
   { value: 'number', label: tKey('Getal') },
   { value: 'photo', label: tKey('Foto') },
+  { value: 'video', label: tKey('Video (korte film)') },
 ];
 
 /** Velden die een stad of klant mag aanpassen, met wat het formulier dan toont. */
@@ -531,6 +532,21 @@ export default function TaskPage() {
                 </div>
               ) : null}
               {answer === 'photo' ? <p className="help">{t('Spelers maken een foto. Die komt in het fotoboek en telt als goed.')}</p> : null}
+              {answer === 'video' ? (
+                <>
+                  <label htmlFor="videoSeconds">{t('Maximale lengte in seconden')}</label>
+                  <input
+                    id="videoSeconds"
+                    inputMode="numeric"
+                    placeholder={String(VIDEO_SECONDS.default)}
+                    value={form.videoSeconds}
+                    onChange={(e) => set({ videoSeconds: e.target.value })}
+                  />
+                  <p className="help">
+                    {t("Spelers filmen een korte video met geluid. Die staat bij de foto's van de sessie (niet in het fotoboek) en telt als goed. De app vraagt pas om de camera en microfoon als een team deze opdracht opent.")}
+                  </p>
+                </>
+              ) : null}
             </Panel>
 
             <Panel title={t('Punten')} enabled={may('points')} variant={isVariant} on={on.points} onToggle={toggle('points')}>
@@ -546,7 +562,7 @@ export default function TaskPage() {
                   </div>
                 ) : null}
               </div>
-              {!isVariant && answer !== 'info' && answer !== 'photo' ? (
+              {!isVariant && answer !== 'info' && answer !== 'photo' && answer !== 'video' ? (
                 <label className="check" style={{ marginTop: 12 }}>
                   <input type="checkbox" checked={form.retryUntilCorrect} onChange={(e) => set({ retryUntilCorrect: e.target.checked })} />
                   {t('Bij een fout antwoord opnieuw laten proberen tot het goed is')}

@@ -3,7 +3,7 @@
 // foto's, chatberichten en spelleiders. Regels en punten worden opnieuw
 // uitgerekend met de spelregel-engine uit dezelfde gebeurtenissen als de app,
 // dus het logboek klopt altijd met wat het team in de app zag.
-import { checkAnswer, computeState, t, type GameEvent, type GamePackage, type Lang } from '@hunt/engine';
+import { checkAnswer, computeState, isVideoPath, t, type GameEvent, type GamePackage, type Lang } from '@hunt/engine';
 import { currentLanguage, t as tr } from './i18n';
 import { describeAnswer, fromEventRow, type EventRow, type PhotoRow, type TeamRow } from './results';
 import { deviceSummary, kindLabel, type AppLogRow } from './app-logs';
@@ -146,8 +146,9 @@ export function buildSessionLog({ game, teams, events, photos = [], chat = [], l
             push({ ...base, text: tr('{task} gelezen', { task: name }) });
             break;
           }
-          if (task.answer.type === 'photo') {
-            push({ ...base, text: tr('Foto ingestuurd bij {task}', { task: name }), points: task.points || undefined, tone: 'ok' });
+          if (task.answer.type === 'photo' || task.answer.type === 'video') {
+            const text = task.answer.type === 'video' ? tr('Video ingestuurd bij {task}', { task: name }) : tr('Foto ingestuurd bij {task}', { task: name });
+            push({ ...base, text, points: task.points || undefined, tone: 'ok' });
             break;
           }
           const check = checkAnswer(task.answer, ev.answer);
@@ -205,7 +206,7 @@ export function buildSessionLog({ game, teams, events, photos = [], chat = [], l
       at: Date.parse(p.created_at),
       teamId: p.team_id,
       category: 'foto',
-      text: tr('Foto geüpload bij {task}', { task: title(p.task_key) }),
+      text: isVideoPath(p.path) ? tr('Video geüpload bij {task}', { task: title(p.task_key) }) : tr('Foto geüpload bij {task}', { task: title(p.task_key) }),
     });
   }
 

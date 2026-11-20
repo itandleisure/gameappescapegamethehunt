@@ -1,5 +1,6 @@
 import {
   canUseHint,
+  videoSeconds,
   t as tx,
   type AnswerValue,
   type TeamState,
@@ -20,7 +21,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { fitImage } from "../../src/core/photo";
 import { answerFeedback, isAnswerable } from "../../src/core/view";
-import { takePhoto, type Photo } from "../../src/ui/camera";
+import { recordVideo, takePhoto, type Photo, type Video } from "../../src/ui/camera";
 import {
   Banner,
   Body,
@@ -41,6 +42,8 @@ export default function TaskScreen() {
   const [text, setText] = useState("");
   const [choice, setChoice] = useState<number[]>([]);
   const [photo, setPhoto] = useState<Photo | null>(null);
+  const [video, setVideo] = useState<Video | null>(null);
+  const [videoTooLong, setVideoTooLong] = useState(false);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
   /** Afteltimer na "Nee" op de bevestigingsvraag: seconden om de cirkel uit te lopen. */
@@ -122,6 +125,9 @@ export default function TaskScreen() {
           {task.answer.type === "photo" ? (
             <Body muted>{t("photoSaved")}</Body>
           ) : null}
+          {task.answer.type === "video" ? (
+            <Body muted>{t("videoSaved")}</Body>
+          ) : null}
           {comment ? <Body>{tr(comment)}</Body> : null}
           <Button label={t("ok")} onPress={close} />
         </ScrollView>
@@ -171,6 +177,13 @@ export default function TaskScreen() {
   const snapPhoto = async () => {
     const taken = await takePhoto();
     if (taken) setPhoto(taken);
+  };
+
+  const maxSeconds = videoSeconds(answer);
+  const filmVideo = async () => {
+    const filmed = await recordVideo(maxSeconds);
+    setVideoTooLong(filmed === "tooLong");
+    if (filmed && filmed !== "tooLong") setVideo(filmed);
   };
 
   return (
@@ -288,6 +301,42 @@ export default function TaskScreen() {
                     setBusy(true);
                     try {
                       await controller.submitPhoto(task.id, photo.uri);
+                      setFeedback("correct");
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                />
+              ) : null}
+            </>
+          ) : null}
+
+          {answer.type === "video" ? (
+            <>
+              <Body muted>{t("videoMax", { seconds: maxSeconds })}</Body>
+              {video ? (
+                <Banner tone="success">
+                  {t("videoReady", { seconds: video.seconds })}
+                </Banner>
+              ) : null}
+              {videoTooLong ? (
+                <Banner tone="danger">
+                  {t("videoTooLong", { seconds: maxSeconds })}
+                </Banner>
+              ) : null}
+              <Button
+                kind={video ? "secondary" : "primary"}
+                label={video ? t("retakeVideo") : t("recordVideo")}
+                onPress={() => void filmVideo()}
+              />
+              {video ? (
+                <Button
+                  label={t("sendVideo")}
+                  busy={busy}
+                  onPress={async () => {
+                    setBusy(true);
+                    try {
+                      await controller.submitVideo(task.id, video.uri, video.contentType);
                       setFeedback("correct");
                     } finally {
                       setBusy(false);
