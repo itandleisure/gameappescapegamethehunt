@@ -119,4 +119,5 @@ export const sl: Messages = {
   videoReady: "Video posnet ({seconds} s).",
   videoTooLong: "Video je predolg. Posnemite največ {seconds} sekund.",
   videoSaved: "Video prejet. Pošilja se v ozadju.",
+  privacy: "Politika zasebnosti",
 };

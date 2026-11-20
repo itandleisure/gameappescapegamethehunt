@@ -119,4 +119,5 @@ export const cs: Messages = {
   videoReady: "Video natočeno ({seconds} s).",
   videoTooLong: "Video je příliš dlouhé. Natočte nejvýše {seconds} sekund.",
   videoSaved: "Video přijato. Odesílá se na pozadí.",
+  privacy: "Zásady ochrany osobních údajů",
 };

@@ -119,4 +119,5 @@ export const pl: Messages = {
   videoReady: "Film nagrany ({seconds} s).",
   videoTooLong: "Ten film jest za długi. Nagrajcie najwyżej {seconds} sekund.",
   videoSaved: "Film odebrany. Jest wysyłany w tle.",
+  privacy: "Polityka prywatności",
 };

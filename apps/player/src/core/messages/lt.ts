@@ -119,4 +119,5 @@ export const lt: Messages = {
   videoReady: "Vaizdo įrašas nufilmuotas ({seconds} s).",
   videoTooLong: "Šis vaizdo įrašas per ilgas. Filmuokite ne daugiau kaip {seconds} sekundžių.",
   videoSaved: "Vaizdo įrašas gautas. Jis siunčiamas fone.",
+  privacy: "Privatumo politika",
 };

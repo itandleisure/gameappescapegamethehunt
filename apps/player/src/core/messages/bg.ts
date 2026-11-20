@@ -119,4 +119,5 @@ export const bg: Messages = {
   videoReady: "Видеото е заснето ({seconds} с).",
   videoTooLong: "Видеото е твърде дълго. Заснемете най-много {seconds} секунди.",
   videoSaved: "Видеото е получено. Изпраща се във фонов режим.",
+  privacy: "Политика за поверителност",
 };

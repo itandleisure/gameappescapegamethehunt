@@ -119,4 +119,5 @@ export const ga: Messages = {
   videoReady: "Físeán taifeadta ({seconds} s).",
   videoTooLong: "Tá an físeán seo rófhada. Taifead {seconds} soicind ar a mhéad.",
   videoSaved: "Físeán faighte. Á sheoladh sa chúlra.",
+  privacy: "Polasaí príobháideachais",
 };

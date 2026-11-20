@@ -119,4 +119,5 @@ export const et: Messages = {
   videoReady: "Video salvestatud ({seconds} s).",
   videoTooLong: "See video on liiga pikk. Filmige kuni {seconds} sekundit.",
   videoSaved: "Video vastu võetud. See saadetakse taustal.",
+  privacy: "Privaatsuspoliitika",
 };

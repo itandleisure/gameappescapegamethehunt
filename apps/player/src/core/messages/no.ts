@@ -119,4 +119,5 @@ export const no: Messages = {
   videoReady: "Video tatt opp ({seconds} s).",
   videoTooLong: "Videoen er for lang. Ta opp maks {seconds} sekunder.",
   videoSaved: "Video mottatt. Den sendes i bakgrunnen.",
+  privacy: "Personvernerklæring",
 };

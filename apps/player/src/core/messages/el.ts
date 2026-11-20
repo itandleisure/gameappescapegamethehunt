@@ -119,4 +119,5 @@ export const el: Messages = {
   videoReady: "Το βίντεο τραβήχτηκε ({seconds} δ).",
   videoTooLong: "Το βίντεο είναι πολύ μεγάλο. Τραβήξτε έως {seconds} δευτερόλεπτα.",
   videoSaved: "Το βίντεο ελήφθη. Αποστέλλεται στο παρασκήνιο.",
+  privacy: "Πολιτική απορρήτου",
 };

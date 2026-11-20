@@ -119,4 +119,5 @@ export const lv: Messages = {
   videoReady: "Video uzņemts ({seconds} s).",
   videoTooLong: "Video ir pārāk garš. Filmējiet ne vairāk kā {seconds} sekundes.",
   videoSaved: "Video saņemts. Tas tiek sūtīts fonā.",
+  privacy: "Privātuma politika",
 };
