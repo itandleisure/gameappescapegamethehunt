@@ -9,14 +9,14 @@ import type { ReactNode } from 'react';
  * verklaring nog niet compleet.
  */
 const COMPANY = {
-  name: '[OFFICIËLE BEDRIJFSNAAM]',
+  name: 'The Badass Group B.V.',
   tradeName: 'Badass Games / Escape Game The Hunt',
-  address: '[STRAAT, POSTCODE, PLAATS]',
+  address: 'Nering 10-1, 8355 DK Giethoorn',
   kvk: '[KVK-NUMMER]',
-  email: '[PRIVACY-E-MAILADRES]',
+  email: 'info@badassgames.nl',
   website: 'https://badassgames.nl',
 };
-const VERSION = 'Versie 1.0, geldig vanaf [DATUM]';
+const VERSION = 'Versie 1.0, geldig vanaf 20 november 2026';
 
 export const metadata: Metadata = { title: 'Privacyverklaring – Escape Game The Hunt' };
 
