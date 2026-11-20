@@ -35,7 +35,7 @@ import { PartialTranslation, translateTexts } from "@/lib/translate-client";
 const LAYER_LABEL = {
   base: tKey("Template"),
   city: tKey("Stad"),
-  client: tKey("Klant"),
+  client: tKey("Op maat"),
 } as const;
 const ANSWER_LABEL: Record<string, string> = {
   info: tKey("Info"),
@@ -659,6 +659,14 @@ export default function GamePage() {
               : t("Nieuwe versies van het basisspel komen pas in deze stad als je ze hier kiest.")}
           </p>
         </section>
+      ) : null}
+
+      {self.game.layer === "city" ? (
+        <p>
+          <Link href={`/spellen/${id}/op-maat`} className="button secondary">
+            {t("Op maat maken voor een groep")}
+          </Link>
+        </p>
       ) : null}
 
       {self.game.layer === "client" && city ? (

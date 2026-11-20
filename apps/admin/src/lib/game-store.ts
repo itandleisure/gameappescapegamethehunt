@@ -22,6 +22,7 @@ import { loadMaplibre } from './maplibre';
 import { withPlayfieldImage } from './playfield-image';
 import { withIllustrations } from './illustrations';
 import { t as tr } from './i18n';
+import type { CustomRows } from './custom-variant';
 
 const GAME_COLUMNS = 'id, layer, slug, parent_id, languages, default_language, settings, base_version';
 
@@ -526,4 +527,54 @@ export async function copyExternalImages(db: SupabaseClient, baseId: string): Pr
     }
   }
   return { copied, failed };
+}
+
+// ---------------------------------------------------------------------------
+// Op maat maken (klantvariant voor één groep)
+// ---------------------------------------------------------------------------
+
+export interface CustomVariantInput {
+  cityId: string;
+  /** Naam in de beheeromgeving, bv. "Leeuwarden · Parteon". */
+  name: string;
+  group: string;
+  slug: string;
+  /** Beginnen met een kopie van deze eerdere op-maat-versie op dezelfde stad. */
+  copyFrom: string | null;
+  rows: CustomRows;
+}
+
+/** Maakt de klantvariant met de aanpassingen uit het stappenplan; geeft het id. */
+export async function createCustomVariant(db: SupabaseClient, orgId: string, input: CustomVariantInput): Promise<string> {
+  const city = check<{ languages: string[] }>(
+    (await db.from('games').select('languages').eq('id', input.cityId).single()) as never,
+  );
+  const id = check<string>(
+    (await db.rpc('create_client_variant', {
+      p_org: orgId,
+      p_parent: input.cityId,
+      p_slug: input.slug,
+      p_copy_from: input.copyFrom,
+    })) as never,
+  );
+  try {
+    const name = Object.fromEntries(city.languages.map((l) => [l, input.name]));
+    check(await db.from('games').update({ settings: { name, group: input.group } }).eq('id', id));
+    for (const c of input.rows.clear) {
+      if (c.field === 'answer') {
+        check(await db.from('overrides').delete().eq('game_id', id).eq('task_id', c.taskId).eq('field', 'answer'));
+        continue;
+      }
+      const texts = db.from('translations').delete().eq('game_id', id).eq('entity', 'task').eq('entity_id', c.key);
+      check(await (c.field === 'hints' ? texts.like('field', 'hint.%') : texts.eq('field', c.field)));
+    }
+    if (input.rows.translations.length)
+      check(await db.from('translations').insert(input.rows.translations.map((r) => ({ ...r, game_id: id }))));
+    if (input.rows.overrides.length)
+      check(await db.from('overrides').insert(input.rows.overrides.map((o) => ({ ...o, game_id: id }))));
+    return id;
+  } catch (err) {
+    await db.from('games').delete().eq('id', id);
+    throw err;
+  }
 }
