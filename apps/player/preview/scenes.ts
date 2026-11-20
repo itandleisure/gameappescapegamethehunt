@@ -11,7 +11,7 @@ import { leeuwarden, leeuwardenPoints, PUZZLES, theHuntBase } from '../../../pac
 export type Scene = 'join' | 'teamphoto' | 'teamcode' | 'play' | 'task' | 'chat' | 'end';
 export type ImageKind = 'none' | 'normal' | 'huge' | 'tiny' | 'wide' | 'tall' | 'broken';
 
-export function currentScene(): { scene: Scene; img: ImageKind; long: boolean; code: boolean } {
+export function currentScene(): { scene: Scene; img: ImageKind; long: boolean; code: boolean; video: boolean } {
   const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
   return {
     scene: (params.get('scene') as Scene | null) ?? 'join',
@@ -19,6 +19,8 @@ export function currentScene(): { scene: Scene; img: ImageKind; long: boolean; c
     long: params.get('long') === '1',
     // Codevakjes en hintveld op het extractiepunt in plaats van de foto.
     code: params.get('code') === '1',
+    // De fotomissie als video-opdracht.
+    video: params.get('video') === '1',
   };
 }
 
@@ -57,7 +59,7 @@ export function previewImage(kind: ImageKind): string | undefined {
 }
 
 /** Het spel voor de scène: Leeuwarden uit de tests, met opdrachten die meteen in de lijst staan. */
-export function previewGame(scene: Scene, img: ImageKind, long: boolean, code = false): GamePackage {
+export function previewGame(scene: Scene, img: ImageKind, long: boolean, code = false, video = false): GamePackage {
   const game = composeGame(theHuntBase, [leeuwarden], { id: 'voorbeeld', version: 1 });
   const image = previewImage(img);
   const tasks: Task[] = game.tasks.map((t) => {
@@ -68,6 +70,7 @@ export function previewGame(scene: Scene, img: ImageKind, long: boolean, code = 
         ...(image ? { image } : {}),
         hints: t.hints.map((h, i) => (i === 0 && image ? { ...h, image } : h)),
       };
+    if (t.id === 'fotomissie' && video) return { ...t, answer: { type: 'video', maxSeconds: 30 } };
     if (t.id === 'fotomissie' && image) return { ...t, image };
     return t;
   });

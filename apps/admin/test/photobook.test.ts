@@ -63,6 +63,12 @@ describe('fotoboek', () => {
     expect(items[5]).toEqual({ source: 'stock', path: 'huisstijl/org/a.jpg', caption: '' });
   });
 
+  it('laat video\'s van een video-opdracht buiten het fotoboek', () => {
+    const video = { ...photo('9', 'vossen', 'film', '13:20'), path: 'vossen/film/9.mp4' };
+    expect(defaultItems([...photos, video], [], (p) => p.team_id).some((i) => i.path.endsWith('.mp4'))).toBe(false);
+    expect(unusedGamePhotos([], [video])).toEqual([]);
+  });
+
   it('vult alleen aan met vaste foto\'s als de spelers weinig foto\'s hebben', () => {
     const stock = Array.from({ length: 6 }, (_, i) => `huisstijl/org/${i}.jpg`);
     const few = defaultItems(photos, [], (p) => p.team_id, stock);

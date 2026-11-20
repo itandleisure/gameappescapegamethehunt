@@ -59,6 +59,7 @@ export const SCENES = [
   { id: 'opdracht-lang', url: '/?scene=task&long=1&img=huge', clicks: [tasksButton, /^Een hele lange titel/] },
   { id: 'opdracht-hint', url: '/?scene=task&img=wide', clicks: [tasksButton, /^Tangram/, /^Hint gebruiken/, /^Ja$/] },
   { id: 'fotomissie', url: '/?scene=task&img=none', clicks: [tasksButton, /^Leg het bewijs vast/, /^Maak (een )?foto/i] },
+  { id: 'videomissie', url: '/?scene=task&img=none&video=1', clicks: [tasksButton, /^Leg het bewijs vast/, /^Film een video/] },
   { id: 'chat', url: '/?scene=chat', clicks: [/^(💬|Chat)/] },
   { id: 'chat-lang-offline', url: '/?scene=chat&long=1', clicks: [/^(💬|Chat)/] },
   { id: 'einde-verzamelpunt', url: '/?scene=end' },

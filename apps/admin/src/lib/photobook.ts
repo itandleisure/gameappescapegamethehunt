@@ -4,6 +4,7 @@
 import { tKey, translate, isAdminLanguage, LOCALES, type AdminLanguage } from './i18n';
 import type { BookTexts } from './org-settings';
 import type { PhotoRow } from './results';
+import { isVideoPath } from '@hunt/engine';
 
 /** Opdrachtsleutel van de teamfoto (zie Photowall). */
 export const TEAM_PHOTO_KEY = '_teamfoto';
@@ -274,7 +275,8 @@ export function defaultItems(
   minPhotos = MIN_PHOTOS,
 ): BookItem[] {
   const order = new Map(teamOrder.map((id, i) => [id, i]));
-  const sorted = [...photos].sort(
+  // Video's (video-opdracht) passen niet in een PDF.
+  const sorted = photos.filter((p) => !isVideoPath(p.path)).sort(
     (a, b) =>
       Number(b.task_key === TEAM_PHOTO_KEY) - Number(a.task_key === TEAM_PHOTO_KEY) ||
       (order.get(a.team_id) ?? Infinity) - (order.get(b.team_id) ?? Infinity) ||
@@ -316,7 +318,7 @@ export function setGroupPhoto(items: readonly BookItem[], index: number): BookIt
 /** Spelfoto's die (nog) niet in het fotoboek staan, bijvoorbeeld foto's die later binnenkwamen. */
 export function unusedGamePhotos(items: readonly BookItem[], photos: readonly PhotoRow[]): PhotoRow[] {
   const used = new Set(items.filter((i) => i.source === 'game').map((i) => i.path));
-  return photos.filter((p) => !used.has(p.path));
+  return photos.filter((p) => !used.has(p.path) && !isVideoPath(p.path));
 }
 
 /** Verplaatst een foto naar een andere plek in de volgorde. */

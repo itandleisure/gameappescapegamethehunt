@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import { LOCATION_TASK } from '../config';
@@ -23,8 +22,7 @@ function toFix(location: Location.LocationObject): Fix {
 
 export { onFix };
 
-const handle = (locations: Location.LocationObject[]) =>
-  handleFixes(locations.map(toFix), () => void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success));
+const handle = (locations: Location.LocationObject[]) => handleFixes(locations.map(toFix));
 
 // Moet bovenaan in de bundel gedefinieerd zijn, ook als de app op de
 // achtergrond wordt gestart door het besturingssysteem.
@@ -50,6 +48,36 @@ export async function requestLocationPermission(): Promise<PermissionResult> {
     logIssue('info', 'locatie_alleen_voorgrond', 'Locatie alleen met de app open (niet "altijd"); GPS stopt met scherm uit');
   }
   return background.status === 'granted' ? 'always' : 'foreground';
+}
+
+/**
+ * Kan de app de locatie volgen met het scherm uit? Niet in Expo Go. Dan is
+ * er ook geen tweede vraag ("Altijd toestaan") nodig.
+ */
+export const BACKGROUND_LOCATION = !IN_EXPO_GO;
+
+/** Stap 1 bij de start: alleen "tijdens gebruik" (na het eigen uitlegscherm). */
+export async function requestForegroundLocation(): Promise<PermissionResult> {
+  const foreground = await Location.requestForegroundPermissionsAsync();
+  if (foreground.status !== 'granted') {
+    logIssue('warn', 'locatie_geweigerd', 'Locatietoestemming geweigerd', { status: foreground.status, opnieuw_vragen: foreground.canAskAgain });
+    return 'denied';
+  }
+  return locationPermission();
+}
+
+/**
+ * Stap 2 bij de start: "Altijd toestaan", zodat het spel doorgaat met het
+ * scherm uit (na het eigen uitlegscherm). Weigeren mag: dan werkt GPS alleen
+ * met de app open.
+ */
+export async function requestAlwaysLocation(): Promise<PermissionResult> {
+  if (!BACKGROUND_LOCATION) return locationPermission();
+  const background = await Location.requestBackgroundPermissionsAsync();
+  if (background.status !== 'granted') {
+    logIssue('info', 'locatie_alleen_voorgrond', 'Locatie alleen met de app open (niet "altijd"); GPS stopt met scherm uit');
+  }
+  return locationPermission();
 }
 
 export async function locationPermission(): Promise<PermissionResult> {

@@ -3,6 +3,11 @@ import type { GameEvent, GamePackage, GpsFix } from '@hunt/engine';
 import type { Backend, ChatMessage, LoadedGame, PendingPhoto, SessionInfo, TeamRecord } from './types.js';
 
 /** Fout met een tekstsleutel uit i18n, zodat het scherm een nette melding toont. */
+/** Extensie in de bucket photos: jpg voor foto's, mp4 of mov voor video's (zie isVideoPath in de engine). */
+export function mediaExtension(photo: Pick<PendingPhoto, 'contentType'>): 'jpg' | 'mp4' | 'mov' {
+  return photo.contentType === 'video/quicktime' ? 'mov' : photo.contentType === 'video/mp4' ? 'mp4' : 'jpg';
+}
+
 export class BackendError extends Error {
   constructor(
     readonly key: 'errorUnknownSession' | 'errorLocked' | 'errorUnknownTeam' | 'errorAmbiguousTeam' | 'errorTeamNameTaken' | 'errorLanguage' | 'errorPhone' | 'errorNetwork' | 'errorGeneric',
@@ -210,9 +215,10 @@ export class SupabaseBackend implements Backend {
   }
 
   async uploadPhoto(teamId: string, photo: PendingPhoto) {
-    const path = `${teamId}/${photo.task}/${photo.photoId}.jpg`;
+    const path = `${teamId}/${photo.task}/${photo.photoId}.${mediaExtension(photo)}`;
     const body = await this.readFile(photo.uri);
-    const upload = await this.client.storage.from('photos').upload(path, body, { contentType: 'image/jpeg', upsert: false });
+    const contentType = photo.contentType ?? 'image/jpeg';
+    const upload = await this.client.storage.from('photos').upload(path, body, { contentType, upsert: false });
     // Bestaat het bestand al, dan is een eerdere poging gelukt maar het antwoord verloren gegaan.
     if (upload.error && !/exists|Duplicate/i.test(upload.error.message)) throw translate(upload.error, 'errorNetwork');
     const { error } = await this.client

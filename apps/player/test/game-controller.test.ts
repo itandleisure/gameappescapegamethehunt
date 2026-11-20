@@ -225,6 +225,37 @@ describe('GameController', () => {
     expect(answered).toMatchObject({ task: 'fotomissie', answer: { type: 'photo', photoId: s.backend.photos[0]!.photo.photoId } });
   });
 
+  it('telt een video direct mee en uploadt hem als mp4 of mov naast de foto\'s', async () => {
+    const withVideo = { ...game, tasks: game.tasks.map((t) => (t.id === 'fotomissie' ? { ...t, answer: { type: 'video' as const, maxSeconds: 20 } } : t)) };
+    s = setup(withVideo);
+    const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl', '06 12345678');
+    await c.start();
+    await c.submitVideo('fotomissie', 'file:///film.mov', 'video/quicktime');
+    s.advance(30_000);
+    await c.tick();
+    expect(s.backend.photos).toHaveLength(1);
+    expect(s.backend.photos[0]!.path).toMatch(/^team-1\/fotomissie\/.+\.mov$/);
+    const answered = s.backend.events.get(c.team.id)!.find((e) => e.type === 'answered')!;
+    expect(answered).toMatchObject({ task: 'fotomissie', answer: { type: 'video', videoId: s.backend.photos[0]!.photo.photoId } });
+  });
+
+  it('trilt één keer als het team een opdracht op de kaart nadert, niet bij slechte GPS', async () => {
+    const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl', '06 12345678');
+    await c.start();
+    s.advance(5_000);
+    const start = leeuwardenPoints.start;
+    const radius = game.tasks.find((t) => t.id === 'start')!.location?.radius ?? 25;
+    // Ruim 100 m buiten de cirkel: nog niets.
+    const far = { lat: start.lat + (radius + 120) / 111_320, lng: start.lng };
+    expect(c.approaching(s.fix(far))).toEqual([]);
+    // 25 m buiten de cirkel, maar met slechte GPS: niets.
+    const near = { lat: start.lat + (radius + 25) / 111_320, lng: start.lng };
+    expect(c.approaching(s.fix(near, 80))).toEqual([]);
+    expect(c.approaching(s.fix(near))).toEqual(['start']);
+    // Eén keer per opdracht.
+    expect(c.approaching(s.fix(near))).toEqual([]);
+  });
+
   it('gaat na een herstart verder en neemt gebeurtenissen van een tweede telefoon over', async () => {
     const c = await GameController.join(s.deps, 'LWD001', 'Team', 'nl', '06 12345678');
     await c.start();

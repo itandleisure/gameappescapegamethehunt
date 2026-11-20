@@ -3,6 +3,7 @@ import {
   PositionUploader,
   canUseHint,
   computeState,
+  distanceMeters,
   reachableTargets,
   type AnswerValue,
   type GameEvent,
@@ -42,6 +43,9 @@ export interface Snapshot {
 
 /** Langste bericht in de teamchat. */
 export const CHAT_MAX_LENGTH = 500;
+
+/** Afstand buiten de cirkel waarop de telefoon trilt: "je bent er bijna". */
+export const NEAR_MARGIN_METERS = 40;
 
 /** Opdrachtsleutel van de teamfoto in de tabel photos (een echte sleutel begint nooit met _). */
 export const TEAM_PHOTO_KEY = '_teamfoto';
@@ -112,6 +116,8 @@ export class GameController {
   private lastPullAt = 0;
   /** Na "Nee" op een bevestigingsvraag: tot wanneer (servertijd) die locatie niet opnieuw vraagt. */
   private readonly snoozed = new Map<string, number>();
+  /** Opdrachten waarvoor de telefoon al getrild heeft omdat het team in de buurt kwam. */
+  private readonly nearAlerted = new Set<string>();
 
   private constructor(
     private readonly deps: ControllerDeps,
@@ -243,6 +249,23 @@ export class GameController {
   }
 
   /**
+   * Opdrachten op de kaart die het team nu nadert: binnen `margin` meter van
+   * de cirkel, maar nog niet geopend. Elke opdracht maar één keer, en alleen
+   * bij een meting die nauwkeurig genoeg is, zodat de telefoon niet trilt
+   * door een GPS-sprong. Voor het trillen (en de melding met scherm uit).
+   */
+  approaching(fix: GpsFix, margin = NEAR_MARGIN_METERS): string[] {
+    const ctx = this.context;
+    if (!ctx || fix.accuracy > (this.game.gps?.maxAccuracy ?? 30)) return [];
+    const state = computeState(this.game, ctx, this.data.events, this.clock.toServer(fix.at) + (this.data.testSkipMs ?? 0));
+    const near = reachableTargets(this.game, ctx, state)
+      .filter((x) => !this.nearAlerted.has(x.task) && distanceMeters(fix, x.location) <= x.location.radius + margin)
+      .map((x) => x.task);
+    for (const task of near) this.nearAlerted.add(task);
+    return near;
+  }
+
+  /**
    * Alleen in een testsessie: doet alsof het team bij de opdracht staat, zodat
    * de spelleiding een spel kan doorlopen zonder ter plekke te zijn.
    * Geeft false als het niet mag of de opdracht nu niet op de kaart open staat.
@@ -312,6 +335,17 @@ export class GameController {
     const photoId = this.newId();
     this.data.photos.push({ photoId, task, uri, takenAt: this.now() });
     this.record({ type: 'answered', task, answer: { type: 'photo', photoId } });
+    await this.commit();
+  }
+
+  /**
+   * Video bij een video-opdracht: net als een foto telt hij direct als
+   * antwoord en gaat hij op de achtergrond mee met de wachtrij.
+   */
+  async submitVideo(task: string, uri: string, contentType: 'video/mp4' | 'video/quicktime'): Promise<void> {
+    const videoId = this.newId();
+    this.data.photos.push({ photoId: videoId, task, uri, takenAt: this.now(), contentType });
+    this.record({ type: 'answered', task, answer: { type: 'video', videoId } });
     await this.commit();
   }
 

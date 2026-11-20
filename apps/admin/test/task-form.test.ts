@@ -20,6 +20,15 @@ describe('opdrachtformulier', () => {
     expect(formToTask('x', { ...form, answerType: 'number', numberValue: '4,5' }).task.answer).toEqual({ type: 'number', value: 4.5 });
   });
 
+  it('maakt een video-opdracht met een maximale lengte', () => {
+    const form = taskToForm(theHuntBase.tasks[0]!);
+    expect(formToTask('x', { ...form, answerType: 'video', videoSeconds: '' }).task.answer).toEqual({ type: 'video' });
+    expect(formToTask('x', { ...form, answerType: 'video', videoSeconds: '20' }).task.answer).toEqual({ type: 'video', maxSeconds: 20 });
+    expect(formToTask('x', { ...form, answerType: 'video', videoSeconds: '300' }).errors).toContain('Een video duurt tussen 5 en 60 seconden.');
+    const back = taskToForm({ ...theHuntBase.tasks[0]!, answer: { type: 'video', maxSeconds: 15 } });
+    expect(back.videoSeconds).toBe('15');
+  });
+
   it('neemt een foto over en weigert een adres zonder https', () => {
     const form = taskToForm(theHuntBase.tasks[0]!);
     expect(formToTask('x', { ...form, image: ' https://example.org/a.jpg ' }).task.image).toBe('https://example.org/a.jpg');

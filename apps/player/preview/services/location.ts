@@ -18,3 +18,6 @@ export async function startTracking(): Promise<PermissionResult> {
   return 'always';
 }
 export async function stopTracking(): Promise<void> {}
+export const BACKGROUND_LOCATION = true;
+export const requestForegroundLocation = requestLocationPermission;
+export const requestAlwaysLocation = requestLocationPermission;

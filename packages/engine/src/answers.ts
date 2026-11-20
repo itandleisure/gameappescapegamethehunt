@@ -38,6 +38,21 @@ export function parseNumber(input: number | string): number | undefined {
 
 export type AnswerCheck = { valid: false; reason: string } | { valid: true; correct: boolean };
 
+/** Standaard en grenzen voor de lengte van een video-opdracht, in seconden. */
+export const VIDEO_SECONDS = { default: 30, min: 5, max: 60 } as const;
+
+/** Maximale lengte van een video-opdracht in seconden (standaard 30, tussen 5 en 60). */
+export function videoSeconds(spec: AnswerSpec): number {
+  const s = spec.type === 'video' ? spec.maxSeconds : undefined;
+  if (s === undefined || !Number.isFinite(s)) return VIDEO_SECONDS.default;
+  return Math.min(VIDEO_SECONDS.max, Math.max(VIDEO_SECONDS.min, Math.round(s)));
+}
+
+/** Een bestand in de bucket photos dat een video is (video-opdracht) in plaats van een foto. */
+export function isVideoPath(path: string): boolean {
+  return /\.(mp4|mov|m4v)$/i.test(path);
+}
+
 /** Controleert een antwoord tegen de specificatie van de opdracht. */
 export function checkAnswer(spec: AnswerSpec, answer: AnswerValue): AnswerCheck {
   if (spec.type !== answer.type) {
@@ -49,6 +64,11 @@ export function checkAnswer(spec: AnswerSpec, answer: AnswerValue): AnswerCheck 
     case 'photo': {
       const a = answer as Extract<AnswerValue, { type: 'photo' }>;
       if (!a.photoId) return { valid: false, reason: 'foto ontbreekt' };
+      return { valid: true, correct: true };
+    }
+    case 'video': {
+      const a = answer as Extract<AnswerValue, { type: 'video' }>;
+      if (!a.videoId) return { valid: false, reason: 'video ontbreekt' };
       return { valid: true, correct: true };
     }
     case 'choice': {

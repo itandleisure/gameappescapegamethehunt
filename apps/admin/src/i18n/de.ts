@@ -1248,4 +1248,12 @@ export const de: Record<string, string> = {
   "Kies bij {title} het goede antwoord.": "Wähle bei {title} die richtige Antwort.",
   "Vul bij {title} het goede antwoord in.": "Gib bei {title} die richtige Antwort ein.",
   "Het antwoord bij {title} moet een getal zijn.": "Die Antwort bei {title} muss eine Zahl sein.",
+  "Video (korte film)": "Video (kurzer Clip)",
+  "Maximale lengte in seconden": "Maximale Länge in Sekunden",
+  "Spelers filmen een korte video met geluid. Die staat bij de foto's van de sessie (niet in het fotoboek) en telt als goed. De app vraagt pas om de camera en microfoon als een team deze opdracht opent.": "Die Spieler filmen ein kurzes Video mit Ton. Es erscheint bei den Fotos der Sitzung (nicht im Fotobuch) und zählt als richtig. Die App fragt erst nach Kamera und Mikrofon, wenn ein Team diese Aufgabe öffnet.",
+  "Video": "Video",
+  "Video ingestuurd bij {task}": "Video eingereicht bei {task}",
+  "Video geüpload bij {task}": "Video hochgeladen bei {task}",
+  "Een video duurt tussen {min} en {max} seconden.": "Ein Video dauert zwischen {min} und {max} Sekunden.",
+  "Video van {team}": "Video von {team}",
 };

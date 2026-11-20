@@ -41,7 +41,13 @@ export type AnswerSpec =
   /** Getal, optioneel met marge. */
   | { type: 'number'; value: number; tolerance?: number }
   /** Foto uploaden; telt altijd als goed. */
-  | { type: 'photo' };
+  | { type: 'photo' }
+  /**
+   * Korte video filmen (met geluid); telt altijd als goed. Optioneel
+   * opdrachttype: alleen spellen die het kiezen gebruiken het (The Hunt niet).
+   * `maxSeconds` is de maximale lengte, standaard 30 (zie `videoSeconds`).
+   */
+  | { type: 'video'; maxSeconds?: number };
 
 export type AnswerValue =
   | { type: 'info' }
@@ -49,7 +55,8 @@ export type AnswerValue =
   | { type: 'multi'; options: number[] }
   | { type: 'text'; text: string }
   | { type: 'number'; value: number | string }
-  | { type: 'photo'; photoId: string };
+  | { type: 'photo'; photoId: string }
+  | { type: 'video'; videoId: string };
 
 // ---------------------------------------------------------------------------
 // Opdrachten
