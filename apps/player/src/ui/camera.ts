@@ -1,6 +1,5 @@
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
-import * as MediaLibrary from 'expo-media-library/legacy';
 import { photoResize } from '../core/photo';
 import { logIssue } from '../services/diagnostics';
 
@@ -65,6 +64,9 @@ export async function recordVideo(maxSeconds: number): Promise<Video | 'tooLong'
  */
 async function keepOnPhone(uri: string): Promise<void> {
   try {
+    // Pas hier laden: een oudere app-build zonder deze module krijgt via een
+    // update wel deze code, en moet dan gewoon zonder galerij verder.
+    const MediaLibrary = require('expo-media-library/legacy') as typeof import('expo-media-library/legacy');
     const permission = await MediaLibrary.requestPermissionsAsync(true);
     if (!permission.granted) return;
     await MediaLibrary.saveToLibraryAsync(uri);

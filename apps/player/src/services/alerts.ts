@@ -15,13 +15,27 @@ import { IN_EXPO_GO } from './runtime';
 const CHANNEL = 'opdrachten';
 
 // Expo Go kan niet volgen met het scherm uit; daar ook geen meldingen (de module laden we dan niet eens).
+// Een oudere app-build zonder deze module krijgt via een update wel deze code:
+// dan geen meldingen in plaats van een crash.
 type NotificationsModule = typeof import('expo-notifications');
-const Notifications: NotificationsModule | null = IN_EXPO_GO ? null : require('expo-notifications');
+function loadNotifications(): NotificationsModule | null {
+  if (IN_EXPO_GO) return null;
+  try {
+    return require('expo-notifications') as NotificationsModule;
+  } catch {
+    return null;
+  }
+}
+const Notifications = loadNotifications();
 
 // Met de app open toont de app zelf de opdracht (met sirene); dan geen melding erbovenop.
-Notifications?.setNotificationHandler({
-  handleNotification: async () => ({ shouldShowBanner: false, shouldShowList: false, shouldPlaySound: false, shouldSetBadge: false }),
-});
+try {
+  Notifications?.setNotificationHandler({
+    handleNotification: async () => ({ shouldShowBanner: false, shouldShowList: false, shouldPlaySound: false, shouldSetBadge: false }),
+  });
+} catch {
+  // module zonder native deel (oudere app-build)
+}
 
 async function ensureChannel(): Promise<void> {
   if (Platform.OS !== 'android' || !Notifications) return;
@@ -37,7 +51,9 @@ export type NotifyPermission = 'granted' | 'denied' | 'undetermined';
 
 export async function notificationPermission(): Promise<NotifyPermission> {
   if (!Notifications) return 'denied';
-  const current = await Notifications.getPermissionsAsync().catch(() => null);
+  const current = await Promise.resolve()
+    .then(() => Notifications.getPermissionsAsync())
+    .catch(() => null);
   if (!current) return 'denied';
   return current.granted ? 'granted' : current.canAskAgain ? 'undetermined' : 'denied';
 }
