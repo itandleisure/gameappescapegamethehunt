@@ -17,6 +17,8 @@ import { GameNav } from '@/editor/GameNav';
 import { cleanName } from '@/lib/game-name';
 import { loadBaseVersions, rolloutCity, versionLabel, type BaseVersion } from '@/lib/game-store';
 import { useLanguage } from '@/lib/language';
+import { countrySettings } from '@/lib/org-settings';
+import { useOrgSettings } from '@/lib/org-settings-store';
 import { supabase } from '@/lib/supabase';
 
 interface BaseRow {
@@ -55,6 +57,7 @@ function NewCity() {
   const [name, setName] = useState<Record<string, string> | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const general = useOrgSettings(org?.id);
 
   // Basisspellen met hun naam.
   useEffect(() => {
@@ -107,6 +110,10 @@ function NewCity() {
     : found && found.country === country && found.name === cityName.trim()
       ? found
       : null;
+  // Taal van het land (Instellingen › Spellen en landen): wordt de hoofdtaal van de stad als het template die heeft.
+  const listedCountry = general?.countries.some((c) => c.country === country) ?? false;
+  const countryLang = general && listedCountry ? countrySettings(general, country).language : null;
+  const cityLang = base && countryLang && base.languages.includes(countryLang) ? countryLang : (base?.default_language ?? null);
   const autoName = base ? cityGameName(base.name, base.languages, cityName || '…') : {};
   const shownName = name ?? autoName;
 
@@ -141,7 +148,7 @@ function NewCity() {
     setBusy(true);
     setErrors([]);
     try {
-      const id = await rolloutCity(supabase(), org.id, { baseId: base.id, version: chosen.version, place, name: clean });
+      const id = await rolloutCity(supabase(), org.id, { baseId: base.id, version: chosen.version, place, name: clean, language: cityLang ?? undefined });
       router.push(`/spellen/${id}?nieuw=1`);
     } catch (err) {
       setErrors([err instanceof Error ? err.message : String(err)]);
@@ -271,6 +278,28 @@ function NewCity() {
                 </button>
               </div>
             )}
+            {base && countryLang && cityLang ? (
+              countryLang === cityLang ? (
+                <p className="help">
+                  {t('Hoofdtaal van de stad: {lang} (ingesteld voor dit land bij Instellingen).', { lang: languageName(cityLang) })}
+                </p>
+              ) : (
+                <p className="error">
+                  {t('Het template is nog niet in het {lang} vertaald. De stad krijgt dan {fallback} als hoofdtaal.', {
+                    lang: languageName(countryLang),
+                    fallback: languageName(cityLang),
+                  })}{' '}
+                  <Link href={`/spellen/${base.id}`}>{t('Vertaal eerst het template')}</Link>
+                </p>
+              )
+            ) : base && general && !listedCountry ? (
+              <p className="help">
+                {t('Dit land staat nog niet bij Instellingen › Spellen en landen. De stad krijgt de hoofdtaal van het template ({lang}).', {
+                  lang: languageName(base.default_language),
+                })}{' '}
+                <Link href="/instellingen/spellen">{t('Land toevoegen')}</Link>
+              </p>
+            ) : null}
           </section>
 
           <section className="card" style={{ marginTop: 16 }}>

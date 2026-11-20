@@ -14,6 +14,7 @@ import {
   type LayerRows,
   type TaskRow,
 } from './game-model';
+import { applyGameSettings, DEFAULT_SETTINGS, parseSettings, type GameSettings } from './org-settings';
 import { withCurrentName } from './game-name';
 import { PUZZLE_COLUMNS, applyPuzzles, puzzleChoice, type PuzzleRow } from './puzzles';
 import { centredLocations, centredMeetingPoint, citySlug, newTodoState, type Place } from './city-rollout';
@@ -233,13 +234,30 @@ export async function publish(db: SupabaseClient, gameId: string): Promise<numbe
   return (await publishVersion(db, gameId)).version;
 }
 
+/**
+ * De algemene spelinstellingen van de organisatie van het spel (Instellingen ›
+ * Spellen en landen). Lukt het ophalen niet, dan de standaardwaarden.
+ */
+export async function orgGameSettings(db: SupabaseClient, gameId: string): Promise<GameSettings> {
+  try {
+    const game = await db.from('games').select('org_id').eq('id', gameId).maybeSingle();
+    const orgId = (game.data as { org_id?: string } | null)?.org_id;
+    if (!orgId) return DEFAULT_SETTINGS.games;
+    const row = await db.from('org_settings').select('settings').eq('org_id', orgId).maybeSingle();
+    return parseSettings((row.data as { settings?: unknown } | null)?.settings).games;
+  } catch {
+    return DEFAULT_SETTINGS.games;
+  }
+}
+
 /** Publiceert het spel; geeft het id en nummer van de nieuwe versie. */
 export async function publishVersion(db: SupabaseClient, gameId: string): Promise<{ id: string; version: number }> {
   const chain = await loadChain(db, gameId);
+  const composed = applyGameSettings(composeChain(chain), await orgGameSettings(db, gameId));
   const pkg = await withIllustrations(
     db,
     gameId,
-    await withPlayfieldImage(db, gameId, await withChosenPuzzles(db, chain, composeChain(chain)), loadMaplibre),
+    await withPlayfieldImage(db, gameId, await withChosenPuzzles(db, chain, composed), loadMaplibre),
   );
   const row = check<{ id: string; version: number }>(await db.rpc('publish_game_version', { p_game: gameId, p_package: pkg }));
   return { id: row.id, version: row.version };
@@ -306,6 +324,11 @@ export interface RolloutInput {
   place: Place;
   /** Naam in de beheeromgeving, per taal. */
   name: Record<string, string>;
+  /**
+   * Hoofdtaal van de stad (de taal van het land, zie Instellingen › Spellen en
+   * landen). Alleen als het template die taal heeft; anders die van het template.
+   */
+  language?: string;
 }
 
 /**
@@ -343,7 +366,7 @@ export async function rolloutCity(db: SupabaseClient, orgId: string, input: Roll
         slug: citySlug(base.slug, input.place.name, slugs.map((s) => s.slug)),
         parent_id: base.id,
         languages: base.languages,
-        default_language: base.default_language,
+        default_language: input.language && base.languages.includes(input.language) ? input.language : base.default_language,
         base_version: input.version,
         settings: { name: input.name, place: input.place, todo: newTodoState() },
       })

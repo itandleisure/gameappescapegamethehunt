@@ -523,3 +523,16 @@ pre.logjson { font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; m
   table.eventlog tr.details > td { display: block; }
   table.eventlog tr.logday td { display: block; }
 }
+
+/* Instellingen */
+.settings-nav { margin-bottom: 4px; }
+.global-note { border-left: 4px solid var(--accent); background: var(--surface); padding: 10px 14px; border-radius: 6px; margin: 12px 0 20px; }
+.settings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.settings-grid a.card { display: block; color: var(--text); text-decoration: none; }
+.settings-grid a.card:hover { border-color: var(--accent); }
+.settings-grid h2 { margin: 0 0 6px; font-size: 18px; }
+.settings-logo { background: #141e29; border-radius: 8px; padding: 16px; display: inline-block; }
+.settings-logo img { max-width: 220px; max-height: 120px; display: block; }
+.country-row { display: grid; grid-template-columns: 1.2fr 1fr 1.2fr auto; gap: 8px; align-items: end; margin-bottom: 8px; }
+@media (max-width: 640px) { .country-row { grid-template-columns: 1fr 1fr; } }
+.country-row label { margin-top: 0; }

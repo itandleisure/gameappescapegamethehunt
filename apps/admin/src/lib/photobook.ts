@@ -2,6 +2,7 @@
 // over de pagina's van de PDF worden verdeeld en de cijfers van de hunt.
 // Zonder browser of database, zodat het met gewone tests te controleren is.
 import { tKey, translate, isAdminLanguage, LOCALES, type AdminLanguage } from './i18n';
+import type { BookTexts } from './org-settings';
 import type { PhotoRow } from './results';
 
 /** Opdrachtsleutel van de teamfoto (zie Photowall). */
@@ -188,8 +189,56 @@ export const BOOK_TEXT = {
 
 export type BookTextKey = keyof typeof BOOK_TEXT;
 
-export function bookText(lang: string, key: BookTextKey, vars?: Record<string, string | number>): string {
-  return translate(isAdminLanguage(lang) ? lang : 'nl', BOOK_TEXT[key], vars);
+/** Teksten die de organisatie zelf kan aanpassen (Instellingen › Fotoboek), in deze volgorde. */
+export const EDITABLE_BOOK_TEXTS = [
+  'missionDone',
+  'thanksFor',
+  'statsTitle',
+  'statsIntro',
+  'videoTitle',
+  'videoText',
+  'reviewTitle',
+  'reviewText',
+  'vacancyLabel',
+  'vacancyTitle',
+  'vacancyText',
+  'vacancyAsk',
+  'thanks',
+  'thanksText',
+  'moreGames',
+  'moreGamesText',
+] as const satisfies readonly BookTextKey[];
+
+/** Naam, groep en eigen teksten van de organisatie, voor het fotoboek. */
+export interface BookBrand {
+  /** "Escape Game The Hunt" */
+  name: string;
+  /** "Badass Games" */
+  group: string;
+  texts?: BookTexts;
+}
+
+export const DEFAULT_BRAND: BookBrand = { name: 'Escape Game The Hunt', group: 'Badass Games' };
+
+/** Vervangt de standaardnamen in een vertaalde tekst door die van de organisatie. */
+export function withBrand(text: string, brand: BookBrand = DEFAULT_BRAND): string {
+  let out = text;
+  if (brand.name && brand.name !== DEFAULT_BRAND.name) out = out.split(DEFAULT_BRAND.name).join(brand.name);
+  if (brand.group && brand.group !== DEFAULT_BRAND.group) out = out.split(DEFAULT_BRAND.group).join(brand.group);
+  return out;
+}
+
+/** Standaardtekst in de taal, met de namen van de organisatie (zonder eigen tekst). */
+export function defaultBookText(lang: string, key: BookTextKey, brand: BookBrand = DEFAULT_BRAND): string {
+  return withBrand(translate(isAdminLanguage(lang) ? lang : 'nl', BOOK_TEXT[key]), brand);
+}
+
+/** Tekst in de taal van het fotoboek: de eigen tekst van de organisatie, anders de standaardtekst. */
+export function bookText(lang: string, key: BookTextKey, vars?: Record<string, string | number>, brand: BookBrand = DEFAULT_BRAND): string {
+  const l = isAdminLanguage(lang) ? lang : 'nl';
+  const own = brand.texts?.[l]?.[key];
+  if (own) return own.replace(/\{(\w+)\}/g, (m, name: string) => (vars && name in vars ? String(vars[name]) : m));
+  return withBrand(translate(l, BOOK_TEXT[key], vars), brand);
 }
 
 /** Onderschrift van een spelfoto: teamnaam, en bij een opdracht ook de titel. */
@@ -198,16 +247,16 @@ export function gameCaption(photo: Pick<PhotoRow, 'task_key'>, teamName: string,
   return `${teamName} · ${taskTitle}`;
 }
 
-/** Merk voor de voettekst en de voorkant. */
-export const BRAND = 'Escape Game The Hunt';
+/** Merk voor de voettekst en de voorkant (zonder eigen naam in de instellingen). */
+export const BRAND = DEFAULT_BRAND.name;
 
 /** Voettekst van de pagina's: "ESCAPE GAME THE HUNT · AMSTERDAM". */
-export function footerText(city: string): string {
+export function footerText(city: string, brand = BRAND): string {
   const c = city.trim();
-  return `${BRAND}${c ? ` · ${c}` : ''}`.toUpperCase();
+  return `${brand || BRAND}${c ? ` · ${c}` : ''}`.toUpperCase();
 }
 
-/** Hebben de spelers minder foto's dan dit, dan vullen de vaste foto's aan tot dit aantal. */
+/** Hebben de spelers minder foto's dan dit, dan vullen de vaste foto's aan tot dit aantal (instelbaar). */
 export const MIN_PHOTOS = 8;
 
 /**
@@ -222,6 +271,7 @@ export function defaultItems(
   teamOrder: readonly string[],
   caption: (photo: PhotoRow) => string,
   stockPaths: readonly string[] = [],
+  minPhotos = MIN_PHOTOS,
 ): BookItem[] {
   const order = new Map(teamOrder.map((id, i) => [id, i]));
   const sorted = [...photos].sort(
@@ -237,7 +287,7 @@ export function defaultItems(
     caption: caption(p),
     ...(i === 0 && p.task_key === TEAM_PHOTO_KEY ? { large: true } : {}),
   }));
-  const fill = Math.max(0, MIN_PHOTOS - game.length);
+  const fill = Math.max(0, minPhotos - game.length);
   return [...game, ...stockPaths.slice(0, fill).map((path): BookItem => ({ source: 'stock', path, caption: '' }))];
 }
 
@@ -541,9 +591,10 @@ export function mailBody(
   link: string,
   password: string,
   until: string | null,
+  brand: BookBrand = DEFAULT_BRAND,
 ): { subject: string; body: string } {
   const l = isAdminLanguage(lang) ? lang : 'nl';
-  const tr = (nl: string, vars?: Record<string, string>) => translate(l, nl, vars);
+  const tr = (nl: string, vars?: Record<string, string>) => withBrand(translate(l, nl, vars), brand);
   const date = until ? new Intl.DateTimeFormat(LOCALES[l], { dateStyle: 'long' }).format(new Date(until)) : '';
   return {
     subject: tr(MAIL.subject, { title }),
@@ -552,7 +603,7 @@ export function mailBody(
       tr(MAIL.text),
       `${link}\n${tr(MAIL.password, { password })}`,
       ...(date ? [tr(MAIL.until, { date })] : []),
-      `${tr(MAIL.bye)}\nEscape Game The Hunt`,
+      `${tr(MAIL.bye)}\n${brand.name || DEFAULT_BRAND.name}`,
     ].join('\n\n'),
   };
 }

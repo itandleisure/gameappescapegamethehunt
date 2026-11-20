@@ -5,8 +5,8 @@
 // Voor de fotoboekpagina die de klant krijgt. Geeft titel, stad, tekst, de
 // cijfers per team en de gekozen foto's in volgorde, met tijdelijke links
 // (1 dag) naar de foto's, de omslagfoto, de foto's van de andere spellen en
-// de PDF. Werkt alleen als "delen met
-// de klant" aan staat en de 28 dagen nog niet voorbij zijn. Alleen foto's van
+// de PDF, en het logo van de organisatie. Werkt alleen als "delen met
+// de klant" aan staat en de termijn (standaard 28 dagen) nog niet voorbij is. Alleen foto's van
 // de eigen sessie en organisatie komen mee (dat bewaakt shared_photobook).
 //
 // Antwoorden: 200 fotoboek, 401 verkeerd wachtwoord, 404 onbekend of niet
@@ -41,6 +41,7 @@ interface Book {
   cover_url?: string | null;
   pdf_path: string | null;
   pdf_url?: string | null;
+  company?: { logo_path?: string | null; logo_url?: string | null } | null;
 }
 
 const fail = (status: number, error: string) => Response.json({ error }, { status, headers: CORS });
@@ -80,12 +81,14 @@ Deno.serve(async (req) => {
     ...(book.cover_path ? [book.cover_path] : []),
     ...(book.games ?? []).flatMap((g) => (g.image_path ? [g.image_path] : [])),
     ...(book.pdf_path ? [book.pdf_path] : []),
+    ...(book.company?.logo_path ? [book.company.logo_path] : []),
   ]);
   for (const item of book.items) item.url = (item.source === 'game' ? game : files).get(item.path);
   book.items = book.items.filter((i) => i.url);
   book.cover_url = book.cover_path ? (files.get(book.cover_path) ?? null) : null;
   for (const g of book.games ?? []) g.image_url = g.image_path ? (files.get(g.image_path) ?? null) : null;
   book.pdf_url = book.pdf_path ? (files.get(book.pdf_path) ?? null) : null;
+  if (book.company) book.company.logo_url = book.company.logo_path ? (files.get(book.company.logo_path) ?? null) : null;
 
   return Response.json(book, { headers: { ...CORS, 'cache-control': 'no-store' } });
 });

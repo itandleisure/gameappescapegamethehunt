@@ -21,6 +21,8 @@ import {
   paginate,
   slots,
   wrapText,
+  DEFAULT_BRAND,
+  type BookBrand,
   type BookGame,
   type BookItem,
   type BookLinks,
@@ -43,6 +45,10 @@ export interface PdfInput {
   extraUrls: string[];
   stats: HuntStats | null;
   links: BookLinks;
+  /** Naam, groep en eigen teksten van de organisatie (Instellingen). */
+  brand?: BookBrand;
+  /** Eigen logo (licht, PNG of JPEG); zonder logo het logo van The Hunt. */
+  logoUrl?: string | null;
   /** Andere spellen voor de slotpagina, met een link naar hun foto. */
   games: (BookGame & { imageUrl?: string | null })[];
   /** Voortgang: aantal verwerkte foto's van het totaal. */
@@ -110,6 +116,23 @@ async function fontBytes(path: string): Promise<ArrayBuffer> {
   return r.arrayBuffer();
 }
 
+/** Eigen logo (PNG of JPEG); lukt dat niet, dan het logo van The Hunt. */
+async function embedLogo(doc: PDFDocument, url: string | null | undefined): Promise<PDFImage> {
+  if (url) {
+    try {
+      const r = await fetch(url);
+      if (r.ok) {
+        const bytes = new Uint8Array(await r.arrayBuffer());
+        const png = bytes[0] === 0x89 && bytes[1] === 0x50;
+        return png ? await doc.embedPng(bytes) : await doc.embedJpg(bytes);
+      }
+    } catch {
+      // dan het standaardlogo
+    }
+  }
+  return doc.embedPng(await fontBytes('/logo-full-light.png'));
+}
+
 export async function buildPhotobookPdf(input: PdfInput): Promise<Uint8Array> {
   const { PDFDocument, PDFString, rgb } = await import('pdf-lib');
   const fontkit = (await import('@pdf-lib/fontkit')).default;
@@ -126,21 +149,22 @@ export async function buildPhotobookPdf(input: PdfInput): Promise<Uint8Array> {
     line: hex('#d9dce1'),
   };
   const lang = input.language;
-  const T = (key: BookTextKey, vars?: Record<string, string | number>) => bookText(lang, key, vars);
+  const brand = input.brand ?? DEFAULT_BRAND;
+  const T = (key: BookTextKey, vars?: Record<string, string | number>) => bookText(lang, key, vars, brand);
   const num = (v: number, d = 0) => formatNumber(lang, v, d);
 
   const doc: PDFDocument = await PDFDocument.create();
   doc.registerFontkit(fontkit);
   doc.setTitle(input.title);
-  doc.setAuthor('Escape Game The Hunt');
-  doc.setCreator('Escape Game The Hunt');
+  doc.setAuthor(brand.name);
+  doc.setCreator(brand.name);
   doc.setLanguage(lang);
   const [regular, bold, mono] = await Promise.all([
     fontBytes('/fonts/Lato-Regular.ttf').then((b) => doc.embedFont(b, { subset: true })),
     fontBytes('/fonts/Lato-Bold.ttf').then((b) => doc.embedFont(b, { subset: true })),
     fontBytes('/fonts/JetBrainsMono-Bold.ttf').then((b) => doc.embedFont(b, { subset: true })),
   ]);
-  const logo = await doc.embedPng(await fontBytes('/logo-full-light.png'));
+  const logo = await embedLogo(doc, input.logoUrl);
 
   // Tekens die een lettertype niet kent (bijvoorbeeld emoji) vallen weg.
   const safe = (f: PDFFont, text: string) => {
@@ -247,7 +271,7 @@ export async function buildPhotobookPdf(input: PdfInput): Promise<Uint8Array> {
 
   // Kop en voet van de gewone pagina's.
   let pageNo = 0;
-  const footerText = makeFooter(input.city);
+  const footerText = makeFooter(input.city, brand.name);
   const newPage = (dark = false) => {
     const page = doc.addPage([W, H]);
     pageNo += 1;
@@ -295,7 +319,7 @@ export async function buildPhotobookPdf(input: PdfInput): Promise<Uint8Array> {
         y -= 30;
         draw(page, input.city, M, y, 24, bold, C.orange, { maxWidth: W - 2 * M });
       }
-    } else draw(page, 'Escape Game The Hunt', M, y, 24, bold, C.orange);
+    } else draw(page, brand.name, M, y, 24, bold, C.orange, { maxWidth: W - 2 * M });
     y -= 30;
     if (input.intro) paragraph(page, input.intro, M, y, 9, regular, C.light, W - 2 * M - 40);
     page.drawRectangle({ x: W - 200, y: 0, width: 200, height: 8, color: C.orange });

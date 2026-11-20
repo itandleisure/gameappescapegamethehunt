@@ -6,6 +6,7 @@ import { useLanguage } from '@/lib/language';
 import { buildPhotoZip, saveBlob } from '@/lib/photo-zip';
 import {
   bookText,
+  DEFAULT_BRAND,
   DEFAULT_GAMES_URL,
   displayUrl,
   footerText,
@@ -14,6 +15,7 @@ import {
   huntStats,
   parseGames,
   zipFileName,
+  type BookBrand,
   type BookLinks,
   type BookTextKey,
 } from '@/lib/photobook';
@@ -34,6 +36,10 @@ interface SharedBook {
   games: unknown;
   pdf_url: string | null;
   shared_until: string | null;
+  /** Naam, groep en logo uit de instellingen van de organisatie. */
+  company?: { name?: string | null; group?: string | null; logo_url?: string | null } | null;
+  /** Eigen teksten per taal (Instellingen › Fotoboek). */
+  texts?: BookBrand['texts'] | null;
 }
 
 type Failure = 'wrong_password' | 'expired' | 'not_found';
@@ -88,11 +94,17 @@ export default function SharedPhotobookPage() {
   }, [token]);
 
   useEffect(() => {
-    if (book) document.title = `${book.title} – Escape Game The Hunt`;
+    if (book) document.title = `${book.title} – ${book.company?.name || DEFAULT_BRAND.name}`;
   }, [book]);
 
   const lang: AdminLanguage = book && isAdminLanguage(book.language) ? book.language : adminLang;
-  const T = (key: BookTextKey, vars?: Record<string, string | number>) => bookText(lang, key, vars);
+  const brand: BookBrand = {
+    name: book?.company?.name || DEFAULT_BRAND.name,
+    group: book?.company?.group || DEFAULT_BRAND.group,
+    texts: book?.texts ?? undefined,
+  };
+  const logo = book?.company?.logo_url || '/logo-full-light.png';
+  const T = (key: BookTextKey, vars?: Record<string, string | number>) => bookText(lang, key, vars, brand);
   const date = (iso: string, timeZone?: string) =>
     new Intl.DateTimeFormat(LOCALES[lang], { dateStyle: 'long', ...(timeZone ? { timeZone } : {}) }).format(new Date(iso));
 
@@ -105,7 +117,7 @@ export default function SharedPhotobookPage() {
       <div className="book">
         <section className="book-gate">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="logo" src="/logo-full-light.png" alt="Escape Game The Hunt" />
+          <img className="logo" src={logo} alt={brand.name} />
           <span className="book-label">{T('missionDone')}</span>
           <h1>{T('thanks')}</h1>
           <form onSubmit={submit}>
@@ -159,7 +171,7 @@ export default function SharedPhotobookPage() {
       <section className="book-cover" style={cover ? { backgroundImage: `url("${cover}")` } : undefined}>
         <div className="book-cover-panel">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="logo" src="/logo-full-light.png" alt="Escape Game The Hunt" />
+          <img className="logo" src={logo} alt={brand.name} />
           <span className="book-label">{T('missionDone')}</span>
           <h1>
             {T('thanksFor')}
@@ -169,7 +181,7 @@ export default function SharedPhotobookPage() {
                 {T('huntIn')} <span className="accent">{book.city}</span>
               </>
             ) : (
-              <span className="accent">Escape Game The Hunt</span>
+              <span className="accent">{brand.name}</span>
             )}
           </h1>
           <p className="muted-light">
@@ -338,7 +350,7 @@ export default function SharedPhotobookPage() {
       </section>
 
       <footer className="book-footer">
-        <span className="book-label">{footerText(book.city)}</span>
+        <span className="book-label">{footerText(book.city, brand.name)}</span>
         <span>
           {website ? <a href={href('url', website)}>{displayUrl(website)}</a> : null}
           {email ? <a href={href('email', email)}>{email}</a> : null}

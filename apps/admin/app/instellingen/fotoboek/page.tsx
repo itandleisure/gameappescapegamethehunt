@@ -2,19 +2,50 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth';
-import { tKey } from '@/lib/i18n';
+import { ADMIN_LANGUAGES, ADMIN_LANGUAGE_NAMES, isAdminLanguage, tKey, type AdminLanguage } from '@/lib/i18n';
 import { useLanguage } from '@/lib/language';
-import { DEFAULT_GAMES, MAX_GAMES, moveItem, type BookGame, type BookLinks, type PhotobookSettings } from '@/lib/photobook';
+import { bookBrand, LIMITS, parseSettings, type OrgSettings } from '@/lib/org-settings';
+import { loadOrgSettings, saveOrgSettings } from '@/lib/org-settings-store';
+import {
+  defaultBookText,
+  DEFAULT_GAMES,
+  EDITABLE_BOOK_TEXTS,
+  MAX_GAMES,
+  moveItem,
+  type BookGame,
+  type BookLinks,
+  type BookTextKey,
+  type PhotobookSettings,
+} from '@/lib/photobook';
 import { deleteFile, loadSettings, saveSettings, signItems, uploadStockPhoto } from '@/lib/photobook-store';
+import { SettingsNav } from '@/settings/SettingsNav';
+
+/** Waar elke tekst in het fotoboek staat, als uitleg bij het veld. */
+const TEXT_LABELS: Record<(typeof EDITABLE_BOOK_TEXTS)[number], string> = {
+  missionDone: tKey('Kopje boven elke pagina'),
+  thanksFor: tKey('Voorkant, eerste regel'),
+  statsTitle: tKey('Cijfers: titel'),
+  statsIntro: tKey('Cijfers: tekst'),
+  videoTitle: tKey('Video: titel'),
+  videoText: tKey('Video: tekst'),
+  reviewTitle: tKey('Review: titel'),
+  reviewText: tKey('Review: tekst'),
+  vacancyLabel: tKey('Vacature: kopje'),
+  vacancyTitle: tKey('Vacature: titel'),
+  vacancyText: tKey('Vacature: tekst'),
+  vacancyAsk: tKey('Vacature: vraag'),
+  thanks: tKey('Laatste pagina: titel'),
+  thanksText: tKey('Laatste pagina: tekst'),
+  moreGames: tKey('Andere spellen: titel'),
+  moreGamesText: tKey('Andere spellen: tekst'),
+};
+const LONG_TEXTS: readonly BookTextKey[] = ['statsIntro', 'reviewText', 'vacancyText', 'thanksText', 'moreGamesText'];
 
 const LINK_FIELDS: { key: keyof BookLinks; label: string; placeholder: string }[] = [
   { key: 'video', label: tKey('Video van The Hunt'), placeholder: 'https://www.youtube.com/…' },
   { key: 'google_review', label: tKey('Google-review'), placeholder: 'https://g.page/r/…/review' },
   { key: 'website_review', label: tKey('Review via de website'), placeholder: 'https://escapegamethehunt.nl/review' },
   { key: 'vacancy', label: tKey('Vacature voor Hunters'), placeholder: 'https://escapegamethehunt.nl/werken-bij' },
-  { key: 'website', label: tKey('Website'), placeholder: 'escapegamethehunt.nl' },
-  { key: 'email', label: tKey('E-mail'), placeholder: 'info@…' },
-  { key: 'phone', label: tKey('Telefoon'), placeholder: '085 …' },
   { key: 'games', label: tKey('Website met alle spellen (knop op de laatste pagina)'), placeholder: 'https://badassgames.nl' },
 ];
 
@@ -23,6 +54,9 @@ export default function PhotobookSettingsPage() {
   const { org } = useAuth();
   const { t } = useLanguage();
   const [settings, setSettings] = useState<PhotobookSettings | null>(null);
+  const [general, setGeneral] = useState<OrgSettings | null>(null);
+  const [generalDirty, setGeneralDirty] = useState(false);
+  const [textLang, setTextLang] = useState<AdminLanguage>('nl');
   const [urls, setUrls] = useState<Map<string, string>>(new Map());
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -33,6 +67,7 @@ export default function PhotobookSettingsPage() {
   useEffect(() => {
     if (!org) return;
     void loadSettings(org.id).then(setSettings, (e: unknown) => setError(e instanceof Error ? e.message : String(e)));
+    void loadOrgSettings(org.id).then(setGeneral, (e: unknown) => setError(e instanceof Error ? e.message : String(e)));
   }, [org]);
 
   const paths = settings
@@ -51,7 +86,7 @@ export default function PhotobookSettingsPage() {
   }, [missing]);
 
   if (!org) return null;
-  if (!settings) return error ? <p className="error">{error}</p> : <p className="muted">{t('Laden…')}</p>;
+  if (!settings || !general) return error ? <p className="error">{error}</p> : <p className="muted">{t('Laden…')}</p>;
 
   const change = (patch: Partial<PhotobookSettings>) => {
     setSettings({ ...settings, ...patch });
@@ -76,6 +111,16 @@ export default function PhotobookSettingsPage() {
       if (cover) change({ cover_path: added[0] ?? settings.cover_path });
       else change({ stock_paths: [...settings.stock_paths, ...added] });
     });
+  const changeGeneral = (patch: Partial<OrgSettings['photobook']>) => {
+    setGeneral({ ...general, photobook: { ...general.photobook, ...patch } });
+    setGeneralDirty(true);
+    setDirty(true);
+    setNotice(null);
+  };
+  const ownTexts = general.photobook.texts[textLang] ?? {};
+  const setText = (key: BookTextKey, value: string) =>
+    changeGeneral({ texts: { ...general.photobook.texts, [textLang]: { ...ownTexts, [key]: value } } });
+  const brand = { ...bookBrand(general), texts: undefined };
   const setGame = (index: number, patch: Partial<BookGame>) =>
     change({ games: settings.games.map((g, i) => (i === index ? { ...g, ...patch } : g)) });
   const uploadGame = (index: number, files: FileList | null) =>
@@ -100,10 +145,8 @@ export default function PhotobookSettingsPage() {
 
   return (
     <>
-      <p className="muted">
-        <Link href="/sessies">{t('Tickets')}</Link> › {t('Fotoboek')}
-      </p>
       <h1>{t("Vaste foto's en links van elk fotoboek")}</h1>
+      <SettingsNav active="fotoboek" orgName={org.name} />
       <p className="muted">
         {t("Deze foto's en links komen in elk fotoboek van {org}. De vaste foto's staan achteraan, en je kunt ze per fotoboek weghalen of verplaatsen.", { org: org.name })}
       </p>
@@ -134,7 +177,7 @@ export default function PhotobookSettingsPage() {
 
       <h2>{t("Vaste foto's")}</h2>
       <p className="muted small">
-        {t("Algemene foto's van jullie, bijvoorbeeld van de Hunters. Hebben de spelers minder dan {n} foto's, dan vullen deze foto's het fotoboek aan. De eerste twee komen ook op de reviewpagina.", { n: 8 })}
+        {t("Algemene foto's van jullie, bijvoorbeeld van de Hunters. Hebben de spelers minder dan {n} foto's, dan vullen deze foto's het fotoboek aan. De eerste twee komen ook op de reviewpagina.", { n: general.photobook.min_photos })}
       </p>
       <div className="photowall photobook">
         {settings.stock_paths.map((path, i) => (
@@ -228,7 +271,8 @@ export default function PhotobookSettingsPage() {
       <h2>{t('Links')}</h2>
       <div className="card">
         <p className="muted small" style={{ marginTop: 0 }}>
-          {t('Een onderdeel zonder link komt niet in het fotoboek.')}
+          {t('Een onderdeel zonder link komt niet in het fotoboek.')}{' '}
+          {t('Website, e-mail en telefoon staan bij')} <Link href="/instellingen/bedrijf">{t('Bedrijf en logo')}</Link>.
         </p>
         {LINK_FIELDS.map((f) => (
           <div key={f.key}>
@@ -244,6 +288,71 @@ export default function PhotobookSettingsPage() {
         ))}
       </div>
 
+      <h2>{t('Teksten in het fotoboek')}</h2>
+      <p className="muted small">
+        {t('Laat een veld leeg voor de standaardtekst (die staat er lichtgrijs in). Eigen teksten gelden per taal van het fotoboek.')}
+      </p>
+      <div className="card">
+        <label htmlFor="pb-text-lang">{t('Taal')}</label>
+        <select id="pb-text-lang" value={textLang} onChange={(e) => isAdminLanguage(e.target.value) && setTextLang(e.target.value)}>
+          {ADMIN_LANGUAGES.map((l) => (
+            <option key={l} value={l}>
+              {ADMIN_LANGUAGE_NAMES[l]}
+              {general.photobook.texts[l] && Object.keys(general.photobook.texts[l]!).length ? ' ✎' : ''}
+            </option>
+          ))}
+        </select>
+        {EDITABLE_BOOK_TEXTS.map((key) => {
+          const Field = LONG_TEXTS.includes(key) ? 'textarea' : 'input';
+          return (
+            <div key={key}>
+              <label htmlFor={`pb-text-${key}`}>{t(TEXT_LABELS[key])}</label>
+              <Field
+                id={`pb-text-${key}`}
+                {...(Field === 'textarea' ? { rows: 3 } : {})}
+                maxLength={1000}
+                value={ownTexts[key] ?? ''}
+                placeholder={defaultBookText(textLang, key, brand)}
+                disabled={!canEdit}
+                onChange={(e: { target: { value: string } }) => setText(key, e.target.value)}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      <h2>{t('Delen en aanvullen')}</h2>
+      <div className="card">
+        <div className="row">
+          <div>
+            <label htmlFor="pb-days">{t('Dagen dat de klant het fotoboek kan bekijken')}</label>
+            <input
+              id="pb-days"
+              type="number"
+              min={LIMITS.share_days[0]}
+              max={LIMITS.share_days[1]}
+              value={general.photobook.share_days}
+              disabled={!canEdit}
+              onChange={(e) => changeGeneral({ share_days: Number(e.target.value) })}
+            />
+            <p className="help">{t('Telt vanaf het moment van delen of verlengen. Al gedeelde fotoboeken houden hun einddatum.')}</p>
+          </div>
+          <div>
+            <label htmlFor="pb-min">{t("Aanvullen tot zoveel foto's")}</label>
+            <input
+              id="pb-min"
+              type="number"
+              min={LIMITS.min_photos[0]}
+              max={LIMITS.min_photos[1]}
+              value={general.photobook.min_photos}
+              disabled={!canEdit}
+              onChange={(e) => changeGeneral({ min_photos: Number(e.target.value) })}
+            />
+            <p className="help">{t("Hebben de spelers minder foto's, dan vullen de vaste foto's het fotoboek aan bij een nieuw fotoboek.")}</p>
+          </div>
+        </div>
+      </div>
+
       {canEdit ? (
         <div className="actions">
           <button
@@ -251,6 +360,10 @@ export default function PhotobookSettingsPage() {
             onClick={() =>
               void run(t('Opslaan…'), async () => {
                 await saveSettings(settings);
+                if (generalDirty) {
+                  setGeneral(await saveOrgSettings(org.id, parseSettings(general)));
+                  setGeneralDirty(false);
+                }
                 setDirty(false);
                 setNotice(t('Opgeslagen.'));
               })

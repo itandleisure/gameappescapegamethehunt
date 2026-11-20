@@ -16,12 +16,15 @@ import {
   setGroupPhoto,
   TEAM_PHOTO_KEY,
   unusedGamePhotos,
+  withBrand,
   zipFileName,
   type BookItem,
   type Photobook,
   type PhotobookSettings,
 } from '@/lib/photobook';
 import { buildPhotobookPdf } from '@/lib/photobook-pdf';
+import { bookBrand, DEFAULT_SETTINGS, withContact, type OrgSettings } from '@/lib/org-settings';
+import { loadOrgSettings, signedLogo } from '@/lib/org-settings-store';
 import {
   deleteFile,
   listOwnPhotos,
@@ -46,7 +49,7 @@ type Draft = Pick<Photobook, 'title' | 'city' | 'intro' | 'items' | 'show_rankin
 /**
  * Fotoboek voor de klant: spelfoto's, eigen foto's en de vaste foto's kiezen
  * en ordenen, een PDF in Escape Game The Hunt-stijl maken en die met link en
- * wachtwoord 28 dagen met de klant delen.
+ * wachtwoord met de klant delen (standaard 28 dagen, zie Instellingen › Fotoboek).
  */
 export function PhotobookEditor({ data, view }: { data: SessionLive; view: SessionResultsView }) {
   const { t, lang, locale } = useLanguage();
@@ -54,6 +57,7 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
   const [saved, setSaved] = useState<Photobook | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [settings, setSettings] = useState<PhotobookSettings | null>(null);
+  const [general, setGeneral] = useState<OrgSettings>(DEFAULT_SETTINGS);
   const [dirty, setDirty] = useState(false);
   const [ownFiles, setOwnFiles] = useState<string[]>([]);
   const [urls, setUrls] = useState<Map<string, string>>(new Map());
@@ -76,21 +80,23 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
     void (async () => {
       try {
         const org = await sessionOrg(session.id);
-        const [book, own, set] = await Promise.all([
+        const [book, own, set, gen] = await Promise.all([
           loadPhotobook(session.id),
           listOwnPhotos(session.id).catch(() => []),
           org ? loadSettings(org).catch(() => null) : Promise.resolve(null),
+          org ? loadOrgSettings(org).catch(() => DEFAULT_SETTINGS) : Promise.resolve(DEFAULT_SETTINGS),
         ]);
         if (stop) return;
         setSaved(book);
         setOwnFiles(own);
         setSettings(set);
+        setGeneral(gen);
         setDraft(
           book ?? {
             title: session.name,
             city: '',
             intro: '',
-            items: defaultItems(data.photos, view.teams.map((x) => x.id), caption, set?.stock_paths ?? []),
+            items: defaultItems(data.photos, view.teams.map((x) => x.id), caption, set?.stock_paths ?? [], gen.photobook.min_photos),
             show_ranking: true,
             language: lang,
           },
@@ -202,7 +208,9 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
         coverUrl: settings?.cover_path ? (signed.get(settings.cover_path) ?? null) : null,
         extraUrls: extra.flatMap((p) => (signed.has(p) ? [signed.get(p)!] : [])),
         stats: draft.show_ranking ? huntStats(view.teams) : null,
-        links: settings?.links ?? {},
+        links: withContact(settings?.links ?? {}, general.company),
+        brand: bookBrand(general),
+        logoUrl: await signedLogo(general.company.logo_path),
         games: games.map((g) => ({ ...g, imageUrl: g.image_path ? (signed.get(g.image_path) ?? null) : null })),
         onProgress: (done, total) => setBusy(t('Foto {n} van {total} verwerken…', { n: done, total })),
       });
@@ -228,14 +236,16 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
       if (!saved) return;
       const until = await setShared(session.id, on);
       setSaved({ ...saved, shared: on, shared_until: until });
-      if (on) setNotice(t('Het fotoboek is {days} dagen te bekijken.', { days: 28 }));
+      if (on) setNotice(t('Het fotoboek is {days} dagen te bekijken.', { days: general.photobook.share_days }));
     });
 
   const pages = paginate(items).length;
   const link = saved ? shareLink(saved.share_token) : '';
   const fmtDate = (iso: string) => new Intl.DateTimeFormat(locale, { dateStyle: 'long' }).format(new Date(iso));
   const expired = !!saved?.shared_until && Date.parse(saved.shared_until) < Date.now();
-  const mail = saved ? mailBody(draft.language, draft.title || session.name, link, saved.share_password, saved.shared_until) : null;
+  const mail = saved
+    ? mailBody(draft.language, draft.title || session.name, link, saved.share_password, saved.shared_until, bookBrand(general))
+    : null;
   const madeAt = saved?.pdf_made_at
     ? new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(saved.pdf_made_at))
     : null;
@@ -293,7 +303,10 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
           </div>
         </div>
         <p className="help">
-          {t('Op de voorkant: "Bedankt voor het spelen van Escape Game The Hunt in {city}". De titel is de naam van de PDF en de klantpagina.', { city: draft.city || '…' })}
+          {withBrand(
+            t('Op de voorkant: "Bedankt voor het spelen van Escape Game The Hunt in {city}". De titel is de naam van de PDF en de klantpagina.', { city: draft.city || '…' }),
+            bookBrand(general),
+          )}
         </p>
         {settings && !settings.cover_path ? (
           <p className="help">
@@ -494,7 +507,7 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
           <>
             <label className="check" style={{ marginTop: 16 }}>
               <input type="checkbox" checked={saved.shared} disabled={!!busy} onChange={(e) => share(e.target.checked)} />
-              {t('Delen met de klant (28 dagen)')}
+              {t('Delen met de klant ({days} dagen)', { days: general.photobook.share_days })}
             </label>
             {saved.shared ? (
               <>
@@ -539,7 +552,7 @@ export function PhotobookEditor({ data, view }: { data: SessionLive; view: Sessi
                     {t('Bekijken')}
                   </a>
                   <button className="secondary" disabled={!!busy} onClick={() => share(true)}>
-                    {t('Verlengen tot 28 dagen vanaf nu')}
+                    {t('Verlengen tot {days} dagen vanaf nu', { days: general.photobook.share_days })}
                   </button>
                 </div>
                 <p>

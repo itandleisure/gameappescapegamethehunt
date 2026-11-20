@@ -8,13 +8,18 @@ import { LanguageProvider, useLanguage, useT } from '@/lib/language';
 import { installAdminErrorReporting } from '@/lib/report-errors';
 import { supabase } from '@/lib/supabase';
 
+/** Pagina's onder het menu Instellingen (Toegang en Accounts hebben een eigen knop). */
+const SETTINGS_PATHS = ['/instellingen/bedrijf', '/instellingen/tickets', '/instellingen/spellen', '/instellingen/fotoboek'];
+const isActive = (href: string, path: string) =>
+  href === '/instellingen' ? path === href || SETTINGS_PATHS.some((p) => path.startsWith(p)) : path.startsWith(href);
+
 const NAV: { href: string; label: string; platformAdmin?: boolean }[] = [
   { href: '/sessies', label: tKey('Tickets') },
   { href: '/spellen', label: tKey('Spellen') },
   { href: '/templates', label: tKey('Templates') },
   { href: '/puzzels', label: tKey('Puzzels') },
   { href: '/logging', label: tKey('Logging') },
-  { href: '/instellingen/fotoboek', label: tKey('Fotoboek') },
+  { href: '/instellingen', label: tKey('Instellingen') },
   { href: '/instellingen/leden', label: tKey('Toegang') },
   { href: '/instellingen/accounts', label: tKey('Accounts'), platformAdmin: true },
 ];
@@ -58,7 +63,7 @@ function Header() {
       </span>
       <nav>
         {NAV.filter((n) => !n.platformAdmin || (org.platform && ['owner', 'admin'].includes(org.role))).map((n) => (
-          <Link key={n.href} href={n.href} className={path.startsWith(n.href) ? 'active' : ''}>
+          <Link key={n.href} href={n.href} className={isActive(n.href, path) ? 'active' : ''}>
             {t(n.label)}
           </Link>
         ))}
