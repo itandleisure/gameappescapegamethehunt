@@ -119,4 +119,5 @@ export const mt: Messages = {
   videoReady: "Video rrekordjat ({seconds} s).",
   videoTooLong: "Dan il-video twil wisq. Irrekordjaw massimu {seconds} sekonda.",
   videoSaved: "Video riċevut. Qed jintbagħat fl-isfond.",
+  privacy: "Politika tal-privatezza",
 };

@@ -119,4 +119,5 @@ export const hu: Messages = {
   videoReady: "Videó felvéve ({seconds} mp).",
   videoTooLong: "Ez a videó túl hosszú. Legfeljebb {seconds} másodpercet vegyetek fel.",
   videoSaved: "Videó megérkezett. A háttérben küldjük el.",
+  privacy: "Adatvédelmi tájékoztató",
 };

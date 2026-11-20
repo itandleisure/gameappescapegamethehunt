@@ -119,4 +119,5 @@ export const sv: Messages = {
   videoReady: "Video inspelad ({seconds} s).",
   videoTooLong: "Videon är för lång. Spela in högst {seconds} sekunder.",
   videoSaved: "Video mottagen. Den skickas i bakgrunden.",
+  privacy: "Integritetspolicy",
 };

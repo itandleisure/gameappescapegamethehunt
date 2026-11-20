@@ -119,4 +119,5 @@ export const da: Messages = {
   videoReady: "Video optaget ({seconds} s).",
   videoTooLong: "Videoen er for lang. Optag højst {seconds} sekunder.",
   videoSaved: "Video modtaget. Den sendes i baggrunden.",
+  privacy: "Privatlivspolitik",
 };

@@ -16,3 +16,6 @@ export { DEFAULT_MAP_SOURCE };
 
 /** Naam van de achtergrondtaak die GPS-metingen ontvangt. */
 export const LOCATION_TASK = 'hunt-location';
+
+/** Privacyverklaring (pagina /privacy van de beheeromgeving), gelinkt vanaf het aanmeldscherm. */
+export const PRIVACY_URL = 'https://escapegamethehunt.badassgames.nl/privacy';

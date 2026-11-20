@@ -551,3 +551,9 @@ pre.logjson { font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; m
 .wizard-option input[type='radio'] { width: auto; }
 .wizard-summary dt { font-weight: 600; margin-top: 10px; }
 .wizard-summary dd { margin: 2px 0 0; }
+
+/* Privacyverklaring (/privacy) */
+.privacy { max-width: 760px; margin: 0 auto; }
+.privacy h3 { font-size: 16px; margin: 24px 0 8px; }
+.privacy-table { overflow-x: auto; margin: 12px 0; }
+.privacy-table td { vertical-align: top; }

@@ -119,4 +119,5 @@ export const ro: Messages = {
   videoReady: "Video înregistrat ({seconds} s).",
   videoTooLong: "Videoclipul este prea lung. Filmați cel mult {seconds} secunde.",
   videoSaved: "Video primit. Se trimite în fundal.",
+  privacy: "Politica de confidențialitate",
 };

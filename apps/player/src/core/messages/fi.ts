@@ -119,4 +119,5 @@ export const fi: Messages = {
   videoReady: "Video kuvattu ({seconds} s).",
   videoTooLong: "Video on liian pitkä. Kuvaa enintään {seconds} sekuntia.",
   videoSaved: "Video vastaanotettu. Se lähetetään taustalla.",
+  privacy: "Tietosuojaseloste",
 };

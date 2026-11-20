@@ -143,6 +143,7 @@ const nl = {
   videoReady: "Video opgenomen ({seconds} s).",
   videoTooLong: "Deze video is te lang. Film hoogstens {seconds} seconden.",
   videoSaved: "Video ontvangen. Hij wordt op de achtergrond verstuurd.",
+  privacy: "Privacyverklaring",
 };
 
 export type MessageKey = keyof typeof nl;
@@ -267,6 +268,7 @@ const en: Messages = {
   videoReady: "Video recorded ({seconds} s).",
   videoTooLong: "This video is too long. Record at most {seconds} seconds.",
   videoSaved: "Video received. It is being sent in the background.",
+  privacy: "Privacy policy",
 };
 
 const de: Messages = {
@@ -388,6 +390,7 @@ const de: Messages = {
   videoReady: "Video aufgenommen ({seconds} s).",
   videoTooLong: "Dieses Video ist zu lang. Nehmt höchstens {seconds} Sekunden auf.",
   videoSaved: "Video erhalten. Es wird im Hintergrund gesendet.",
+  privacy: "Datenschutzerklärung",
 };
 
 const es: Messages = {
@@ -509,6 +512,7 @@ const es: Messages = {
   videoReady: "Vídeo grabado ({seconds} s).",
   videoTooLong: "Este vídeo es demasiado largo. Grabad como máximo {seconds} segundos.",
   videoSaved: "Vídeo recibido. Se envía en segundo plano.",
+  privacy: "Política de privacidad",
 };
 
 const pt: Messages = {
@@ -630,6 +634,7 @@ const pt: Messages = {
   videoReady: "Vídeo gravado ({seconds} s).",
   videoTooLong: "Este vídeo é demasiado longo. Filmem no máximo {seconds} segundos.",
   videoSaved: "Vídeo recebido. Vai ser enviado em segundo plano.",
+  privacy: "Política de privacidade",
 };
 
 const it: Messages = {
@@ -751,6 +756,7 @@ const it: Messages = {
   videoReady: "Video registrato ({seconds} s).",
   videoTooLong: "Questo video è troppo lungo. Girate al massimo {seconds} secondi.",
   videoSaved: "Video ricevuto. Viene inviato in background.",
+  privacy: "Informativa sulla privacy",
 };
 
 /**

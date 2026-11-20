@@ -1,6 +1,6 @@
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Animated, Image, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Image, Keyboard, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { APP_LANGUAGES, languageLabel, MAIN_LANGUAGES } from '../src/core/i18n';
 import { BackendError } from '../src/core/supabase-backend';
@@ -8,6 +8,7 @@ import { joinGame, rejoinGame } from '../src/services/game';
 import { useLeader } from '../src/services/leader';
 import { leaderMsg } from '../src/core/leader-i18n';
 import { isValidPhone } from '../src/core/view';
+import { PRIVACY_URL } from '../src/config';
 import { Banner, Button, Chip, Field, Title } from '../src/ui/components';
 import { useGame } from '../src/ui/GameProvider';
 import { colors, contentColumn, radius, space } from '../src/ui/theme';
@@ -206,6 +207,11 @@ export default function JoinScreen() {
 
           {/* Spelleiders loggen in met de spelleider-code van de hunt en zien de teams in plaats van het spel. */}
           <Button kind="secondary" label={leaderMsg(lang, 'leaderTitle')} onPress={() => router.push('/leader-login')} />
+
+          {/* Privacyverklaring: verplicht vindbaar in de app (App Store en Google Play). */}
+          <Text style={styles.privacy} accessibilityRole="link" onPress={() => void Linking.openURL(PRIVACY_URL)}>
+            {t('privacy')}
+          </Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -234,5 +240,6 @@ const styles = StyleSheet.create({
   languageValue: { color: colors.text, fontSize: 16, flexShrink: 1 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', marginTop: space.sm },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: space.lg },
+  privacy: { color: colors.textMuted, fontSize: 14, textAlign: 'center', textDecorationLine: 'underline', paddingVertical: space.md },
   rejoin: { marginTop: space.md, padding: space.md, paddingBottom: space.sm, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border },
 });
