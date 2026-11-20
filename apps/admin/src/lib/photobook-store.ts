@@ -1,7 +1,7 @@
 'use client';
 // Fotoboek opslaan en ophalen (tabellen photobooks en photobook_settings,
 // bucket photobooks).
-import { isAdminLanguage } from './i18n';
+import { isAdminLanguage, t } from './i18n';
 import { parseGames, parseItems, parseLinks, type BookItem, type BookLinks, type Photobook, type PhotobookSettings } from './photobook';
 import { loadAsJpeg } from './photobook-pdf';
 import { supabase } from './supabase';
@@ -163,7 +163,7 @@ export async function saveSettings(settings: PhotobookSettings): Promise<void> {
 }
 
 /** Vaste foto van de organisatie, onder huisstijl/<organisatie>/. */
-export function uploadStockPhoto(orgId: string, file: File): Promise<string> {
+export function uploadStockPhoto(orgId: string, file: File | Blob): Promise<string> {
   return uploadJpeg(`huisstijl/${orgId}/${crypto.randomUUID()}.jpg`, file);
 }
 
@@ -171,4 +171,30 @@ export function uploadStockPhoto(orgId: string, file: File): Promise<string> {
 export async function sessionOrg(sessionId: string): Promise<string | null> {
   const { data } = await supabase().from('sessions').select('org_id').eq('id', sessionId).maybeSingle();
   return (data as { org_id: string } | null)?.org_id ?? null;
+}
+
+/**
+ * Haalt de voorbeeldfoto van een webpagina op (via de server, want de browser
+ * mag een andere website niet uitlezen) en zet hem bij de vaste foto's van de
+ * organisatie. Geeft het pad terug.
+ */
+export async function importPageImage(orgId: string, url: string): Promise<string> {
+  const { data } = await supabase().auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error(t('Log opnieuw in.'));
+  let res: Response;
+  try {
+    res = await fetch('/api/pagina-foto', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+      body: JSON.stringify({ url }),
+    });
+  } catch {
+    throw new Error(t('Geen verbinding met de server.'));
+  }
+  if (!res.ok || !(res.headers.get('content-type') ?? '').startsWith('image/')) {
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body.error ?? t('De server gaf een fout ({status}). Probeer het opnieuw.', { status: res.status }));
+  }
+  return uploadStockPhoto(orgId, await res.blob());
 }
