@@ -21,7 +21,7 @@ interface GameRow {
   name: { text: string; lang: string }[];
 }
 
-const LAYER_LABEL: Record<GameRow['layer'], string> = { base: tKey('Basisspel'), city: tKey('Stad'), client: tKey('Klant') };
+const LAYER_LABEL: Record<GameRow['layer'], string> = { base: tKey('Basisspel'), city: tKey('Stad'), client: tKey('Op maat') };
 
 /** Zet de spellen in boomvolgorde: basisspel (template), dan zijn steden, dan hun klanten. */
 function tree(games: GameRow[]): { game: GameRow; depth: number }[] {
@@ -83,7 +83,8 @@ export default function GamesPage() {
     <>
       <h1>{t('Spellen')}</h1>
       <p className="muted">
-        {t('Hier staan de spellen per stad en klant. Een nieuwe stad maak je vanuit een template (onder Templates). Publiceren maakt een vaste versie waarmee je tickets maakt.')}
+        {t('Hier staan de spellen per stad en klant. Een nieuwe stad maak je vanuit een template (onder Templates). Publiceren maakt een vaste versie waarmee je tickets maakt.')}{' '}
+        {t('Met “Op maat maken” maak je van een stad een eigen versie voor één groep, met hun eigen morsecode-hints en lokale vragen.')}
       </p>
       <div className="actions">
         <Link href="/templates" className="filebutton">
@@ -113,6 +114,7 @@ export default function GamesPage() {
                 <th>{t('Soort')}</th>
                 <th>{t('Talen')}</th>
                 <th>{t('Gepubliceerd')}</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -145,6 +147,14 @@ export default function GamesPage() {
                           })()}
                         </div>
                       ) : null}
+                      {g.layer === 'client' ? (
+                        <div className="muted">
+                          {(() => {
+                            const parent = games.find((c) => c.id === g.parent_id);
+                            return parent ? t('volgt {city}', { city: gameTitle(parent) }) : null;
+                          })()}
+                        </div>
+                      ) : null}
                       {(() => {
                         const open = g.layer === 'city' ? openTodos(g.settings) : null;
                         if (!open) return null;
@@ -160,6 +170,13 @@ export default function GamesPage() {
                       {latest
                         ? `v${latest.version} · ${new Date(latest.published_at).toLocaleDateString(locale)}`
                         : t('Nog niet')}
+                    </td>
+                    <td>
+                      {g.layer === 'city' ? (
+                        <Link href={`/spellen/${g.id}/op-maat`} className="button secondary" style={{ whiteSpace: 'nowrap' }}>
+                          {t('Op maat maken')}
+                        </Link>
+                      ) : null}
                     </td>
                   </tr>
                 );
