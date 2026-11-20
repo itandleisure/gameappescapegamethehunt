@@ -5,14 +5,13 @@ import type { ReactNode } from 'react';
  * Privacyverklaring van de speler-app (openbaar, geen inlog nodig). De App
  * Store, Google Play en het aanmeldscherm van de app linken naar /privacy.
  *
- * Bedrijfsgegevens: vul ze hieronder in. Zolang er een [ ... ] staat, is de
- * verklaring nog niet compleet.
+ * Bedrijfsgegevens staan hieronder (KvK 82473897, zoals op escapegamethehunt.nl).
  */
 const COMPANY = {
   name: 'The Badass Group B.V.',
   tradeName: 'Badass Games / Escape Game The Hunt',
   address: 'Nering 10-1, 8355 DK Giethoorn',
-  kvk: '[KVK-NUMMER]',
+  kvk: '82473897',
   email: 'info@badassgames.nl',
   website: 'https://badassgames.nl',
 };
