@@ -1,0 +1,44 @@
+name: App-build maken
+
+# Maakt een nieuwe build van de speler-app op Expo (EAS Build). Nodig als er
+# nieuwe telefoononderdelen of toestemmingen in de app komen; daarvoor is een
+# update via het kanaal "preview" niet genoeg. Start met de hand via
+# Actions → App-build maken → Run workflow. De build loopt daarna op expo.dev
+# (10 tot 30 minuten); daar staat ook de installatielink.
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Telefoon'
+        type: choice
+        options: [android, ios, all]
+        default: android
+      profile:
+        description: 'Soort build (preview = testversie met installatielink, production = voor de stores)'
+        type: choice
+        options: [preview, production]
+        default: preview
+
+concurrency:
+  group: expo-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build starten
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: 27.2.0
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Build starten op expo.dev
+        working-directory: apps/player
+        run: eas build --platform "${{ inputs.platform }}" --profile "${{ inputs.profile }}" --non-interactive --no-wait
