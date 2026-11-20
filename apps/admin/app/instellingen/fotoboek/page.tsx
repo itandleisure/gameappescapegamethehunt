@@ -17,7 +17,7 @@ import {
   type BookTextKey,
   type PhotobookSettings,
 } from '@/lib/photobook';
-import { deleteFile, loadSettings, saveSettings, signItems, uploadStockPhoto } from '@/lib/photobook-store';
+import { deleteFile, importPageImage, loadSettings, saveSettings, signItems, uploadStockPhoto } from '@/lib/photobook-store';
 import { SettingsNav } from '@/settings/SettingsNav';
 
 /** Waar elke tekst in het fotoboek staat, als uitleg bij het veld. */
@@ -128,6 +128,26 @@ export default function PhotobookSettingsPage() {
       const file = files?.[0];
       if (file) setGame(index, { image_path: await uploadStockPhoto(org.id, file) });
     });
+  /** Foto's van de links ophalen; zonder index voor alle spellen met een link en zonder foto. */
+  const fetchGameImages = (index?: number) =>
+    void run(t('Foto ophalen…'), async () => {
+      const todo = settings.games
+        .map((g, i) => ({ g, i }))
+        .filter(({ g, i }) => g.url.trim() && (index === undefined ? !g.image_path : i === index));
+      const found = new Map<number, string>();
+      const failed: string[] = [];
+      for (const [n, { g, i }] of todo.entries()) {
+        setBusy(t('Foto ophalen bij {name} ({n} van {total})…', { name: g.name || g.url, n: n + 1, total: todo.length }));
+        try {
+          found.set(i, await importPageImage(org.id, g.url));
+        } catch (e) {
+          failed.push(`${g.name || g.url}: ${e instanceof Error ? e.message : String(e)}`);
+        }
+      }
+      if (found.size) change({ games: settings.games.map((g, i) => (found.has(i) ? { ...g, image_path: found.get(i)! } : g)) });
+      if (failed.length) throw new Error(failed.join(' · '));
+      if (found.size) setNotice(t('Foto opgehaald. Klik op Opslaan om hem te bewaren.'));
+    });
   const remove = (path: string) =>
     void run(t('Verwijderen…'), async () => {
       const next = { ...settings, stock_paths: settings.stock_paths.filter((p) => p !== path), cover_path: settings.cover_path === path ? null : settings.cover_path };
@@ -217,7 +237,7 @@ export default function PhotobookSettingsPage() {
       ) : null}
 
       <h2>{t('Meer spellen van Badass Games')}</h2>
-      <p className="muted small">{t('Blokken op de laatste pagina ("Bedankt voor het spelen"), met een foto, een korte tekst en een link. Hooguit {n}.', { n: MAX_GAMES })}</p>
+      <p className="muted small">{t('Blokken op de laatste pagina ("Bedankt voor het spelen"), met een foto, een korte tekst en een link. Hooguit {n}. De foto kun je van de link laten ophalen (de voorbeeldfoto van die pagina) of zelf uploaden.', { n: MAX_GAMES })}</p>
       <div className="pb-games">
         {settings.games.map((g, i) => (
           <div className="card" key={i}>
@@ -237,8 +257,11 @@ export default function PhotobookSettingsPage() {
               {g.image_path ? <div className="pb-game-img">{img(g.image_path)}</div> : <p className="muted small">{t('Nog geen foto.')}</p>}
               {canEdit ? (
                 <div className="actions" style={{ marginTop: 0 }}>
+                  <button className="secondary" disabled={!!busy || !g.url.trim()} onClick={() => fetchGameImages(i)}>
+                    {t('Foto van de link ophalen')}
+                  </button>
                   <label className={`filebutton ${busy ? 'disabled' : ''}`}>
-                    {g.image_path ? t('Andere foto') : t('Foto kiezen')}
+                    {g.image_path ? t('Andere foto uploaden') : t('Foto uploaden')}
                     <input type="file" accept="image/*" disabled={!!busy} onChange={(e) => uploadGame(i, e.target.files)} />
                   </label>
                   <button className="secondary" disabled={i === 0} onClick={() => change({ games: moveItem(settings.games, i, i - 1) })}>
@@ -261,6 +284,13 @@ export default function PhotobookSettingsPage() {
             onClick={() => change({ games: [...settings.games, { name: '', text: '', url: '', image_path: null }] })}
           >
             {t('Spel toevoegen')}
+          </button>
+          <button
+            className="secondary"
+            disabled={!!busy || !settings.games.some((g) => g.url.trim() && !g.image_path)}
+            onClick={() => fetchGameImages()}
+          >
+            {t("Foto's ophalen van de links")}
           </button>
           <button className="link" onClick={() => change({ games: DEFAULT_GAMES.map((g) => ({ ...g })) })}>
             {t('Terug naar de vier standaardspellen')}
