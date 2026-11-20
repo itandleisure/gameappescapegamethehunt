@@ -523,3 +523,18 @@ pre.logjson { font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; m
   table.eventlog tr.details > td { display: block; }
   table.eventlog tr.logday td { display: block; }
 }
+
+/* Stappenplan "Op maat maken" */
+.wizard-steps { display: flex; gap: 6px; margin: 0 0 20px; padding: 0; list-style: none; flex-wrap: wrap; }
+.wizard-steps li { flex: 1 1 120px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); font-size: 13px; color: var(--muted); }
+.wizard-steps li b { display: block; color: var(--text); font-size: 14px; }
+.wizard-steps li span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wizard-steps li.now { border-color: var(--accent); box-shadow: inset 0 -3px 0 var(--accent); }
+.wizard-steps li.done b::after { content: ' ✓'; color: var(--ok); }
+.wizard-hint { display: grid; grid-template-columns: 110px 1fr; gap: 8px; align-items: start; margin-bottom: 8px; }
+.wizard-hint .cost { font-weight: 700; color: var(--accent); padding-top: 9px; }
+@media (max-width: 520px) { .wizard-hint { grid-template-columns: 1fr; } .wizard-hint .cost { padding-top: 0; } }
+.wizard-option { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+.wizard-option input[type='radio'] { width: auto; }
+.wizard-summary dt { font-weight: 600; margin-top: 10px; }
+.wizard-summary dd { margin: 2px 0 0; }

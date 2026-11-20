@@ -1502,6 +1502,16 @@
       },
       {
         "target": {
+          "task": "puzzel-morse",
+          "field": "answer"
+        },
+        "layers": [
+          "client"
+        ],
+        "label": "Oplossing morsecodepuzzel"
+      },
+      {
+        "target": {
           "game": "meetingPoint"
         },
         "layers": [
