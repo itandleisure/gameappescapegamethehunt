@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { tKey } from '@/lib/i18n';
 import { useLanguage } from '@/lib/language';
 
-export type SettingsPage = 'overzicht' | 'bedrijf' | 'tickets' | 'spellen' | 'fotoboek';
+export type SettingsPage = 'overzicht' | 'bedrijf' | 'tickets' | 'spellen' | 'fotoboek' | 'webshop';
 
 export const SETTINGS_PAGES: { key: SettingsPage; href: string; label: string; text: string }[] = [
   {
@@ -29,6 +29,12 @@ export const SETTINGS_PAGES: { key: SettingsPage; href: string; label: string; t
     href: '/instellingen/fotoboek',
     label: tKey('Fotoboek'),
     text: tKey("Vaste foto's, links, de andere spellen, eigen teksten en hoe lang de klant het fotoboek kan bekijken."),
+  },
+  {
+    key: 'webshop',
+    href: '/instellingen/webshop',
+    label: tKey('Webshop'),
+    text: tKey('De sleutel waarmee de webshop zelf tickets aanmaakt, met het aantal gekochte teams.'),
   },
 ];
 

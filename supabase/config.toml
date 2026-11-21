@@ -11,3 +11,7 @@ verify_jwt = false
 
 [functions.opruimen]
 verify_jwt = false
+
+# Webshop maakt tickets aan: de webshopsleutel is de toegang.
+[functions.webshop-ticket]
+verify_jwt = false
