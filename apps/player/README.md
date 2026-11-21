@@ -7,7 +7,7 @@ React Native + Expo (TypeScript) voor iPhone en Android, en als webapp in de bro
 - **Aanmelden** met de sessiecode van de spelleiding, teamnaam en taal (standaard de taal van de telefoon). Verder spelen op een tweede telefoon met de teamcode.
 - **Kaart** (MapLibre, OpenStreetMap) met de opdrachten van de eigen track, de eigen positie en eventueel de overlay. Alleen het speelveld wordt bij het inloggen gedownload en na afloop verwijderd.
 - **GPS**: opdrachten openen vanzelf op locatie (twee goede metingen of 3 seconden binnen de cirkel, slechte metingen tellen niet). Werkt ook met het scherm uit, op Android met een melding.
-- **Toestemmingen** pas als ze nodig zijn, met een eigen uitlegscherm vóór elke vraag bij de start (locatie, altijd, meldingen). Zie [docs/toestemmingen.md](../../docs/toestemmingen.md), ook voor de teksten voor de App Store en Google Play.
+- **Toestemmingen** pas als ze nodig zijn, met een eigen uitlegscherm vóór elke vraag bij de start (locatie, op iPhone ook "altijd", meldingen). Zie [docs/toestemmingen.md](../../docs/toestemmingen.md), ook voor de teksten voor de App Store en Google Play.
 - **Trillen**: bij een opdracht die opengaat en als het team binnen 40 m van een opdracht komt. Met het scherm uit via een melding van de telefoon zelf (geen pushserver).
 - **Opdrachten**: bevestigen, tekst, getal, meerkeuze, foto, hints met puntaftrek, reeksen zoals de speluitleg, playgrounds zoals het extractiepunt, berichten van de spelregels, timer en score.
 - **Teamchat** (als de spelleider hem aanzet bij de hunt): één gesprek met alle teams van de hunt en de spelleiding. Berichten zonder bereik gaan mee zodra er weer verbinding is.

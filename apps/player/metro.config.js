@@ -31,8 +31,18 @@ const WEB_MODULES = {
   '@react-native-async-storage/async-storage': 'async-storage.ts',
 };
 
+// MapLibre heeft een aparte versie voor `import` (lib/module) en `require`
+// (lib/commonjs). De app gebruikt allebei, en dan zaten beide in de bundel:
+// de kaart-Camera werd twee keer aangemeld en de app crashte bij het openen
+// van de kaart. Daarom altijd één en dezelfde versie.
+const MAPLIBRE = '@maplibre/maplibre-react-native';
+const MAPLIBRE_FILE = require.resolve(MAPLIBRE, { paths: [__dirname] });
+
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   const resolve = defaultResolve ?? context.resolveRequest;
+  if (moduleName === MAPLIBRE && platform !== 'web') {
+    return { type: 'sourceFile', filePath: MAPLIBRE_FILE };
+  }
   if (PREVIEW && PREVIEW_MODULES[moduleName]) {
     return { type: 'sourceFile', filePath: path.join(__dirname, 'preview', PREVIEW_MODULES[moduleName]) };
   }
