@@ -9,7 +9,7 @@ import { answerToRow, rowsToBase, taskSettings, rowsToVariant, type GameRow, typ
 import { loadChain } from '@/lib/game-store';
 import { tKey } from '@/lib/i18n';
 import { useT } from '@/lib/language';
-import { illustrationSource, type Illustration } from '@/lib/illustrations';
+import { ILLUSTRATIONS, ILLUSTRATION_LABELS, illustrationSource, type Illustration } from '@/lib/illustrations';
 import { mediaPath } from '@/lib/map-settings';
 import { shrinkImage } from '@/lib/shrink-image';
 import { supabase } from '@/lib/supabase';
@@ -683,15 +683,16 @@ export default function TaskPage() {
                   {t('Kaartje van het speelveld tonen')}
                 </label>
                 <p className="help">{t('Bij publiceren maakt de beheeromgeving per stad een kaartje van het getekende speelveld (kaart met de grens erop) en toont dat in plaats van de foto hierboven. Zonder getekend speelveld blijft de foto staan.')}</p>
-                <label className="check">
-                  <input
-                    type="checkbox"
-                    checked={form.illustration === 'extractiepunt'}
-                    onChange={(e) => set({ illustration: e.target.checked ? 'extractiepunt' : '' })}
-                  />
-                  {t('Tekening van het extractiepunt tonen')}
-                </label>
-                <p className="help">{t('Een tekening zonder tekst: alle puzzels opgelost geeft één finishvlag, niet alles opgelost geeft drie mogelijke extractiepunten. Spelers zien die in plaats van de foto hierboven.')}</p>
+                <label htmlFor="illustration">{t('Vaste tekening tonen')}</label>
+                <select id="illustration" value={form.illustration} onChange={(e) => set({ illustration: e.target.value })}>
+                  <option value="">{t('Geen')}</option>
+                  {ILLUSTRATIONS.map((name) => (
+                    <option key={name} value={name}>
+                      {t(ILLUSTRATION_LABELS[name])}
+                    </option>
+                  ))}
+                </select>
+                <p className="help">{t('Spelers zien de tekening in plaats van de foto hierboven. De infographics van de speluitleg bestaan in alle speltalen: elk team ziet die in de eigen taal.')}</p>
               </>
             )}
             {form.illustration ? (

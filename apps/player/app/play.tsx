@@ -136,12 +136,12 @@ export default function PlayScreen() {
   // Foto's bij opdrachten vooraf ophalen, zodat ze er ook zijn bij slecht bereik.
   useEffect(() => {
     for (const task of game?.tasks ?? []) {
-      for (const uri of [task.image, ...task.hints.map((h) => h.image)])
+      for (const uri of [task.images?.[lang] ?? task.image, task.mapImage, ...task.hints.map((h) => h.image)])
         if (uri) void Image.prefetch(uri).catch(() => undefined);
     }
     for (const p of game?.playgrounds ?? [])
       if (p.reveal) void Image.prefetch(p.reveal.image).catch(() => undefined);
-  }, [game]);
+  }, [game, lang]);
 
   if (!controller || !snapshot || !game) return <Redirect href="/" />;
   if (state?.ended) return <Redirect href="/end" />;
@@ -479,6 +479,16 @@ export default function PlayScreen() {
               onPress={() => router.push("/tasks")}
             />
           </View>
+          {game.sequences.some((q) => q.id === "intro" && q.tasks.length) ? (
+            <View style={styles.bottomSide}>
+              <Button
+                kind="secondary"
+                label="?"
+                accessibilityLabel={t("help")}
+                onPress={() => router.push("/help")}
+              />
+            </View>
+          ) : null}
           {controller.teamChat ? (
             <View style={styles.bottomSide}>
               <Button

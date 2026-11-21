@@ -12,6 +12,7 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -140,8 +141,9 @@ export default function TaskScreen() {
       <SafeAreaView style={styles.safe}>
         <ScrollView contentContainerStyle={styles.content}>
           <Title>{tr(task.title)}</Title>
-          {task.image ? <TaskImage uri={task.image} /> : null}
-          <Body muted>{tr(task.body)}</Body>
+          {photoOf(task, lang) ? <TaskImage uri={photoOf(task, lang)!} tall={!!task.images} /> : null}
+          {task.mapImage ? <TaskImage uri={task.mapImage} /> : null}
+          <TaskBody text={tr(task.body)} folded={!!task.images} muted />
           <Button kind="secondary" label={t("close")} onPress={close} />
         </ScrollView>
       </SafeAreaView>
@@ -202,8 +204,9 @@ export default function TaskScreen() {
             </Banner>
           ) : null}
           <Title>{tr(task.title)}</Title>
-          {task.image ? <TaskImage uri={task.image} /> : null}
-          <Body>{tr(task.body)}</Body>
+          {photoOf(task, lang) ? <TaskImage uri={photoOf(task, lang)!} tall={!!task.images} /> : null}
+          {task.mapImage ? <TaskImage uri={task.mapImage} /> : null}
+          <TaskBody text={tr(task.body)} folded={!!task.images} />
           <View style={styles.spacer} />
 
           {feedback === "tryAgain" ? (
@@ -397,7 +400,32 @@ export default function TaskScreen() {
  * binnen het scherm. Laadt de foto niet (geen bereik, kapotte link), dan
  * blijft er een leeg vak staan en gaat de opdracht gewoon door.
  */
-function TaskImage({ uri, size }: { uri: string; size?: { width: number; height: number } }) {
+/**
+ * Tekst bij de opdracht. Bij een infographic (`folded`) staat de tekst
+ * ingeklapt onder "Lees meer": de tekening zegt het al.
+ */
+function TaskBody({ text, folded, muted }: { text: string; folded?: boolean; muted?: boolean }) {
+  const { t } = useGame();
+  const [open, setOpen] = useState(false);
+  if (!text.trim()) return null;
+  if (!folded) return <Body muted={muted}>{text}</Body>;
+  return (
+    <View>
+      <Pressable accessibilityRole="button" onPress={() => setOpen(!open)} style={styles.readMore}>
+        <Text style={styles.readMoreText}>{open ? `▲ ${t("readLess")}` : `▼ ${t("readMore")}`}</Text>
+      </Pressable>
+      {open ? <Body muted={muted}>{text}</Body> : null}
+    </View>
+  );
+}
+
+/** Foto bij de opdracht in de taal van het team (infographics hebben er één per taal). */
+function photoOf(task: { image?: string; images?: Partial<Record<string, string>> }, lang: string): string | undefined {
+  return task.images?.[lang] ?? task.image;
+}
+
+/** `tall`: een infographic, die over de hele breedte staat en zo lang mag zijn als hij is. */
+function TaskImage({ uri, size, tall }: { uri: string; size?: { width: number; height: number }; tall?: boolean }) {
   const screen = useWindowDimensions();
   const [loaded, setLoaded] = useState<{ width: number; height: number } | null>(size ?? null);
   useEffect(() => {
@@ -414,7 +442,7 @@ function TaskImage({ uri, size }: { uri: string; size?: { width: number; height:
   }, [uri, size]);
   const box = fitImage(loaded, {
     width: Math.min(screen.width, CONTENT_MAX_WIDTH) - 2 * space.md,
-    maxHeight: screen.height * 0.6,
+    maxHeight: tall ? Number.POSITIVE_INFINITY : screen.height * 0.6,
   });
   return (
     <Image
@@ -431,6 +459,8 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   content: { padding: space.md, paddingBottom: space.xl, ...contentColumn },
   spacer: { height: space.md },
+  readMore: { paddingVertical: space.sm },
+  readMoreText: { color: colors.accent, fontWeight: "700", fontSize: 16 },
   countdown: {
     color: colors.accent,
     fontSize: 72,

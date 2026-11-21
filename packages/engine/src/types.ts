@@ -89,6 +89,18 @@ export interface Task {
    * die bij het publiceren in `image`.
    */
   illustration?: string;
+  /**
+   * Foto per taal, voor een illustratie met tekst (zoals de infographics van de
+   * speluitleg). De speler-app toont die van de eigen taal en anders `image`.
+   * De beheeromgeving zet dit bij het publiceren.
+   */
+  images?: Partial<Record<Lang, string>>;
+  /**
+   * Extra foto onder de foto: het kaartje van het speelveld als de opdracht
+   * ook een illustratie heeft (zoals de infographic "Speelveld" plus de echte
+   * stadskaart). De beheeromgeving zet dit bij het publiceren.
+   */
+  mapImage?: string;
   /** Kort nummer of teken in het kaarticoon (bijvoorbeeld 1, 2, 3) in plaats van de titel. */
   mapLabel?: string;
   /**
