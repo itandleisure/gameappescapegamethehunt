@@ -23,8 +23,12 @@ interface AuthState {
 const AuthContext = createContext<AuthState>({ loading: true, user: null, org: null, reload: async () => {} });
 
 const PUBLIC_PATHS = ['/login'];
-/** Pagina's die zonder inloggen werken, zoals het fotoboek voor de klant. */
-const PUBLIC_PREFIXES = ['/fotoboek/'];
+/**
+ * Pagina's die zonder inloggen werken (en ook met een anoniem speleraccount
+ * van de webapp /speel op hetzelfde domein): het fotoboek voor de klant en de
+ * privacyverklaring, waar de app en de stores naar linken.
+ */
+const PUBLIC_PREFIXES = ['/fotoboek/', '/privacy'];
 /** Waar je heen wilde voordat je moest inloggen, zoals een resultatenlink. */
 const RETURN_KEY = 'hunt-na-inloggen';
 
