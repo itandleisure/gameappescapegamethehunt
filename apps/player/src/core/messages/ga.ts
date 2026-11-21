@@ -86,6 +86,7 @@ export const ga: Messages = {
   leaveConfirmCode: 'An bhfuil sibh cinnte? Is féidir libh leanúint ar aghaidh níos déanaí le cód an chluiche {code} agus ainm foirne "{name}", ar fhón eile freisin.',
   leaveUnsent: 'Tabhair faoi deara: níor seoladh {count} freagra nó grianghraf fós. Fanaigí ar an idirlíon, nó caillfear iad.',
   errorLocked: 'Ní féidir le foirne nua páirt a ghlacadh sa chluiche seo a thuilleadh. Ag imirt cheana? Cuirigí cód an chluiche agus ainm na foirne isteach thíos.',
+  errorFull: "Tá an ticéad seo lán: tá an líon uasta foirne ag imirt cheana féin. Ag imirt cheana? Cuir isteach cód an chluiche agus ainm na foirne thíos. Mura bhfuil, iarr foireann bhreise ar an eagraí.",
   chat: 'Comhrá',
   chatTitle: 'Comhrá leis na foirne eile',
   gameUpdatedTitle: 'Cluiche nuashonraithe',

@@ -19,6 +19,8 @@ export interface SessionInfo {
   team_chat: boolean;
   /** Zoveel spelleiders mogen tegelijk inloggen in de game-app. */
   max_leaders: number;
+  /** Zoveel teams mogen met de ticketcode inloggen; null = onbeperkt. */
+  max_teams: number | null;
 }
 
 /** Spelleider die in de game-app is ingelogd, met zijn laatste positie. Teams zien deze niet. */
@@ -105,7 +107,7 @@ export function useSessionLive(id: string) {
     try {
       const s = await db
         .from('sessions')
-        .select('id, name, status, test_mode, starts_at, timezone, join_code, team_chat, max_leaders, game_versions(package)')
+        .select('id, name, status, test_mode, starts_at, timezone, join_code, team_chat, max_leaders, max_teams, game_versions(package)')
         .eq('id', id)
         .single();
       if (s.error) throw new Error(s.error.message);

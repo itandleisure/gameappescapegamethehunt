@@ -14,6 +14,22 @@ export interface SessionInput {
   teamChat?: boolean;
   /** Eigen sessiecode; leeg = de database kiest er een van 5 tekens. */
   joinCode?: string;
+  /** Zoveel teams mogen met de ticketcode inloggen; null = onbeperkt. */
+  maxTeams?: number | null;
+}
+
+/** Hoogste maximum aantal teams per ticket (zoals in de database). */
+export const MAX_TEAMS_LIMIT = 500;
+
+/** Klopt dit maximum aantal teams? null (onbeperkt) mag altijd. */
+export function validMaxTeams(n: number | null | undefined): boolean {
+  return n == null || (Number.isInteger(n) && n >= 1 && n <= MAX_TEAMS_LIMIT);
+}
+
+/** Teams in een ticket als tekst: "3 / 4 teams", of "3 teams" bij onbeperkt. */
+export function teamsLabel(count: number, max: number | null | undefined): string {
+  if (max == null) return count === 1 ? t('1 team') : t('{n} teams', { n: count });
+  return t('{n} / {max} teams', { n: count, max });
 }
 
 export const STATUS_LABEL: Record<SessionStatus, string> = {
@@ -69,6 +85,7 @@ export function validateSession(input: SessionInput): string[] {
   if (!Number.isInteger(input.trackCount) || input.trackCount < 1 || input.trackCount > 50) {
     errors.push(t('Aantal tracks moet tussen 1 en 50 liggen.'));
   }
+  if (!validMaxTeams(input.maxTeams)) errors.push(t('Maximaal aantal teams moet tussen 1 en 500 liggen, of onbeperkt.'));
   const code = input.joinCode?.trim() ?? '';
   if (code && !/^[A-Za-z0-9]{4,12}$/.test(code)) errors.push(t('De ticketcode moet 4 tot 12 letters of cijfers zijn, zonder spaties.'));
   if (input.startsAt && Number.isNaN(Date.parse(input.startsAt))) errors.push(t('Startmoment is ongeldig.'));

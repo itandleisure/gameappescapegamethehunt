@@ -86,6 +86,7 @@ export const ro: Messages = {
   leaveConfirmCode: 'Sigur? Puteți continua mai târziu cu codul jocului {code} și numele echipei „{name}”, și pe alt telefon.',
   leaveUnsent: 'Atenție: {count} răspuns(uri) sau fotografii nu au fost încă trimise. Așteptați internetul, altfel se pierd.',
   errorLocked: 'Echipele noi nu mai pot intra în acest joc. Jucați deja? Introduceți mai jos codul jocului și numele echipei.',
+  errorFull: "Acest bilet este complet: numărul maxim de echipe joacă deja. Jucați deja? Introduceți mai jos codul jocului și numele echipei. Altfel, cereți organizatorului o echipă în plus.",
   chat: 'Chat',
   chatTitle: 'Chat cu celelalte echipe',
   gameUpdatedTitle: 'Joc actualizat',

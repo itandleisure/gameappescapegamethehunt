@@ -86,6 +86,7 @@ export const et: Messages = {
   leaveConfirmCode: 'Kas olete kindlad? Hiljem saate jätkata mängukoodiga {code} ja meeskonna nimega „{name}“, ka teises telefonis.',
   leaveUnsent: 'Tähelepanu: {count} vastust või fotot pole veel saadetud. Oodake internetti, muidu need lähevad kaduma.',
   errorLocked: 'Selle mänguga ei saa uued meeskonnad enam liituda. Mängite juba? Sisestage allpool mängukood ja meeskonna nimi.',
+  errorFull: "See pilet on täis: maksimaalne arv võistkondi juba mängib. Mängite juba? Sisestage allpool mängukood ja võistkonna nimi. Muidu küsige korraldajalt lisavõistkonda.",
   chat: 'Vestlus',
   chatTitle: 'Vestlus teiste meeskondadega',
   gameUpdatedTitle: 'Mängu uuendati',

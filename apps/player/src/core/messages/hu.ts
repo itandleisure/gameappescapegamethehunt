@@ -86,6 +86,7 @@ export const hu: Messages = {
   leaveConfirmCode: 'Biztosak vagytok benne? Később folytathatjátok a(z) {code} játékkóddal és a(z) „{name}” csapatnévvel, akár egy másik telefonon is.',
   leaveUnsent: 'Figyelem: {count} válasz vagy fotó még nincs elküldve. Várjatok internetre, különben elvesznek.',
   errorLocked: 'Ehhez a játékhoz már nem csatlakozhatnak új csapatok. Már játszotok? Írjátok be lent a játékkódot és a csapatnevet.',
+  errorFull: "Ez a jegy betelt: már a maximális számú csapat játszik. Már játszotok? Írjátok be lent a játékkódot és a csapatnevet. Különben kérjetek a szervezőtől egy további csapatot.",
   chat: 'Chat',
   chatTitle: 'Chat a többi csapattal',
   gameUpdatedTitle: 'A játék frissült',

@@ -86,6 +86,7 @@ export const sv: Messages = {
   leaveConfirmCode: 'Är ni säkra? Ni kan fortsätta senare med spelkoden {code} och lagnamnet "{name}", även på en annan telefon.',
   leaveUnsent: 'Obs: {count} svar eller foton har inte skickats än. Vänta på internet, annars går de förlorade.',
   errorLocked: 'Nya lag kan inte längre gå med i det här spelet. Spelar ni redan? Ange spelkoden och ert lagnamn nedan.',
+  errorFull: "Den här biljetten är full: det högsta antalet lag spelar redan. Spelar ni redan? Ange spelkoden och ert lagnamn nedan. Annars kan ni be arrangören om ett extra lag.",
   chat: 'Chatt',
   chatTitle: 'Chatta med de andra lagen',
   gameUpdatedTitle: 'Spelet har uppdaterats',

@@ -86,6 +86,7 @@ export const fr: Messages = {
   leaveConfirmCode: "Vous êtes sûrs ? Vous pourrez continuer plus tard avec le code du jeu {code} et le nom d'équipe « {name} », aussi sur un autre téléphone.",
   leaveUnsent: "Attention : {count} réponse(s) ou photo(s) n'ont pas encore été envoyées. Attendez d'avoir internet, sinon elles seront perdues.",
   errorLocked: "Les nouvelles équipes ne peuvent plus rejoindre cette partie. Vous jouez déjà ? Saisissez ci-dessous le code du jeu et le nom de votre équipe.",
+  errorFull: "Ce ticket est complet : le nombre maximal d'équipes joue déjà. Vous jouez déjà ? Saisissez ci-dessous le code du jeu et le nom de votre équipe. Sinon, demandez une équipe supplémentaire à l'organisateur.",
   chat: 'Chat',
   chatTitle: 'Chat avec les autres équipes',
   gameUpdatedTitle: 'Jeu mis à jour',

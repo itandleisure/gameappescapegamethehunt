@@ -86,6 +86,7 @@ export const pl: Messages = {
   leaveConfirmCode: 'Na pewno? Później możecie grać dalej z kodem gry {code} i nazwą drużyny „{name}”, również na innym telefonie.',
   leaveUnsent: 'Uwaga: {count} odpowiedzi lub zdjęć nie zostało jeszcze wysłanych. Poczekajcie na internet, inaczej przepadną.',
   errorLocked: 'Nowe drużyny nie mogą już dołączyć do tej gry. Już gracie? Wpiszcie poniżej kod gry i nazwę drużyny.',
+  errorFull: "Ten bilet jest pełny: gra już maksymalna liczba drużyn. Już gracie? Wpiszcie poniżej kod gry i nazwę drużyny. W przeciwnym razie poproście organizatora o dodatkową drużynę.",
   chat: 'Czat',
   chatTitle: 'Czat z innymi drużynami',
   gameUpdatedTitle: 'Gra zaktualizowana',

@@ -86,6 +86,7 @@ export const sl: Messages = {
   leaveConfirmCode: 'Ste prepričani? Pozneje lahko nadaljujete s kodo igre {code} in imenom ekipe „{name}“, tudi na drugem telefonu.',
   leaveUnsent: 'Pozor: {count} odgovorov ali fotografij še ni poslanih. Počakajte na internet, sicer se izgubijo.',
   errorLocked: 'Nove ekipe se tej igri ne morejo več pridružiti. Že igrate? Spodaj vpišite kodo igre in ime ekipe.',
+  errorFull: "Ta vstopnica je polna: največje število ekip že igra. Že igrate? Spodaj vnesite kodo igre in ime ekipe. Sicer prosite organizatorja za dodatno ekipo.",
   chat: 'Klepet',
   chatTitle: 'Klepet z drugimi ekipami',
   gameUpdatedTitle: 'Igra je posodobljena',

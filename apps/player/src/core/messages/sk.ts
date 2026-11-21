@@ -86,6 +86,7 @@ export const sk: Messages = {
   leaveConfirmCode: 'Naozaj? Neskôr môžete pokračovať s kódom hry {code} a názvom tímu „{name}“, aj na inom telefóne.',
   leaveUnsent: 'Pozor: {count} odpovedí alebo fotiek ešte nebolo odoslaných. Počkajte na internet, inak sa stratia.',
   errorLocked: 'Do tejto hry sa už nové tímy nemôžu pridať. Už hráte? Zadajte nižšie kód hry a názov tímu.',
+  errorFull: "Tento lístok je plný: maximálny počet tímov už hrá. Už hráte? Zadajte nižšie kód hry a názov tímu. Inak požiadajte organizátora o ďalší tím.",
   chat: 'Chat',
   chatTitle: 'Chat s ostatnými tímami',
   gameUpdatedTitle: 'Hra aktualizovaná',
