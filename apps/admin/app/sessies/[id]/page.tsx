@@ -7,7 +7,7 @@ import { tKey } from '@/lib/i18n';
 import { useLanguage } from '@/lib/language';
 import { buildTrails, teamColor } from '@/lib/live-map';
 import { buildResults, resultsToCsv } from '@/lib/results';
-import { formatInZone } from '@/lib/sessions';
+import { formatInZone, teamsLabel } from '@/lib/sessions';
 import { useSessionLive } from '@/lib/session-live';
 import { Answers } from '@/results/Answers';
 import { LiveMap } from '@/results/LiveMap';
@@ -15,6 +15,7 @@ import { DeleteSession } from '@/results/DeleteSession';
 import { EventLinks } from '@/results/EventLinks';
 import { EventLog } from '@/results/EventLog';
 import { LeaderCode } from '@/results/LeaderCode';
+import { MaxTeams } from '@/results/MaxTeams';
 import { OpenToggle } from '@/results/OpenToggle';
 import { PhotobookEditor } from '@/results/PhotobookEditor';
 import { Photowall } from '@/results/Photowall';
@@ -122,11 +123,18 @@ export default function SessionLivePage() {
           canEdit={org?.role !== 'instructor'}
           onChange={() => void reload()}
         />
+        <MaxTeams
+          sessionId={session.id}
+          maxTeams={session.max_teams ?? null}
+          teamCount={data.teams.length}
+          canEdit={org?.role !== 'instructor'}
+          onChange={() => void reload()}
+        />
       </div>
       <p className="muted">
         <OpenToggle id={session.id} status={session.status} onChange={() => void reload()} />{' '}
         {session.test_mode ? <span className="badge test">{t('Test')}</span> : null} {t('Code')} <strong>{session.join_code}</strong> ·{' '}
-        {data.teams.length === 1 ? t('1 team') : t('{n} teams', { n: data.teams.length })}
+        {teamsLabel(data.teams.length, session.max_teams)}
         {playing ? `, ${t('{n} aan het spelen', { n: playing })}` : ''} · {t('bijgewerkt')}{' '}
         {new Intl.DateTimeFormat(locale, { timeStyle: 'medium' }).format(new Date(updatedAt))}
         {error ? <span className="error"> · {error}</span> : null}

@@ -81,6 +81,7 @@ export const lt: Messages = {
   leaveConfirmCode: 'Ar tikrai? Vėliau galėsite tęsti su žaidimo kodu {code} ir komandos pavadinimu „{name}“, taip pat kitame telefone.',
   leaveUnsent: 'Dėmesio: {count} atsakymų ar nuotraukų dar neišsiųsta. Palaukite interneto, kitaip jie bus prarasti.',
   errorLocked: 'Naujos komandos nebegali prisijungti prie šio žaidimo. Jau žaidžiate? Žemiau įveskite žaidimo kodą ir komandos pavadinimą.',
+  errorFull: "Šis bilietas pilnas: jau žaidžia didžiausias komandų skaičius. Jau žaidžiate? Žemiau įveskite žaidimo kodą ir komandos pavadinimą. Kitu atveju paprašykite organizatoriaus papildomos komandos.",
   chat: 'Pokalbis',
   chatTitle: 'Pokalbis su kitomis komandomis',
   gameUpdatedTitle: 'Žaidimas atnaujintas',

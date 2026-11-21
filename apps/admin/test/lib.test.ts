@@ -2,7 +2,7 @@ import { composeGame } from '@hunt/engine';
 import { describe, expect, it } from 'vitest';
 import { leeuwarden, parteon, theHuntBase } from '../../../packages/engine/test/fixtures/the-hunt.js';
 import { parseGameFile } from '../src/lib/game-import.js';
-import { formatInZone, toJoinCode, validateSession, zonedToUtc } from '../src/lib/sessions.js';
+import { formatInZone, teamsLabel, toJoinCode, validateSession, validMaxTeams, zonedToUtc } from '../src/lib/sessions.js';
 
 describe('spelpakket importeren', () => {
   it('accepteert een samengesteld spel', () => {
@@ -46,6 +46,14 @@ describe('sessies', () => {
     expect(validateSession({ ...ok, name: ' ', trackCount: 0, gameVersionId: '' })).toHaveLength(3);
     expect(validateSession({ ...ok, joinCode: 'HUNT1' })).toEqual([]);
     expect(validateSession({ ...ok, joinCode: 'HUNT 1' })).toHaveLength(1);
+    // Maximum aantal teams: leeg = onbeperkt, anders 1 tot 500.
+    expect(validateSession({ ...ok, maxTeams: null })).toEqual([]);
+    expect(validateSession({ ...ok, maxTeams: 4 })).toEqual([]);
+    expect(validateSession({ ...ok, maxTeams: 0 })).toHaveLength(1);
+    expect(validMaxTeams(501)).toBe(false);
+    expect(validMaxTeams(2.5)).toBe(false);
+    expect(teamsLabel(3, 4)).toBe('3 / 4 teams');
+    expect(teamsLabel(3, null)).toBe('3 teams');
     expect(toJoinCode('Van Dijk B.V.')).toBe('VANDIJKBV');
     expect(toJoinCode('Café Ünïe')).toBe('CAFEUNIE');
     expect(toJoinCode('Parteon Woningcorporatie')).toBe('PARTEONWONIN');

@@ -81,6 +81,7 @@ export const no: Messages = {
   leaveConfirmCode: 'Er dere sikre? Dere kan fortsette senere med spillkode {code} og lagnavnet "{name}", også på en annen telefon.',
   leaveUnsent: 'Obs: {count} svar eller bilder er ikke sendt ennå. Vent på internett, ellers går de tapt.',
   errorLocked: 'Nye lag kan ikke lenger bli med i dette spillet. Spiller dere allerede? Skriv inn spillkoden og lagnavnet nedenfor.',
+  errorFull: "Denne billetten er full: det maksimale antallet lag spiller allerede. Spiller dere allerede? Skriv inn spillkoden og lagnavnet nedenfor. Ellers kan dere be arrangøren om et ekstra lag.",
   chat: 'Chat',
   chatTitle: 'Chat med de andre lagene',
   gameUpdatedTitle: 'Spillet er oppdatert',

@@ -81,6 +81,7 @@ export const mt: Messages = {
   leaveConfirmCode: 'Żguri? Tistgħu tkomplu aktar tard bil-kodiċi tal-logħba {code} u l-isem tat-tim "{name}", anke fuq telefon ieħor.',
   leaveUnsent: 'Attenzjoni: {count} tweġiba/iet jew ritratt(i) għadhom ma ntbagħtux. Stennew l-internet, inkella jintilfu.',
   errorLocked: 'Timijiet ġodda ma jistgħux jingħaqdu aktar ma’ din il-logħba. Diġà qed tilagħbu? Daħħlu l-kodiċi tal-logħba u l-isem tat-tim hawn taħt.',
+  errorFull: "Dan il-biljett mimli: in-numru massimu ta' timijiet diġà qed jilgħab. Diġà qed tilagħbu? Daħħlu l-kodiċi tal-logħba u l-isem tat-tim hawn taħt. Inkella, staqsu lill-organizzatur għal tim żejjed.",
   chat: 'Chat',
   chatTitle: 'Chat mat-timijiet l-oħra',
   gameUpdatedTitle: 'Il-logħba ġiet aġġornata',

@@ -19,7 +19,7 @@ const KINDS: Partial<Record<keyof Backend, string>> = {
 };
 
 /** Fouten die bij de speler horen (verkeerde code, naam bezet): geen storing, wel handig om te zien. */
-const USER_ERRORS = new Set(['errorUnknownSession', 'errorLocked', 'errorUnknownTeam', 'errorAmbiguousTeam', 'errorTeamNameTaken', 'errorPhone', 'errorLanguage']);
+const USER_ERRORS = new Set(['errorUnknownSession', 'errorLocked', 'errorFull', 'errorUnknownTeam', 'errorAmbiguousTeam', 'errorTeamNameTaken', 'errorPhone', 'errorLanguage']);
 
 /** Een klok die meer dan zoveel afwijkt van de server, wordt gemeld. */
 export const CLOCK_WARN_MS = 120_000;

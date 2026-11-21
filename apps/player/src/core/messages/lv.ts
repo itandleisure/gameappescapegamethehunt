@@ -81,6 +81,7 @@ export const lv: Messages = {
   leaveConfirmCode: 'Vai esat pārliecināti? Vēlāk varēsiet turpināt ar spēles kodu {code} un komandas nosaukumu “{name}”, arī citā tālrunī.',
   leaveUnsent: 'Uzmanību: {count} atbildes vai foto vēl nav nosūtīti. Pagaidiet internetu, citādi tie pazudīs.',
   errorLocked: 'Jaunas komandas vairs nevar pievienoties šai spēlei. Jau spēlējat? Zemāk ievadiet spēles kodu un komandas nosaukumu.',
+  errorFull: "Šī biļete ir pilna: jau spēlē maksimālais komandu skaits. Jau spēlējat? Ievadiet zemāk spēles kodu un komandas nosaukumu. Citādi lūdziet organizatoram papildu komandu.",
   chat: 'Tērzēšana',
   chatTitle: 'Tērzēšana ar citām komandām',
   gameUpdatedTitle: 'Spēle atjaunināta',

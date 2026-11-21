@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth';
 import { useT } from '@/lib/language';
 import {
   formatInZone,
+  teamsLabel,
   timezoneOptions,
   toJoinCode,
   validateSession,
@@ -14,6 +15,7 @@ import {
 } from '@/lib/sessions';
 import { supabase } from '@/lib/supabase';
 import { DeleteSession } from '@/results/DeleteSession';
+import { MaxTeamsField } from '@/results/MaxTeams';
 import { OpenToggle } from '@/results/OpenToggle';
 import { tx } from '@/lib/text';
 import { displayName } from '@/lib/game-name';
@@ -39,6 +41,7 @@ interface SessionRow {
   status: SessionStatus;
   test_mode: boolean;
   track_count: number;
+  max_teams: number | null;
   starts_at: string | null;
   timezone: string;
   game_versions: { version: number; name: unknown; games?: GameRef } | null;
@@ -78,6 +81,7 @@ const EMPTY: SessionInput = {
   testMode: false,
   teamChat: false,
   joinCode: '',
+  maxTeams: null,
 };
 
 export default function SessionsPage() {
@@ -97,7 +101,7 @@ export default function SessionsPage() {
     const [s, v, g] = await Promise.all([
       db
         .from('sessions')
-        .select('id, name, join_code, status, test_mode, track_count, starts_at, timezone, teams(count), game_versions(version, name:package->name, games(layer, slug, settings))')
+        .select('id, name, join_code, status, test_mode, track_count, max_teams, starts_at, timezone, teams(count), game_versions(version, name:package->name, games(layer, slug, settings))')
         .eq('org_id', org.id)
         .order('created_at', { ascending: false }),
       db.from('game_versions').select('id, game_id, version, name:package->name, games(layer, slug, settings)').order('version', { ascending: false }),
@@ -154,6 +158,7 @@ export default function SessionsPage() {
         track_count: form.trackCount,
         test_mode: form.testMode,
         team_chat: form.teamChat ?? false,
+        max_teams: form.maxTeams ?? null,
         status: 'open',
         ...(form.joinCode?.trim() ? { join_code: form.joinCode.trim().toUpperCase() } : {}),
       });
@@ -247,6 +252,7 @@ export default function SessionsPage() {
               />
             </div>
           </div>
+          <MaxTeamsField id="max-teams" value={form.maxTeams ?? null} onChange={(maxTeams) => setForm({ ...form, maxTeams })} />
           <label className="check">
             <input type="checkbox" checked={form.testMode} onChange={(e) => setForm({ ...form, testMode: e.target.checked })} />
             {t('Testmodus')}
@@ -306,7 +312,8 @@ export default function SessionsPage() {
                       <strong>{s.name}</strong>
                     </Link>
                     <div className="muted">
-                      {s.game_versions ? versionLabel(s.game_versions) : ''} · {t('{n} tracks', { n: s.track_count })}
+                      {s.game_versions ? versionLabel(s.game_versions) : ''} · {t('{n} tracks', { n: s.track_count })} ·{' '}
+                      {teamsLabel(s.teams?.[0]?.count ?? 0, s.max_teams)}
                     </div>
                   </td>
                   <td className="code" data-label={t('Ticketcode')}>{s.join_code}</td>

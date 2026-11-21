@@ -15,6 +15,7 @@ De database moet leeg zijn. In CI draait dit automatisch tegen een Postgres-cont
 
 1. De app logt anoniem in bij Supabase (anonymous sign-in).
 2. `join_session(code, teamnaam, taal)` maakt het team aan en verdeelt het over de tracks op volgorde van inloggen.
+   Heeft het ticket een maximum (`sessions.max_teams`, leeg = onbeperkt) en doet dat aantal al mee, dan weigert hij met code `P0007` (ticket vol).
 3. Op een tweede telefoon: `rejoin_team(teamcode)`.
 4. `start_team(team)` zet de starttijd op servertijd.
 

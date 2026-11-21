@@ -81,6 +81,7 @@ export const hr: Messages = {
   leaveConfirmCode: 'Jeste li sigurni? Kasnije možete nastaviti s kôdom igre {code} i nazivom tima „{name}”, i na drugom telefonu.',
   leaveUnsent: 'Pažnja: {count} odgovor(a) ili fotografija još nije poslano. Pričekajte internet, inače će se izgubiti.',
   errorLocked: 'Novi timovi se više ne mogu pridružiti ovoj igri. Već igrate? Upišite ispod kôd igre i naziv tima.',
+  errorFull: "Ova ulaznica je puna: najveći broj timova već igra. Već igrate? Upišite ispod kod igre i ime tima. Inače zamolite organizatora za dodatni tim.",
   chat: 'Chat',
   chatTitle: 'Chat s drugim timovima',
   gameUpdatedTitle: 'Igra je ažurirana',

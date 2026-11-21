@@ -81,6 +81,7 @@ export const da: Messages = {
   leaveConfirmCode: 'Er I sikre? I kan spille videre senere med spilkode {code} og holdnavnet "{name}", også på en anden telefon.',
   leaveUnsent: 'Bemærk: {count} svar eller foto(s) er endnu ikke sendt. Vent på internet, ellers går de tabt.',
   errorLocked: 'Nye hold kan ikke længere deltage i dette spil. Spiller I allerede? Indtast spilkoden og jeres holdnavn herunder.',
+  errorFull: "Denne billet er fuld: det maksimale antal hold spiller allerede. Spiller I allerede? Indtast spilkoden og jeres holdnavn nedenfor. Ellers kan I bede arrangøren om et ekstra hold.",
   chat: 'Chat',
   chatTitle: 'Chat med de andre hold',
   gameUpdatedTitle: 'Spillet er opdateret',

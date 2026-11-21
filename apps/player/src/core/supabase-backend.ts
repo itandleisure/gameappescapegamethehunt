@@ -10,7 +10,7 @@ export function mediaExtension(photo: Pick<PendingPhoto, 'contentType'>): 'jpg' 
 
 export class BackendError extends Error {
   constructor(
-    readonly key: 'errorUnknownSession' | 'errorLocked' | 'errorUnknownTeam' | 'errorAmbiguousTeam' | 'errorTeamNameTaken' | 'errorLanguage' | 'errorPhone' | 'errorNetwork' | 'errorGeneric',
+    readonly key: 'errorUnknownSession' | 'errorLocked' | 'errorFull' | 'errorUnknownTeam' | 'errorAmbiguousTeam' | 'errorTeamNameTaken' | 'errorLanguage' | 'errorPhone' | 'errorNetwork' | 'errorGeneric',
     cause?: unknown,
   ) {
     super(key);
@@ -106,6 +106,7 @@ export function fromEventRow(row: EventRow): GameEvent {
 function translate(error: { code?: string; message?: string } | null, fallback: BackendError['key'] = 'errorGeneric') {
   if (!error) return new BackendError(fallback);
   if (error.code === 'P0003') return new BackendError('errorLocked', error);
+  if (error.code === 'P0007') return new BackendError('errorFull', error);
   if (error.code === 'P0005') return new BackendError('errorAmbiguousTeam', error);
   if (error.code === '23505') return new BackendError('errorTeamNameTaken', error);
   if (error.code === 'P0002') return new BackendError(fallback === 'errorUnknownTeam' ? 'errorUnknownTeam' : 'errorUnknownSession', error);

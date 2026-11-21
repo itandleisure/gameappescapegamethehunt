@@ -81,6 +81,7 @@ export const fi: Messages = {
   leaveConfirmCode: 'Oletteko varmoja? Voitte jatkaa myöhemmin pelikoodilla {code} ja joukkueen nimellä "{name}", myös toisella puhelimella.',
   leaveUnsent: 'Huom: {count} vastausta tai kuvaa on vielä lähettämättä. Odottakaa internetyhteyttä, muuten ne katoavat.',
   errorLocked: 'Uudet joukkueet eivät voi enää liittyä tähän peliin. Pelaatteko jo? Kirjoittakaa pelikoodi ja joukkueen nimi alle.',
+  errorFull: "Tämä lippu on täynnä: enimmäismäärä joukkueita pelaa jo. Pelaatteko jo? Kirjoita alle pelikoodi ja joukkueen nimi. Muuten pyydä järjestäjältä lisäjoukkuetta.",
   chat: 'Chat',
   chatTitle: 'Chat muiden joukkueiden kanssa',
   gameUpdatedTitle: 'Peli päivitetty',
