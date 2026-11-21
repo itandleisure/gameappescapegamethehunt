@@ -79,6 +79,12 @@ export interface Backend {
   /** Stuurt gebeurtenissen; dubbel versturen mag (zelfde id wordt genegeerd). */
   sendEvents(teamId: string, events: GameEvent[]): Promise<void>;
   recordPositions(teamId: string, fixes: GpsFix[]): Promise<void>;
+  /**
+   * Is er een Hunter (ingelogde spelleider) binnen de afstand van het spel?
+   * Alleen ja of nee; de server vergelijkt met de laatst verstuurde positie van
+   * het team. Optioneel: zonder deze functie geen waarschuwing.
+   */
+  hunterNearby?(teamId: string): Promise<boolean>;
   /** Uploadt een foto en registreert hem; geeft het opslagpad terug. */
   uploadPhoto(teamId: string, photo: PendingPhoto): Promise<string>;
   /** Servertijd in ms. */

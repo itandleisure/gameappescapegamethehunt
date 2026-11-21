@@ -432,3 +432,82 @@ describe('teamchat', () => {
   });
 });
 
+describe('Hunter in de buurt', () => {
+  async function playing(g = game) {
+    const s = setup(g);
+    const alerts: string[] = [];
+    const c = await GameController.join({ ...s.deps, onHunterNear: (team) => alerts.push(team.name) }, 'LWD001', 'Vossen', 'nl', '06 12345678');
+    return { ...s, c, alerts };
+  }
+
+  it('trilt één keer als er een Hunter dichtbij komt en toont het zolang hij er is', async () => {
+    const { c, backend, advance, alerts } = await playing();
+    await c.tick();
+    expect(backend.hunterChecks).toBe(0); // nog niet gestart: niet vragen
+    await c.start();
+    await c.tick();
+    expect(backend.hunterChecks).toBe(1);
+    expect(c.snapshot().hunterNear).toBe(false);
+
+    backend.hunterNear = true;
+    advance(5_000);
+    await c.tick();
+    expect(backend.hunterChecks).toBe(1); // hooguit elke 10 seconden
+    advance(5_000);
+    await c.tick();
+    expect(alerts).toEqual(['Vossen']);
+    expect(c.snapshot().hunterNear).toBe(true);
+
+    // Blijft hij in de buurt, dan niet steeds opnieuw trillen.
+    advance(10_000);
+    await c.tick();
+    expect(alerts).toHaveLength(1);
+
+    // Even weg en meteen terug: pas na twee minuten weer trillen.
+    backend.hunterNear = false;
+    advance(10_000);
+    await c.tick();
+    expect(c.snapshot().hunterNear).toBe(false);
+    backend.hunterNear = true;
+    advance(10_000);
+    await c.tick();
+    expect(alerts).toHaveLength(1);
+    expect(c.snapshot().hunterNear).toBe(true);
+    backend.hunterNear = false;
+    advance(10_000);
+    await c.tick();
+    advance(120_000);
+    backend.hunterNear = true;
+    await c.tick();
+    expect(alerts).toHaveLength(2);
+  });
+
+  it('zonder bereik verdwijnt de waarschuwing na een tijdje van het scherm', async () => {
+    const { c, backend, advance } = await playing();
+    await c.start();
+    backend.hunterNear = true;
+    await c.tick();
+    expect(c.snapshot().hunterNear).toBe(true);
+    backend.offline = true;
+    advance(50_000);
+    await c.tick();
+    expect(c.snapshot().hunterNear).toBe(false);
+  });
+
+  it('vraagt niets als de waarschuwing in dit spel uit staat', async () => {
+    const off = { ...game, hunterAlert: { radius: 0 } };
+    const { c, backend, alerts } = await playing(off);
+    await c.start();
+    backend.hunterNear = true;
+    await c.tick();
+    expect(backend.hunterChecks).toBe(0);
+    expect(alerts).toEqual([]);
+    expect(c.hunterAlertRadius).toBe(0);
+  });
+
+  it('gebruikt 100 meter voor een spel zonder instelling', async () => {
+    const { c } = await playing();
+    expect(c.hunterAlertRadius).toBe(100);
+  });
+});
+

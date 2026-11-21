@@ -196,6 +196,11 @@ export default function TaskScreen() {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
+          {snapshot.hunterNear ? (
+            <Banner tone="danger">
+              {`${t("hunterNearNotice")} ${t("hunterNearBody", { m: controller.hunterAlertRadius })}`}
+            </Banner>
+          ) : null}
           <Title>{tr(task.title)}</Title>
           {task.image ? <TaskImage uri={task.image} /> : null}
           <Body>{tr(task.body)}</Body>

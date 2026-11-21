@@ -1,6 +1,7 @@
 import {
   LocationGate,
   PositionUploader,
+  DEFAULT_HUNTER_ALERT_RADIUS,
   canUseHint,
   computeState,
   distanceMeters,
@@ -39,6 +40,8 @@ export interface Snapshot {
   chatUnread: number;
   /** De spelleiding heeft het spel live bijgewerkt en het team heeft de melding nog niet gezien. */
   gameUpdated: boolean;
+  /** Er is nu een Hunter (spelleider) in de buurt. Alleen dát, niet waar. */
+  hunterNear: boolean;
 }
 
 /** Langste bericht in de teamchat. */
@@ -46,6 +49,13 @@ export const CHAT_MAX_LENGTH = 500;
 
 /** Afstand buiten de cirkel waarop de telefoon trilt: "je bent er bijna". */
 export const NEAR_MARGIN_METERS = 40;
+
+/** Zo vaak vraagt de app of er een Hunter in de buurt is (de Hunters delen hun positie elke 10 s). */
+export const HUNTER_CHECK_MS = 10_000;
+/** Na een waarschuwing trilt de telefoon voor een Hunter pas na deze tijd opnieuw. */
+export const HUNTER_REALERT_MS = 120_000;
+/** Zonder gelukte controle in deze tijd (geen bereik) verdwijnt "Hunter in de buurt" van het scherm. */
+export const HUNTER_STALE_MS = 45_000;
 
 /** Opdrachtsleutel van de teamfoto in de tabel photos (een echte sleutel begint nooit met _). */
 export const TEAM_PHOTO_KEY = '_teamfoto';
@@ -57,6 +67,8 @@ export interface ControllerDeps {
   deviceNow?: () => number;
   /** Maakt unieke id's voor gebeurtenissen en foto's. */
   newId?: () => string;
+  /** Er kwam net een Hunter in de buurt: trillen (met het scherm uit via een melding). */
+  onHunterNear?: (team: TeamRecord) => void;
 }
 
 interface Saved {
@@ -118,6 +130,11 @@ export class GameController {
   private readonly snoozed = new Map<string, number>();
   /** Opdrachten waarvoor de telefoon al getrild heeft omdat het team in de buurt kwam. */
   private readonly nearAlerted = new Set<string>();
+  /** Hunter in de buurt: laatste antwoord van de server, en wanneer (telefoontijd). */
+  private hunterNear = false;
+  private hunterCheckedAt = 0;
+  private lastHunterCheckAt = 0;
+  private lastHunterAlertAt = Number.NEGATIVE_INFINITY;
 
   private constructor(
     private readonly deps: ControllerDeps,
@@ -215,6 +232,7 @@ export class GameController {
       chat: this.chatMessages(),
       chatUnread: this.chatUnread(),
       gameUpdated: this.data.gameUpdated === true,
+      hunterNear: this.hunterNear && this.device() - this.hunterCheckedAt < HUNTER_STALE_MS,
     };
   }
 
@@ -349,6 +367,11 @@ export class GameController {
     await this.commit();
   }
 
+  /** Telefoontijd (ms). */
+  private device(): number {
+    return (this.deps.deviceNow ?? Date.now)();
+  }
+
   /** Servertijd, in een testsessie plus de tijd die vooruitgezet is. */
   private now(): number {
     return this.clock.now() + (this.data.testSkipMs ?? 0);
@@ -468,6 +491,7 @@ export class GameController {
       const device = (this.deps.deviceNow ?? Date.now)();
       await this.flushEvents(device);
       await this.flushPositions();
+      await this.checkHunters(device);
       await this.flushPhotos(device);
       await this.syncChat(device);
       if (device - this.lastPullAt >= 30_000) {
@@ -542,6 +566,41 @@ export class GameController {
       this.chatRetry.succeeded();
     } catch {
       this.chatRetry.failed(device);
+    }
+  }
+
+  /** Afstand (meter) voor de waarschuwing "Hunter in de buurt"; 0 = uit. */
+  get hunterAlertRadius(): number {
+    return this.game.hunterAlert?.radius ?? DEFAULT_HUNTER_ALERT_RADIUS;
+  }
+
+  /**
+   * Vraagt elke 10 seconden of er een Hunter in de buurt is, zolang het team
+   * speelt. Komt er een Hunter in de buurt, dan één keer trillen; daarna pas
+   * opnieuw als hij weg was en na twee minuten terugkomt, zodat de telefoon
+   * niet blijft zoemen tijdens een achtervolging.
+   */
+  private async checkHunters(device: number) {
+    if (!this.deps.backend.hunterNearby || !(this.hunterAlertRadius > 0)) return;
+    if (device - this.lastHunterCheckAt < HUNTER_CHECK_MS) return;
+    const ctx = this.context;
+    if (!ctx || computeState(this.game, ctx, this.data.events, this.now()).ended) {
+      this.hunterNear = false;
+      return;
+    }
+    this.lastHunterCheckAt = device;
+    try {
+      const near = await this.deps.backend.hunterNearby(this.data.team.id);
+      // Lang geen bereik gehad: telt als "weg geweest", dus weer trillen als hij er nog is.
+      if (device - this.hunterCheckedAt >= HUNTER_STALE_MS) this.hunterNear = false;
+      this.hunterCheckedAt = device;
+      if (near && !this.hunterNear && device - this.lastHunterAlertAt >= HUNTER_REALERT_MS) {
+        this.lastHunterAlertAt = device;
+        this.deps.onHunterNear?.(this.data.team);
+      }
+      this.hunterNear = near;
+    } catch {
+      // Geen bereik: na HUNTER_STALE_MS verdwijnt de waarschuwing vanzelf van het scherm.
     }
   }
 

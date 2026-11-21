@@ -112,6 +112,8 @@ export const sk: Messages = {
   permSkip: "Teraz nie",
   taskOpenedNotice: "Úloha otvorená",
   nearTaskNotice: "Takmer pri úlohe",
+  hunterNearNotice: "Hunter nablízku!",
+  hunterNearBody: "Hunter je do {m} metrov od vás. Majte oči otvorené!",
   recordVideo: "Natočiť video",
   retakeVideo: "Natočiť znova",
   sendVideo: "Odoslať video",

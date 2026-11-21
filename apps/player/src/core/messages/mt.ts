@@ -112,6 +112,8 @@ export const mt: Messages = {
   permSkip: "Mhux issa",
   taskOpenedNotice: "Kompitu miftuħ",
   nearTaskNotice: "Kważi fi kompitu",
+  hunterNearNotice: "Hunter fil-qrib!",
+  hunterNearBody: "Hemm Hunter fi ħdan {m} metri. Żommu għajnejkom miftuħa!",
   recordVideo: "Irrekordja video",
   retakeVideo: "Irrekordja mill-ġdid",
   sendVideo: "Ibgħat il-video",

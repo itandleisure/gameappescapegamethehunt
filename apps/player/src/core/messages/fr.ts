@@ -112,6 +112,8 @@ export const fr: Messages = {
   permSkip: "Pas maintenant",
   taskOpenedNotice: "Mission ouverte",
   nearTaskNotice: "Presque à une mission",
+  hunterNearNotice: "Hunter à proximité !",
+  hunterNearBody: "Un Hunter est à moins de {m} mètres. Ouvrez l'œil !",
   recordVideo: "Filmer une vidéo",
   retakeVideo: "Refilmer",
   sendVideo: "Envoyer la vidéo",

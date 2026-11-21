@@ -8,7 +8,7 @@ willen. Alleen de eerste vraag (locatie) is nodig om te spelen; de andere kun je
 |---|---|---|---|
 | Locatie tijdens gebruik | Bij Start, na uitlegscherm 1 | Opdrachten openen op locatie | Spelen gaat niet; uitleg en knop naar Instellingen |
 | Locatie altijd (alleen iPhone) | Bij Start, na uitlegscherm 2 | GPS met het scherm uit / telefoon in de zak | GPS alleen met de app open |
-| Meldingen | Bij Start, na uitlegscherm 3 | Trillen met het scherm uit als een opdracht opengaat of dichtbij is | Met het scherm uit trilt de telefoon niet (de opdracht opent wel) |
+| Meldingen | Bij Start, na uitlegscherm 3 | Trillen met het scherm uit als een opdracht opengaat of dichtbij is, of als een Hunter in de buurt is | Met het scherm uit trilt de telefoon niet (de opdracht opent wel) |
 | Camera | Bij de eerste foto | Teamfoto en foto-opdrachten | Geen foto |
 | Microfoon | Bij de eerste video | Geluid bij een video-opdracht | Video zonder geluid of geen video |
 | Foto's bewaren (galerij) | Bij de eerste foto | Foto's en video's uit het spel ook op de eigen telefoon | Alleen naar de server; iPhone vraagt "foto's toevoegen", Android alleen tot en met Android 12 |

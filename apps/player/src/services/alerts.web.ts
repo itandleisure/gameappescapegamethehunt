@@ -27,3 +27,7 @@ export async function alertOpened(_title: string, _body: string): Promise<void> 
 export async function alertNear(_title: string, _body: string): Promise<void> {
   vibrate([80, 60, 80]);
 }
+
+export async function alertHunter(_title: string, _body: string): Promise<void> {
+  vibrate([500, 150, 500, 150, 500]);
+}

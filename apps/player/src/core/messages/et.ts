@@ -112,6 +112,8 @@ export const et: Messages = {
   permSkip: "Mitte praegu",
   taskOpenedNotice: "Ülesanne avatud",
   nearTaskNotice: "Peaaegu ülesande juures",
+  hunterNearNotice: "Hunter on lähedal!",
+  hunterNearBody: "Hunter on {m} meetri raadiuses. Hoidke silmad lahti!",
   recordVideo: "Filmi video",
   retakeVideo: "Filmi uuesti",
   sendVideo: "Saada video",

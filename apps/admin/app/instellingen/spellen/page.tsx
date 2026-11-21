@@ -67,6 +67,7 @@ export default function GameSettingsPage() {
       <div className="card">
         <div className="row">
           {number('meeting_radius', t('Cirkel om het verzamelpunt'), t('meter'), t('Daarbinnen is een team bij het verzamelpunt.'))}
+          {number('hunter_alert_radius', t('Hunter in de buurt'), t('meter'), t('Teams krijgen een melding met trillen als een ingelogde spelleider zo dichtbij is, zonder richting. 0 = uit.'))}
           <div>
             <label htmlFor="g-style">{t('Kaartstijl')}</label>
             <select id="g-style" value={g.map_style} disabled={!canEdit} onChange={(e) => set({ map_style: e.target.value })}>

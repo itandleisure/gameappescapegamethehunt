@@ -100,6 +100,15 @@ Dit is de reden voor een eigen app, dus hier zit extra aandacht:
 - Elke sessie logt de nauwkeurigheid van de metingen. Bij de veldtest vergelijken we dat met Loquiz op dezelfde route.
 - Als vangnet kan de spelleiding een opdracht vanuit de monitor handmatig openen voor een team.
 
+### 3.4 Hunter in de buurt
+
+Spelleiders (de Hunters) loggen in de app in en delen hun positie elke 10 seconden. Elke 10 seconden vraagt de app van een spelend team aan de server of er een Hunter binnen de ingestelde afstand is (standaard 100 meter; per spel in te stellen op de kaartpagina, standaard voor alle spellen in Instellingen › Spellen en landen; 0 = uit). De telefoon trilt dan (met het scherm uit via een melding op de telefoon zelf) en de kaart en opdracht tonen een rode balk.
+
+- Alleen ja of nee: nooit waar de Hunter is, welke kant op of hoe ver. Zo blijft het spel spannend.
+- De server vergelijkt met de laatst verstuurde positie van het team zelf, niet met een positie die de app meestuurt; een team kan dus niet met verzonnen coördinaten zoeken waar de Hunters zijn.
+- Alleen verse posities tellen (2 minuten), van Hunters met redelijke GPS (tot 75 meter onzekerheid).
+- Eén keer trillen per keer dat een Hunter in de buurt komt; is hij weg geweest, dan pas na twee minuten weer, zodat de telefoon niet blijft zoemen tijdens een achtervolging.
+
 ## 4. Gelaagd gamemodel
 
 Een speelbaar spel wordt samengesteld uit lagen. Elke laag vult alleen in wat hij mag aanpassen:

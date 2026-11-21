@@ -1,4 +1,4 @@
-import { MAP_ICONS, type Action, type Condition, type GamePackage, type Hint, type Lang, type Selector, type Task, type Text } from './types.js';
+import { MAP_ICONS, MAX_HUNTER_ALERT_RADIUS, type Action, type Condition, type GamePackage, type Hint, type Lang, type Selector, type Task, type Text } from './types.js';
 
 /**
  * Gelaagd gamemodel: basisspel → stadsvariant → klantvariant → taal.
@@ -22,7 +22,7 @@ export type TaskField =
   | 'correctComment'
   | 'wrongComment';
 
-export type GameField = 'name' | 'meetingPoint' | 'mapOverlay' | 'map' | 'boundary' | 'playgroundCodes';
+export type GameField = 'name' | 'meetingPoint' | 'mapOverlay' | 'map' | 'boundary' | 'playgroundCodes' | 'hunterAlert';
 
 /** Waarde van spelveld `playgroundCodes`: per tabblad de stukjes code, in de volgorde van de vakjes. */
 export type PlaygroundCodes = Record<string, string[]>;
@@ -265,6 +265,9 @@ export function validateGame(game: GamePackage): string[] {
   }
   const mr = game.meetingPoint?.radius;
   if (mr !== undefined && !(mr > 0 && mr <= 1000)) issues.push('verzamelpunt: straal moet tussen 0 en 1000 meter liggen');
+  const hr = game.hunterAlert?.radius;
+  if (game.hunterAlert !== undefined && !(typeof hr === 'number' && hr >= 0 && hr <= MAX_HUNTER_ALERT_RADIUS))
+    issues.push(`hunter in de buurt: afstand moet tussen 0 en ${MAX_HUNTER_ALERT_RADIUS} meter liggen`);
   for (const t of game.tasks) {
     if (t.image !== undefined && !/^https:\/\/\S+$/.test(t.image)) issues.push(`opdracht ${t.id}: foto moet een https-adres zijn`);
     if (t.mapIcon !== undefined && !(MAP_ICONS as readonly string[]).includes(t.mapIcon)) issues.push(`opdracht ${t.id}: onbekend kaarticoon ${String(t.mapIcon)}`);

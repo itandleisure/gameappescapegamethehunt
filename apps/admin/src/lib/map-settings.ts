@@ -2,8 +2,8 @@ import type { LatLng, MapOverlay } from '@hunt/engine';
 import type { LayerRows } from './game-model';
 import { t } from './i18n';
 
-/** Spelvelden op de kaartpagina voor overlay en verzamelpunt. */
-export type MapGameField = 'mapOverlay' | 'meetingPoint' | 'map' | 'boundary';
+/** Spelvelden op de kaartpagina: overlay, verzamelpunt, kaartstijl, speelveld en "Hunter in de buurt". */
+export type MapGameField = 'mapOverlay' | 'meetingPoint' | 'map' | 'boundary' | 'hunterAlert';
 
 /**
  * Mag deze laag het veld aanpassen? Het basisspel altijd; een stad of klant

@@ -1263,4 +1263,10 @@ export const en: Record<string, string> = {
   "Foto's ophalen van de links": "Fetch photos from the links",
   "Log opnieuw in.": "Please log in again.",
   "Geen verbinding met de server.": "No connection to the server.",
+  "Hunter in de buurt": "Hunter nearby",
+  "Teams krijgen een melding met trillen (ook met het scherm uit) als een ingelogde spelleider zo dichtbij is. Alleen een waarschuwing: niet waar de Hunter is of welke kant op.": "Teams get a notification with vibration (also with the screen off) when a logged-in game master is this close. Only a warning: not where the Hunter is or which way.",
+  "Dit is in deze laag niet aan te passen.": "This cannot be changed in this layer.",
+  "Afstand (meter, 0 = uit)": "Distance (metres, 0 = off)",
+  "Terug naar de waarde van de laag erboven": "Back to the value of the layer above",
+  "Teams krijgen een melding met trillen als een ingelogde spelleider zo dichtbij is, zonder richting. 0 = uit.": "Teams get a notification with vibration when a logged-in game master is this close, without direction. 0 = off.",
 };

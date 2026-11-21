@@ -112,6 +112,8 @@ export const hu: Messages = {
   permSkip: "Most nem",
   taskOpenedNotice: "Feladat megnyitva",
   nearTaskNotice: "Majdnem egy feladatnál",
+  hunterNearNotice: "Hunter a közelben!",
+  hunterNearBody: "Egy Hunter {m} méteren belül van. Nyissátok ki a szemeteket!",
   recordVideo: "Videó felvétele",
   retakeVideo: "Újra felvétel",
   sendVideo: "Videó küldése",
