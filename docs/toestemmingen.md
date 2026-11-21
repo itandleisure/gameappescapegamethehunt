@@ -7,7 +7,7 @@ willen. Alleen de eerste vraag (locatie) is nodig om te spelen; de andere kun je
 | Toestemming | Wanneer gevraagd | Waarvoor | Zonder toestemming |
 |---|---|---|---|
 | Locatie tijdens gebruik | Bij Start, na uitlegscherm 1 | Opdrachten openen op locatie | Spelen gaat niet; uitleg en knop naar Instellingen |
-| Locatie altijd | Bij Start, na uitlegscherm 2 | GPS met het scherm uit / telefoon in de zak | GPS alleen met de app open |
+| Locatie altijd (alleen iPhone) | Bij Start, na uitlegscherm 2 | GPS met het scherm uit / telefoon in de zak | GPS alleen met de app open |
 | Meldingen | Bij Start, na uitlegscherm 3 | Trillen met het scherm uit als een opdracht opengaat of dichtbij is | Met het scherm uit trilt de telefoon niet (de opdracht opent wel) |
 | Camera | Bij de eerste foto | Teamfoto en foto-opdrachten | Geen foto |
 | Microfoon | Bij de eerste video | Geluid bij een video-opdracht | Video zonder geluid of geen video |
@@ -20,6 +20,11 @@ telefoon zelf (lokale melding). Er is geen pushserver en de app vraagt geen push
 De app leest de fotogalerij niet (geen `READ_MEDIA_IMAGES` of `READ_MEDIA_VIDEO` op Android, geen
 `NSPhotoLibraryUsageDescription` op iPhone). Daarmee blijft de app buiten het strengere fotobeleid van Google Play.
 
+Android vraagt geen "Altijd toestaan". Daarvoor stuurt Android de speler naar Instellingen, en dat liep vast. De app
+gebruikt op Android een voorgronddienst met een vaste melding: die houdt de GPS met het scherm uit aan met alleen
+"Tijdens gebruik". De app heeft daarom ook geen `ACCESS_BACKGROUND_LOCATION`. Elke fout bij het starten van de GPS
+wordt in het logboek gezet en valt terug op GPS met de app open; het spel loopt altijd door.
+
 ## Teksten voor de beoordeling in de stores
 
 **App Store (App Review, notities bij Background Modes: Location updates)**
@@ -30,13 +35,14 @@ De app leest de fotogalerij niet (geen `READ_MEDIA_IMAGES` of `READ_MEDIA_VIDEO`
 > active. The app explains this on its own screen before iOS asks for "Always" access, and the game also works with
 > "While Using" access (then the screen has to stay on).
 
-**Google Play (Play Console, App content, Location permissions: background location)**
+**Google Play**
 
-> Feature: tasks in an outdoor city game open automatically when the team arrives at a location, also while the phone is
-> in a pocket with the screen off. Background location is used only during an active game and stops when the game
-> ends. A persistent notification ("Escape Game The Hunt is tracking your location during the game") is shown while it
-> runs. Video for the declaration: start a game, accept the location prompts, lock the screen and walk to a task; the
-> phone vibrates and the task is open when the screen is turned on.
+Geen verklaring voor achtergrondlocatie nodig: de app vraagt `ACCESS_BACKGROUND_LOCATION` niet. Bij "Foreground
+service" in de Play Console kies je "Location" met deze uitleg:
+
+> Tasks in an outdoor city game open automatically when the team arrives at a location, also while the phone is in a
+> pocket with the screen off. The location service runs only during an active game, started by the player, and stops
+> when the game ends. A persistent notification is shown while it runs.
 
 Google vraagt bij achtergrondlocatie ook een korte video (YouTube-link) van precies die stappen.
 
