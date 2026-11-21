@@ -23,6 +23,13 @@ const deps: ControllerDeps = {
     const radius = current?.hunterAlertRadius ?? 100;
     void alertHunter(msg(team.language, 'hunterNearNotice'), msg(team.language, 'hunterNearBody', { m: radius }));
   },
+  // Team gepakt: trillen, met het scherm uit via een melding op de telefoon.
+  onCaught: (team, notice) => {
+    const lang = team.language;
+    const title = msg(lang, notice.own ? 'caughtOwnTitle' : 'caughtTitle');
+    const body = notice.own ? msg(lang, 'caughtOwnBody', { points: notice.points }) : msg(lang, 'caughtBody', { team: notice.teamName });
+    void alertHunter(title, body);
+  },
 };
 
 let current: GameController | null = null;

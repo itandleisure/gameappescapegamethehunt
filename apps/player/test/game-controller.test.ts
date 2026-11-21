@@ -494,19 +494,79 @@ describe('Hunter in de buurt', () => {
     expect(c.snapshot().hunterNear).toBe(false);
   });
 
-  it('vraagt niets als de waarschuwing in dit spel uit staat', async () => {
+  it('waarschuwt niet als de waarschuwing in dit spel uit staat', async () => {
     const off = { ...game, hunterAlert: { radius: 0 } };
     const { c, backend, alerts } = await playing(off);
     await c.start();
     backend.hunterNear = true;
     await c.tick();
-    expect(backend.hunterChecks).toBe(0);
     expect(alerts).toEqual([]);
+    expect(c.snapshot().hunterNear).toBe(false);
     expect(c.hunterAlertRadius).toBe(0);
   });
 
+  it('telt de waarschuwingen voor het rode alarm', async () => {
+    const { c, backend } = await playing();
+    await c.start();
+    expect(c.snapshot().hunterAlerts).toBe(0);
+    backend.hunterNear = true;
+    await c.tick();
+    expect(c.snapshot().hunterAlerts).toBe(1);
+  });
+});
+
+describe('Team gepakt', () => {
+  async function playing() {
+    const s = setup();
+    const notices: { team: string; own: boolean }[] = [];
+    const c = await GameController.join(
+      { ...s.deps, onCaught: (_team, n) => notices.push({ team: n.teamName, own: n.own }) },
+      'LWD001',
+      'Vossen',
+      'nl',
+      '06 12345678',
+    );
+    await c.start();
+    await c.tick();
+    return { ...s, c, notices };
+  }
+
+  it('een ander team gepakt: melding en trillen, één keer', async () => {
+    const { c, backend, advance, notices } = await playing();
+    const score = c.snapshot().state!.score;
+    backend.caught.push({ id: 'pak-1', teamId: 'team-99', teamName: 'Dassen', points: -100, at: backend.serverNow + 1 });
+    advance(10_000);
+    await c.tick();
+    expect(notices).toEqual([{ team: 'Dassen', own: false }]);
+    expect(c.snapshot().caughtNotice).toMatchObject({ teamName: 'Dassen', own: false });
+    expect(c.snapshot().state!.score).toBe(score);
+    await c.dismissCaughtNotice();
+    expect(c.snapshot().caughtNotice).toBeNull();
+    advance(10_000);
+    await c.tick();
+    expect(notices).toHaveLength(1);
+  });
+
+  it('zelf gepakt: -100 punten meteen in de score, en weg als de spelleider het terugdraait', async () => {
+    const { c, backend, advance, notices } = await playing();
+    const score = c.snapshot().state!.score;
+    const at = backend.serverNow + 1;
+    backend.caught.push({ id: 'pak-2', teamId: c.team.id, teamName: 'Vossen', points: -100, at });
+    advance(10_000);
+    await c.tick();
+    expect(notices).toEqual([{ team: 'Vossen', own: true }]);
+    expect(c.snapshot().state!.score).toBe(score - 100);
+    // Bij het ophalen van de gebeurtenissen: de spelleider haalde hem weg.
+    advance(30_000);
+    await c.tick();
+    expect(c.snapshot().state!.score).toBe(score);
+  });
+});
+
+describe('Hunter in de buurt, standaard', () => {
   it('gebruikt 100 meter voor een spel zonder instelling', async () => {
-    const { c } = await playing();
+    const c = await GameController.join(setup().deps, 'LWD001', 'Vossen', 'nl', '06 12345678');
+    expect(game.hunterAlert).toBeUndefined();
     expect(c.hunterAlertRadius).toBe(100);
   });
 });

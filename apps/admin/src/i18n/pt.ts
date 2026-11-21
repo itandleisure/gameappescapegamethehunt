@@ -1269,4 +1269,5 @@ export const pt: Record<string, string> = {
   "Afstand (meter, 0 = uit)": "Distância (metros, 0 = desligado)",
   "Terug naar de waarde van de laag erboven": "Voltar ao valor da camada acima",
   "Teams krijgen een melding met trillen als een ingelogde spelleider zo dichtbij is, zonder richting. 0 = uit.": "As equipas recebem um aviso com vibração quando um mestre de jogo com sessão iniciada está assim tão perto, sem direção. 0 = desligado.",
+  "Gepakt door een Hunter": "Apanhado por um Hunter",
 };

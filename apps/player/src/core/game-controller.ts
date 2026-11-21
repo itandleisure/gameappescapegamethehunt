@@ -15,7 +15,7 @@ import {
 } from '@hunt/engine';
 import { ClockSync } from './clock.js';
 import { Retry } from './outbox.js';
-import type { Backend, ChatMessage, KeyValueStore, LoadedGame, PendingPhoto, SessionInfo, TeamRecord } from './types.js';
+import type { Backend, CaughtSignal, ChatMessage, KeyValueStore, LoadedGame, PendingPhoto, SessionInfo, TeamRecord } from './types.js';
 
 export const STORAGE_KEY = 'hunt.game.v1';
 
@@ -42,6 +42,21 @@ export interface Snapshot {
   gameUpdated: boolean;
   /** Er is nu een Hunter (spelleider) in de buurt. Alleen dát, niet waar. */
   hunterNear: boolean;
+  /** Telt op bij elke waarschuwing "Hunter in de buurt" (voor het rode alarm op het scherm). */
+  hunterAlerts: number;
+  /** Een team is net gepakt (dit team zelf of een ander) en het team heeft de melding nog niet gezien. */
+  caughtNotice: CaughtNotice | null;
+}
+
+/** Melding "Team gepakt". */
+export interface CaughtNotice {
+  /** Id van de gebeurtenis; elke melding verschijnt één keer. */
+  id: string;
+  teamName: string;
+  /** Dit team zelf is gepakt. */
+  own: boolean;
+  /** Strafpunten, bijvoorbeeld -100. */
+  points: number;
 }
 
 /** Langste bericht in de teamchat. */
@@ -69,6 +84,8 @@ export interface ControllerDeps {
   newId?: () => string;
   /** Er kwam net een Hunter in de buurt: trillen (met het scherm uit via een melding). */
   onHunterNear?: (team: TeamRecord) => void;
+  /** Een team is net gepakt: trillen (met het scherm uit via een melding). */
+  onCaught?: (team: TeamRecord, notice: CaughtNotice) => void;
 }
 
 interface Saved {
@@ -90,6 +107,10 @@ interface Saved {
   chatSeenAt?: number;
   /** Het spel is live bijgewerkt; de melding "Spel bijgewerkt" moet nog getoond worden. */
   gameUpdated?: boolean;
+  /** Servertijd (ms) van de laatste melding "gepakt" die dit team al kreeg. */
+  caughtSince?: number;
+  /** Melding "Team gepakt" die nog getoond moet worden. */
+  caughtNotice?: CaughtNotice;
 }
 
 type Listener = (snapshot: Snapshot) => void;
@@ -135,6 +156,7 @@ export class GameController {
   private hunterCheckedAt = 0;
   private lastHunterCheckAt = 0;
   private lastHunterAlertAt = Number.NEGATIVE_INFINITY;
+  private hunterAlerts = 0;
 
   private constructor(
     private readonly deps: ControllerDeps,
@@ -233,6 +255,8 @@ export class GameController {
       chatUnread: this.chatUnread(),
       gameUpdated: this.data.gameUpdated === true,
       hunterNear: this.hunterNear && this.device() - this.hunterCheckedAt < HUNTER_STALE_MS,
+      hunterAlerts: this.hunterAlerts,
+      caughtNotice: this.data.caughtNotice ?? null,
     };
   }
 
@@ -491,7 +515,7 @@ export class GameController {
       const device = (this.deps.deviceNow ?? Date.now)();
       await this.flushEvents(device);
       await this.flushPositions();
-      await this.checkHunters(device);
+      await this.checkSignals(device);
       await this.flushPhotos(device);
       await this.syncChat(device);
       if (device - this.lastPullAt >= 30_000) {
@@ -575,13 +599,18 @@ export class GameController {
   }
 
   /**
-   * Vraagt elke 10 seconden of er een Hunter in de buurt is, zolang het team
-   * speelt. Komt er een Hunter in de buurt, dan één keer trillen; daarna pas
-   * opnieuw als hij weg was en na twee minuten terugkomt, zodat de telefoon
-   * niet blijft zoemen tijdens een achtervolging.
+   * Elke 10 seconden, zolang het team speelt: is er een Hunter in de buurt, en
+   * is er een team gepakt?
+   *
+   * Hunter in de buurt: één keer trillen; daarna pas opnieuw als hij weg was en
+   * na twee minuten terugkomt, zodat de telefoon niet blijft zoemen tijdens
+   * een achtervolging.
+   *
+   * Gepakt: de spelleider meldt het; dit team trilt en ziet "Team gepakt". Is
+   * dit team zelf gepakt, dan telt de straf meteen mee in de score.
    */
-  private async checkHunters(device: number) {
-    if (!this.deps.backend.hunterNearby || !(this.hunterAlertRadius > 0)) return;
+  private async checkSignals(device: number) {
+    if (!this.deps.backend.teamSignals) return;
     if (device - this.lastHunterCheckAt < HUNTER_CHECK_MS) return;
     const ctx = this.context;
     if (!ctx || computeState(this.game, ctx, this.data.events, this.now()).ended) {
@@ -590,18 +619,50 @@ export class GameController {
     }
     this.lastHunterCheckAt = device;
     try {
-      const near = await this.deps.backend.hunterNearby(this.data.team.id);
+      const since = this.data.caughtSince ?? ctx.startedAt;
+      const signals = await this.deps.backend.teamSignals(this.data.team.id, since);
+      const near = signals.hunterNear && this.hunterAlertRadius > 0;
       // Lang geen bereik gehad: telt als "weg geweest", dus weer trillen als hij er nog is.
       if (device - this.hunterCheckedAt >= HUNTER_STALE_MS) this.hunterNear = false;
       this.hunterCheckedAt = device;
       if (near && !this.hunterNear && device - this.lastHunterAlertAt >= HUNTER_REALERT_MS) {
         this.lastHunterAlertAt = device;
+        this.hunterAlerts += 1;
         this.deps.onHunterNear?.(this.data.team);
       }
       this.hunterNear = near;
+      if (signals.caught.length > 0) await this.onCaughtSignals(signals.caught);
     } catch {
       // Geen bereik: na HUNTER_STALE_MS verdwijnt de waarschuwing vanzelf van het scherm.
     }
+  }
+
+  private async onCaughtSignals(caught: CaughtSignal[]) {
+    const known = new Set(this.data.events.map((e) => e.id));
+    let latest: CaughtSignal | undefined;
+    for (const c of caught) {
+      if (c.teamId === this.data.team.id && !known.has(c.id)) {
+        this.data.events.push({ id: c.id, at: c.at, type: 'caught', points: c.points });
+      }
+      if (!latest || c.at >= latest.at) latest = c;
+      this.data.caughtSince = Math.max(this.data.caughtSince ?? 0, c.at);
+    }
+    if (latest) {
+      // Meerdere tegelijk (de app stond even uit): alleen de laatste melden.
+      const notice: CaughtNotice = { id: latest.id, teamName: latest.teamName, own: latest.teamId === this.data.team.id, points: latest.points };
+      this.data.caughtNotice = notice;
+      this.deps.onCaught?.(this.data.team, notice);
+    }
+    await this.save();
+    this.emit();
+  }
+
+  /** Het team heeft de melding "Team gepakt" gezien. */
+  async dismissCaughtNotice(): Promise<void> {
+    if (!this.data.caughtNotice) return;
+    delete this.data.caughtNotice;
+    await this.save();
+    this.emit();
   }
 
   /** Haalt gebeurtenissen van de server op en voegt ze samen met de lokale. */
@@ -612,6 +673,9 @@ export class GameController {
     ]);
     const known = new Set(this.data.events.map((e) => e.id));
     const added = remote.filter((e) => !known.has(e.id));
+    // Gepakt komt alleen van de server: haalde de spelleider het weg (vergissing), dan hier ook.
+    const remoteIds = new Set(remote.map((e) => e.id));
+    this.data.events = this.data.events.filter((e) => e.type !== 'caught' || remoteIds.has(e.id));
     this.data.team = team;
     // De spelleider kan de teamchat tijdens het spel aan- of uitzetten.
     const teamChat = await this.deps.backend.loadTeamChat(team.sessionId).catch(() => this.teamChat);

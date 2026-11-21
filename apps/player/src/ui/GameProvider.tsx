@@ -1,9 +1,10 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 import type { GameController, Snapshot } from '../core/game-controller';
 import { msg, type MessageKey } from '../core/i18n';
 import { currentGame, onGameChange, resumeGame } from '../services/game';
 import { notify } from './confirm';
+import { RedAlarm } from './RedAlarm';
 
 interface GameContextValue {
   /** Nog bezig met laden van een eerder spel. */
@@ -70,12 +71,41 @@ export function GameProvider({ children, deviceLanguage }: { children: ReactNode
     notify(msg(updateLang, 'gameUpdatedTitle'), msg(updateLang, 'gameUpdatedBody'), msg(updateLang, 'ok'));
   }, [gameUpdated, controller, updateLang]);
 
+  // Team gepakt (door de spelleider gemeld): rood knipperen en één keer de melding tonen.
+  const caught = snapshot?.caughtNotice ?? null;
+  const [caughtFlash, setCaughtFlash] = useState(0);
+  useEffect(() => {
+    if (!caught || !controller) return;
+    void controller.dismissCaughtNotice();
+    setCaughtFlash((n) => n + 1);
+    const title = msg(updateLang, caught.own ? 'caughtOwnTitle' : 'caughtTitle');
+    const body = caught.own
+      ? msg(updateLang, 'caughtOwnBody', { points: caught.points })
+      : msg(updateLang, 'caughtBody', { team: caught.teamName });
+    notify(title, body, msg(updateLang, 'ok'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [caught?.id, controller]);
+  const lastCaught = useRef<{ own: boolean; teamName: string } | null>(null);
+  if (caught) lastCaught.current = caught;
+
   const lang = snapshot?.team.language ?? deviceLanguage;
   const value = useMemo<GameContextValue>(
     () => ({ loading, controller, snapshot, lang, t: (key, vars) => msg(lang, key, vars) }),
     [loading, controller, snapshot, lang],
   );
-  return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
+  return (
+    <GameContext.Provider value={value}>
+      {children}
+      {/* Hunter in de buurt: het scherm knippert rood (naast trillen en de rode balk). */}
+      <RedAlarm trigger={snapshot?.hunterAlerts ?? 0} title={msg(lang, 'hunterNearNotice')} />
+      <RedAlarm
+        trigger={caughtFlash}
+        blinks={3}
+        title={msg(lang, lastCaught.current?.own ? 'caughtOwnTitle' : 'caughtTitle')}
+        body={lastCaught.current && !lastCaught.current.own ? msg(lang, 'caughtBody', { team: lastCaught.current.teamName }) : undefined}
+      />
+    </GameContext.Provider>
+  );
 }
 
 export function useGame(): GameContextValue {

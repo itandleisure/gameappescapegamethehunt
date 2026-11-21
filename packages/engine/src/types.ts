@@ -259,6 +259,8 @@ export const DEFAULT_MEETING_RADIUS = 20;
  * niets kiest en waarbij bij het publiceren ook geen instelling is meegegeven.
  */
 export const DEFAULT_HUNTER_ALERT_RADIUS = 100;
+/** Strafpunten als een Hunter een team pakt (de spelleider meldt het). */
+export const DEFAULT_CAUGHT_PENALTY = 100;
 /** Grootste instelbare afstand voor "Hunter in de buurt". */
 export const MAX_HUNTER_ALERT_RADIUS = 500;
 
@@ -421,6 +423,8 @@ export interface GamePackage {
   briefing?: string;
   /** Waarschuwing als een Hunter in de buurt is; ontbreekt = DEFAULT_HUNTER_ALERT_RADIUS. */
   hunterAlert?: HunterAlert;
+  /** Strafpunten als een Hunter het team pakt (positief getal); ontbreekt = DEFAULT_CAUGHT_PENALTY. */
+  caughtPenalty?: number;
   gps: GpsSettings;
 }
 
@@ -444,6 +448,11 @@ export type GameEvent = EventBase &
     | { type: 'hintUsed'; task: string; hint: number }
     /** Spelleiding opent een opdracht handmatig vanuit de monitor. */
     | { type: 'manualOpen'; task: string }
+    /**
+     * Een Hunter heeft het team gepakt (door de spelleider gemeld, alleen via
+     * de server). `points` is de straf, bijvoorbeeld -100.
+     */
+    | { type: 'caught'; points: number }
   );
 
 export interface TeamContext {
@@ -488,7 +497,7 @@ export interface TaskState {
 export interface LedgerEntry {
   at: number;
   points: number;
-  reason: 'answer' | 'hint' | 'award' | 'ending' | 'wrong';
+  reason: 'answer' | 'hint' | 'award' | 'ending' | 'wrong' | 'caught';
   task?: string;
   note?: string;
 }
