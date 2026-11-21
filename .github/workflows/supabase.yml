@@ -42,3 +42,4 @@ jobs:
           supabase functions deploy results-export --use-api
           supabase functions deploy photobook --use-api
           supabase functions deploy opruimen --use-api
+          supabase functions deploy webshop-ticket --use-api
