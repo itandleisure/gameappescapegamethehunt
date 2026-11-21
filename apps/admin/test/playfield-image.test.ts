@@ -36,6 +36,14 @@ describe('kaartje van het speelveld', () => {
     expect(out.tasks.map((t) => t.image)).toEqual(['https://x/speelveld.jpg', 'https://x/rugtas.jpg']);
   });
 
+  it('zet het kaartje onder de infographic als de opdracht een tekening heeft', () => {
+    const p = pkg(square);
+    p.tasks[0]!.illustration = 'uitleg-speelveld';
+    const out = applyPlayfieldImage(p, 'https://x/speelveld.jpg');
+    expect(out.tasks[0]!.image).toBe('https://x/oud.jpg');
+    expect(out.tasks[0]!.mapImage).toBe('https://x/speelveld.jpg');
+  });
+
   it('zelfde grens en stijl geven hetzelfde bestand; elke wijziging een nieuw', () => {
     const { styleUrl } = playfieldStyle({});
     const a = playfieldPath('g1', square, styleUrl);

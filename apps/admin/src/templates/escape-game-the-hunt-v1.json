@@ -103,6 +103,7 @@
           "uitleg-09",
           "uitleg-10",
           "uitleg-11",
+          "uitleg-13",
           "uitleg-12"
         ]
       }
@@ -155,7 +156,8 @@
         },
         "points": 0,
         "tags": [],
-        "hints": []
+        "hints": [],
+        "illustration": "uitleg-speluitleg"
       },
       {
         "id": "uitleg-02",
@@ -172,7 +174,8 @@
         "tags": [],
         "hints": [],
         "image": "https://loquiz-live.s3.amazonaws.com/resized/optimized/question~JwjcGcDok~speelveld_leeuwarden.jpeg",
-        "playfieldImage": true
+        "playfieldImage": true,
+        "illustration": "uitleg-speelveld"
       },
       {
         "id": "uitleg-03",
@@ -188,7 +191,8 @@
         "points": 0,
         "tags": [],
         "hints": [],
-        "image": "https://loquiz-live.s3.amazonaws.com/resized/optimized/question~aFiiBf-3H~rugtas_hunt.jpeg"
+        "image": "https://loquiz-live.s3.amazonaws.com/resized/optimized/question~aFiiBf-3H~rugtas_hunt.jpeg",
+        "illustration": "uitleg-rugtas"
       },
       {
         "id": "uitleg-04",
@@ -204,7 +208,8 @@
         "points": 0,
         "tags": [],
         "hints": [],
-        "image": "https://loquiz-live.s3.amazonaws.com/resized/optimized/question~1NIiwOAA9~Vragen_en_Hints.jpeg"
+        "image": "https://loquiz-live.s3.amazonaws.com/resized/optimized/question~1NIiwOAA9~Vragen_en_Hints.jpeg",
+        "illustration": "uitleg-gameapp"
       },
       {
         "id": "uitleg-05",
@@ -220,7 +225,8 @@
         "points": 0,
         "tags": [],
         "hints": [],
-        "image": "https://loquiz-live.s3.amazonaws.com/media/groups/NmYvfyEMl/question~ofp8QTmuA~Extractiepunt.jpeg"
+        "image": "https://loquiz-live.s3.amazonaws.com/media/groups/NmYvfyEMl/question~ofp8QTmuA~Extractiepunt.jpeg",
+        "illustration": "uitleg-puzzels"
       },
       {
         "id": "uitleg-06",
@@ -237,7 +243,7 @@
         "tags": [],
         "hints": [],
         "image": "https://loquiz-live.s3.amazonaws.com/media/groups/NmYvfyEMl/question~XYkA7UMyn~finish_vlag.png",
-        "illustration": "extractiepunt"
+        "illustration": "uitleg-extractiepunt"
       },
       {
         "id": "uitleg-07",
@@ -253,7 +259,8 @@
         "points": 0,
         "tags": [],
         "hints": [],
-        "image": "https://loquiz-live.s3.amazonaws.com/resized/optimized/question~H-jDDU8ip~The_Hunters_gaan_op_jacht.jpeg"
+        "image": "https://loquiz-live.s3.amazonaws.com/resized/optimized/question~H-jDDU8ip~The_Hunters_gaan_op_jacht.jpeg",
+        "illustration": "uitleg-hunters-zien-jullie"
       },
       {
         "id": "uitleg-08",
@@ -269,7 +276,8 @@
         "points": 0,
         "tags": [],
         "hints": [],
-        "image": "https://loquiz-live.s3.amazonaws.com/resized/optimized/question~EW-qiuYaM~hunters_zijn_actief.jpeg"
+        "image": "https://loquiz-live.s3.amazonaws.com/resized/optimized/question~EW-qiuYaM~hunters_zijn_actief.jpeg",
+        "illustration": "uitleg-hunters-in-de-buurt"
       },
       {
         "id": "uitleg-09",
@@ -285,7 +293,8 @@
         "points": 0,
         "tags": [],
         "hints": [],
-        "image": "https://loquiz-live.s3.amazonaws.com/resized/optimized/question~FIdvHxtOB~rugtas_hunt.jpeg"
+        "image": "https://loquiz-live.s3.amazonaws.com/resized/optimized/question~FIdvHxtOB~rugtas_hunt.jpeg",
+        "illustration": "uitleg-gepakt"
       },
       {
         "id": "uitleg-10",
@@ -300,7 +309,8 @@
         },
         "points": 0,
         "tags": [],
-        "hints": []
+        "hints": [],
+        "illustration": "uitleg-tijdlijn"
       },
       {
         "id": "uitleg-11",
@@ -316,7 +326,26 @@
         "points": 0,
         "tags": [],
         "hints": [],
-        "image": "https://loquiz-live.s3.amazonaws.com/resized/optimized/question~VSoNJR6HN~chat.jpeg"
+        "image": "https://loquiz-live.s3.amazonaws.com/resized/optimized/question~VSoNJR6HN~chat.jpeg",
+        "illustration": "uitleg-belangrijk"
+      },
+      {
+        "id": "uitleg-13",
+        "title": {
+          "nl": "Batterij leeg?",
+          "en": "Battery dead?"
+        },
+        "body": {
+          "nl": "Geen probleem: speel verder op een andere telefoon.\n\n1. Download de app op een andere telefoon.\n2. Tik op de knop “Ons team speelt al – opnieuw inloggen”.\n3. Vul je teamnaam in.\n\n✓ Punten en tijd blijven staan.",
+          "en": "No problem: keep playing on another phone.\n\n1. Download the app on another phone.\n2. Tap the button “Our team is already playing – sign in again”.\n3. Enter your team name.\n\n✓ Points and time are kept."
+        },
+        "answer": {
+          "type": "info"
+        },
+        "points": 0,
+        "tags": [],
+        "hints": [],
+        "illustration": "uitleg-batterij"
       },
       {
         "id": "uitleg-12",
@@ -331,7 +360,8 @@
         },
         "points": 0,
         "tags": [],
-        "hints": []
+        "hints": [],
+        "illustration": "uitleg-start"
       },
       {
         "id": "puzzel-tangram",
@@ -909,7 +939,7 @@
     "rules": [
       {
         "id": "introreeks",
-        "label": "0 - Uitleg starten (12 schermen)",
+        "label": "0 - Uitleg starten (13 schermen)",
         "when": {
           "kind": "and",
           "conditions": [
@@ -960,7 +990,8 @@
                 "uitleg-09",
                 "uitleg-10",
                 "uitleg-11",
-                "uitleg-12"
+                "uitleg-12",
+                "uitleg-13"
               ]
             },
             "on": {

@@ -33,9 +33,17 @@ export function needsPlayfieldImage(pkg: GamePackage): boolean {
   return pkg.tasks.some((t) => t.playfieldImage) && (pkg.boundary?.points.length ?? 0) >= 3;
 }
 
-/** Zet het kaartje als foto bij alle opdrachten die erom vragen. */
+/**
+ * Zet het kaartje als foto bij alle opdrachten die erom vragen. Heeft de
+ * opdracht ook een illustratie (de infographic), dan komt het kaartje eronder.
+ */
 export function applyPlayfieldImage(pkg: GamePackage, url: string): GamePackage {
-  return { ...pkg, tasks: pkg.tasks.map((t) => (t.playfieldImage ? { ...t, image: url } : t)) };
+  return {
+    ...pkg,
+    tasks: pkg.tasks.map((t) =>
+      !t.playfieldImage ? t : t.illustration ? { ...t, mapImage: url } : { ...t, image: url },
+    ),
+  };
 }
 
 /** Alles wat het kaartje bepaalt, in vaste volgorde. */
