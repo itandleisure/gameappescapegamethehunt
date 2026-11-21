@@ -1284,4 +1284,5 @@ export const it: Record<string, string> = {
   "Infographic: Belangrijk": "Infographic: Importante",
   "Infographic: Batterij leeg?": "Infographic: Batteria scarica?",
   "Infographic: Start van het spel": "Infographic: Inizio del gioco",
+  "Gepakt door een Hunter": "Preso da un Hunter",
 };

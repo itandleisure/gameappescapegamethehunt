@@ -143,6 +143,11 @@ class Run {
       if (event.at > now) break;
       const at = Math.max(event.at, this.team.startedAt);
       this.advanceTo(at);
+      // Gepakt telt altijd: de spelleider kan het ook na afloop nog melden.
+      if (event.type === 'caught') {
+        this.addPoints(at, Number.isFinite(event.points) ? event.points : 0, 'caught', undefined, 'gepakt');
+        continue;
+      }
       if (this.state.ended) {
         this.reject(event, 'spel is al afgelopen');
         continue;
@@ -342,7 +347,7 @@ class Run {
   // Gebeurtenissen
   // -------------------------------------------------------------------------
 
-  private apply(event: GameEvent, at: number): void {
+  private apply(event: Exclude<GameEvent, { type: 'caught' }>, at: number): void {
     const task = this.tasks.get(event.task);
     const ts = this.state.tasks[event.task];
     if (!task || !ts) return this.reject(event, 'onbekende opdracht');

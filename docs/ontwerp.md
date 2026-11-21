@@ -107,7 +107,16 @@ Spelleiders (de Hunters) loggen in de app in en delen hun positie elke 10 second
 - Alleen ja of nee: nooit waar de Hunter is, welke kant op of hoe ver. Zo blijft het spel spannend.
 - De server vergelijkt met de laatst verstuurde positie van het team zelf, niet met een positie die de app meestuurt; een team kan dus niet met verzonnen coördinaten zoeken waar de Hunters zijn.
 - Alleen verse posities tellen (2 minuten), van Hunters met redelijke GPS (tot 75 meter onzekerheid).
-- Eén keer trillen per keer dat een Hunter in de buurt komt; is hij weg geweest, dan pas na twee minuten weer, zodat de telefoon niet blijft zoemen tijdens een achtervolging.
+- Eén keer trillen per keer dat een Hunter in de buurt komt; is hij weg geweest, dan pas na twee minuten weer, zodat de telefoon niet blijft zoemen tijdens een achtervolging. Het scherm knippert dan een paar seconden rood met "Hunter in de buurt!"; de rode balk blijft zolang hij dichtbij is.
+
+### 3.5 Team gepakt
+
+De spelleider kiest in de app (tabblad Teams, knop "Team gepakt") het team uit een lijst en bevestigt. Dat vervangt in de basis het inleveren van de munt:
+
+- Het team krijgt strafpunten (standaard -100, per spel `caughtPenalty`). Die zijn een gebeurtenis `caught` in de tabel events, dus ze tellen overal mee waar de score uit de gebeurtenissen wordt berekend (app, ranglijst, resultaten, logboek). Teams kunnen zelf geen `caught` insturen.
+- De teller "Gepakt" (ook in het beheer) loopt mee; min op de teller haalt de laatste straf weer weg, voor een vergissing.
+- Alle teams krijgen binnen ~10 seconden een melding met trillen (met het scherm uit via een melding op de telefoon), het scherm knippert kort rood en ze zien "Team gepakt! … is gepakt door een Hunter." Het gepakte team zelf ziet "Jullie zijn gepakt!" met de strafpunten.
+- De app vraagt dit samen met "Hunter in de buurt" in één verzoek (`team_signals`).
 
 ## 4. Gelaagd gamemodel
 

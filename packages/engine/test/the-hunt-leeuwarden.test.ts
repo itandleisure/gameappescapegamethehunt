@@ -10,6 +10,9 @@ import type { GameEvent } from '../src/types.js';
 import { INTRO, leeuwarden, leeuwardenPoints, PUZZLES, theHuntBase } from './fixtures/the-hunt.js';
 import { min, Script, T0 } from './helpers.js';
 
+/** Opdracht van een gebeurtenis (gepakt hoort bij geen opdracht). */
+const taskOf = (e: GameEvent) => ('task' in e ? e.task : '');
+
 const game = composeGame(theHuntBase, [leeuwarden], { id: 'the-hunt-leeuwarden', version: 1 });
 const TRACK = 3;
 const team = { track: TRACK, startedAt: T0 };
@@ -90,7 +93,7 @@ describe('Escape Game The Hunt Leeuwarden', () => {
   });
 
   it('elke 10 minuten komt een nieuwe puzzel vrij', () => {
-    const events = solidTeam().events.filter((e) => !e.task.startsWith('puzzel'));
+    const events = solidTeam().events.filter((e) => !taskOf(e).startsWith('puzzel'));
     const visibleAt = (m: number) =>
       PUZZLES.filter((p) => computeState(game, team, events, min(m)).tasks[p.id]!.status !== 'hidden').length;
     expect(visibleAt(9.9)).toBe(1);
@@ -100,7 +103,7 @@ describe('Escape Game The Hunt Leeuwarden', () => {
   });
 
   it('fotomissie opent na 35 minuten', () => {
-    const events = solidTeam().events.filter((e) => e.task !== 'fotomissie');
+    const events = solidTeam().events.filter((e) => taskOf(e) !== 'fotomissie');
     expect(computeState(game, team, events, min(34.9)).tasks['fotomissie']!.status).toBe('hidden');
     const state = computeState(game, team, events, min(35));
     expect(state.tasks['fotomissie']).toMatchObject({ status: 'open', inList: true });
@@ -123,7 +126,7 @@ describe('Escape Game The Hunt Leeuwarden', () => {
   });
 
   it('geen finale zolang niet alle puzzels goed zijn', () => {
-    const events = solidTeam().events.filter((e) => e.task !== 'puzzel-kompas');
+    const events = solidTeam().events.filter((e) => taskOf(e) !== 'puzzel-kompas');
     const state = computeState(game, team, events, min(70));
     expect(state.tasks['extractie-a']!.status).toBe('hidden');
     expect(state.firedRules['finale']).toBeUndefined();
@@ -187,7 +190,7 @@ describe('Escape Game The Hunt Leeuwarden', () => {
   });
 
   it('na 75 minuten: alles uit en einde "tijd op"', () => {
-    const events = solidTeam().events.filter((e) => e.task !== 'puzzel-kompas');
+    const events = solidTeam().events.filter((e) => taskOf(e) !== 'puzzel-kompas');
     const late = extra(new Script().text(80, 'puzzel-kompas', 'noordoost'), 'laat');
     const state = computeState(game, team, [...events, ...late], min(90));
     expect(state.ended).toEqual({ ending: 'tijd-op', at: min(75) });
@@ -216,7 +219,7 @@ describe('Escape Game The Hunt Leeuwarden', () => {
     });
 
     it('trackvragen openen alleen op de locatie van de eigen track', () => {
-      const events = solidTeam().events.filter((e) => !e.task.startsWith('lokaal'));
+      const events = solidTeam().events.filter((e) => !taskOf(e).startsWith('lokaal'));
       const other = extra(new Script().reach(12, 'lokaal-1', P.track(1, 1)), 'x');
       const state = computeState(game, team, [...events, ...other], min(13));
       expect(state.rejected).toEqual([{ event: 'x0', reason: 'buiten de straal' }]);
@@ -225,7 +228,7 @@ describe('Escape Game The Hunt Leeuwarden', () => {
     });
 
     it('spelleiding kan een opdracht handmatig openen', () => {
-      const events = solidTeam().events.filter((e) => e.task !== 'lokaal-1');
+      const events = solidTeam().events.filter((e) => taskOf(e) !== 'lokaal-1');
       const manual = extra(
         new Script().add(30, { type: 'manualOpen', task: 'lokaal-1' }).text(31, 'lokaal-1', 'Zaailand'),
         'm',

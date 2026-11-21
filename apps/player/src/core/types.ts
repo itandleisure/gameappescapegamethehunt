@@ -60,6 +60,23 @@ export interface PendingPhoto {
   contentType?: 'video/mp4' | 'video/quicktime';
 }
 
+/** Een team is gepakt door een Hunter (de spelleider meldde het). */
+export interface CaughtSignal {
+  /** Id van de gebeurtenis 'caught'. */
+  id: string;
+  teamId: string;
+  teamName: string;
+  /** Strafpunten, bijvoorbeeld -100. */
+  points: number;
+  /** Servertijd (ms). */
+  at: number;
+}
+
+export interface TeamSignals {
+  hunterNear: boolean;
+  caught: CaughtSignal[];
+}
+
 /**
  * Alles wat de app van de server nodig heeft. De echte versie praat met
  * Supabase (`supabase-backend.ts`); de tests gebruiken een nep-server.
@@ -80,11 +97,12 @@ export interface Backend {
   sendEvents(teamId: string, events: GameEvent[]): Promise<void>;
   recordPositions(teamId: string, fixes: GpsFix[]): Promise<void>;
   /**
-   * Is er een Hunter (ingelogde spelleider) binnen de afstand van het spel?
-   * Alleen ja of nee; de server vergelijkt met de laatst verstuurde positie van
-   * het team. Optioneel: zonder deze functie geen waarschuwing.
+   * Wat een spelend team elke 10 seconden vraagt: is er een Hunter (ingelogde
+   * spelleider) binnen de afstand van het spel (alleen ja of nee; de server
+   * vergelijkt met de laatst verstuurde positie van het team), en welke teams
+   * zijn na `since` (servertijd in ms) gepakt. Optioneel.
    */
-  hunterNearby?(teamId: string): Promise<boolean>;
+  teamSignals?(teamId: string, since: number): Promise<TeamSignals>;
   /** Uploadt een foto en registreert hem; geeft het opslagpad terug. */
   uploadPhoto(teamId: string, photo: PendingPhoto): Promise<string>;
   /** Servertijd in ms. */

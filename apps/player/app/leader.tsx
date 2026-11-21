@@ -1,4 +1,4 @@
-import { boundaryPath, DEFAULT_BOUNDARY_COLOR, outsideShade } from '@hunt/engine';
+import { boundaryPath, DEFAULT_BOUNDARY_COLOR, DEFAULT_CAUGHT_PENALTY, outsideShade } from '@hunt/engine';
 import * as Clipboard from 'expo-clipboard';
 import * as Crypto from 'expo-crypto';
 import { Redirect, router } from 'expo-router';
@@ -322,7 +322,11 @@ function LeaderTeams({
   const [pending, setPending] = useState<Record<string, number>>({});
   const [error, setError] = useState<LeaderKey | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  /** "Team gepakt": lijst met teams open, en welk team net gemeld is. */
+  const [picking, setPicking] = useState(false);
+  const [reported, setReported] = useState<string | null>(null);
   if (!data) return <View style={styles.flex} />;
+  const penalty = Math.abs(data.game?.caughtPenalty ?? DEFAULT_CAUGHT_PENALTY);
   const colorOf = teamColors(data.teams);
   // Tikken kopieert het nummer in plaats van te bellen, zodat een spelleider niet per ongeluk belt.
   const copyPhone = async (teamId: string, phone: string) => {
@@ -355,10 +359,51 @@ function LeaderTeams({
     }
   };
 
+  // Team gepakt melden: kies het team, bevestig; het team krijgt strafpunten en alle teams een melding.
+  const report = (team: LeaderTeam) => {
+    Alert.alert(t('leaderCaughtReport'), t('leaderCaughtConfirm', { team: team.name, points: penalty }), [
+      { text: t('leaderCancel'), style: 'cancel' },
+      {
+        text: t('leaderCaughtYes'),
+        style: 'destructive',
+        onPress: () => {
+          setPicking(false);
+          setReported(team.name);
+          setTimeout(() => setReported((r) => (r === team.name ? null : r)), 5000);
+          void bump(team, 1);
+        },
+      },
+    ]);
+  };
+  const playing = data.teams.filter((tm) => tm.started_at && !tm.ended_at);
+
   return (
     <ScrollView contentContainerStyle={styles.list}>
       {error ? <Banner tone="danger">{t(error)}</Banner> : null}
       {data.teams.length === 0 ? <Body muted>{t('leaderNoTeams')}</Body> : null}
+      {data.teams.length ? (
+        <View style={styles.card}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ expanded: picking }}
+            style={styles.caughtButton}
+            onPress={() => setPicking((p) => !p)}
+          >
+            <Text style={styles.caughtButtonText}>{t('leaderCaughtReport')} {picking ? '▲' : '▼'}</Text>
+          </Pressable>
+          {picking
+            ? (playing.length ? playing : data.teams).map((tm) => (
+                <Pressable key={tm.id} accessibilityRole="button" style={styles.caughtOption} onPress={() => report(tm)}>
+                  <View style={[styles.dot, { backgroundColor: colorOf.get(tm.id) }]} />
+                  <Text style={styles.teamName} numberOfLines={1}>
+                    {tm.name}
+                  </Text>
+                </Pressable>
+              ))
+            : null}
+          {reported ? <Text style={styles.muted}>{t('leaderCaughtDone', { team: reported, points: penalty })}</Text> : null}
+        </View>
+      ) : null}
       {standings(data.teams, progress.scores).map((tm, i) => {
         const p = last.get(tm.id);
         const status = tm.ended_at ? t('leaderFinished') : tm.started_at ? t('leaderPlaying') : t('leaderWaiting');
@@ -599,6 +644,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepText: { color: colors.text, fontSize: 22, fontWeight: '700' },
+  caughtButton: { backgroundColor: colors.danger, borderRadius: radius.md, paddingVertical: space.md, alignItems: 'center' },
+  caughtButtonText: { color: '#ffffff', fontSize: 18, fontWeight: '800' },
+  caughtOption: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: space.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   puzzleWrap: { gap: space.xs },
   puzzles: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: space.xs },
   puzzle: {

@@ -108,6 +108,10 @@ export function buildSessionLog({ game, teams, events, photos = [], chat = [], l
     // Gebeurtenissen uit de app.
     for (const ev of evs) {
       if (ev.at > (endedAt ?? now)) continue;
+      if (ev.type === 'caught') {
+        push({ id: ev.id, at: ev.at, teamId: team.id, category: 'spel', text: tr('Gepakt door een Hunter'), points: ev.points, tone: 'bad' });
+        continue;
+      }
       const base = { id: ev.id, at: ev.at, teamId: team.id, category: 'opdracht' as const };
       const name = title(ev.task);
       const why = rejected.get(ev.id);

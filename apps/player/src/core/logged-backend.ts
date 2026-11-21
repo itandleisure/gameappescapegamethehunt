@@ -13,7 +13,7 @@ const KINDS: Partial<Record<keyof Backend, string>> = {
   uploadPhoto: 'foto_upload_mislukt',
   sendEvents: 'antwoorden_versturen_mislukt',
   recordPositions: 'gps_versturen_mislukt',
-  hunterNearby: 'hunter_check_mislukt',
+  teamSignals: 'signalen_ophalen_mislukt',
   loadGame: 'spel_laden_mislukt',
   sendChat: 'chat_versturen_mislukt',
 };
