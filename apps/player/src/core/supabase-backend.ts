@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GameEvent, GamePackage, GpsFix } from '@hunt/engine';
-import type { Backend, ChatMessage, LoadedGame, PendingPhoto, SessionInfo, TeamRecord } from './types.js';
+import type { Backend, ChatMessage, LoadedGame, PendingPhoto, SessionInfo, TeamRecord, TeamSignals } from './types.js';
 
 /** Fout met een tekstsleutel uit i18n, zodat het scherm een nette melding toont. */
 /** Extensie in de bucket photos: jpg voor foto's, mp4 of mov voor video's (zie isVideoPath in de engine). */
@@ -214,10 +214,14 @@ export class SupabaseBackend implements Backend {
     if (error) throw translate(error, 'errorNetwork');
   }
 
-  async hunterNearby(teamId: string) {
-    const { data, error } = await this.client.rpc('hunter_nearby', { p_team: teamId });
+  async teamSignals(teamId: string, since: number): Promise<TeamSignals> {
+    const { data, error } = await this.client.rpc('team_signals', { p_team: teamId, p_since: since });
     if (error) throw translate(error, 'errorNetwork');
-    return data === true;
+    const raw = (data ?? {}) as { hunter_near?: boolean; caught?: { id: string; team_id: string; team_name: string; points: number | string; at: number | string }[] };
+    return {
+      hunterNear: raw.hunter_near === true,
+      caught: (raw.caught ?? []).map((c) => ({ id: c.id, teamId: c.team_id, teamName: c.team_name, points: Number(c.points) || 0, at: Number(c.at) })),
+    };
   }
 
   async uploadPhoto(teamId: string, photo: PendingPhoto) {

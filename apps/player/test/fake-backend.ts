@@ -1,5 +1,5 @@
 import type { GameEvent, GamePackage, GpsFix } from '@hunt/engine';
-import type { Backend, ChatMessage, PendingPhoto, TeamRecord } from '../src/core/types.js';
+import type { Backend, CaughtSignal, ChatMessage, PendingPhoto, TeamRecord } from '../src/core/types.js';
 import { mediaExtension } from '../src/core/supabase-backend.js';
 
 /** Nep-server voor tests: houdt alles in het geheugen en kan "offline" gaan. */
@@ -110,10 +110,13 @@ export class FakeBackend implements Backend {
   hunterNear = false;
   hunterChecks = 0;
 
-  async hunterNearby(_teamId: string) {
+  /** Teams die gepakt zijn (de spelleider meldde het). */
+  caught: CaughtSignal[] = [];
+
+  async teamSignals(_teamId: string, since: number) {
     this.guard();
     this.hunterChecks += 1;
-    return this.hunterNear;
+    return { hunterNear: this.hunterNear, caught: this.caught.filter((c) => c.at > since) };
   }
 
   async recordPositions(_teamId: string, fixes: GpsFix[]) {

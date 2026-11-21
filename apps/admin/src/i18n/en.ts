@@ -1269,4 +1269,5 @@ export const en: Record<string, string> = {
   "Afstand (meter, 0 = uit)": "Distance (metres, 0 = off)",
   "Terug naar de waarde van de laag erboven": "Back to the value of the layer above",
   "Teams krijgen een melding met trillen als een ingelogde spelleider zo dichtbij is, zonder richting. 0 = uit.": "Teams get a notification with vibration when a logged-in game master is this close, without direction. 0 = off.",
+  "Gepakt door een Hunter": "Caught by a Hunter",
 };
