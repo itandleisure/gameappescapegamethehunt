@@ -112,6 +112,8 @@ export const pl: Messages = {
   permSkip: "Nie teraz",
   taskOpenedNotice: "Zadanie otwarte",
   nearTaskNotice: "Prawie przy zadaniu",
+  hunterNearNotice: "Hunter w pobliżu!",
+  hunterNearBody: "Hunter jest w promieniu {m} metrów. Miejcie oczy szeroko otwarte!",
   recordVideo: "Nagraj film",
   retakeVideo: "Nagraj ponownie",
   sendVideo: "Wyślij film",

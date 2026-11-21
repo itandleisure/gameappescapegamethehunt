@@ -112,6 +112,8 @@ export const cs: Messages = {
   permSkip: "Teď ne",
   taskOpenedNotice: "Úkol otevřen",
   nearTaskNotice: "Skoro u úkolu",
+  hunterNearNotice: "Hunter poblíž!",
+  hunterNearBody: "Hunter je do {m} metrů od vás. Mějte oči otevřené!",
   recordVideo: "Natočit video",
   retakeVideo: "Natočit znovu",
   sendVideo: "Odeslat video",

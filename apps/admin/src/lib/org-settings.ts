@@ -4,11 +4,13 @@
 // Zonder browser of database, zodat het met gewone tests te controleren is.
 import {
   DEFAULT_BOUNDARY_COLOR,
+  DEFAULT_HUNTER_ALERT_RADIUS,
   DEFAULT_MAP_SOURCE,
   DEFAULT_MEETING_RADIUS,
   DEFAULT_OUTSIDE_COLOR,
   DEFAULT_OUTSIDE_OPACITY,
   MAP_STYLES,
+  MAX_HUNTER_ALERT_RADIUS,
   type GamePackage,
   type MapSource,
 } from '@hunt/engine';
@@ -42,6 +44,8 @@ export interface GameSettings {
   decline_seconds: number;
   /** Cirkel om het verzamelpunt (meters), als het spel zelf niets kiest. */
   meeting_radius: number;
+  /** Teams waarschuwen als een Hunter binnen zoveel meter is (0 = uit), als het spel zelf niets kiest. */
+  hunter_alert_radius: number;
   /** Kaartstijl (id uit MAP_STYLES), als het spel zelf niets kiest. */
   map_style: string;
   boundary_color: string;
@@ -94,6 +98,7 @@ export const DEFAULT_SETTINGS: OrgSettings = {
     max_accuracy: 30,
     decline_seconds: 20,
     meeting_radius: DEFAULT_MEETING_RADIUS,
+    hunter_alert_radius: DEFAULT_HUNTER_ALERT_RADIUS,
     map_style: MAP_STYLES[0]!.id,
     boundary_color: DEFAULT_BOUNDARY_COLOR,
     outside_color: DEFAULT_OUTSIDE_COLOR,
@@ -109,6 +114,7 @@ export const LIMITS = {
   max_accuracy: [10, 100],
   decline_seconds: [5, 300],
   meeting_radius: [5, 200],
+  hunter_alert_radius: [0, MAX_HUNTER_ALERT_RADIUS],
   share_days: [1, 365],
   min_photos: [0, 40],
 } as const satisfies Record<string, readonly [number, number]>;
@@ -255,6 +261,7 @@ export function parseSettings(value: unknown): OrgSettings {
       max_accuracy: num(g.max_accuracy, d.games.max_accuracy, LIMITS.max_accuracy),
       decline_seconds: num(g.decline_seconds, d.games.decline_seconds, LIMITS.decline_seconds),
       meeting_radius: num(g.meeting_radius, d.games.meeting_radius, LIMITS.meeting_radius),
+      hunter_alert_radius: num(g.hunter_alert_radius, d.games.hunter_alert_radius, LIMITS.hunter_alert_radius),
       map_style: typeof g.map_style === 'string' && MAP_STYLES.some((s) => s.id === g.map_style) ? g.map_style : d.games.map_style,
       boundary_color: color(g.boundary_color, d.games.boundary_color),
       outside_color: color(g.outside_color, d.games.outside_color),
@@ -281,8 +288,8 @@ export function defaultMapSource(games: GameSettings): MapSource {
 /**
  * Zet de algemene spelinstellingen in het spelpakket. GPS-nauwkeurigheid en de
  * wachttijd na "Nee" gelden voor elk spel; kaartstijl, kleuren van het
- * speelveld en de cirkel om het verzamelpunt alleen als het spel daar zelf
- * niets voor gekozen heeft.
+ * speelveld, de cirkel om het verzamelpunt en de afstand voor "Hunter in de
+ * buurt" alleen als het spel daar zelf niets voor gekozen heeft.
  */
 export function applyGameSettings(pkg: GamePackage, games: GameSettings): GamePackage {
   const out: GamePackage = {
@@ -290,6 +297,7 @@ export function applyGameSettings(pkg: GamePackage, games: GameSettings): GamePa
     gps: { ...pkg.gps, maxAccuracy: games.max_accuracy, declineSeconds: games.decline_seconds },
   };
   if (!pkg.map && games.map_style !== DEFAULT_SETTINGS.games.map_style) out.map = defaultMapSource(games);
+  if (!pkg.hunterAlert) out.hunterAlert = { radius: games.hunter_alert_radius };
   if (pkg.meetingPoint && pkg.meetingPoint.radius === undefined) out.meetingPoint = { ...pkg.meetingPoint, radius: games.meeting_radius };
   if (pkg.boundary) {
     out.boundary = {

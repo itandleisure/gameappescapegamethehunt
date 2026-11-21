@@ -80,6 +80,19 @@ describe('gelaagd gamemodel', () => {
     expect(validateGame(broken)).toEqual(['regel x: onbekende opdracht bestaat-niet', 'regel x: onbekend einde nee']);
   });
 
+  it('Hunter in de buurt: een stad kiest een eigen afstand als dat mag, en die moet kloppen', () => {
+    const base: BaseGame = JSON.parse(JSON.stringify(theHuntBase));
+    base.hunterAlert = { radius: 100 };
+    base.overridable.push({ target: { game: 'hunterAlert' }, layers: ['city'] });
+    const city = { ...leeuwarden, overrides: [...leeuwarden.overrides, { target: { game: 'hunterAlert' as const }, value: { radius: 60 } }] };
+    expect(composeGame(base, [city], meta).hunterAlert).toEqual({ radius: 60 });
+    expect(composeGame(base, [leeuwarden], meta).hunterAlert).toEqual({ radius: 100 });
+    expect(validateGame({ ...composeGame(base, [leeuwarden], meta), hunterAlert: { radius: 0 } })).toEqual([]);
+    expect(validateGame({ ...composeGame(base, [leeuwarden], meta), hunterAlert: { radius: -5 } })).toEqual([
+      'hunter in de buurt: afstand moet tussen 0 en 500 meter liggen',
+    ]);
+  });
+
   it('controleert de speelveldgrens', () => {
     const p = (lat: number, lng: number) => ({ lat, lng });
     const ok = { ...theHuntBase, version: 0, boundary: { points: [p(53.2, 5.79), p(53.21, 5.8), p(53.2, 5.81)] } };

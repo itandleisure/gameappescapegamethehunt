@@ -112,6 +112,8 @@ export const fi: Messages = {
   permSkip: "Ei nyt",
   taskOpenedNotice: "Tehtävä avattu",
   nearTaskNotice: "Melkein tehtävällä",
+  hunterNearNotice: "Hunter lähellä!",
+  hunterNearBody: "Hunter on alle {m} metrin päässä. Pitäkää silmät auki!",
   recordVideo: "Kuvaa video",
   retakeVideo: "Kuvaa uudelleen",
   sendVideo: "Lähetä video",

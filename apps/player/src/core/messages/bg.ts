@@ -112,6 +112,8 @@ export const bg: Messages = {
   permSkip: "Не сега",
   taskOpenedNotice: "Задачата е отворена",
   nearTaskNotice: "Почти при задача",
+  hunterNearNotice: "Hunter наблизо!",
+  hunterNearBody: "Hunter е в радиус от {m} метра. Отваряйте си очите!",
   recordVideo: "Заснемете видео",
   retakeVideo: "Заснемете отново",
   sendVideo: "Изпратете видео",

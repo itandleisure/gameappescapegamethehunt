@@ -214,6 +214,12 @@ export class SupabaseBackend implements Backend {
     if (error) throw translate(error, 'errorNetwork');
   }
 
+  async hunterNearby(teamId: string) {
+    const { data, error } = await this.client.rpc('hunter_nearby', { p_team: teamId });
+    if (error) throw translate(error, 'errorNetwork');
+    return data === true;
+  }
+
   async uploadPhoto(teamId: string, photo: PendingPhoto) {
     const path = `${teamId}/${photo.task}/${photo.photoId}.${mediaExtension(photo)}`;
     const body = await this.readFile(photo.uri);

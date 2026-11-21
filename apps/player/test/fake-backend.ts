@@ -106,6 +106,16 @@ export class FakeBackend implements Backend {
     this.events.set(teamId, list);
   }
 
+  /** Antwoord op "is er een Hunter in de buurt?", en hoe vaak het gevraagd is. */
+  hunterNear = false;
+  hunterChecks = 0;
+
+  async hunterNearby(_teamId: string) {
+    this.guard();
+    this.hunterChecks += 1;
+    return this.hunterNear;
+  }
+
   async recordPositions(_teamId: string, fixes: GpsFix[]) {
     this.guard();
     this.positions.push(...fixes);

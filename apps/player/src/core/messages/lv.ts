@@ -112,6 +112,8 @@ export const lv: Messages = {
   permSkip: "Ne tagad",
   taskOpenedNotice: "Uzdevums atvērts",
   nearTaskNotice: "Gandrīz pie uzdevuma",
+  hunterNearNotice: "Hunter tuvumā!",
+  hunterNearBody: "Hunter ir {m} metru rādiusā. Turiet acis vaļā!",
   recordVideo: "Filmēt video",
   retakeVideo: "Filmēt vēlreiz",
   sendVideo: "Sūtīt video",

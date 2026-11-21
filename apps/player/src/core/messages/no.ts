@@ -112,6 +112,8 @@ export const no: Messages = {
   permSkip: "Ikke nå",
   taskOpenedNotice: "Oppgave åpnet",
   nearTaskNotice: "Nesten ved en oppgave",
+  hunterNearNotice: "Hunter i nærheten!",
+  hunterNearBody: "En Hunter er innenfor {m} meter. Hold øynene åpne!",
   recordVideo: "Ta opp en video",
   retakeVideo: "Ta opp på nytt",
   sendVideo: "Send video",

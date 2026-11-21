@@ -112,6 +112,8 @@ export const sv: Messages = {
   permSkip: "Inte nu",
   taskOpenedNotice: "Uppdrag öppnat",
   nearTaskNotice: "Nästan vid ett uppdrag",
+  hunterNearNotice: "Hunter i närheten!",
+  hunterNearBody: "En Hunter är inom {m} meter. Håll ögonen öppna!",
   recordVideo: "Spela in en video",
   retakeVideo: "Spela in igen",
   sendVideo: "Skicka video",

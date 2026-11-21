@@ -112,6 +112,8 @@ export const el: Messages = {
   permSkip: "Όχι τώρα",
   taskOpenedNotice: "Η αποστολή άνοιξε",
   nearTaskNotice: "Σχεδόν σε μια αποστολή",
+  hunterNearNotice: "Hunter κοντά!",
+  hunterNearBody: "Ένας Hunter είναι σε απόσταση {m} μέτρων. Ανοιχτά τα μάτια!",
   recordVideo: "Τραβήξτε βίντεο",
   retakeVideo: "Ξανά",
   sendVideo: "Αποστολή βίντεο",

@@ -112,6 +112,8 @@ export const da: Messages = {
   permSkip: "Ikke nu",
   taskOpenedNotice: "Opgave åbnet",
   nearTaskNotice: "Næsten ved en opgave",
+  hunterNearNotice: "Hunter i nærheden!",
+  hunterNearBody: "En Hunter er inden for {m} meter. Hold øjnene åbne!",
   recordVideo: "Optag en video",
   retakeVideo: "Optag igen",
   sendVideo: "Send video",

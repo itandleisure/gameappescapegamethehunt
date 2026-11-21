@@ -112,6 +112,8 @@ export const lt: Messages = {
   permSkip: "Ne dabar",
   taskOpenedNotice: "Užduotis atidaryta",
   nearTaskNotice: "Beveik prie užduoties",
+  hunterNearNotice: "Hunter netoliese!",
+  hunterNearBody: "Hunter yra {m} metrų spinduliu. Būkite budrūs!",
   recordVideo: "Filmuoti vaizdo įrašą",
   retakeVideo: "Filmuoti iš naujo",
   sendVideo: "Siųsti vaizdo įrašą",

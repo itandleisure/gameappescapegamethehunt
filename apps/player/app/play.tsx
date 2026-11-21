@@ -401,6 +401,12 @@ export default function PlayScreen() {
         </View>
         {/* Meldingen kunnen samen nooit meer dan een derde van het scherm bedekken; een lang bericht scrollt. */}
         <ScrollView style={{ maxHeight: screenHeight * 0.35 }} bounces={false}>
+          {/* Alleen dát er een Hunter dichtbij is, niet waar: het spel blijft spannend. */}
+          {snapshot.hunterNear ? (
+            <Banner tone="danger">
+              {`${t("hunterNearNotice")} ${t("hunterNearBody", { m: controller.hunterAlertRadius })}`}
+            </Banner>
+          ) : null}
           {!snapshot.online ? (
             <Banner tone="warning">{t("offline")}</Banner>
           ) : null}

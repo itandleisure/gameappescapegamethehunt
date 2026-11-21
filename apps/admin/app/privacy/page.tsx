@@ -102,7 +102,7 @@ export default function PrivacyPage() {
         rows={[
           ['Locatie tijdens gebruik', 'Opdrachten openen op locatie', 'Spelen is dan niet mogelijk'],
           ['Locatie altijd (achtergrond)', 'GPS blijft werken met het scherm uit, alleen tijdens een lopend spel', 'GPS werkt alleen met de app open'],
-          ['Meldingen', 'Trillen en een melding met het scherm uit als een opdracht opengaat', 'Geen melding met het scherm uit'],
+          ['Meldingen', 'Trillen en een melding met het scherm uit als een opdracht opengaat of een Hunter in de buurt is', 'Geen melding met het scherm uit'],
           ['Camera', "Teamfoto en foto- en video-opdrachten", "Geen foto's of video's"],
           ['Microfoon', 'Alleen geluid bij een video-opdracht', 'Video zonder geluid of geen video'],
           ["Foto's bewaren in je galerij", "Een kopie van je spelfoto's en -video's op je telefoon", "Foto's gaan alleen naar het spel"],
@@ -115,6 +115,10 @@ export default function PrivacyPage() {
           achtergrond loopt; op iPhone de blauwe locatie-aanduiding.
         </li>
         <li>De app stuurt geen pushberichten via een server; meldingen komen van je telefoon zelf.</li>
+        <li>
+          Is een spelleider (Hunter) ingelogd, dan vergelijkt de server zijn laatste positie met die van de teams. Een team
+          hoort alleen dát er een Hunter in de buurt is, niet waar hij is of wie het is.
+        </li>
         <li>Geen advertenties, geen analyse- of trackingdiensten, en we verkopen geen gegevens.</li>
         <li>We gebruiken je gegevens niet voor geautomatiseerde besluitvorming of profilering.</li>
       </ul>

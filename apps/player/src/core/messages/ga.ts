@@ -112,6 +112,8 @@ export const ga: Messages = {
   permSkip: "Ní anois",
   taskOpenedNotice: "Tasc oscailte",
   nearTaskNotice: "Beagnach ag tasc",
+  hunterNearNotice: "Hunter in aice láimhe!",
+  hunterNearBody: "Tá Hunter laistigh de {m} méadar. Coinnígí bhur súile ar oscailt!",
   recordVideo: "Taifead físeán",
   retakeVideo: "Taifead arís",
   sendVideo: "Seol físeán",

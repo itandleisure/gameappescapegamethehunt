@@ -253,6 +253,25 @@ export interface MeetingPoint extends LatLng {
 
 export const DEFAULT_MEETING_RADIUS = 20;
 
+/**
+ * Standaardafstand (meter) waarop een team gewaarschuwd wordt dat er een
+ * Hunter (ingelogde spelleider) in de buurt is. Geldt voor een spel dat zelf
+ * niets kiest en waarbij bij het publiceren ook geen instelling is meegegeven.
+ */
+export const DEFAULT_HUNTER_ALERT_RADIUS = 100;
+/** Grootste instelbare afstand voor "Hunter in de buurt". */
+export const MAX_HUNTER_ALERT_RADIUS = 500;
+
+/**
+ * Waarschuwing "Hunter in de buurt": de telefoon van het team trilt (met het
+ * scherm uit via een melding) zodra een ingelogde spelleider binnen `radius`
+ * meter is. Alleen dát er een Hunter dichtbij is, nooit waar of welke kant op.
+ */
+export interface HunterAlert {
+  /** Afstand in meters; 0 = uit. */
+  radius: number;
+}
+
 export interface MapOverlay {
   /** Media-id of URL van de afbeelding. */
   image: string;
@@ -400,6 +419,8 @@ export interface GamePackage {
    * de start als afgerond.
    */
   briefing?: string;
+  /** Waarschuwing als een Hunter in de buurt is; ontbreekt = DEFAULT_HUNTER_ALERT_RADIUS. */
+  hunterAlert?: HunterAlert;
   gps: GpsSettings;
 }
 

@@ -1263,4 +1263,10 @@ export const es: Record<string, string> = {
   "Foto's ophalen van de links": "Obtener fotos de los enlaces",
   "Log opnieuw in.": "Vuelve a iniciar sesión.",
   "Geen verbinding met de server.": "Sin conexión con el servidor.",
+  "Hunter in de buurt": "Hunter cerca",
+  "Teams krijgen een melding met trillen (ook met het scherm uit) als een ingelogde spelleider zo dichtbij is. Alleen een waarschuwing: niet waar de Hunter is of welke kant op.": "Los equipos reciben un aviso con vibración (también con la pantalla apagada) cuando un director de juego conectado está así de cerca. Solo un aviso: no dónde está el Hunter ni en qué dirección.",
+  "Dit is in deze laag niet aan te passen.": "Esto no se puede cambiar en esta capa.",
+  "Afstand (meter, 0 = uit)": "Distancia (metros, 0 = desactivado)",
+  "Terug naar de waarde van de laag erboven": "Volver al valor de la capa superior",
+  "Teams krijgen een melding met trillen als een ingelogde spelleider zo dichtbij is, zonder richting. 0 = uit.": "Los equipos reciben un aviso con vibración cuando un director de juego conectado está así de cerca, sin dirección. 0 = desactivado.",
 };

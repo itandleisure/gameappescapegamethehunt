@@ -104,3 +104,19 @@ export async function alertNear(title: string, body: string): Promise<void> {
   }
   await notify(title, body).catch((error) => logIssue('warn', 'melding_mislukt', String(error)));
 }
+
+/**
+ * Er kwam een Hunter in de buurt: lang en dringend trillen, anders dan bij een
+ * opdracht. Met het scherm uit via een melding, net als bij een opdracht.
+ */
+export async function alertHunter(title: string, body: string): Promise<void> {
+  if (inForeground()) {
+    if (Platform.OS === 'android') Vibration.vibrate([0, 500, 150, 500, 150, 500]);
+    else {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => undefined);
+      Vibration.vibrate();
+    }
+    return;
+  }
+  await notify(title, body).catch((error) => logIssue('warn', 'melding_mislukt', String(error)));
+}

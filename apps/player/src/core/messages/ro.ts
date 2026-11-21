@@ -112,6 +112,8 @@ export const ro: Messages = {
   permSkip: "Nu acum",
   taskOpenedNotice: "Misiune deschisă",
   nearTaskNotice: "Aproape de o misiune",
+  hunterNearNotice: "Hunter în apropiere!",
+  hunterNearBody: "Un Hunter este la mai puțin de {m} metri. Fiți atenți!",
   recordVideo: "Filmați un video",
   retakeVideo: "Filmați din nou",
   sendVideo: "Trimiteți videoclipul",

@@ -112,6 +112,8 @@ export const hr: Messages = {
   permSkip: "Ne sada",
   taskOpenedNotice: "Zadatak otvoren",
   nearTaskNotice: "Gotovo kod zadatka",
+  hunterNearNotice: "Hunter u blizini!",
+  hunterNearBody: "Hunter je unutar {m} metara. Otvorite oči!",
   recordVideo: "Snimite video",
   retakeVideo: "Snimi ponovno",
   sendVideo: "Pošalji video",

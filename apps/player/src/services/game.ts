@@ -1,8 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import { GameController, type ControllerDeps } from '../core/game-controller';
+import { msg } from '../core/i18n';
 import { withIssueLog } from '../core/logged-backend';
 import { SupabaseBackend } from '../core/supabase-backend';
+import { alertHunter } from './alerts';
 import { logIssue, setLogContext } from './diagnostics';
 import { readFile } from './read-file';
 import { supabase } from './supabase';
@@ -16,6 +18,11 @@ const deps: ControllerDeps = {
   backend: withIssueLog(new SupabaseBackend(supabase, readFile), logIssue),
   store: AsyncStorage,
   newId: () => Crypto.randomUUID(),
+  // Hunter in de buurt: trillen, met het scherm uit via een melding op de telefoon.
+  onHunterNear: (team) => {
+    const radius = current?.hunterAlertRadius ?? 100;
+    void alertHunter(msg(team.language, 'hunterNearNotice'), msg(team.language, 'hunterNearBody', { m: radius }));
+  },
 };
 
 let current: GameController | null = null;

@@ -3,8 +3,10 @@ import { gameLanguageShort } from '@/lib/game-languages';
 import {
   circlesGeoJson,
   DEFAULT_BOUNDARY_COLOR,
+  DEFAULT_HUNTER_ALERT_RADIUS,
   DEFAULT_MEETING_RADIUS,
   MAP_STYLES,
+  MAX_HUNTER_ALERT_RADIUS,
   outsideShade,
   type GamePackage,
   type LatLng,
@@ -82,9 +84,11 @@ export default function MapPage() {
   const [meeting, setMeeting] = useState<LatLng | null>(null);
   const [meetingText, setMeetingText] = useState<Text>({});
   const [meetingRadius, setMeetingRadius] = useState(DEFAULT_MEETING_RADIUS);
+  /** Teams waarschuwen als een Hunter binnen zoveel meter is; 0 = uit. */
+  const [hunterRadius, setHunterRadius] = useState(DEFAULT_HUNTER_ALERT_RADIUS);
   const [fieldsDirty, setFieldsDirty] = useState<Set<SettingField>>(new Set());
   /** Welke lagen (stad, klant) een veld mogen aanpassen; alleen in het basisspel in te stellen. */
-  const [allowed, setAllowed] = useState<Record<MapGameField, Layer[]>>({ map: [], mapOverlay: [], meetingPoint: [], boundary: [] });
+  const [allowed, setAllowed] = useState<Record<MapGameField, Layer[]>>({ map: [], mapOverlay: [], meetingPoint: [], boundary: [], hunterAlert: [] });
   const [allowedDirty, setAllowedDirty] = useState(false);
   const shownStyle = useRef<string | null>(null);
   /** Voorbeeld van het kaartje voor de speluitleg (zie playfield-image.ts). */
@@ -106,8 +110,9 @@ export default function MapPage() {
       setMeeting(g.meetingPoint ? { lat: g.meetingPoint.lat, lng: g.meetingPoint.lng } : null);
       setMeetingText(g.meetingPoint?.text ?? {});
       setMeetingRadius(g.meetingPoint?.radius ?? DEFAULT_MEETING_RADIUS);
+      setHunterRadius(g.hunterAlert?.radius ?? DEFAULT_HUNTER_ALERT_RADIUS);
       setFieldsDirty(new Set());
-      const fields: MapGameField[] = ['map', 'mapOverlay', 'meetingPoint', 'boundary'];
+      const fields: MapGameField[] = ['map', 'mapOverlay', 'meetingPoint', 'boundary', 'hunterAlert'];
       setAllowed(
         Object.fromEntries(
           fields.map((f) => [f, c[0]!.overridable.find((o) => o.task_id === null && o.field === f)?.layers.filter((l) => l !== 'base') ?? []]),
@@ -126,6 +131,7 @@ export default function MapPage() {
   // Zonder eigen cirkel om het verzamelpunt: de standaard uit Instellingen.
   useEffect(() => {
     if (game && game.meetingPoint?.radius === undefined && !fieldsDirty.has('meetingPoint')) setMeetingRadius(gs.meeting_radius);
+    if (game && !game.hunterAlert && !fieldsDirty.has('hunterAlert')) setHunterRadius(gs.hunter_alert_radius);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game, gs]);
 
@@ -407,6 +413,7 @@ export default function MapPage() {
   const canBoundary = gameFieldEditable(chain, 'boundary');
   const canStyle = gameFieldEditable(chain, 'map');
   const canOverlay = gameFieldEditable(chain, 'mapOverlay');
+  const canHunter = gameFieldEditable(chain, 'hunterAlert');
   const mapCenter = () => {
     const c = map.current?.getCenter();
     return c ? { lat: round(c.lat), lng: round(c.lng) } : null;
@@ -446,6 +453,7 @@ export default function MapPage() {
       if (boundaryDirty) values.boundary = boundary && boundary.points.length ? boundary : null;
       if (fieldsDirty.has('map')) values.map = mapSource;
       if (fieldsDirty.has('mapOverlay')) values.mapOverlay = overlay;
+      if (fieldsDirty.has('hunterAlert')) values.hunterAlert = { radius: hunterRadius };
       if (fieldsDirty.has('meetingPoint')) {
         values.meetingPoint = meeting ? { ...meeting, radius: meetingRadius, ...(isBase ? {} : { text: cleanText(meetingText) }) } : null;
       }
@@ -814,6 +822,38 @@ export default function MapPage() {
               ) : null}
             </>
           )}
+          <h2>{t('Hunter in de buurt')}</h2>
+          <p className="muted small">
+            {t('Teams krijgen een melding met trillen (ook met het scherm uit) als een ingelogde spelleider zo dichtbij is. Alleen een waarschuwing: niet waar de Hunter is of welke kant op.')}
+          </p>
+          {!canHunter ? (
+            <p className="muted small">{t('Dit is in deze laag niet aan te passen.')}</p>
+          ) : (
+            <>
+              <div>
+                <label htmlFor="hunter-radius">{t('Afstand (meter, 0 = uit)')}</label>
+                <input
+                  id="hunter-radius"
+                  type="number"
+                  min={0}
+                  max={MAX_HUNTER_ALERT_RADIUS}
+                  step={10}
+                  value={hunterRadius}
+                  onChange={(e) => {
+                    const r = Math.round(Number(e.target.value));
+                    if (!(r >= 0 && r <= MAX_HUNTER_ALERT_RADIUS)) return;
+                    setHunterRadius(r);
+                    touchField('hunterAlert');
+                  }}
+                />
+              </div>
+              {!isBase && ownGameField(chain, 'hunterAlert') ? (
+                <button className="link" onClick={() => void reset('hunterAlert')} disabled={busy}>
+                  {t('Terug naar de waarde van de laag erboven')}
+                </button>
+              ) : null}
+            </>
+          )}
           {overlay && canOverlay ? (
             <>
               <h2>{t('Oude overlay')}</h2>
@@ -866,6 +906,7 @@ export default function MapPage() {
                       ['map', tKey('Kaartstijl')],
                       ['meetingPoint', tKey('Verzamelpunt')],
                       ['boundary', tKey('Speelveldgrens (rode lijn)')],
+                      ['hunterAlert', tKey('Hunter in de buurt')],
                     ] as const
                   ).map(([field, label]) => (
                     <tr key={field}>

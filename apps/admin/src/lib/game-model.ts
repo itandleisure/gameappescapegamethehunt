@@ -9,6 +9,7 @@
  */
 import { MAP_ICONS } from '@hunt/engine';
 import type {
+  HunterAlert,
   Action,
   AnswerSpec,
   BaseGame,
@@ -135,11 +136,12 @@ interface BaseSettings {
   mapOverlay?: MapOverlay;
   map?: MapSource;
   boundary?: PlayBoundary;
+  hunterAlert?: HunterAlert;
   briefing?: string;
 }
 
 const TASK_TEXT_FIELDS = ['title', 'body', 'confirm', 'correctComment', 'wrongComment'] as const;
-const GAME_VALUE_FIELDS: GameField[] = ['meetingPoint', 'mapOverlay', 'map', 'boundary', 'playgroundCodes'];
+const GAME_VALUE_FIELDS: GameField[] = ['meetingPoint', 'mapOverlay', 'map', 'boundary', 'playgroundCodes', 'hunterAlert'];
 
 // ---------------------------------------------------------------------------
 // Teksten
@@ -288,6 +290,7 @@ export function baseToRows(base: BaseGame, game: Omit<GameRow, 'languages' | 'de
   if (base.mapOverlay) settings.mapOverlay = base.mapOverlay;
   if (base.map) settings.map = base.map;
   if (base.boundary) settings.boundary = base.boundary;
+  if (base.hunterAlert) settings.hunterAlert = base.hunterAlert;
   if (base.briefing) settings.briefing = base.briefing;
   const reveal = Object.fromEntries(base.playgrounds.filter((p) => p.reveal).map((p) => [p.id, p.reveal!]));
   if (Object.keys(reveal).length) settings.playgroundReveal = reveal;
@@ -417,6 +420,7 @@ export function rowsToBase(rows: LayerRows): BaseGame {
   if (settings.mapOverlay) base.mapOverlay = settings.mapOverlay;
   if (settings.map) base.map = settings.map;
   if (settings.boundary) base.boundary = settings.boundary;
+  if (settings.hunterAlert) base.hunterAlert = settings.hunterAlert;
   if (settings.briefing) base.briefing = settings.briefing;
   return base;
 }

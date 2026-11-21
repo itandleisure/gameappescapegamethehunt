@@ -44,6 +44,14 @@ describe('algemene instellingen', () => {
     expect(applyGameSettings(pkg, DEFAULT_SETTINGS.games).map).toBeUndefined();
   });
 
+  it('Hunter in de buurt: standaard 100 m, een eigen keuze van het spel blijft', () => {
+    const pkg = { gps: { maxAccuracy: 30 } } as unknown as GamePackage;
+    expect(applyGameSettings(pkg, DEFAULT_SETTINGS.games).hunterAlert).toEqual({ radius: 100 });
+    expect(applyGameSettings(pkg, { ...DEFAULT_SETTINGS.games, hunter_alert_radius: 0 }).hunterAlert).toEqual({ radius: 0 });
+    expect(applyGameSettings({ ...pkg, hunterAlert: { radius: 50 } }, DEFAULT_SETTINGS.games).hunterAlert).toEqual({ radius: 50 });
+    expect(parseSettings({ games: { hunter_alert_radius: 9999 } }).games.hunter_alert_radius).toBe(500);
+  });
+
   it('fotoboek: eigen naam, eigen teksten en contactgegevens', () => {
     const brand = { name: 'Stadsjacht', group: 'Spelgroep', texts: { nl: { thanks: 'Tot ziens, {n}!' } } };
     expect(bookText('nl', 'thanks', { n: 'team' }, brand)).toBe('Tot ziens, team!');
