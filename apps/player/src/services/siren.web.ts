@@ -6,3 +6,12 @@ export async function playSiren(): Promise<void> {
     // niet ondersteund
   }
 }
+
+/** Webapp: nieuwsflits, één kort tikje (alleen Android). */
+export async function buzzNews(): Promise<void> {
+  try {
+    navigator.vibrate?.(80);
+  } catch {
+    // niet ondersteund
+  }
+}

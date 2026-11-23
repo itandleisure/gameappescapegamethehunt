@@ -62,6 +62,9 @@ export const SCENES = [
   { id: 'videomissie', url: '/?scene=task&img=none&video=1', clicks: [tasksButton, /^Leg het bewijs vast/, /^Film een video/] },
   { id: 'chat', url: '/?scene=chat', clicks: [/^(💬|Chat)/] },
   { id: 'chat-lang-offline', url: '/?scene=chat&long=1', clicks: [/^(💬|Chat)/] },
+  { id: 'nieuwsflits', url: '/?scene=play&news=1', wait: 1500 },
+  { id: 'nieuwsflits-lang', url: '/?scene=task&news=1&long=1', wait: 1500 },
+  { id: 'nieuws-lijst', url: '/?scene=task&news=2', clicks: [/Nieuws/] },
   { id: 'einde-verzamelpunt', url: '/?scene=end' },
   { id: 'einde-lang', url: '/?scene=end&long=1' },
 ];

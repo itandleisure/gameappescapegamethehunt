@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { GameEvent, GamePackage, GpsFix } from '@hunt/engine';
-import type { Backend, ChatMessage, LoadedGame, PendingPhoto, SessionInfo, TeamRecord, TeamSignals } from './types.js';
+import type { GameEvent, GamePackage, GpsFix, NewsAuto, Text } from '@hunt/engine';
+import type { Backend, ChatMessage, LoadedGame, NewsSignal, PendingPhoto, SessionInfo, TeamRecord, TeamSignals, TeamSummary } from './types.js';
 
 /** Fout met een tekstsleutel uit i18n, zodat het scherm een nette melding toont. */
 /** Extensie in de bucket photos: jpg voor foto's, mp4 of mov voor video's (zie isVideoPath in de engine). */
@@ -215,13 +215,55 @@ export class SupabaseBackend implements Backend {
     if (error) throw translate(error, 'errorNetwork');
   }
 
-  async teamSignals(teamId: string, since: number): Promise<TeamSignals> {
-    const { data, error } = await this.client.rpc('team_signals', { p_team: teamId, p_since: since });
+  async teamSignals(teamId: string, since: number, newsSince?: number): Promise<TeamSignals> {
+    const args: Record<string, unknown> = { p_team: teamId, p_since: since };
+    if (newsSince !== undefined) args.p_news_since = newsSince;
+    const { data, error } = await this.client.rpc('team_signals', args);
     if (error) throw translate(error, 'errorNetwork');
-    const raw = (data ?? {}) as { hunter_near?: boolean; caught?: { id: string; team_id: string; team_name: string; points: number | string; at: number | string }[] };
+    const raw = (data ?? {}) as {
+      hunter_near?: boolean;
+      caught?: { id: string; team_id: string; team_name: string; points: number | string; at: number | string }[];
+      news?: NewsRow[];
+      news_auto?: Partial<NewsAuto>;
+    };
     return {
       hunterNear: raw.hunter_near === true,
       caught: (raw.caught ?? []).map((c) => ({ id: c.id, teamId: c.team_id, teamName: c.team_name, points: Number(c.points) || 0, at: Number(c.at) })),
+      ...(raw.news ? { news: raw.news.map(toNewsSignal) } : {}),
+      ...(raw.news_auto ? { newsAuto: raw.news_auto } : {}),
+    };
+  }
+
+  async reportNews(teamId: string, kind: 'escaped' | 'puzzle', task?: string) {
+    const { error } = await this.client.rpc('team_report_news', { p_team: teamId, p_kind: kind, p_task: task ?? null });
+    if (error) throw translate(error, 'errorNetwork');
+  }
+
+  async finishTeam(teamId: string, score: number, ending: string, endedAt: number) {
+    const { error } = await this.client.rpc('team_finish', { p_team: teamId, p_score: Math.round(score), p_ending: ending, p_ended_at: endedAt });
+    if (error) throw translate(error, 'errorNetwork');
+  }
+
+  async teamSummary(teamId: string): Promise<TeamSummary> {
+    const { data, error } = await this.client.rpc('team_summary', { p_team: teamId });
+    if (error) throw translate(error, 'errorNetwork');
+    const raw = (data ?? {}) as {
+      distance_m?: number | null;
+      teams?: number;
+      finished?: { team: string; score: number }[];
+      first_escape_team?: string | null;
+      first_puzzle_team?: string | null;
+      most_distance_team?: string | null;
+      most_photos_team?: string | null;
+    };
+    return {
+      distance: typeof raw.distance_m === 'number' ? raw.distance_m : null,
+      teams: Number(raw.teams) || 0,
+      finished: (raw.finished ?? []).map((f) => ({ team: f.team, score: Number(f.score) || 0 })),
+      firstEscapeTeam: raw.first_escape_team ?? null,
+      firstPuzzleTeam: raw.first_puzzle_team ?? null,
+      mostDistanceTeam: raw.most_distance_team ?? null,
+      mostPhotosTeam: raw.most_photos_team ?? null,
     };
   }
 
@@ -298,4 +340,31 @@ export class SupabaseBackend implements Backend {
     if (error) throw translate(error, 'errorNetwork');
     return (data as { game_version_id: string }).game_version_id;
   }
+}
+
+/** Nieuwsflits zoals de database hem geeft (news_json). */
+export interface NewsRow {
+  id: string;
+  kind: 'leader' | 'escaped' | 'puzzle';
+  team_id?: string | null;
+  team_name?: string | null;
+  task?: string | null;
+  icon?: string | null;
+  title?: Text | null;
+  body?: Text | null;
+  sender_name?: string | null;
+  n?: number | string | null;
+  at: number | string;
+}
+
+export function toNewsSignal(row: NewsRow): NewsSignal {
+  const out: NewsSignal = { id: row.id, kind: row.kind, at: Number(row.at) };
+  if (row.team_id) out.teamId = row.team_id;
+  if (row.team_name) out.teamName = row.team_name;
+  if (row.task) out.task = row.task;
+  if (row.icon) out.icon = row.icon;
+  if (row.title && Object.keys(row.title).length) out.title = row.title;
+  if (row.body && Object.keys(row.body).length) out.body = row.body;
+  if (row.n !== null && row.n !== undefined) out.n = Number(row.n);
+  return out;
 }

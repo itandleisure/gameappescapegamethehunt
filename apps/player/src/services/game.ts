@@ -7,6 +7,7 @@ import { SupabaseBackend } from '../core/supabase-backend';
 import { alertHunter } from './alerts';
 import { logIssue, setLogContext } from './diagnostics';
 import { readFile } from './read-file';
+import { buzzNews } from './siren';
 import { supabase } from './supabase';
 
 /**
@@ -29,6 +30,10 @@ const deps: ControllerDeps = {
     const title = msg(lang, notice.own ? 'caughtOwnTitle' : 'caughtTitle');
     const body = notice.own ? msg(lang, 'caughtOwnBody', { points: notice.points }) : msg(lang, 'caughtBody', { team: notice.teamName });
     void alertHunter(title, body);
+  },
+  // Nieuwsflits: kort trillen (alleen met de app open; nieuws is nooit dringend).
+  onNews: () => {
+    void buzzNews();
   },
 };
 

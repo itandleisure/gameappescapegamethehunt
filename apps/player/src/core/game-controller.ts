@@ -2,20 +2,28 @@ import {
   LocationGate,
   PositionUploader,
   DEFAULT_HUNTER_ALERT_RADIUS,
+  TIME_LEFT_NOTICE_MINUTES,
+  addDistance,
   canUseHint,
   computeState,
   distanceMeters,
+  gameTimeLimitMinutes,
+  isEscapeEnding,
+  puzzleTasks,
   reachableTargets,
+  type DistanceProgress,
   type AnswerValue,
   type GameEvent,
   type GamePackage,
   type GpsFix,
+  type NewsAuto,
   type TeamContext,
   type TeamState,
 } from '@hunt/engine';
 import { ClockSync } from './clock.js';
 import { Retry } from './outbox.js';
-import type { Backend, CaughtSignal, ChatMessage, KeyValueStore, LoadedGame, PendingPhoto, SessionInfo, TeamRecord } from './types.js';
+import { currentNews, endStats, fromSignal, mergeNews, type EndStats, type NewsFlash } from './news.js';
+import type { Backend, CaughtSignal, ChatMessage, KeyValueStore, LoadedGame, PendingPhoto, SessionInfo, TeamRecord, TeamSummary } from './types.js';
 
 export const STORAGE_KEY = 'hunt.game.v1';
 
@@ -46,6 +54,12 @@ export interface Snapshot {
   hunterAlerts: number;
   /** Een team is net gepakt (dit team zelf of een ander) en het team heeft de melding nog niet gezien. */
   caughtNotice: CaughtNotice | null;
+  /** Nieuwsflitsen van deze hunt, oudste eerst. */
+  news: NewsFlash[];
+  /** De flits die nu onderin het scherm hoort, of null. */
+  newsCurrent: NewsFlash | null;
+  /** Flitsen sinds het team de lijst Nieuws voor het laatst opende. */
+  newsUnread: number;
 }
 
 /** Melding "Team gepakt". */
@@ -86,6 +100,8 @@ export interface ControllerDeps {
   onHunterNear?: (team: TeamRecord) => void;
   /** Een team is net gepakt: trillen (met het scherm uit via een melding). */
   onCaught?: (team: TeamRecord, notice: CaughtNotice) => void;
+  /** Er is een nieuwsflits binnengekomen: kort trillen. */
+  onNews?: (team: TeamRecord, flash: NewsFlash) => void;
 }
 
 interface Saved {
@@ -111,6 +127,24 @@ interface Saved {
   caughtSince?: number;
   /** Melding "Team gepakt" die nog getoond moet worden. */
   caughtNotice?: CaughtNotice;
+  /** Nieuwsflitsen, oudste eerst. */
+  news?: NewsFlash[];
+  /** Servertijd (ms) van de nieuwste flits van de server. */
+  newsSince?: number;
+  /** Servertijd van de nieuwste flits toen het team de lijst Nieuws opende. */
+  newsSeenAt?: number;
+  /** Welke automatische flitsen aan staan (van de server). */
+  newsAuto?: Partial<NewsAuto>;
+  /** Nieuws over dit team dat al gemeld is: 'escaped' en 'puzzle:<opdracht>'. */
+  newsReported?: string[];
+  /** De flits "Nog 10 minuten" is er al geweest. */
+  timeLeftShown?: boolean;
+  /** Score, einde en eindtijd zijn bij de server gemeld. */
+  finishReported?: boolean;
+  /** Afgelegde afstand volgens deze telefoon. */
+  distance?: DistanceProgress;
+  /** Laatst opgehaalde gegevens voor het eindscherm. */
+  summary?: TeamSummary;
 }
 
 type Listener = (snapshot: Snapshot) => void;
@@ -139,6 +173,7 @@ export class GameController {
   private readonly photoRetry = new Retry();
   private readonly positionRetry = new Retry();
   private readonly chatRetry = new Retry();
+  private readonly newsRetry = new Retry();
   private lastChatAt = 0;
   private lastChatFullAt = 0;
   private readonly listeners = new Set<Listener>();
@@ -257,6 +292,9 @@ export class GameController {
       hunterNear: this.hunterNear && this.device() - this.hunterCheckedAt < HUNTER_STALE_MS,
       hunterAlerts: this.hunterAlerts,
       caughtNotice: this.data.caughtNotice ?? null,
+      news: this.data.news ?? [],
+      newsCurrent: currentNews(this.data.news ?? [], now),
+      newsUnread: (this.data.news ?? []).filter((n) => n.at > (this.data.newsSeenAt ?? 0)).length,
     };
   }
 
@@ -281,6 +319,7 @@ export class GameController {
 
     const state = computeState(this.game, ctx, this.data.events, serverFix.at);
     if (state.ended) return [];
+    this.data.distance = addDistance(this.data.distance ?? { meters: 0 }, serverFix, this.game.gps?.maxAccuracy ?? 30);
     const targets = reachableTargets(this.game, ctx, state).filter((x) => !((this.snoozed.get(x.task) ?? 0) > serverFix.at));
     const reached = this.gate.feed(serverFix, targets);
     for (const task of reached) {
@@ -516,6 +555,8 @@ export class GameController {
       await this.flushEvents(device);
       await this.flushPositions();
       await this.checkSignals(device);
+      await this.flushNews(device);
+      this.checkTimeLeft();
       await this.flushPhotos(device);
       await this.syncChat(device);
       if (device - this.lastPullAt >= 30_000) {
@@ -620,7 +661,7 @@ export class GameController {
     this.lastHunterCheckAt = device;
     try {
       const since = this.data.caughtSince ?? ctx.startedAt;
-      const signals = await this.deps.backend.teamSignals(this.data.team.id, since);
+      const signals = await this.deps.backend.teamSignals(this.data.team.id, since, this.data.newsSince ?? ctx.startedAt);
       const near = signals.hunterNear && this.hunterAlertRadius > 0;
       // Lang geen bereik gehad: telt als "weg geweest", dus weer trillen als hij er nog is.
       if (device - this.hunterCheckedAt >= HUNTER_STALE_MS) this.hunterNear = false;
@@ -632,6 +673,8 @@ export class GameController {
       }
       this.hunterNear = near;
       if (signals.caught.length > 0) await this.onCaughtSignals(signals.caught);
+      if (signals.newsAuto) this.data.newsAuto = signals.newsAuto;
+      if (signals.news?.length) await this.addNews(signals.news.map(fromSignal));
     } catch {
       // Geen bereik: na HUNTER_STALE_MS verdwijnt de waarschuwing vanzelf van het scherm.
     }
@@ -655,6 +698,137 @@ export class GameController {
     }
     await this.save();
     this.emit();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Nieuwsflitsen
+  // ---------------------------------------------------------------------------
+
+  private async addNews(flashes: NewsFlash[]) {
+    const before = new Set((this.data.news ?? []).map((n) => n.id));
+    const now = this.now();
+    this.data.news = mergeNews(this.data.news ?? [], flashes, now);
+    for (const f of flashes) if (f.kind !== 'time') this.data.newsSince = Math.max(this.data.newsSince ?? 0, f.at);
+    const added = this.data.news.filter((n) => !before.has(n.id) && !n.shown);
+    // Meerdere tegelijk: één keer trillen.
+    if (added.length) this.deps.onNews?.(this.data.team, added[added.length - 1]!);
+    await this.save();
+    this.emit();
+  }
+
+  /** De flits is weggetikt of vanzelf verdwenen. */
+  async dismissNews(id: string): Promise<void> {
+    const flash = this.data.news?.find((n) => n.id === id);
+    if (!flash || flash.shown) return;
+    this.data.news = this.data.news!.map((n) => (n.id === id ? { ...n, shown: true } : n));
+    await this.save();
+    this.emit();
+  }
+
+  /** Het team heeft de lijst Nieuws bekeken. */
+  async markNewsRead(): Promise<void> {
+    const latest = (this.data.news ?? []).reduce((max, n) => Math.max(max, n.at), 0);
+    if (latest <= (this.data.newsSeenAt ?? 0)) return;
+    this.data.newsSeenAt = latest;
+    // Wat in de lijst staat, hoeft niet meer onderin.
+    this.data.news = (this.data.news ?? []).map((n) => (n.shown ? n : { ...n, shown: true }));
+    await this.save();
+    this.emit();
+  }
+
+  /**
+   * "Nog 10 minuten": rekent de app zelf uit, ook zonder bereik, bij een spel
+   * dat na een vaste tijd eindigt. Eén keer per spel.
+   */
+  private checkTimeLeft() {
+    if (this.data.timeLeftShown || this.data.newsAuto?.timeLeft === false) return;
+    const ctx = this.context;
+    const limit = gameTimeLimitMinutes(this.game);
+    if (!ctx || limit === undefined || limit <= TIME_LEFT_NOTICE_MINUTES) return;
+    const now = this.now();
+    const left = ctx.startedAt + limit * 60_000 - now;
+    if (left <= 0 || left > TIME_LEFT_NOTICE_MINUTES * 60_000) return;
+    if (computeState(this.game, ctx, this.data.events, now).ended) return;
+    this.data.timeLeftShown = true;
+    void this.addNews([{ id: `tijd-${this.data.team.id}`, kind: 'time', at: now, minutes: Math.ceil(left / 60_000) }]);
+  }
+
+  /**
+   * Nieuws over dit team voor de andere teams (puzzel opgelost, extractiepunt
+   * bereikt), en aan het einde de score en eindtijd. Gaat mee zodra er bereik
+   * is; nieuws van langer dan 10 minuten geleden wordt niet meer gemeld.
+   */
+  private async flushNews(device: number, force = false) {
+    const { backend } = this.deps;
+    const ctx = this.context;
+    if (!ctx || (!force && !this.newsRetry.ready(device)) || (!backend.reportNews && !backend.finishTeam)) return;
+    const now = this.now();
+    const state = computeState(this.game, ctx, this.data.events, now);
+    const reported = new Set(this.data.newsReported ?? []);
+    const due: { key: string; kind: 'escaped' | 'puzzle'; task?: string; at: number }[] = [];
+    for (const task of puzzleTasks(this.game)) {
+      const ts = state.tasks[task.id];
+      if (ts?.correct === true && !reported.has(`puzzle:${task.id}`)) due.push({ key: `puzzle:${task.id}`, kind: 'puzzle', task: task.id, at: ts.completedAt ?? now });
+    }
+    if (state.ended && isEscapeEnding(this.game, state.ended.ending) && !reported.has('escaped')) {
+      due.push({ key: 'escaped', kind: 'escaped', at: state.ended.at });
+    }
+    const finish = state.ended && !this.data.finishReported && backend.finishTeam ? state.ended : null;
+    if (due.length === 0 && !finish) return;
+    try {
+      for (const item of due) {
+        if (backend.reportNews && now - item.at <= 10 * 60_000) await backend.reportNews(this.data.team.id, item.kind, item.task);
+        reported.add(item.key);
+        this.data.newsReported = [...reported];
+      }
+      if (finish) {
+        await backend.finishTeam!(this.data.team.id, state.score, finish.ending, finish.at);
+        this.data.finishReported = true;
+      }
+      this.newsRetry.succeeded();
+    } catch {
+      this.newsRetry.failed(device);
+    }
+    await this.save();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Eindscherm
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Haalt afstand, eindstand en records op voor het eindscherm. Zonder bereik
+   * blijft de laatst opgehaalde versie staan.
+   */
+  async loadSummary(): Promise<TeamSummary | null> {
+    if (!this.deps.backend.teamSummary) return this.data.summary ?? null;
+    try {
+      // Eerst de eigen eindstand melden, zodat die in de ranglijst staat.
+      await this.flushNews(this.device(), true);
+      this.data.summary = await this.deps.backend.teamSummary(this.data.team.id);
+      await this.save();
+      this.emit();
+    } catch {
+      // Geen bereik: met wat er is.
+    }
+    return this.data.summary ?? null;
+  }
+
+  /** Cijfers en badges voor het eindscherm, of null zolang het spel loopt. */
+  endStats(): EndStats | null {
+    const ctx = this.context;
+    if (!ctx) return null;
+    const state = computeState(this.game, ctx, this.data.events, this.now());
+    if (!state.ended) return null;
+    return endStats({
+      game: this.game,
+      state,
+      events: this.data.events,
+      teamId: this.data.team.id,
+      startedAt: ctx.startedAt,
+      localMeters: this.data.distance?.meters ?? 0,
+      summary: this.data.summary ?? null,
+    });
   }
 
   /** Het team heeft de melding "Team gepakt" gezien. */

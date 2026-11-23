@@ -1,5 +1,6 @@
 import type { GameEvent, GamePackage, GpsFix } from '@hunt/engine';
-import type { Backend, CaughtSignal, ChatMessage, PendingPhoto, TeamRecord } from '../src/core/types.js';
+import type { NewsAuto } from '@hunt/engine';
+import type { Backend, CaughtSignal, ChatMessage, NewsSignal, PendingPhoto, TeamRecord, TeamSummary } from '../src/core/types.js';
 import { mediaExtension } from '../src/core/supabase-backend.js';
 
 /** Nep-server voor tests: houdt alles in het geheugen en kan "offline" gaan. */
@@ -113,10 +114,40 @@ export class FakeBackend implements Backend {
   /** Teams die gepakt zijn (de spelleider meldde het). */
   caught: CaughtSignal[] = [];
 
-  async teamSignals(_teamId: string, since: number) {
+  /** Nieuwsflitsen van de hunt, en welke automatische aan staan. */
+  news: NewsSignal[] = [];
+  newsAuto: Partial<NewsAuto> = { escaped: true, puzzle: true, timeLeft: true };
+  /** Nieuws dat teams zelf meldden, en hun eindstand. */
+  reported: { teamId: string; kind: 'escaped' | 'puzzle'; task?: string }[] = [];
+  finished = new Map<string, { score: number; ending: string; endedAt: number }>();
+  summary: Omit<TeamSummary, 'finished'> = { distance: 0, teams: 1 };
+
+  async teamSignals(teamId: string, since: number, newsSince?: number) {
     this.guard();
     this.hunterChecks += 1;
-    return { hunterNear: this.hunterNear, caught: this.caught.filter((c) => c.at > since) };
+    return {
+      hunterNear: this.hunterNear,
+      caught: this.caught.filter((c) => c.at > since),
+      ...(newsSince === undefined
+        ? {}
+        : { news: this.news.filter((n) => n.at > newsSince && n.teamId !== teamId), newsAuto: this.newsAuto }),
+    };
+  }
+
+  async reportNews(teamId: string, kind: 'escaped' | 'puzzle', task?: string) {
+    this.guard();
+    if (this.reported.some((r) => r.teamId === teamId && r.kind === kind && r.task === task)) return;
+    this.reported.push({ teamId, kind, ...(task ? { task } : {}) });
+  }
+
+  async finishTeam(teamId: string, score: number, ending: string, endedAt: number) {
+    this.guard();
+    this.finished.set(teamId, { score, ending, endedAt });
+  }
+
+  async teamSummary(_teamId: string): Promise<TeamSummary> {
+    this.guard();
+    return { ...this.summary, finished: [...this.finished].map(([team, f]) => ({ team, score: f.score })) };
   }
 
   async recordPositions(_teamId: string, fixes: GpsFix[]) {

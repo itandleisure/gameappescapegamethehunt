@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { computeState, puzzleTasks, t, type GamePackage } from '@hunt/engine';
+import { computeState, DEFAULT_NEWS_PRESETS, puzzleTasks, t, type GamePackage, type NewsPreset, type Text } from '@hunt/engine';
 import { fromEventRow, type EventRow } from './supabase-backend.js';
 
 /**
@@ -72,6 +72,56 @@ export interface LeaderMessage {
   own?: boolean;
   /** Foto bij het bericht (pad in de bucket photobooks). */
   photo_path?: string | null;
+}
+
+/** Een nieuwsflits die een spelleider verstuurde. */
+export interface LeaderNews {
+  id: string;
+  icon: string | null;
+  title: Text;
+  body: Text;
+  sender_name: string | null;
+  /** ms */
+  at: number;
+}
+
+export interface LeaderNewsData {
+  /** Snelknoppen uit het beheer (Instellingen › Nieuwsflitsen), anders de startset. */
+  presets: NewsPreset[];
+  /** Laatst verstuurde flitsen, nieuwste eerst. */
+  sent: LeaderNews[];
+}
+
+/**
+ * Een eigen tekst van de spelleider in alle talen van het spel: via de
+ * vertaaldienst van het beheer. Lukt dat niet, dan alleen de getypte taal
+ * (`translated: false`); teams in een andere taal zien die dan.
+ */
+export async function translateNews(
+  post: (body: unknown) => Promise<{ ok: boolean; json: () => Promise<unknown> }>,
+  source: string,
+  targets: readonly string[],
+  title: string,
+  body: string,
+): Promise<{ title: Text; body: Text; translated: boolean }> {
+  const out = { title: { [source]: title } as Record<string, string>, body: (body ? { [source]: body } : {}) as Record<string, string> };
+  const rest = targets.filter((l) => l !== source);
+  if (rest.length === 0) return { title: out.title as Text, body: out.body as Text, translated: true };
+  try {
+    const res = await post({ source, targets: rest, texts: body ? { title, body } : { title } });
+    if (!res.ok) throw new Error('vertalen');
+    const data = (await res.json()) as { translations?: Record<string, { title?: string; body?: string }> };
+    let complete = true;
+    for (const l of rest) {
+      const tr = data.translations?.[l];
+      if (tr?.title) out.title[l] = tr.title;
+      else complete = false;
+      if (body && tr?.body) out.body[l] = tr.body;
+    }
+    return { title: out.title as Text, body: out.body as Text, translated: complete };
+  } catch {
+    return { title: out.title as Text, body: out.body as Text, translated: false };
+  }
 }
 
 /** Teamchat (alle teams en de hunters) of de onderlinge chat van de hunters. */
@@ -271,6 +321,39 @@ export class LeaderApi {
     const { data, error } = await this.client.rpc('leader_send_photo', { p_session: sessionId, p_photo: photoId, p_body: text });
     if (error) throw leaderError({ code: error.code, message: `bericht: ${error.code ?? ''} ${error.message}` });
     return data as LeaderMessage;
+  }
+
+  async news(sessionId: string): Promise<LeaderNewsData> {
+    const { data, error } = await this.client.rpc('leader_news', { p_session: sessionId });
+    if (error) throw leaderError(error);
+    const row = data as { presets: NewsPreset[] | null; sent: LeaderNews[] };
+    return { presets: row.presets ?? DEFAULT_NEWS_PRESETS, sent: row.sent ?? [] };
+  }
+
+  async sendNews(sessionId: string, icon: string, title: Text, body: Text = {}): Promise<LeaderNews> {
+    const { data, error } = await this.client.rpc('leader_send_news', { p_session: sessionId, p_icon: icon, p_title: title, p_body: body });
+    if (error) throw leaderError(error);
+    return data as LeaderNews;
+  }
+
+  /** Eigen tekst vertalen via het beheer (de spelleider mag dat voor zijn eigen hunt). */
+  async translateNews(adminUrl: string, sessionId: string, source: string, targets: readonly string[], title: string, body: string) {
+    const { data } = await this.client.auth.getSession();
+    const token = data.session?.access_token;
+    return translateNews(
+      async (payload) => {
+        if (!token) throw new Error('niet ingelogd');
+        return fetch(`${adminUrl}/api/vertalen`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+          body: JSON.stringify({ ...(payload as object), session: sessionId }),
+        });
+      },
+      source,
+      targets,
+      title,
+      body,
+    );
   }
 
   async leave(sessionId: string) {

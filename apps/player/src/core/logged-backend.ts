@@ -16,6 +16,9 @@ const KINDS: Partial<Record<keyof Backend, string>> = {
   teamSignals: 'signalen_ophalen_mislukt',
   loadGame: 'spel_laden_mislukt',
   sendChat: 'chat_versturen_mislukt',
+  reportNews: 'nieuws_melden_mislukt',
+  finishTeam: 'einde_melden_mislukt',
+  teamSummary: 'eindstand_ophalen_mislukt',
 };
 
 /** Fouten die bij de speler horen (verkeerde code, naam bezet): geen storing, wel handig om te zien. */

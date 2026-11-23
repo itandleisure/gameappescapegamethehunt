@@ -11,7 +11,7 @@ import { leeuwarden, leeuwardenPoints, PUZZLES, theHuntBase } from '../../../pac
 export type Scene = 'join' | 'teamphoto' | 'teamcode' | 'play' | 'task' | 'chat' | 'end';
 export type ImageKind = 'none' | 'normal' | 'huge' | 'tiny' | 'wide' | 'tall' | 'broken';
 
-export function currentScene(): { scene: Scene; img: ImageKind; long: boolean; code: boolean; video: boolean } {
+export function currentScene(): { scene: Scene; img: ImageKind; long: boolean; code: boolean; video: boolean; news: number } {
   const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
   return {
     scene: (params.get('scene') as Scene | null) ?? 'join',
@@ -21,6 +21,8 @@ export function currentScene(): { scene: Scene; img: ImageKind; long: boolean; c
     code: params.get('code') === '1',
     // De fotomissie als video-opdracht.
     video: params.get('video') === '1',
+    // Nieuwsflitsen: 1 = een flits onderin, 2 = alleen oudere flitsen (voor de lijst Nieuws).
+    news: Number(params.get('news') ?? 0),
   };
 }
 

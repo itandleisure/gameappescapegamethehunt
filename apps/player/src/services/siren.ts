@@ -7,3 +7,8 @@ import * as Haptics from 'expo-haptics';
 export async function playSiren(): Promise<void> {
   await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => undefined);
 }
+
+/** Nieuwsflits: één kort tikje, zachter dan bij een opdracht. */
+export async function buzzNews(): Promise<void> {
+  await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
+}

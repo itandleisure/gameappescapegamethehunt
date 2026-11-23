@@ -3,6 +3,33 @@ import type { GamePackage } from '@hunt/engine';
 import { applyGameSettings, countrySettings, DEFAULT_SETTINGS, parseSettings, withContact } from '../src/lib/org-settings.js';
 import { bookText, defaultItems, footerText, mailBody } from '../src/lib/photobook.js';
 
+describe('nieuwsflitsen', () => {
+  it('zonder eigen knoppen de startset uit de app (null), automatische flitsen standaard aan', () => {
+    expect(parseSettings({}).news).toEqual({ presets: null, auto: { escaped: true, puzzle: true, timeLeft: true } });
+  });
+
+  it('leest eigen knoppen en laat lege of foute weg', () => {
+    const s = parseSettings({
+      news: {
+        auto: { puzzle: false, timeLeft: 'nee' },
+        presets: [
+          { id: 'a', icon: '🔥', title: { nl: ' Hunters op jacht ', xx: 'onbekend' }, body: { nl: '' } },
+          { id: 'a', title: { en: 'Same id' } },
+          { id: 'leeg', title: { nl: '  ' } },
+          'onzin',
+        ],
+      },
+    });
+    expect(s.news.auto).toEqual({ escaped: true, puzzle: false, timeLeft: true });
+    expect(s.news.presets).toEqual([
+      { id: 'a', icon: '🔥', title: { nl: 'Hunters op jacht' } },
+      { id: 'a-2', icon: '📣', title: { en: 'Same id' } },
+    ]);
+    // Bewust geen knoppen: een lege lijst blijft leeg.
+    expect(parseSettings({ news: { presets: [] } }).news.presets).toEqual([]);
+  });
+});
+
 describe('algemene instellingen', () => {
   it('vult ontbrekende of foute waarden met de standaard', () => {
     expect(parseSettings(null)).toEqual(DEFAULT_SETTINGS);
