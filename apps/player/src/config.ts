@@ -19,3 +19,6 @@ export const LOCATION_TASK = 'hunt-location';
 
 /** Privacyverklaring (pagina /privacy van de beheeromgeving), gelinkt vanaf het aanmeldscherm. */
 export const PRIVACY_URL = 'https://escapegamethehunt.badassgames.nl/privacy';
+
+/** De beheeromgeving: vertaalt een eigen nieuwsflits van de spelleider (POST /api/vertalen). */
+export const ADMIN_URL = 'https://escapegamethehunt.badassgames.nl';

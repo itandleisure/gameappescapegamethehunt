@@ -1,4 +1,4 @@
-import type { GameEvent, GamePackage, GpsFix } from '@hunt/engine';
+import type { GameEvent, GamePackage, GpsFix, HuntRecords, NewsAuto, Text } from '@hunt/engine';
 
 /** Een team zoals de server het teruggeeft. Tijden in ms sinds epoch (servertijd). */
 export interface TeamRecord {
@@ -72,9 +72,44 @@ export interface CaughtSignal {
   at: number;
 }
 
+/**
+ * Nieuwsflits van de server: van de spelleider, of automatisch over een ander
+ * team (extractiepunt bereikt, puzzel opgelost).
+ */
+export interface NewsSignal {
+  id: string;
+  kind: 'leader' | 'escaped' | 'puzzle';
+  teamId?: string | null;
+  teamName?: string | null;
+  /** De puzzel (opdrachtsleutel) bij 'puzzle'. */
+  task?: string | null;
+  /** Van de spelleider: emoji, titel en tekst per taal. */
+  icon?: string | null;
+  title?: Text;
+  body?: Text;
+  /** Het hoeveelste team met dit nieuws (1 = als eerste). */
+  n?: number | null;
+  /** Servertijd (ms). */
+  at: number;
+}
+
 export interface TeamSignals {
   hunterNear: boolean;
   caught: CaughtSignal[];
+  /** Alleen als de app `newsSince` meegaf. */
+  news?: NewsSignal[];
+  /** Welke automatische flitsen aan staan. */
+  newsAuto?: Partial<NewsAuto>;
+}
+
+/** Wat de server weet voor het eindscherm (zie team_summary). */
+export interface TeamSummary extends HuntRecords {
+  /** Afgelegde afstand volgens de GPS-route op de server, in meters. */
+  distance: number | null;
+  /** Aantal gestarte teams. */
+  teams: number;
+  /** Teams die klaar zijn, met hun eindscore. */
+  finished: { team: string; score: number }[];
 }
 
 /**
@@ -102,7 +137,13 @@ export interface Backend {
    * vergelijkt met de laatst verstuurde positie van het team), en welke teams
    * zijn na `since` (servertijd in ms) gepakt. Optioneel.
    */
-  teamSignals?(teamId: string, since: number): Promise<TeamSignals>;
+  teamSignals?(teamId: string, since: number, newsSince?: number): Promise<TeamSignals>;
+  /** Meldt nieuws over dit team voor de andere teams: extractiepunt bereikt of een puzzel opgelost. Optioneel. */
+  reportNews?(teamId: string, kind: 'escaped' | 'puzzle', task?: string): Promise<void>;
+  /** Aan het einde: score, einde en eindtijd (servertijd in ms). Optioneel. */
+  finishTeam?(teamId: string, score: number, ending: string, endedAt: number): Promise<void>;
+  /** Voor het eindscherm: afstand, eindstand en wie de eerste of de meeste was. Optioneel. */
+  teamSummary?(teamId: string): Promise<TeamSummary>;
   /** Uploadt een foto en registreert hem; geeft het opslagpad terug. */
   uploadPhoto(teamId: string, photo: PendingPhoto): Promise<string>;
   /** Servertijd in ms. */

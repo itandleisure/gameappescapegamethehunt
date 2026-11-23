@@ -10,3 +10,4 @@ export * from './stats.js';
 export * from './gps-upload.js';
 export * from './richtext.js';
 export * from './map-provider.js';
+export * from './news.js';

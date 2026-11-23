@@ -1,4 +1,4 @@
-import { boundaryPath, DEFAULT_BOUNDARY_COLOR, DEFAULT_CAUGHT_PENALTY, outsideShade } from '@hunt/engine';
+import { boundaryPath, DEFAULT_BOUNDARY_COLOR, DEFAULT_CAUGHT_PENALTY, NEWS_BODY_MAX, NEWS_TITLE_MAX, outsideShade, t as tx, type Text as LangText } from '@hunt/engine';
 import * as Clipboard from 'expo-clipboard';
 import * as Crypto from 'expo-crypto';
 import { Redirect, router } from 'expo-router';
@@ -31,11 +31,14 @@ import {
   type LeaderData,
   type LeaderChannel,
   type LeaderMessage,
+  type LeaderNews,
+  type LeaderNewsData,
   type LeaderTeam,
   type PuzzleProgress,
 } from '../src/core/leader';
 import { leaderMsg, type LeaderKey } from '../src/core/leader-i18n';
 import { playAreaBounds } from '../src/core/play-area';
+import { ADMIN_URL } from '../src/config';
 import { mapStyleChoice } from '../src/core/view';
 import { leaderApi, leaveLeader, useLeader } from '../src/services/leader';
 import { readFile } from '../src/services/read-file';
@@ -54,8 +57,8 @@ const REFRESH_MS = 10_000;
 const CHAT_REFRESH_MS = 5_000;
 const CHAT_MAX_LENGTH = 500;
 
-type Tab = 'map' | 'teams' | 'chat' | 'hunters';
-const TAB_LABEL: Record<Tab, LeaderKey> = { map: 'leaderMap', teams: 'leaderTeams', chat: 'leaderChat', hunters: 'leaderHunterChat' };
+type Tab = 'map' | 'teams' | 'news' | 'chat' | 'hunters';
+const TAB_LABEL: Record<Tab, LeaderKey> = { map: 'leaderMap', teams: 'leaderTeams', news: 'leaderNews', chat: 'leaderChat', hunters: 'leaderHunterChat' };
 
 function ago(iso: string | null, now: number): string | null {
   if (!iso) return null;
@@ -193,12 +196,13 @@ export default function LeaderScreen() {
       <View style={styles.flex}>
         {tab === 'map' ? <LeaderMap data={data} position={position} now={now} /> : null}
         {tab === 'teams' ? <LeaderTeams data={data} now={now} t={t} onChange={load} /> : null}
+        {tab === 'news' ? <LeaderNewsTab sessionId={leader.sessionId} data={data} t={t} lang={lang} /> : null}
         {tab === 'chat' && data ? <LeaderChat key="teams" channel="teams" sessionId={leader.sessionId} data={data} t={t} lang={lang} /> : null}
         {tab === 'hunters' && data ? <LeaderChat key="hunters" channel="hunters" sessionId={leader.sessionId} data={data} t={t} lang={lang} /> : null}
       </View>
 
       <SafeAreaView edges={['bottom']} style={styles.tabs}>
-        {(['map', 'teams', 'chat', 'hunters'] as const).map((id) => (
+        {(['map', 'teams', 'news', 'chat', 'hunters'] as const).map((id) => (
           <Pressable
             key={id}
             accessibilityRole="tab"
@@ -206,7 +210,7 @@ export default function LeaderScreen() {
             onPress={() => setTab(id)}
             style={[styles.tab, tab === id && styles.tabActive]}
           >
-            <Text style={[styles.tabText, tab === id && styles.tabTextActive]}>
+            <Text style={[styles.tabText, tab === id && styles.tabTextActive]} numberOfLines={1} adjustsFontSizeToFit>
               {t(TAB_LABEL[id])}
             </Text>
           </Pressable>
@@ -611,6 +615,178 @@ function LeaderChat({
   );
 }
 
+/** Een nieuwsflits die klaarstaat om te versturen, ter controle. */
+interface NewsDraft {
+  icon: string;
+  title: LangText;
+  body: LangText;
+  /** Eigen tekst: nog vertalen vóór het versturen. */
+  own?: { title: string; body: string };
+}
+
+/**
+ * Nieuwsflitsen naar alle teams: snelknoppen uit het beheer (al vertaald) en
+ * een eigen bericht dat de app eerst laat vertalen. Elke flits eerst ter
+ * controle, dan pas versturen.
+ */
+function LeaderNewsTab({
+  sessionId,
+  data,
+  t,
+  lang,
+}: {
+  sessionId: string;
+  data: LeaderData | null;
+  t: (key: LeaderKey, vars?: Record<string, string | number>) => string;
+  lang: string;
+}) {
+  const [news, setNews] = useState<LeaderNewsData | null>(null);
+  const [draft, setDraft] = useState<NewsDraft | null>(null);
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<LeaderKey | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const game = data?.game ?? null;
+  const fallback = game?.defaultLanguage ?? 'nl';
+  const label = (text: LangText | undefined) => tx(text, lang, fallback);
+  const time = new Intl.DateTimeFormat(lang, { hour: '2-digit', minute: '2-digit', timeZone: data?.session.timezone });
+
+  const load = useCallback(async () => {
+    try {
+      setNews(await leaderApi.news(sessionId));
+      setError(null);
+    } catch (e) {
+      setError(e instanceof LeaderError ? e.key : 'errorGeneric');
+    }
+  }, [sessionId]);
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const send = async (d: NewsDraft) => {
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      let { title: ti, body: bo } = d;
+      let translated = true;
+      if (d.own) {
+        // Getypt in de taal van de telefoon; die moet wel een taal van het spel zijn, anders de hoofdtaal.
+        const languages: string[] = game?.languages ?? [fallback];
+        const source = languages.includes(lang) ? lang : fallback;
+        const result = await leaderApi.translateNews(ADMIN_URL, sessionId, source, languages, d.own.title, d.own.body);
+        ({ title: ti, body: bo, translated } = result);
+      }
+      const row = await leaderApi.sendNews(sessionId, d.icon, ti, bo);
+      setNews((n) => (n ? { ...n, sent: [row, ...n.sent] } : n));
+      setDraft(null);
+      if (d.own) {
+        setTitle('');
+        setBody('');
+      }
+      setNotice(translated ? t('leaderNewsSent', { title: label(ti) }) : t('leaderNewsUntranslated'));
+    } catch (e) {
+      setError(e instanceof LeaderError ? e.key : 'errorGeneric');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const ownDraft = () => {
+    const ti = title.trim();
+    if (!ti) return;
+    setNotice(null);
+    setDraft({ icon: '📣', title: { [lang]: ti } as LangText, body: (body.trim() ? { [lang]: body.trim() } : {}) as LangText, own: { title: ti, body: body.trim() } });
+  };
+
+  return (
+    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled">
+        <Body muted>{t('leaderNewsIntro')}</Body>
+        {error ? <Banner tone="danger">{t(error)}</Banner> : null}
+        {notice ? <Banner>{notice}</Banner> : null}
+
+        {draft ? (
+          <View style={[styles.card, styles.newsDraft]}>
+            <Text style={styles.section}>{t('leaderNewsPreview')}</Text>
+            <View style={styles.cardRow}>
+              <Text style={styles.newsIcon}>{draft.icon}</Text>
+              <View style={styles.flex}>
+                <Text style={styles.teamName}>{label(draft.title)}</Text>
+                {label(draft.body) ? <Text style={styles.muted}>{label(draft.body)}</Text> : null}
+              </View>
+            </View>
+            <Button label={busy ? t('leaderNewsSending') : t('leaderNewsSend')} disabled={busy} onPress={() => void send(draft)} />
+            <Button kind="secondary" label={t('leaderCancel')} disabled={busy} onPress={() => setDraft(null)} />
+          </View>
+        ) : null}
+
+        <Text style={styles.section}>{t('leaderNewsQuick')}</Text>
+        {(news?.presets ?? []).map((p) => (
+          <Pressable
+            key={p.id}
+            accessibilityRole="button"
+            disabled={busy}
+            style={[styles.card, styles.cardRow]}
+            onPress={() => {
+              setNotice(null);
+              setDraft({ icon: p.icon, title: p.title, body: p.body ?? {} });
+            }}
+          >
+            <Text style={styles.newsIcon}>{p.icon}</Text>
+            <View style={styles.flex}>
+              <Text style={styles.teamName}>{label(p.title)}</Text>
+              {label(p.body) ? <Text style={styles.muted}>{label(p.body)}</Text> : null}
+            </View>
+          </Pressable>
+        ))}
+        <Text style={styles.muted}>{t('leaderNewsEdit')}</Text>
+
+        <Text style={styles.section}>{t('leaderNewsOwn')}</Text>
+        <View style={styles.card}>
+          <TextInput
+            style={styles.newsInput}
+            value={title}
+            onChangeText={setTitle}
+            placeholder={t('leaderNewsTitle')}
+            placeholderTextColor={colors.textMuted}
+            maxLength={NEWS_TITLE_MAX}
+            accessibilityLabel={t('leaderNewsTitle')}
+          />
+          <TextInput
+            style={styles.newsInput}
+            value={body}
+            onChangeText={setBody}
+            placeholder={t('leaderNewsBody')}
+            placeholderTextColor={colors.textMuted}
+            maxLength={NEWS_BODY_MAX}
+            multiline
+            accessibilityLabel={t('leaderNewsBody')}
+          />
+          <Button label={t('leaderChatSend')} disabled={!title.trim() || busy} onPress={ownDraft} />
+        </View>
+
+        <Text style={styles.section}>{t('leaderNewsHistory')}</Text>
+        {news && news.sent.length === 0 ? <Body muted>{t('leaderNewsEmpty')}</Body> : null}
+        {(news?.sent ?? []).map((n: LeaderNews) => (
+          <View key={n.id} style={[styles.card, styles.cardRow]}>
+            <Text style={styles.newsIcon}>{n.icon ?? '📣'}</Text>
+            <View style={styles.flex}>
+              <Text style={styles.teamName}>{label(n.title)}</Text>
+              {label(n.body) ? <Text style={styles.muted}>{label(n.body)}</Text> : null}
+              <Text style={styles.muted}>
+                {time.format(new Date(n.at))}
+                {n.sender_name ? ` · ${n.sender_name}` : ''}
+              </Text>
+            </View>
+          </View>
+        ))}
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   flex: { flex: 1 },
@@ -624,7 +800,7 @@ const styles = StyleSheet.create({
   tabs: { flexDirection: 'row', backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border },
   tab: { flex: 1, minHeight: 52, alignItems: 'center', justifyContent: 'center' },
   tabActive: { borderTopWidth: 3, borderTopColor: colors.accent },
-  tabText: { color: colors.textMuted, fontSize: 15, fontWeight: '600' },
+  tabText: { color: colors.textMuted, fontSize: 14, fontWeight: '600', paddingHorizontal: 2 },
   tabTextActive: { color: colors.text },
   list: { padding: space.md, gap: space.sm, ...contentColumn },
   card: { backgroundColor: colors.surface, borderRadius: radius.md, padding: space.md, gap: space.sm },
@@ -711,4 +887,16 @@ const styles = StyleSheet.create({
   },
   photoButtonText: { fontSize: 22 },
   sendText: { color: colors.accentText, fontSize: 17, fontWeight: '700' },
+  newsDraft: { borderWidth: 2, borderColor: colors.accent },
+  newsIcon: { fontSize: 26, width: 36, textAlign: 'center' },
+  newsInput: {
+    minHeight: 48,
+    maxHeight: 120,
+    backgroundColor: colors.background,
+    color: colors.text,
+    borderRadius: radius.sm,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    fontSize: 17,
+  },
 });

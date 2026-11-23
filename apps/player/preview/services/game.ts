@@ -7,7 +7,7 @@ import { currentScene, previewGame, testImage } from '../scenes';
  * Schermvoorbeeld: vervangt src/services/game.ts. Zelfde functies, maar met
  * een nepserver in het geheugen en een spel in de toestand van de scène.
  */
-const { scene, img, long, code, video } = currentScene();
+const { scene, img, long, code, video, news } = currentScene();
 
 class PreviewBackend extends FakeBackend {
   override async serverTime() {
@@ -19,7 +19,9 @@ const backend = new PreviewBackend(previewGame(scene, img, long, code, video), D
 backend.testMode = scene === 'play';
 backend.teamChat = scene === 'chat' || scene === 'play';
 let n = 0;
-const deps: ControllerDeps = { backend, store: new MemoryStore(), newId: () => `voorbeeld-${++n}` };
+/** Klok van de telefoon iets vooruitzetten, zodat de app meteen weer bij de server kijkt (nieuwsflitsen). */
+let skew = 0;
+const deps: ControllerDeps = { backend, store: new MemoryStore(), newId: () => `voorbeeld-${++n}`, deviceNow: () => Date.now() + skew };
 
 let current: GameController | null = null;
 const watchers = new Set<(controller: GameController | null) => void>();
@@ -65,8 +67,27 @@ async function prepare(): Promise<GameController | null> {
     await controller.answer('puzzel-morse', { type: 'text', text: 'extractie' });
     await controller.answer('puzzel-stratenkaart', { type: 'text', text: 'Oldehove' });
   }
-  if (long) backend.offline = true;
+  if (news) {
+    const now = Date.now() + 1;
+    const teamName = long ? 'De Allerlangste Teamnaam Van Heel Nederland En Omstreken' : 'De Wolven';
+    backend.news.push(
+      { id: 'flits-1', kind: 'leader', icon: '🔥', title: { nl: 'Hunters op jacht' }, body: { nl: 'De Hunters zijn extra actief. Blijf uit het zicht!' }, at: now },
+      { id: 'flits-2', kind: 'escaped', teamId: 'team-9', teamName, n: 1, at: now + 1 },
+      { id: 'flits-3', kind: 'puzzle', teamId: 'team-8', teamName: 'Vossen', task: 'puzzel-morse', n: 2, at: now + 2 },
+    );
+    skew += 15_000;
+  }
+  if (scene === 'end') {
+    // Eindkaart: afstand en stand zoals de server ze geeft.
+    backend.summary = { distance: long ? 23_456 : 6_849, teams: 6, firstEscapeTeam: 'team-9', mostDistanceTeam: controller.team.id, mostPhotosTeam: controller.team.id };
+    backend.finished.set('team-9', { score: 9_999, ending: 'ontsnapt', endedAt: Date.now() });
+    backend.finished.set('team-8', { score: -50, ending: 'tijd-op', endedAt: Date.now() });
+  }
+  if (long && !news) backend.offline = true;
   await controller.tick();
+  // 2 = de flitsen zijn al voorbij geweest; de knop Nieuws staat er met het aantal ongelezen.
+  if (news === 2) for (const f of controller.snapshot().news) await controller.dismissNews(f.id);
+  if (scene === 'end') await controller.loadSummary();
   return controller;
 }
 

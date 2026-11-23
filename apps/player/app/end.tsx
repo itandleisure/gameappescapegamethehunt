@@ -9,6 +9,7 @@ import { mapStyleChoice } from '../src/core/view';
 import { onFix, startTracking, stopTracking } from '../src/services/location';
 import { removePlayAreas } from '../src/services/map-download';
 import { Banner, Body, Button, Title } from '../src/ui/components';
+import { EndCard } from '../src/ui/EndCard';
 import { useGame } from '../src/ui/GameProvider';
 import { LeaveGame } from '../src/ui/LeaveGame';
 import GameMap from '../src/ui/map/GameMap';
@@ -76,6 +77,14 @@ export default function EndScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ended, walking, arrived]);
 
+  // Afstand, stand en records voor de eindkaart; elke minuut opnieuw, zodat de plaats bijwerkt als andere teams klaar zijn.
+  useEffect(() => {
+    if (!ended || !controller) return;
+    void controller.loadSummary();
+    const timer = setInterval(() => void controller.loadSummary(), 60_000);
+    return () => clearInterval(timer);
+  }, [ended !== undefined, controller]);
+
   const distance = meeting && position ? metersTo(position, meeting) : null;
 
   if (!controller || !snapshot || !state) return <Redirect href="/" />;
@@ -85,6 +94,7 @@ export default function EndScreen() {
   const tr = (value: Parameters<typeof tx>[0]) => tx(value, lang, game.defaultLanguage);
 
   const testMode = snapshot.session.testMode;
+  const stats = controller.endStats();
   const far = distanceText(distance ?? 0, lang);
 
   const d = 0.0025;
@@ -92,6 +102,7 @@ export default function EndScreen() {
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.kicker}>{t('gameOver')}</Text>
+        {stats ? <EndCard stats={stats} game={game} teamName={snapshot.team.name} lang={lang} t={t} /> : null}
         <Title>{tr(ending?.title)}</Title>
         <Body>{tr(ending?.body)}</Body>
 

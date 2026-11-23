@@ -36,6 +36,7 @@ import { useScreenOn } from "../src/services/screen-on";
 import { useGame } from "../src/ui/GameProvider";
 import { logError } from "../src/services/diagnostics";
 import GameMap from "../src/ui/map/GameMap";
+import { NewsCard } from "../src/ui/NewsCard";
 import { colors, contentColumn, radius, space } from "../src/ui/theme";
 
 const SIREN_GAP_MS = 8_000;
@@ -472,6 +473,34 @@ export default function PlayScreen() {
             ))}
           </ScrollView>
         ) : null}
+        {/* Nieuwsflits onderin, boven de knoppen: los van de waarschuwingen bovenin. Tikken = weg. */}
+        {snapshot.newsCurrent ? (
+          <View style={styles.news}>
+            <NewsCard
+              flash={snapshot.newsCurrent}
+              game={game}
+              lang={lang}
+              t={t}
+              onDismiss={() => void controller.dismissNews(snapshot.newsCurrent!.id)}
+            />
+          </View>
+        ) : snapshot.news.length > 0 ? (
+          <View style={styles.newsPillRow}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={snapshot.newsUnread > 0 ? `${t("newsTitle")} (${snapshot.newsUnread})` : t("newsTitle")}
+              style={styles.newsPill}
+              onPress={() => router.push("/news")}
+            >
+              <Text style={styles.newsPillText}>{`📣 ${t("newsTitle")}`}</Text>
+              {snapshot.newsUnread > 0 ? (
+                <View style={styles.newsBadge}>
+                  <Text style={styles.newsBadgeText}>{snapshot.newsUnread}</Text>
+                </View>
+              ) : null}
+            </Pressable>
+          </View>
+        ) : null}
         <View style={styles.bottomRow}>
           <View style={styles.bottomMain}>
             <Button
@@ -514,6 +543,22 @@ const styles = StyleSheet.create({
   skipRow: { flexDirection: "row", gap: space.sm },
   skipButton: { flex: 1 },
   bottomRow: { flexDirection: "row", gap: space.sm },
+  news: { marginBottom: space.sm },
+  newsPillRow: { flexDirection: "row", justifyContent: "flex-end", marginBottom: space.sm },
+  newsPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.sm,
+    minHeight: 40,
+    paddingHorizontal: space.md,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "rgba(31,39,51,0.95)",
+  },
+  newsPillText: { color: colors.text, fontSize: 14, fontWeight: "700" },
+  newsBadge: { minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 6, backgroundColor: colors.accent, alignItems: "center", justifyContent: "center" },
+  newsBadgeText: { color: colors.accentText, fontSize: 13, fontWeight: "800" },
   bottomMain: { flex: 1 },
   bottomSide: { minWidth: 72 },
   codeCard: {

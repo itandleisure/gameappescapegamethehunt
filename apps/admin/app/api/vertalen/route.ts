@@ -3,9 +3,10 @@
  *
  * De API-sleutel (ANTHROPIC_API_KEY) staat alleen op de server (Vercel) en
  * komt nooit in de browser. Alleen ingelogde partners, beheerders en
- * eigenaren van een organisatie mogen vertalen.
+ * eigenaren van een organisatie mogen vertalen, en een spelleider van een
+ * lopende hunt (met `session`) voor een korte nieuwsflits vanuit de app.
  *
- * Invoer:  { source: "nl", targets: ["en", "de"], texts: { title: "…", "hint.0": "…" } }
+ * Invoer:  { source: "nl", targets: ["en", "de"], texts: { title: "…", "hint.0": "…" }, session?: "…" }
  * Uitvoer: { translations: { en: { title: "…" }, de: { … } } }
  */
 import Anthropic from '@anthropic-ai/sdk';
@@ -38,9 +39,26 @@ Rules:
 - Answer options of a multiple-choice question are translated as short options, consistent with the question.
 - Return a translation for every id in every requested language.`;
 
+/** Een spelleider vertaalt alleen een nieuwsflits: een titel en een korte tekst. */
+const LEADER_MAX_FIELDS = 2;
+const LEADER_MAX_CHARS = 600;
+
+/** De spelleider-app draait ook als webapp op een ander adres; inloggen gaat met een token, niet met cookies. */
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'authorization, content-type',
+};
+
 function json(status: number, body: unknown) {
-  return NextResponse.json(body, { status });
+  return NextResponse.json(body, { status, headers: CORS });
 }
+
+export function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS });
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Schema voor de uitvoer: een lijst met per id de vertaling in elke doeltaal. */
 function outputSchema(targets: string[]) {
@@ -64,7 +82,7 @@ function outputSchema(targets: string[]) {
 }
 
 export async function POST(request: Request) {
-  // 1. Wie vraagt dit? Alleen partner (editor) of hoger.
+  // 1. Wie vraagt dit? Partner (editor) of hoger, of een spelleider van de hunt.
   const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
   if (!token) return json(401, { error: 'Log opnieuw in om te vertalen.' });
   const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -72,19 +90,31 @@ export async function POST(request: Request) {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const { data: who, error: authError } = await db.auth.getUser(token);
-  if (authError || !who.user || who.user.is_anonymous) return json(401, { error: 'Log opnieuw in om te vertalen.' });
-  const { data: roles } = await db.from('memberships').select('role').eq('user_id', who.user.id);
-  if (!(roles ?? []).some((r: { role: string }) => ['owner', 'admin', 'editor'].includes(r.role))) {
-    return json(403, { error: 'Alleen beheerders en partners kunnen vertalen.' });
-  }
+  if (authError || !who.user) return json(401, { error: 'Log opnieuw in om te vertalen.' });
 
-  // 2. Invoer controleren.
-  let input: { source?: unknown; targets?: unknown; texts?: unknown };
+  let input: { source?: unknown; targets?: unknown; texts?: unknown; session?: unknown };
   try {
     input = (await request.json()) as typeof input;
   } catch {
     return json(400, { error: 'Ongeldige aanvraag.' });
   }
+
+  // Spelleider (ook anoniem ingelogd in de app) van deze hunt, of partner of hoger.
+  const session = typeof input.session === 'string' && UUID.test(input.session) ? input.session : null;
+  let leader = false;
+  if (session) {
+    const { data: allowed } = await db.rpc('leader_can_translate', { p_session: session });
+    leader = allowed === true;
+  }
+  if (!leader) {
+    if (who.user.is_anonymous) return json(401, { error: 'Log opnieuw in om te vertalen.' });
+    const { data: roles } = await db.from('memberships').select('role').eq('user_id', who.user.id);
+    if (!(roles ?? []).some((r: { role: string }) => ['owner', 'admin', 'editor'].includes(r.role))) {
+      return json(403, { error: 'Alleen beheerders en partners kunnen vertalen.' });
+    }
+  }
+
+  // 2. Invoer controleren.
   const source = typeof input.source === 'string' ? input.source : '';
   const targets = Array.isArray(input.targets) ? [...new Set(input.targets.filter((l): l is string => typeof l === 'string'))] : [];
   const texts = input.texts && typeof input.texts === 'object' ? (input.texts as Record<string, unknown>) : {};
@@ -93,7 +123,9 @@ export async function POST(request: Request) {
     return json(400, { error: 'Onbekende taal.' });
   }
   if (entries.length === 0) return json(200, { translations: Object.fromEntries(targets.map((l) => [l, {}])) });
-  if (entries.length > MAX_FIELDS || entries.reduce((n, [, v]) => n + v.length, 0) > MAX_CHARS) {
+  const maxFields = leader ? LEADER_MAX_FIELDS : MAX_FIELDS;
+  const maxChars = leader ? LEADER_MAX_CHARS : MAX_CHARS;
+  if (entries.length > maxFields || entries.reduce((n, [, v]) => n + v.length, 0) > maxChars) {
     return json(413, { error: 'Te veel tekst om in één keer te vertalen.' });
   }
 

@@ -11,8 +11,14 @@ import {
   DEFAULT_OUTSIDE_OPACITY,
   MAP_STYLES,
   MAX_HUNTER_ALERT_RADIUS,
+  DEFAULT_NEWS_AUTO,
+  NEWS_BODY_MAX,
+  NEWS_TITLE_MAX,
   type GamePackage,
   type MapSource,
+  type NewsAuto,
+  type NewsPreset,
+  type Text,
 } from '@hunt/engine';
 import { GAME_LANGUAGES } from './game-languages';
 import { ADMIN_LANGUAGES, type AdminLanguage } from './i18n';
@@ -73,6 +79,16 @@ export interface PhotobookExtraSettings {
   texts: BookTexts;
 }
 
+export interface NewsSettings {
+  /** Snelknoppen van de spelleider; null = de startset uit de app (DEFAULT_NEWS_PRESETS). */
+  presets: NewsPreset[] | null;
+  /** Welke automatische nieuwsflitsen de teams krijgen. */
+  auto: NewsAuto;
+}
+
+/** Zoveel snelknoppen hooguit. */
+export const MAX_NEWS_PRESETS = 20;
+
 export interface OrgSettings {
   company: CompanySettings;
   tickets: TicketSettings;
@@ -80,6 +96,7 @@ export interface OrgSettings {
   /** Landen met hun taal en tijdzone, in de volgorde van de lijst. */
   countries: CountrySettings[];
   photobook: PhotobookExtraSettings;
+  news: NewsSettings;
 }
 
 export const DEFAULT_COMPANY: CompanySettings = {
@@ -106,6 +123,7 @@ export const DEFAULT_SETTINGS: OrgSettings = {
   },
   countries: [{ country: 'NL', language: 'nl', timezone: 'Europe/Amsterdam' }],
   photobook: { share_days: 28, min_photos: 8, texts: {} },
+  news: { presets: null, auto: DEFAULT_NEWS_AUTO },
 };
 
 /** Grenzen van de getallen, ook voor de invoervelden. */
@@ -203,6 +221,42 @@ export function isTimezone(zone: string): boolean {
 }
 const zone = (v: unknown, fallback: string): string => (typeof v === 'string' && isTimezone(v.trim()) ? v.trim() : fallback);
 
+/** Tekst per taal: alleen bekende talen met een niet-lege tekst. */
+function text(v: unknown, max: number): Text {
+  const o = obj(v);
+  const out: Record<string, string> = {};
+  for (const lang of GAME_LANGUAGES) {
+    const x = o[lang];
+    if (typeof x === 'string' && x.trim()) out[lang] = x.trim().slice(0, max);
+  }
+  return out as Text;
+}
+
+function parseNews(value: unknown): NewsSettings {
+  const n = obj(value);
+  const a = obj(n.auto);
+  const auto: NewsAuto = {
+    escaped: bool(a.escaped, DEFAULT_NEWS_AUTO.escaped),
+    puzzle: bool(a.puzzle, DEFAULT_NEWS_AUTO.puzzle),
+    timeLeft: bool(a.timeLeft, DEFAULT_NEWS_AUTO.timeLeft),
+  };
+  if (!Array.isArray(n.presets)) return { presets: null, auto };
+  const ids = new Set<string>();
+  const presets = n.presets.flatMap((x, i): NewsPreset[] => {
+    const o = obj(x);
+    const title = text(o.title, NEWS_TITLE_MAX);
+    if (Object.keys(title).length === 0) return [];
+    let id = typeof o.id === 'string' && o.id.trim() ? o.id.trim().slice(0, 60) : `knop-${i + 1}`;
+    while (ids.has(id)) id = `${id}-${i + 1}`;
+    ids.add(id);
+    const preset: NewsPreset = { id, icon: str(o.icon, '', 16) || '📣', title };
+    const body = text(o.body, NEWS_BODY_MAX);
+    if (Object.keys(body).length) preset.body = body;
+    return [preset];
+  });
+  return { presets: presets.slice(0, MAX_NEWS_PRESETS), auto };
+}
+
 export function parseSettings(value: unknown): OrgSettings {
   const d = DEFAULT_SETTINGS;
   const root = obj(value);
@@ -273,6 +327,7 @@ export function parseSettings(value: unknown): OrgSettings {
       min_photos: num(pb.min_photos, d.photobook.min_photos, LIMITS.min_photos),
       texts,
     },
+    news: parseNews(root.news),
   };
 }
 
