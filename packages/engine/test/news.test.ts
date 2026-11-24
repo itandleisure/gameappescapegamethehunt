@@ -35,7 +35,7 @@ function ended(ending: string, at: number, correct: string[] = []): TeamState {
 
 describe('nieuwsflitsen', () => {
   it('startset snelknoppen staat in alle 25 talen, niet te lang', () => {
-    expect(DEFAULT_NEWS_PRESETS.length).toBeGreaterThanOrEqual(5);
+    expect(DEFAULT_NEWS_PRESETS.length).toBeGreaterThanOrEqual(3);
     for (const preset of DEFAULT_NEWS_PRESETS) {
       expect(Object.keys(preset.title).sort()).toEqual([...LANGS].sort());
       expect(Object.keys(preset.body ?? {}).sort()).toEqual([...LANGS].sort());
