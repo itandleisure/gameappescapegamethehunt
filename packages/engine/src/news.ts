@@ -123,33 +123,6 @@ export const DEFAULT_NEWS_PRESETS: NewsPreset[] = [
     },
   },
   {
-    id: 'hunters-op-pauze',
-    icon: '☕',
-    title: {
-      nl: 'Hunters op pauze', en: 'Hunters on a break', de: 'Hunters machen Pause', fr: 'Les Hunters font une pause',
-      es: 'Los Hunters descansan', it: 'Hunters in pausa', pt: 'Hunters em pausa', da: 'Hunters holder pause', sv: 'Hunters tar paus',
-      no: 'Hunters tar pause', fi: 'Hunterit tauolla', pl: 'Hunterzy mają przerwę', cs: 'Hunteři mají pauzu', sk: 'Hunteri majú prestávku',
-      hu: 'Szünetel a Hunterek', ro: 'Hunterii iau o pauză', bg: 'Hunters са в почивка', el: 'Οι Hunters κάνουν διάλειμμα',
-      hr: 'Hunteri na pauzi', sl: 'Hunterji imajo odmor', et: 'Hunterid puhkavad', lv: 'Hunteriem pārtraukums', lt: 'Hunteriai ilsisi',
-      ga: 'Sos ag na Hunters', mt: 'Il-Hunters fil-waqfa',
-    },
-    body: {
-      nl: 'De Hunters nemen even pauze. Dit is jullie kans!', en: 'The Hunters are taking a short break. This is your chance!',
-      de: 'Die Hunters machen kurz Pause. Das ist eure Chance!', fr: "Les Hunters font une courte pause. C'est votre chance !",
-      es: 'Los Hunters se toman un descanso. ¡Es vuestra oportunidad!', it: "Gli Hunters fanno una breve pausa. È la vostra occasione!",
-      pt: 'Os Hunters fazem uma pequena pausa. É a vossa oportunidade!', da: 'Hunterne holder en kort pause. Det er jeres chance!',
-      sv: 'Hunterna tar en kort paus. Det här är er chans!', no: 'Hunterne tar en kort pause. Dette er sjansen deres!',
-      fi: 'Hunterit pitävät lyhyen tauon. Nyt on teidän tilaisuutenne!', pl: 'Hunterzy robią krótką przerwę. To wasza szansa!',
-      cs: 'Hunteři si dávají krátkou pauzu. To je vaše šance!', sk: 'Hunteri si dávajú krátku prestávku. To je vaša šanca!',
-      hu: 'A Hunterek rövid szünetet tartanak. Itt a lehetőség!', ro: 'Hunterii iau o scurtă pauză. Aceasta este șansa voastră!',
-      bg: 'Hunters си почиват за малко. Това е вашият шанс!', el: 'Οι Hunters κάνουν ένα μικρό διάλειμμα. Αυτή είναι η ευκαιρία σας!',
-      hr: 'Hunteri su na kratkoj pauzi. Ovo je vaša prilika!', sl: 'Hunterji imajo kratek odmor. To je vaša priložnost!',
-      et: 'Hunterid teevad lühikese pausi. See on teie võimalus!', lv: 'Hunteri ieturē īsu pārtraukumu. Šī ir jūsu iespēja!',
-      lt: 'Hunteriai trumpai ilsisi. Tai jūsų proga!', ga: 'Tá sos gearr ag na Hunters. Seo bhur seans!',
-      mt: 'Il-Hunters qed jieħdu waqfa qasira. Din iċ-ċans tagħkom!',
-    },
-  },
-  {
     id: 'telefoon-bij-de-hand',
     icon: '📞',
     title: {
